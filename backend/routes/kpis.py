@@ -148,12 +148,26 @@ async def get_kpis(
         {"status": "Not Evaluated", "count": total_leads - qualified_leads - faulty_leads}
     ]
     
-    # Get all custom/additional metrics
-    all_metrics = await db.metric_settings.find({"is_active": True}, {"_id": 0}).to_list(50)
-    custom_metrics = {}
+    # Get all metrics for dashboard display
+    all_metrics = await db.metric_settings.find(
+        {"is_active": True, "show_on_dashboard": True}, 
+        {"_id": 0}
+    ).sort("dashboard_order", 1).to_list(50)
+    
+    # Calculate counts for all metrics
+    dashboard_metrics = []
     for metric in all_metrics:
-        if metric["metric_id"] not in ["won_leads", "lost_leads", "open_leads", "closed_leads", "hot_leads", "warm_leads", "cold_leads"]:
-            custom_metrics[metric["metric_id"]] = await count_by_metric(db, base_query, metric)
+        count = await count_by_metric(db, base_query, metric)
+        dashboard_metrics.append({
+            "metric_id": metric["metric_id"],
+            "metric_name": metric["metric_name"],
+            "value": count,
+            "color": metric.get("color", "primary"),
+            "icon": metric.get("icon", "BarChart3"),
+            "field_name": metric.get("field_name"),
+            "field_values": metric.get("field_values", []),
+            "is_custom": metric.get("is_custom", False)
+        })
     
     return {
         "total_leads": total_leads,
