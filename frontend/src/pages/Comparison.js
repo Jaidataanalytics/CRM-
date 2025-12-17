@@ -58,7 +58,7 @@ const Comparison = () => {
   const [dealerData, setDealerData] = useState([]);
   const [districtData, setDistrictData] = useState([]);
   const [marketData, setMarketData] = useState({});
-  const [selectedState, setSelectedState] = useState('');
+  const [selectedState, setSelectedState] = useState('all');
   const [availableStates, setAvailableStates] = useState([]);
   const [tooltipContent, setTooltipContent] = useState('');
   const [newEntry, setNewEntry] = useState({ state: '', market_total: '', market_share: '' });
