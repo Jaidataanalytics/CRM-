@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Request, Depends, Query
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 import logging
 
 from models.user import User
+from models.metric_settings import DEFAULT_METRICS
 from routes.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,33 @@ def get_indian_fy_dates():
     return start_date, end_date
 
 
+async def get_metric_config(db, metric_id: str) -> dict:
+    """Get metric configuration from database or use default"""
+    metric = await db.metric_settings.find_one({"metric_id": metric_id}, {"_id": 0})
+    if not metric:
+        # Find in defaults
+        for default in DEFAULT_METRICS:
+            if default["metric_id"] == metric_id:
+                return default
+        return None
+    return metric
+
+
+async def count_by_metric(db, base_query: dict, metric_config: dict) -> int:
+    """Count leads matching a metric configuration"""
+    if not metric_config or not metric_config.get("is_active", True):
+        return 0
+    
+    field_name = metric_config.get("field_name")
+    field_values = metric_config.get("field_values", [])
+    
+    if not field_name or not field_values:
+        return 0
+    
+    query = {**base_query, field_name: {"$in": field_values}}
+    return await db.leads.count_documents(query)
+
+
 @router.get("")
 async def get_kpis(
     request: Request,
@@ -38,7 +66,7 @@ async def get_kpis(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ):
-    """Get KPI metrics with optional filters"""
+    """Get KPI metrics with optional filters - uses configurable metric settings"""
     db = await get_db(request)
     
     # Default to Indian FY if no dates provided
@@ -61,31 +89,25 @@ async def get_kpis(
     # Total leads
     total_leads = await db.leads.count_documents(base_query)
     
-    # Won leads (Closed-Won)
-    won_query = {**base_query, "enquiry_stage": "Closed-Won"}
-    won_leads = await db.leads.count_documents(won_query)
+    # Get configurable metrics
+    won_config = await get_metric_config(db, "won_leads")
+    lost_config = await get_metric_config(db, "lost_leads")
+    open_config = await get_metric_config(db, "open_leads")
+    closed_config = await get_metric_config(db, "closed_leads")
+    hot_config = await get_metric_config(db, "hot_leads")
+    warm_config = await get_metric_config(db, "warm_leads")
+    cold_config = await get_metric_config(db, "cold_leads")
     
-    # Lost leads (Closed-Lost)
-    lost_query = {**base_query, "enquiry_stage": "Closed-Lost"}
-    lost_leads = await db.leads.count_documents(lost_query)
+    # Count using configurable metrics
+    won_leads = await count_by_metric(db, base_query, won_config)
+    lost_leads = await count_by_metric(db, base_query, lost_config)
+    open_leads = await count_by_metric(db, base_query, open_config)
+    closed_leads = await count_by_metric(db, base_query, closed_config)
+    hot_leads = await count_by_metric(db, base_query, hot_config)
+    warm_leads = await count_by_metric(db, base_query, warm_config)
+    cold_leads = await count_by_metric(db, base_query, cold_config)
     
-    # Open leads
-    open_query = {**base_query, "enquiry_status": "Open"}
-    open_leads = await db.leads.count_documents(open_query)
-    
-    # Hot leads
-    hot_query = {**base_query, "enquiry_type": "Hot"}
-    hot_leads = await db.leads.count_documents(hot_query)
-    
-    # Warm leads
-    warm_query = {**base_query, "enquiry_type": "Warm"}
-    warm_leads = await db.leads.count_documents(warm_query)
-    
-    # Cold leads
-    cold_query = {**base_query, "enquiry_type": "Cold"}
-    cold_leads = await db.leads.count_documents(cold_query)
-    
-    # Qualified leads
+    # Qualified leads (system-based, not configurable)
     qualified_query = {**base_query, "is_qualified": True}
     qualified_leads = await db.leads.count_documents(qualified_query)
     
@@ -93,9 +115,9 @@ async def get_kpis(
     faulty_query = {**base_query, "is_qualified": False, "qualification_score": {"$exists": True}}
     faulty_leads = await db.leads.count_documents(faulty_query)
     
-    # Conversion rate
-    closed_total = won_leads + lost_leads
-    conversion_rate = (won_leads / closed_total * 100) if closed_total > 0 else 0
+    # Conversion rate (Won / (Won + Lost))
+    closed_for_conversion = won_leads + lost_leads
+    conversion_rate = (won_leads / closed_for_conversion * 100) if closed_for_conversion > 0 else 0
     
     # Leads by segment
     segment_pipeline = [
@@ -126,17 +148,26 @@ async def get_kpis(
         {"status": "Not Evaluated", "count": total_leads - qualified_leads - faulty_leads}
     ]
     
+    # Get all custom/additional metrics
+    all_metrics = await db.metric_settings.find({"is_active": True}, {"_id": 0}).to_list(50)
+    custom_metrics = {}
+    for metric in all_metrics:
+        if metric["metric_id"] not in ["won_leads", "lost_leads", "open_leads", "closed_leads", "hot_leads", "warm_leads", "cold_leads"]:
+            custom_metrics[metric["metric_id"]] = await count_by_metric(db, base_query, metric)
+    
     return {
         "total_leads": total_leads,
         "won_leads": won_leads,
         "lost_leads": lost_leads,
         "open_leads": open_leads,
+        "closed_leads": closed_leads,
         "hot_leads": hot_leads,
         "warm_leads": warm_leads,
         "cold_leads": cold_leads,
         "qualified_leads": qualified_leads,
         "faulty_leads": faulty_leads,
         "conversion_rate": round(conversion_rate, 2),
+        "custom_metrics": custom_metrics,
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
             for s in segment_distribution
@@ -150,5 +181,14 @@ async def get_kpis(
         "date_range": {
             "start_date": start_date,
             "end_date": end_date
+        },
+        "metric_configs": {
+            "won_leads": won_config,
+            "lost_leads": lost_config,
+            "open_leads": open_config,
+            "closed_leads": closed_config,
+            "hot_leads": hot_config,
+            "warm_leads": warm_config,
+            "cold_leads": cold_config
         }
     }
