@@ -337,17 +337,33 @@ const Forecast = () => {
               <CardHeader>
                 <CardTitle>Prediction Trend</CardTitle>
               </CardHeader>
-              <CardContent className="h-64">
-                <Line 
+              <CardContent className="h-80">
+                <Bar 
                   data={predictionChartData}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                      legend: { position: 'top' }
+                      legend: { 
+                        position: 'top',
+                        labels: { font: { size: 12 } }
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: (context) => `${context.dataset.label}: ${context.raw.toLocaleString()}`
+                        }
+                      }
                     },
                     scales: {
-                      y: { beginAtZero: true }
+                      y: { 
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (value) => value.toLocaleString()
+                        }
+                      },
+                      x: {
+                        grid: { display: false }
+                      }
                     }
                   }}
                 />
