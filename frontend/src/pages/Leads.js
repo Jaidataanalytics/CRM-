@@ -269,6 +269,46 @@ const Leads = () => {
           <p className="text-muted-foreground mt-1">Create, update, and manage your leads</p>
         </div>
         <div className="flex gap-2">
+          {/* Search */}
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <Select value={searchField} onValueChange={setSearchField}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="phone_number">Phone</SelectItem>
+                <SelectItem value="email_address">Email</SelectItem>
+                <SelectItem value="enquiry_no">Enquiry No</SelectItem>
+                <SelectItem value="dealer">Dealer</SelectItem>
+                <SelectItem value="state">State</SelectItem>
+                <SelectItem value="employee_name">Employee</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={`Search by ${searchField}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-48"
+              />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                  onClick={clearSearch}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            <Button type="submit" variant="secondary" size="sm">
+              Search
+            </Button>
+          </form>
           <input
             type="file"
             ref={fileInputRef}
