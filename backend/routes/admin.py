@@ -264,51 +264,125 @@ async def get_admin_stats(
     }
 
 
-# Column mapping from Excel to database fields
+# Column mapping from Excel to database fields (supports multiple variations)
 COLUMN_MAPPING = {
+    # Zone
     "Zone": "zone",
+    "zone": "zone",
+    # State
     "State": "state",
+    "state": "state",
+    # Area/Office variations
     "Area": "area",
+    "area": "area",
     "Office": "office",
+    "office": "office",
+    "Area Office": "area",
+    "area office": "area",
+    # Dealer
     "Dealer": "dealer",
+    "dealer": "dealer",
+    # Branch
     "Branch": "branch",
+    "branch": "branch",
+    # Location/Address
     "Location": "location",
+    "location": "location",
+    "Address": "address",
+    "address": "address",
+    # Employee fields
     "Employee Code": "employee_code",
+    "employee code": "employee_code",
     "Employee Name": "employee_name",
+    "employee name": "employee_name",
     "Employee Status": "employee_status",
+    "employee status": "employee_status",
+    # Enquiry fields
     "Enquiry No": "enquiry_no",
+    "enquiry no": "enquiry_no",
     "Enquiry Date": "enquiry_date",
+    "enquiry date": "enquiry_date",
+    # Customer fields
     "Customer Type": "customer_type",
+    "customer type": "customer_type",
     "Corporate Name": "corporate_name",
+    "corporate name": "corporate_name",
     "Name": "name",
+    "name": "name",
     "Phone Number": "phone_number",
+    "phone number": "phone_number",
+    "Phone": "phone_number",
+    "phone": "phone_number",
     "Email Address": "email_address",
+    "email address": "email_address",
+    "Email": "email_address",
+    "email": "email_address",
     "PinCode": "pincode",
+    "pincode": "pincode",
+    "Pin Code": "pincode",
     "Tehsil": "tehsil",
+    "tehsil": "tehsil",
     "District": "district",
+    "district": "district",
+    # Product fields
     "KVA": "kva",
+    "kva": "kva",
     "Phase": "phase",
+    "phase": "phase",
     "Qty": "qty",
+    "qty": "qty",
+    "Quantity": "qty",
     "Remarks": "remarks",
+    "remarks": "remarks",
+    # Status fields
     "EnquiryStatus": "enquiry_status",
+    "Enquiry Status": "enquiry_status",
+    "enquiry status": "enquiry_status",
     "EnquiryType": "enquiry_type",
+    "Enquiry Type": "enquiry_type",
+    "enquiry type": "enquiry_type",
     "Enquiry Stage": "enquiry_stage",
+    "enquiry stage": "enquiry_stage",
+    # Date fields
     "EO/PO Date": "eo_po_date",
+    "eo/po date": "eo_po_date",
     "Planned Followup Date": "planned_followup_date",
-    "Source": "source",
-    "Source From": "source_from",
-    "Events": "events",
-    "No of Follow-ups": "no_of_followups",
-    "Segment": "segment",
-    "SubSegment": "sub_segment",
-    "DG Ownership": "dg_ownership",
-    "Created By": "created_by",
-    "PAN NO.": "pan_no",
+    "planned followup date": "planned_followup_date",
     "LastFollowupDate": "last_followup_date",
+    "Last Followup Date": "last_followup_date",
+    "last followup date": "last_followup_date",
     "Enquiry Closure Date": "enquiry_closure_date",
+    "enquiry closure date": "enquiry_closure_date",
+    # Source fields
+    "Source": "source",
+    "source": "source",
+    "Source From": "source_from",
+    "source from": "source_from",
+    "Events": "events",
+    "events": "events",
+    "No of Follow-ups": "no_of_followups",
+    "no of follow-ups": "no_of_followups",
+    "Followups": "no_of_followups",
+    # Segment fields
+    "Segment": "segment",
+    "segment": "segment",
+    "SubSegment": "sub_segment",
+    "sub segment": "sub_segment",
+    "Sub Segment": "sub_segment",
+    "DG Ownership": "dg_ownership",
+    "dg ownership": "dg_ownership",
+    # Other fields
+    "Created By": "created_by",
+    "created by": "created_by",
+    "PAN NO.": "pan_no",
+    "pan no.": "pan_no",
+    "PAN": "pan_no",
     "Finance Required": "finance_required",
+    "finance required": "finance_required",
     "Finance Company": "finance_company",
-    "Referred By": "referred_by"
+    "finance company": "finance_company",
+    "Referred By": "referred_by",
+    "referred by": "referred_by"
 }
 
 
