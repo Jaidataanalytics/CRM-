@@ -183,6 +183,57 @@ const Admin = () => {
     }
   };
 
+  const createCustomMetric = async () => {
+    if (!newMetric.metric_id || !newMetric.metric_name) {
+      toast.error('Please fill in metric ID and name');
+      return;
+    }
+    if (newMetric.field_values.length === 0) {
+      toast.error('Please select at least one value');
+      return;
+    }
+    try {
+      await axios.post(`${API}/metric-settings/create`, newMetric, { withCredentials: true });
+      toast.success('Custom metric created');
+      setShowCreateMetric(false);
+      setNewMetric({
+        metric_id: '',
+        metric_name: '',
+        description: '',
+        field_name: 'segment',
+        field_values: [],
+        color: 'primary',
+        show_on_dashboard: true
+      });
+      loadMetricSettings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create metric');
+    }
+  };
+
+  const deleteCustomMetric = async (metricId) => {
+    if (!window.confirm('Delete this custom metric?')) return;
+    try {
+      await axios.delete(`${API}/metric-settings/${metricId}`, { withCredentials: true });
+      toast.success('Metric deleted');
+      loadMetricSettings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete metric');
+    }
+  };
+
+  const toggleMetricDashboard = async (metric) => {
+    try {
+      await axios.put(`${API}/metric-settings/${metric.metric_id}`, 
+        { show_on_dashboard: !metric.show_on_dashboard },
+        { withCredentials: true }
+      );
+      loadMetricSettings();
+    } catch (error) {
+      toast.error('Failed to update metric');
+    }
+  };
+
   const handleHistoricalUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
