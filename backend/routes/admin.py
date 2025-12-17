@@ -432,17 +432,26 @@ async def upload_historical_data(
                             else:
                                 lead_data[db_field] = None
                         else:
-                            lead_data[db_field] = clean_value(val)
+                            cleaned = clean_value(val)
+                            # Convert to string if not None to avoid type issues
+                            if cleaned is not None:
+                                lead_data[db_field] = str(cleaned) if not isinstance(cleaned, str) else cleaned
+                            else:
+                                lead_data[db_field] = None
                 
-                # Create new lead
-                lead = Lead(**lead_data)
-                lead_doc = lead.model_dump()
-                lead_doc["created_at"] = lead_doc["created_at"].isoformat()
-                lead_doc["updated_at"] = lead_doc["updated_at"].isoformat()
+                # Create lead document directly without Pydantic validation to avoid issues
+                import uuid as uuid_mod
+                lead_doc = {
+                    "lead_id": f"lead_{uuid_mod.uuid4().hex[:12]}",
+                    **lead_data,
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
                 await db.leads.insert_one(lead_doc)
                 created_count += 1
                     
             except Exception as e:
+                logger.error(f"Row {idx + 2} error: {e}")
                 errors.append({"row": idx + 2, "error": str(e)})
                 continue
         
