@@ -65,6 +65,12 @@ const Leads = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  
+  // Qualification state
+  const [isQualifyDialogOpen, setIsQualifyDialogOpen] = useState(false);
+  const [qualifyingLead, setQualifyingLead] = useState(null);
+  const [qualificationQuestions, setQualificationQuestions] = useState([]);
+  const [qualificationAnswers, setQualificationAnswers] = useState({});
 
   useEffect(() => {
     loadLeads();
