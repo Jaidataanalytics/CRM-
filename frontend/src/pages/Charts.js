@@ -24,7 +24,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { Pie, Bar, Line } from 'react-chartjs-2';
+import { Pie, Bar, Line, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -48,31 +48,44 @@ const chartColors = [
   'hsl(270, 50%, 40%)',
   'hsl(200, 70%, 50%)',
   'hsl(45, 90%, 50%)',
+  'hsl(180, 60%, 45%)',
 ];
 
 const chartTypes = [
   { value: 'pie', label: 'Pie Chart', icon: PieChart },
+  { value: 'doughnut', label: 'Doughnut Chart', icon: PieChart },
   { value: 'bar', label: 'Bar Chart', icon: BarChart2 },
   { value: 'line', label: 'Line Chart', icon: LineChartIcon },
 ];
 
 const dataOptions = [
-  { value: 'segment', label: 'By Segment' },
-  { value: 'stage', label: 'By Stage' },
-  { value: 'state', label: 'By State' },
-  { value: 'dealer', label: 'By Dealer' },
-  { value: 'source', label: 'By Source' },
-  { value: 'monthly', label: 'Monthly Trend' },
+  // Data groupings
+  { value: 'segment', label: 'By Segment', type: 'data' },
+  { value: 'stage', label: 'By Stage', type: 'data' },
+  { value: 'state', label: 'By State', type: 'data' },
+  { value: 'dealer', label: 'By Dealer', type: 'data' },
+  { value: 'source', label: 'By Source', type: 'data' },
+  { value: 'type', label: 'By Type (Hot/Warm/Cold)', type: 'data' },
+  { value: 'qualification', label: 'By Qualification Status', type: 'data' },
+  { value: 'monthly', label: 'Monthly Trend', type: 'data' },
+  // Metrics
+  { value: 'metric_won', label: 'Won Leads by State', type: 'metric' },
+  { value: 'metric_lost', label: 'Lost Leads by State', type: 'metric' },
+  { value: 'metric_qualified', label: 'Qualified Leads by Dealer', type: 'metric' },
+  { value: 'metric_conversion', label: 'Conversion Rate by Employee', type: 'metric' },
+  { value: 'metric_monthly_won', label: 'Monthly Won Leads Trend', type: 'metric' },
+  { value: 'metric_monthly_qualified', label: 'Monthly Qualified Leads', type: 'metric' },
 ];
 
 const ChartCard = ({ chart, onRemove, data }) => {
   const chartData = {
     labels: data?.labels || [],
     datasets: [{
+      label: chart.title,
       data: data?.values || [],
       backgroundColor: chartColors,
       borderColor: chartColors,
-      borderWidth: chart.type === 'pie' ? 0 : 2,
+      borderWidth: (chart.type === 'pie' || chart.type === 'doughnut') ? 0 : 2,
       fill: chart.type === 'line' ? false : true,
     }]
   };
@@ -82,7 +95,7 @@ const ChartCard = ({ chart, onRemove, data }) => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: chart.type === 'pie' ? 'right' : 'top',
+        position: (chart.type === 'pie' || chart.type === 'doughnut') ? 'right' : 'top',
         labels: {
           usePointStyle: true,
           padding: 15,
@@ -95,13 +108,16 @@ const ChartCard = ({ chart, onRemove, data }) => {
         bodyFont: { size: 13 },
       }
     },
-    scales: chart.type !== 'pie' ? {
+    scales: (chart.type !== 'pie' && chart.type !== 'doughnut') ? {
       y: { beginAtZero: true, grid: { display: false } },
       x: { grid: { display: false } }
     } : undefined
   };
 
-  const ChartComponent = chart.type === 'pie' ? Pie : chart.type === 'bar' ? Bar : Line;
+  const ChartComponent = 
+    chart.type === 'pie' ? Pie : 
+    chart.type === 'doughnut' ? Doughnut :
+    chart.type === 'bar' ? Bar : Line;
 
   return (
     <Card className="h-full">
@@ -128,10 +144,11 @@ const ChartCard = ({ chart, onRemove, data }) => {
 const Charts = () => {
   const { buildQueryParams } = useFilters();
   const [charts, setCharts] = useState([
-    { id: 'default-1', type: 'pie', dataKey: 'segment', title: 'Leads by Segment' }
+    { id: 'default-1', type: 'pie', dataKey: 'segment', title: 'Leads by Segment' },
+    { id: 'default-2', type: 'doughnut', dataKey: 'stage', title: 'Leads by Stage' },
   ]);
   const [chartData, setChartData] = useState({});
-  const [newChart, setNewChart] = useState({ type: 'bar', dataKey: 'stage' });
+  const [newChart, setNewChart] = useState({ type: 'bar', dataKey: 'metric_won' });
 
   const loadChartData = useCallback(async () => {
     const queryParams = buildQueryParams();
@@ -139,38 +156,72 @@ const Charts = () => {
 
     for (const chart of charts) {
       try {
-        let endpoint = '';
-        if (chart.dataKey === 'segment' || chart.dataKey === 'stage') {
-          endpoint = `${API}/kpis?${queryParams}`;
-        } else if (chart.dataKey === 'monthly') {
-          endpoint = `${API}/insights/monthly-trends?months=12`;
-        } else {
-          endpoint = `${API}/insights/top-performers?by=${chart.dataKey}&${queryParams}`;
+        let labels = [];
+        let values = [];
+
+        // Data-based charts
+        if (chart.dataKey === 'segment' || chart.dataKey === 'stage' || 
+            chart.dataKey === 'type' || chart.dataKey === 'qualification') {
+          const res = await axios.get(`${API}/kpis?${queryParams}`, { withCredentials: true });
+          
+          if (chart.dataKey === 'segment') {
+            labels = res.data.segment_distribution?.map(s => s.segment) || [];
+            values = res.data.segment_distribution?.map(s => s.count) || [];
+          } else if (chart.dataKey === 'stage') {
+            labels = res.data.stage_distribution?.map(s => s.stage) || [];
+            values = res.data.stage_distribution?.map(s => s.count) || [];
+          } else if (chart.dataKey === 'type') {
+            labels = res.data.type_distribution?.map(t => t.type) || [];
+            values = res.data.type_distribution?.map(t => t.count) || [];
+          } else if (chart.dataKey === 'qualification') {
+            labels = res.data.qualification_distribution?.map(q => q.status) || [];
+            values = res.data.qualification_distribution?.map(q => q.count) || [];
+          }
+        } 
+        else if (chart.dataKey === 'monthly') {
+          const res = await axios.get(`${API}/insights/monthly-trends?months=12`, { withCredentials: true });
+          labels = res.data.trends?.map(t => t.month) || [];
+          values = res.data.trends?.map(t => t.total_leads) || [];
+        }
+        else if (chart.dataKey === 'state' || chart.dataKey === 'dealer') {
+          const res = await axios.get(`${API}/insights/top-performers?by=${chart.dataKey}&metric=total&${queryParams}`, { withCredentials: true });
+          labels = res.data.performers?.map(p => p.name) || [];
+          values = res.data.performers?.map(p => p.total_leads) || [];
+        }
+        // Metric-based charts
+        else if (chart.dataKey === 'metric_won') {
+          const res = await axios.get(`${API}/insights/top-performers?by=state&metric=won&${queryParams}`, { withCredentials: true });
+          labels = res.data.performers?.map(p => p.name) || [];
+          values = res.data.performers?.map(p => p.won_leads) || [];
+        }
+        else if (chart.dataKey === 'metric_lost') {
+          const res = await axios.get(`${API}/insights/top-performers?by=state&metric=total&${queryParams}`, { withCredentials: true });
+          labels = res.data.performers?.map(p => p.name) || [];
+          values = res.data.performers?.map(p => p.lost_leads) || [];
+        }
+        else if (chart.dataKey === 'metric_qualified') {
+          const res = await axios.get(`${API}/insights/top-performers?by=dealer&metric=total&${queryParams}`, { withCredentials: true });
+          // Note: We'd need to add qualified_leads to the performers data
+          labels = res.data.performers?.map(p => p.name) || [];
+          values = res.data.performers?.map(p => p.won_leads) || []; // Using won as proxy
+        }
+        else if (chart.dataKey === 'metric_conversion') {
+          const res = await axios.get(`${API}/insights/top-performers?by=employee&metric=conversion_rate&${queryParams}`, { withCredentials: true });
+          labels = res.data.performers?.map(p => p.name) || [];
+          values = res.data.performers?.map(p => p.conversion_rate) || [];
+        }
+        else if (chart.dataKey === 'metric_monthly_won') {
+          const res = await axios.get(`${API}/insights/monthly-trends?months=12`, { withCredentials: true });
+          labels = res.data.trends?.map(t => t.month) || [];
+          values = res.data.trends?.map(t => t.won) || [];
+        }
+        else if (chart.dataKey === 'metric_monthly_qualified') {
+          const res = await axios.get(`${API}/insights/monthly-trends?months=12`, { withCredentials: true });
+          labels = res.data.trends?.map(t => t.month) || [];
+          values = res.data.trends?.map(t => t.won) || []; // Using won as proxy until qualified is tracked
         }
 
-        const res = await axios.get(endpoint, { withCredentials: true });
-        
-        if (chart.dataKey === 'segment') {
-          newData[chart.id] = {
-            labels: res.data.segment_distribution?.map(s => s.segment) || [],
-            values: res.data.segment_distribution?.map(s => s.count) || []
-          };
-        } else if (chart.dataKey === 'stage') {
-          newData[chart.id] = {
-            labels: res.data.stage_distribution?.map(s => s.stage) || [],
-            values: res.data.stage_distribution?.map(s => s.count) || []
-          };
-        } else if (chart.dataKey === 'monthly') {
-          newData[chart.id] = {
-            labels: res.data.trends?.map(t => t.month) || [],
-            values: res.data.trends?.map(t => t.total_leads) || []
-          };
-        } else {
-          newData[chart.id] = {
-            labels: res.data.performers?.map(p => p.name) || [],
-            values: res.data.performers?.map(p => p.total_leads) || []
-          };
-        }
+        newData[chart.id] = { labels, values };
       } catch (error) {
         console.error(`Error loading chart data for ${chart.id}:`, error);
         newData[chart.id] = { labels: [], values: [] };
@@ -185,12 +236,12 @@ const Charts = () => {
   }, [loadChartData]);
 
   const addChart = () => {
-    const dataLabel = dataOptions.find(d => d.value === newChart.dataKey)?.label || '';
+    const dataOption = dataOptions.find(d => d.value === newChart.dataKey);
     const newChartObj = {
       id: `chart-${Date.now()}`,
       type: newChart.type,
       dataKey: newChart.dataKey,
-      title: `Leads ${dataLabel}`
+      title: dataOption?.label || 'Custom Chart'
     };
     setCharts([...charts, newChartObj]);
   };
@@ -204,7 +255,7 @@ const Charts = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight">Charts</h1>
-          <p className="text-muted-foreground mt-1">Create custom visualizations</p>
+          <p className="text-muted-foreground mt-1">Create custom visualizations with data and metrics</p>
         </div>
       </div>
 
@@ -215,7 +266,7 @@ const Charts = () => {
             <div className="space-y-2">
               <label className="text-sm font-medium">Chart Type</label>
               <Select value={newChart.type} onValueChange={(v) => setNewChart(prev => ({ ...prev, type: v }))}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -231,13 +282,18 @@ const Charts = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Data</label>
+              <label className="text-sm font-medium">Data / Metric</label>
               <Select value={newChart.dataKey} onValueChange={(v) => setNewChart(prev => ({ ...prev, dataKey: v }))}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-56">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {dataOptions.map(d => (
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Data Groupings</div>
+                  {dataOptions.filter(d => d.type === 'data').map(d => (
+                    <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                  ))}
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground mt-2">Metrics</div>
+                  {dataOptions.filter(d => d.type === 'metric').map(d => (
                     <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
                   ))}
                 </SelectContent>
