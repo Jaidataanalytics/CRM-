@@ -66,6 +66,12 @@ const Admin = () => {
   const [dataStats, setDataStats] = useState(null);
   const [uploadingHistorical, setUploadingHistorical] = useState(false);
   const [historicalUploadResult, setHistoricalUploadResult] = useState(null);
+  
+  // Metric Settings state
+  const [metricSettings, setMetricSettings] = useState(null);
+  const [availableFields, setAvailableFields] = useState({});
+  const [fieldCounts, setFieldCounts] = useState({});
+  const [savingMetric, setSavingMetric] = useState(null);
 
   useEffect(() => {
     loadData();
