@@ -32,8 +32,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import { Users, Activity, Settings, Shield, UserX, UserCheck, ChevronLeft, ChevronRight, Plus, Trash2, ShieldCheck, Save, Upload, Database, Calendar, FileSpreadsheet, AlertTriangle } from 'lucide-react';
+import { Users, Activity, Settings, Shield, UserX, UserCheck, ChevronLeft, ChevronRight, Plus, Trash2, ShieldCheck, Save, Upload, Database, Calendar, FileSpreadsheet, AlertTriangle, BarChart3, RefreshCw, Check, X } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
