@@ -223,9 +223,9 @@ const Comparison = () => {
             {/* Map */}
             <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle>{selectedState ? `${selectedState} - District Performance` : 'India - State Performance'}</CardTitle>
+                <CardTitle>{selectedState !== 'all' ? `${selectedState} - District Performance` : 'India - State Performance'}</CardTitle>
                 <CardDescription>
-                  {selectedState ? 'District-wise lead distribution' : 'Click a state to see district-level data'}
+                  {selectedState !== 'all' ? 'District-wise lead distribution' : 'Click a state to see district-level data'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="h-[500px] relative">
