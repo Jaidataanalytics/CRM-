@@ -276,3 +276,72 @@ async def get_monthly_trends(
             for r in results if r["_id"]
         ]
     }
+
+
+@router.get("/district-performance")
+async def get_district_performance(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    state: str = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """Get district-wise performance for a state"""
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    query = {"enquiry_date": {"$gte": start_date, "$lte": end_date}}
+    if state:
+        query["state"] = state
+    
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": "$district",
+                "total_leads": {"$sum": 1},
+                "won_leads": {
+                    "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}
+                },
+                "lost_leads": {
+                    "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Lost"]}, 1, 0]}
+                },
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {
+            "$addFields": {
+                "conversion_rate": {
+                    "$cond": [
+                        {"$eq": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                        0,
+                        {"$multiply": [
+                            {"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]},
+                            100
+                        ]}
+                    ]
+                }
+            }
+        },
+        {"$sort": {"total_leads": -1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(100)
+    
+    return {
+        "districts": [
+            {
+                "name": r["_id"] or "Unknown",
+                "total_leads": r["total_leads"],
+                "won_leads": r["won_leads"],
+                "lost_leads": r["lost_leads"],
+                "conversion_rate": round(r["conversion_rate"], 2),
+                "total_kva": round(r["total_kva"], 2)
+            }
+            for r in results if r["_id"]
+        ],
+        "state": state,
+        "date_range": {"start_date": start_date, "end_date": end_date}
+    }
