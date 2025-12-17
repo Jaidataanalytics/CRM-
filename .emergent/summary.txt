@@ -14,77 +14,62 @@ The user wants to build a comprehensive Lead Management Dashboard named LeadForg
     -   **Admin**: User management (Admin, Manager, Employee), historical data management, and management of lead qualification questions.
 -   **Filtering**: A hierarchical filter system (state, city, dealer, etc.) that applies globally.
 -   **Lead Qualification**: An admin-defined system of questions with scored answers to automatically classify leads as Qualified or Faulty.
+-   **Configurable Metrics**: The logic for KPIs (Won, Lost, Open, etc.) must be configurable by the admin. Admins should also be able to create, show, and hide custom KPI cards on the dashboard.
+-   **Enhanced Comparison**: The comparison page should allow users to input session-based market data and compare performance across states, dealers, areas, and employees using tables and charts.
+-   **Detailed Forecast**: The forecast module should provide a detailed, AI-powered breakdown of future leads by state, dealer, segment, and employee.
+-   **Lead Search**: The Manage Leads page must have a search functionality to easily find specific leads.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack application (React + FastAPI + MongoDB) has been developed, delivering the core features. The backend includes APIs for authentication (Google/password), lead management, KPIs, and administration. The frontend provides a functional UI for login, a dashboard with KPI cards and a lead table, pages for managing leads, charts, insights, and admin tasks. A lead qualification system and a demo user (/) are in place. The application was recently tested by the testing agent with a 97.5% success rate before the user reported new issues.
+A comprehensive full-stack application (React + FastAPI + MongoDB) is fully functional. It includes authentication (Google/password), a dashboard with customizable KPI cards, lead management with CRUD and two separate bulk upload features (additive and historical replacement), a detailed comparison page with market data input, an AI-powered forecast page with detailed breakdowns, and an extensive admin panel. The admin panel allows for user management, lead qualification rule setting, and KPI logic configuration (including the creation of custom metrics). Role-based access control and a global filter bar are also implemented.
 
 **Last working item**:
--   **Last item agent was working**: The user reported three issues: 1) the main filter bar is broken, 2) the charts page needs separate dropdowns for chart type, metric, and dimension, and 3) a feature for historical data upload is missing. The agent began fixing these issues.
--   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: both
+-   **Last item agent was working**: The user reported that uploading an Excel file via the Upload Excel button on the Manage Leads page did not add any leads. The agent identified the root cause in —it was using outdated logic with silent validation failures. The agent fixed this by replacing the code with the more robust and flexible logic from the historical data upload feature, which handles varied column names and date formats correctly.
+-   **Status**: USER VERIFICATION PENDING
+-   **Agent Testing Done**: Y
+-   **Which testing method agent to use?**: Frontend testing agent
 -   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0)**: Filters are not working.
--   **Issue 2 (P1)**: The Charts page UI needs to be updated.
+-   **Issue 1 (P0)**: Verify the Upload Excel feature on the Manage Leads page.
 
 **Issues Detail**:
--   **Issue 1**: **Filters are not working.**
-    -   **Attempted fixes**: The agent identified the issue in , where using an empty string  for All options in  components was causing problems. The file was overwritten with a fix.
+-   **Issue 1**: **Verify the Upload Excel feature on the Manage Leads page.**
+    -   **Attempted fixes**: The agent replaced the entire logic in  with the proven, robust code from the historical upload endpoint (). This new logic bypasses strict Pydantic model validation for insertion and includes flexible date parsing and column mapping. The agent successfully tested the fix from the command line by uploading a sample Excel file.
     -   **Next debug checklist**:
-        1.  Verify the frontend has restarted since the file was changed.
-        2.  Take a screenshot of the dashboard page to confirm the filters are populated with data.
-        3.  Test by selecting a filter option and check if the KPIs and lead table update correctly.
-        4.  Inspect browser console logs for any related errors.
-    -   **Why fix this issue and what will be achieved with the fix?**: The filters are a core feature for data analysis across multiple pages. Fixing this will restore essential application functionality.
-    -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Frontend
-    -   **Blocked on other issue**: None
-
--   **Issue 2**: **Charts page needs separate dropdowns for Chart Type, Metric, and Dimension.**
-    -   **Attempted fixes**: None. The agent was about to start this task.
-    -   **Next debug checklist**:
-        1.  Modify  to replace the single Data / Metric dropdown with three separate dropdowns: Chart Type, Dimension (e.g., By State, By Dealer), and Metric (e.g., Won Leads, Total Leads).
-        2.  Update the component's state and rendering logic to handle the three independent selections.
-    -   **Why fix this issue and what will be achieved with the fix?**: This fulfills a specific user request for more granular control over chart generation.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: N
+        1.  Navigate to the Manage Leads page.
+        2.  Take a screenshot to confirm the UI is correct.
+        3.  Use the screenshot tool to test the Upload Excel button with a sample file.
+        4.  After the upload completes, use the search bar on the page to find one of the newly added leads.
+        5.  Confirm the new leads appear in the table.
+    -   **Why fix this issue and what will be achieved with the fix?**: This is a core data entry workflow for users to add new leads in bulk. Verifying the fix will confirm that all data import methods are fully functional.
+    -   **Status**: USER VERIFICATION PENDING
+    -   **Is recurring issue?**: Y
     -   **Should Test frontend/backend/both after fix?**: Frontend
     -   **Blocked on other issue**: None
 
 **In progress Task List**:
--   **Task 1**: **Implement historical data upload feature.**
-    -   **Where to resume**:
-        1.  **Backend**: Create a new endpoint in the admin routes (e.g., ) that accepts an Excel file and implements the replacement logic specified by the user (replace data up to the last date in the uploaded file).
-        2.  **Frontend**: Add a Data Management tab to the Admin page () containing a file upload component for this feature.
-    -   **What will be achieved with this?**: This will allow administrators to perform bulk data management for historical records.
-    -   **Status**: NOT STARTED
-    -   **Should Test frontend/backend/both after fix?**: Both
-    -   **Blocked on something**: None
+None.
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks**:
-    -   **P2**: Implement the **Comparison** module with a visual map representation.
-    -   **P2**: Fully implement the **Forecast** module on the frontend to interact with the existing backend API.
-    -   **P3**: Add Conversion Analysis and Segment Analysis tabs to the **Insights** page.
--   **Future Tasks**:
-    -   Finalize role-based access control for **Manager** and **Employee** roles.
-    -   Refine the lead update workflow for closed leads.
+-   All major features requested by the user have been implemented. The next phase will likely involve user feedback, refinements, and potentially addressing lower-priority items like the map visualization.
 
 **Completed work in this session**
--   Full initial build of the LeadForge application (backend and frontend).
--   Implemented dual authentication: Google OAuth and username/password.
--   Developed a lead qualification system with admin-configurable questions and scoring.
--   Created a lead detail popup modal, accessible from the dashboard's lead table.
--   Seeded the database with sample data.
--   The application passed a full test suite with a 97.5% success rate before the latest user feedback.
+-   **Historical Data Upload**: Implemented and thoroughly debugged the feature, resolving issues with date parsing, column mapping, and incorrect database targeting.
+-   **Configurable & Custom KPIs**: Built a Metric Settings admin page where the logic for all dashboard KPIs can be configured. Admins can now also create, display, and delete custom KPI cards.
+-   **Dashboard Rework**: Updated the dashboard to display new KPI cards (Warm, Cold, Closed) and to source all data based on the admin-defined metric settings.
+-   **Comparison Page Revamp**: Replaced the non-functional map view with a new, fully functional page using . It now includes a market data input form and detailed comparison tables/charts for States, Dealers, Areas, and Employees.
+-   **Enhanced Forecast Module**: Improved the forecast page by restoring a line chart for trends and adding expandable, AI-powered breakdowns of the forecast by State, Dealer, Segment, and Employee.
+-   **Manage Leads Search**: Added a comprehensive search bar to the Manage Leads page, allowing users to find leads by various fields (Name, Phone, Email, etc.).
+-   **Manage Leads Upload Fix**: Repaired the standard Excel upload feature by replacing its faulty backend logic with a more robust implementation.
 
 **Earlier issues found/mentioned but not fixed**
-None.
+-   **Issue 1**: **Comparison page map view is not working.**
+    -   **Debug checklist**: The initial implementation using  was abandoned due to complexities with TopoJSON files and data integration. It was replaced by a more detailed tabular and chart-based comparison which the user approved.
+    -   **Why to solve this issue and what will be achieved with this?**: Re-implementing this would provide a geographical visualization of performance, as originally requested. This can be considered a future enhancement.
+    -   **Should Test frontend/backend/both after fix**: Both
+    -   **Is recurring issue?**: N
 
 **Known issue recurrence from previous fork**
 None.
@@ -94,81 +79,86 @@ None.
 
 **Key Technical Concepts**
 -   **Backend**: FastAPI, Pydantic, Motor
--   **Frontend**: React, React Router, Tailwind CSS, Shadcn UI, Chart.js
+-   **Frontend**: React, React Router, Tailwind CSS, Shadcn UI, Chart.js, **recharts**
 -   **Database**: MongoDB
 -   **Authentication**: JWT, Emergent-managed Google Auth
 -   **AI/Forecasting**: OpenAI GPT-4o
 
 **key DB schema**
--   **leads**: Contains lead details plus , .
--   **users**: Stores user information including  and .
--   **sessions**: Manages user session tokens.
--   **qualification_questions**: Defines questions, answer options, and scores.
--   **qualification_settings**: Stores the  for qualification.
--   **activities**: Logs changes to leads.
+-   **leads**: Contains all 42 columns of lead data.
+-   **users**: Stores user information, including .
+-   **metric_settings**: Stores the admin configuration for dashboard KPIs, including custom metrics.
+-   **qualification_questions**: Defines questions and scores for lead qualification.
 
 **changes in tech stack**
--   **Backend**:  for password hashing.
--   **Frontend**:  and  for data visualization.
+-   **Frontend**: Added  and  for the revamped Comparison page.
 
 **All files of reference**
--   : Component with the filter bug.
--   : Page requiring UI changes for dropdowns.
--   : Page where historical data upload feature needs to be added.
--   : Main backend application file.
--   : Main frontend application file with routing.
+-   : Overwritten to fix the standard bulk upload feature.
+-   : Heavily modified for historical upload; its logic was reused.
+-   : Rewritten to support configurable and custom metrics.
+-   : New file defining the schema for metric configurations.
+-   : New file for the metric settings API endpoints.
+-   : Heavily modified to include Data Management and Metric Settings tabs.
+-   : Completely overwritten to implement the new market comparison feature.
+-   : Overwritten to add the detailed, expandable forecast breakdown.
+-   : Modified to add search functionality.
+-   : Modified to render dynamic, customizable KPI cards.
 
 **Areas that need refactoring**:
 None.
 
 **key api endpoints**
--   : Username/password authentication.
--   : Retrieves dashboard KPI data.
--   : Fetches a paginated list of leads.
--   : Populates filter dropdowns.
--   : Retrieves qualification questions for the admin panel and lead forms.
+-   : Adds new leads in bulk from the Manage Leads page.
+-   : Replaces historical lead data.
+-   : Retrieves all KPI data for the dashboard based on admin settings.
+-   : Retrieves all metric configurations.
+-   : Creates a new custom metric.
+-   : Updates a metric's configuration.
+-   : Searches for leads based on a query.
+-   : Retrieves comparison data for states, dealers, etc.
+-   : Generates a forecast with a detailed breakdown.
+-   : Gets all unique values for filter dropdowns.
 
 **Critical Info for New Agent**
--   Your immediate priority is to address the three issues reported by the user in their last message.
--   Start by verifying the attempted fix for the **filter bar** (). If it's not working, debug it.
--   Next, implement the UI changes on the **Charts page** to have three separate dropdowns.
--   Finally, build the **historical data upload** feature in the Admin panel.
--   The user prefers being asked clarifying questions, so do not hesitate to do so if requirements are unclear.
--   The API testing session expires; you may need to re-authenticate to test backend endpoints using curl.
+-   Your first task is to verify the fix for the Upload Excel feature on the Manage Leads page. The backend logic is confirmed to be working via , so you need to perform a UI-based test (uploading a file and searching for the new data).
+-   The application connects to a MongoDB database named  (defined in  env var). Be aware of this, as another database named  exists but is not used by the main application.
+-   The user's provided Excel file has a specific date format ('01 Apr 2023'). The data import logic in both  and  has been updated to handle this format.
 
 **documents created in this job**
--   
--   
+None.
 
 **Last 10 User Messages and any pending user messages**
-1.  **User (Msg 147)**: Reported issues with metrics and requested new features like a lead detail popup. (Status: Partially Addressed)
-2.  **Agent (Msg 148)**: Asked clarifying questions. (Status: Addressed)
-3.  **User (Msg 150)**: Provided answers on qualification logic. (Status: Addressed)
-4.  **Agent (Msg 152)**: Asked follow-up questions on scoring. (Status: Addressed)
-5.  **User (Msg 153)**: Provided more answers on scoring and UI. (Status: Addressed)
-6.  **Agent (Msg 154)**: Presented a new implementation plan. (Status: Addressed)
-7.  **User (Msg 172)**: Acknowledged a billing message and instructed to continue work. (Status: Addressed)
-8.  **User (Msg 229)**: Reported that filters are broken, historical data upload is missing, and the charts UI needs to be changed. (Status: **PENDING - Current active task**)
-9.  **Agent (Msg 231)**: Asked clarifying questions about the new issues. (Status: Addressed)
-10. **User (Msg 232)**: Provided detailed requirements for the fixes. (Status: **PENDING - This is the primary input for your work**)
+1.  **Msg #488**: Reports that adding data via Upload Excel on the Manage Leads page doesn't work. (Status: **PENDING - Current active task**)
+2.  **Msg #451**: Reports that the forecast trend graph was better before, the breakdown is incomplete, and the Manage Leads page lacks a search feature. (Status: **RESOLVED**)
+3.  **Msg #414**: Provides follow-up requirements for the forecast breakdown (AI-based, both chart/table, expandable). (Status: **RESOLVED**)
+4.  **Msg #411**: Reports that KPI data is missing, the metric settings UI is broken, and requests a more detailed forecast. (Status: **RESOLVED**)
+5.  **Msg #310**: Provides details on custom metrics (allow creation), market data (session-based), and comparison page (replace map). (Status: **RESOLVED**)
+6.  **Msg #307**: Requests admin-configurable KPI cards and a revamp of the comparison page (map not working, market data input). (Status: **RESOLVED**)
+7.  **Msg #248**: Confirms the proposed KPI logic changes and approves the implementation of the Metric Settings admin page. (Status: **RESOLVED**)
+8.  **Msg #243**: Asks for clarification on the logic for KPI metrics and wants it to be admin-configurable. (Status: **RESOLVED**)
+9.  **Msg #208**: User reports the historical upload is still not working and provides the Excel file for debugging. (Status: **RESOLVED**)
+10. **Msg #174**: User reports that after a successful historical upload, the data is not showing on the dashboard. (Status: **RESOLVED**)
 
 **Project Health Check:**
--   **Broken**: The main filter bar (). A fix has been applied but requires verification.
+-   **Broken**: None. The last reported issue has a fix implemented and is pending verification.
 -   **Mocked**: None.
 
 **3rd Party Integrations**
--   **Emergent-managed Google Auth**: Implemented and functional.
--   **OpenAI GPT-4o**: uses Emergent LLM Key. Backend endpoint is in place; full feature implementation is pending.
+-   **OpenAI GPT-4o**: uses Emergent LLM Key for the Forecast module.
+-   **Emergent-managed Google Auth**: Implemented for user login.
+-   **recharts**: Frontend library for charts.
+-   **react-simple-maps**: Installed but not currently in use.
 
 **Testing status**
 -   **Testing agent used after significant changes**: YES
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None
--   **Known regressions**: The main filter functionality broke after the last feature update.
+-   **Known regressions**: None
 
 **Credentials to test flow:**
 -   **Username**: 
 -   **Password**: 
 
 **What agent forgot to execute**
-The agent correctly planned to address all three user-reported issues but was forked before completing the work on the Charts page UI and starting the historical data upload feature. The fix for the filter bar was applied but not verified.</analysis>
+-   The user's initial request for an interactive map on the Comparison page was not fulfilled. The agent replaced it with a chart/table-based solution due to technical complexity, which the user accepted in a subsequent plan. This could be revisited as a future enhancement.</analysis>
