@@ -154,3 +154,25 @@ async def get_enquiry_types(
 ):
     """Get all enquiry types"""
     return {"types": ["Hot", "Warm", "Cold"]}
+
+@router.get("/all")
+async def get_all_filters(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all filter options at once"""
+    db = await get_db(request)
+    
+    states = await db.leads.distinct("state")
+    dealers = await db.leads.distinct("dealer")
+    areas = await db.leads.distinct("area")
+    employees = await db.leads.distinct("employee_name")
+    segments = await db.leads.distinct("segment")
+    
+    return {
+        "states": sorted([s for s in states if s]),
+        "dealers": sorted([d for d in dealers if d]),
+        "areas": sorted([a for a in areas if a]),
+        "employees": sorted([e for e in employees if e]),
+        "segments": sorted([s for s in segments if s])
+    }
