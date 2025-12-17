@@ -451,8 +451,42 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* KPI Cards - Row 2 */}
+      {/* KPI Cards - Row 2: Lead Types */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Hot Leads"
+          value={kpis?.hot_leads || 0}
+          icon={Flame}
+          color="text-red-500"
+        />
+        <KPICard
+          title="Warm Leads"
+          value={kpis?.warm_leads || 0}
+          icon={ThermometerSun}
+          color="text-orange-500"
+        />
+        <KPICard
+          title="Cold Leads"
+          value={kpis?.cold_leads || 0}
+          icon={Snowflake}
+          color="text-blue-500"
+        />
+        <KPICard
+          title="Conversion Rate"
+          value={`${kpis?.conversion_rate || 0}%`}
+          icon={TrendingUp}
+          color="text-primary"
+        />
+      </div>
+
+      {/* KPI Cards - Row 3: Qualification */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Closed Leads"
+          value={kpis?.closed_leads || 0}
+          icon={CheckCircle}
+          color="text-purple-500"
+        />
         <KPICard
           title="Qualified Leads"
           value={kpis?.qualified_leads || 0}
@@ -463,20 +497,17 @@ const Dashboard = () => {
           title="Faulty Leads"
           value={kpis?.faulty_leads || 0}
           icon={ShieldX}
-          color="text-orange-500"
+          color="text-amber-500"
         />
-        <KPICard
-          title="Conversion Rate"
-          value={`${kpis?.conversion_rate || 0}%`}
-          icon={TrendingUp}
-          color="text-primary"
-        />
-        <KPICard
-          title="Hot Leads"
-          value={kpis?.hot_leads || 0}
-          icon={Flame}
-          color="text-orange-500"
-        />
+        <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Metric Settings</CardTitle>
+            <BarChart3 className="h-5 w-5 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">Configure KPI logic in Admin → Metric Settings</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Leads Table */}
