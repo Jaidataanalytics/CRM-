@@ -127,6 +127,52 @@ const Admin = () => {
     }
   };
 
+  const loadMetricSettings = async () => {
+    try {
+      const res = await axios.get(`${API}/metric-settings`, { withCredentials: true });
+      setMetricSettings(res.data.metrics || []);
+      setAvailableFields(res.data.available_fields || {});
+      setFieldCounts(res.data.field_counts || {});
+    } catch (error) {
+      console.error('Error loading metric settings:', error);
+    }
+  };
+
+  const updateMetricValues = async (metricId, newValues) => {
+    setSavingMetric(metricId);
+    try {
+      await axios.put(`${API}/metric-settings/${metricId}`, 
+        { field_values: newValues },
+        { withCredentials: true }
+      );
+      toast.success('Metric updated successfully');
+      loadMetricSettings();
+    } catch (error) {
+      toast.error('Failed to update metric');
+    } finally {
+      setSavingMetric(null);
+    }
+  };
+
+  const toggleMetricValue = (metric, value) => {
+    const currentValues = metric.field_values || [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    updateMetricValues(metric.metric_id, newValues);
+  };
+
+  const resetMetricSettings = async () => {
+    if (!window.confirm('Reset all metrics to default settings?')) return;
+    try {
+      await axios.post(`${API}/metric-settings/reset`, {}, { withCredentials: true });
+      toast.success('Metrics reset to defaults');
+      loadMetricSettings();
+    } catch (error) {
+      toast.error('Failed to reset metrics');
+    }
+  };
+
   const handleHistoricalUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
