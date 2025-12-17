@@ -350,6 +350,11 @@ def main():
     tester.test_health_endpoints()
     tester.test_without_auth()
     
+    # Login first to get session token
+    if not tester.test_login():
+        print("❌ Login failed, cannot proceed with authenticated tests")
+        return 1
+    
     # Test authenticated endpoints first
     tester.test_auth_me_endpoint()
     tester.test_kpi_endpoints()
@@ -359,6 +364,7 @@ def main():
     tester.test_insights_endpoints()
     tester.test_qualification_endpoints()
     tester.test_lead_activity_endpoints()
+    tester.test_upload_endpoints()  # Add upload tests
     tester.test_admin_endpoints()
     
     # Test logout last (invalidates session)
