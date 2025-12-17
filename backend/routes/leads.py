@@ -16,7 +16,7 @@ async def get_db(request: Request):
     return request.app.state.db
 
 
-@router.get("", response_model=List[dict])
+@router.get("")
 async def get_leads(
     request: Request,
     current_user: User = Depends(get_current_user),
