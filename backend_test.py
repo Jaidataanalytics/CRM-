@@ -91,8 +91,8 @@ class LeadManagementAPITester:
         login_data = {"username": "admin", "password": "admin123"}
         success, response = self.run_test("Login", "POST", "auth/login", 200, login_data)
         
-        if success and "session_token" in response:
-            self.session_token = response["session_token"]
+        if success and "token" in response:
+            self.session_token = response["token"]
             print(f"✅ Session token obtained: {self.session_token[:20]}...")
             return True
         else:
