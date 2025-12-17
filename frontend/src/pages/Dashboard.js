@@ -35,7 +35,8 @@ import {
   ShieldX,
   Edit,
   Clock,
-  User
+  User,
+  BarChart3
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
