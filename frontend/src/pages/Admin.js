@@ -697,6 +697,144 @@ const Admin = () => {
           </Dialog>
         </TabsContent>
 
+        {/* Data Management Tab */}
+        <TabsContent value="data" className="space-y-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Warning: Destructive Operation</AlertTitle>
+            <AlertDescription>
+              Uploading historical data will <strong>delete all existing leads</strong> with dates up to the maximum date in your uploaded file, then insert the new data. This action cannot be undone.
+            </AlertDescription>
+          </Alert>
+
+          {/* Current Data Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Current Data Statistics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dataStats ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total Leads</p>
+                    <p className="text-2xl font-bold">{dataStats.total_leads?.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Earliest Date</p>
+                    <p className="text-2xl font-bold">{dataStats.date_range?.min || '-'}</p>
+                  </div>
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Latest Date</p>
+                    <p className="text-2xl font-bold">{dataStats.date_range?.max || '-'}</p>
+                  </div>
+                </div>
+              ) : (
+                <Skeleton className="h-24 w-full" />
+              )}
+              
+              {dataStats?.monthly_distribution?.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-sm font-medium mb-3">Monthly Distribution (Last 12 months)</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {dataStats.monthly_distribution.map((m, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-xs">
+                        {m.month}: {m.count.toLocaleString()}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Historical Data Upload */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Upload Historical Data
+              </CardTitle>
+              <CardDescription>
+                Replace existing lead data with a new Excel file. Data will be replaced up to the maximum "Enquiry Date" found in your file.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <div className="space-y-2">
+                  <Label htmlFor="historical-upload" className="cursor-pointer">
+                    <span className="text-primary hover:underline">Click to upload</span> or drag and drop
+                  </Label>
+                  <p className="text-sm text-muted-foreground">Excel files only (.xlsx, .xls)</p>
+                  <Input
+                    id="historical-upload"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    className="hidden"
+                    onChange={handleHistoricalUpload}
+                    disabled={uploadingHistorical}
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => document.getElementById('historical-upload').click()}
+                    disabled={uploadingHistorical}
+                    className="mt-2"
+                  >
+                    {uploadingHistorical ? 'Uploading...' : 'Select File'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Upload Result */}
+              {historicalUploadResult && (
+                <Card className={historicalUploadResult.success ? 'border-green-500' : 'border-destructive'}>
+                  <CardContent className="pt-4">
+                    {historicalUploadResult.success ? (
+                      <div className="space-y-2">
+                        <p className="font-medium text-green-600">Upload Successful</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Date Range</p>
+                            <p className="font-medium">{historicalUploadResult.date_range?.min} to {historicalUploadResult.date_range?.max}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Deleted</p>
+                            <p className="font-medium">{historicalUploadResult.deleted?.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Created</p>
+                            <p className="font-medium">{historicalUploadResult.created?.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Errors</p>
+                            <p className="font-medium">{historicalUploadResult.total_errors || 0}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-destructive">{historicalUploadResult.error || 'Upload failed'}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Instructions */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-medium mb-2">How it works:</h4>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Upload an Excel file with lead data (must include "Enquiry Date" column)</li>
+                  <li>System identifies the date range in your file</li>
+                  <li>All existing leads with dates up to the max date are deleted</li>
+                  <li>New leads from the file are inserted</li>
+                </ol>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Activity Logs Tab */}
         <TabsContent value="logs">
           <Card>
