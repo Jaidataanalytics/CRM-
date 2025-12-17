@@ -200,7 +200,7 @@ const Comparison = () => {
               <SelectValue placeholder="Select State for Map" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All India</SelectItem>
+              <SelectItem value="all">All India</SelectItem>
               {availableStates.map(state => (
                 <SelectItem key={state} value={state}>{state}</SelectItem>
               ))}
@@ -303,7 +303,7 @@ const Comparison = () => {
                     variant="outline" 
                     size="sm" 
                     className="absolute top-4 right-4"
-                    onClick={() => setSelectedState('')}
+                    onClick={() => setSelectedState('all')}
                   >
                     Back to India
                   </Button>
