@@ -35,8 +35,9 @@ async def get_top_performers(
     group_field = {
         "employee": "$employee_name",
         "dealer": "$dealer",
-        "state": "$state"
-    }[by]
+        "state": "$state",
+        "area": "$area"
+    }.get(by, "$employee_name")
     
     pipeline = [
         {"$match": base_match},
