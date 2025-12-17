@@ -6,6 +6,7 @@ import logging
 from models.lead import Lead, LeadCreate, LeadUpdate, LeadResponse
 from models.user import User, UserRole
 from models.activity_log import ActivityLog
+from models.activity import LeadActivity
 from routes.auth import get_current_user
 
 logger = logging.getLogger(__name__)
