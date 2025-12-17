@@ -69,7 +69,7 @@ const Comparison = () => {
   }, [buildQueryParams]);
 
   useEffect(() => {
-    if (selectedState) {
+    if (selectedState && selectedState !== 'all') {
       loadDistrictData(selectedState);
     }
   }, [selectedState]);
@@ -267,7 +267,7 @@ const Comparison = () => {
                               }}
                               onMouseLeave={() => setTooltipContent('')}
                               onClick={() => {
-                                if (!selectedState && availableStates.includes(name)) {
+                                if (selectedState === 'all' && availableStates.includes(name)) {
                                   setSelectedState(name);
                                 }
                               }}
