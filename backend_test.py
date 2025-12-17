@@ -83,12 +83,16 @@ class LeadManagementAPITester:
         self.run_test("Backend Health Check", "GET", "", 200)
         self.run_test("Health Endpoint", "GET", "health", 200)
 
-    def test_auth_endpoints(self):
-        """Test authentication endpoints"""
+    def test_auth_me_endpoint(self):
+        """Test /me endpoint"""
         print("\n=== AUTHENTICATION TESTS ===")
         
         # Test /me endpoint with session token
         self.run_test("Get Current User", "GET", "auth/me", 200)
+    
+    def test_logout_endpoint(self):
+        """Test logout endpoint (run last as it invalidates session)"""
+        print("\n=== LOGOUT TEST ===")
         
         # Test logout
         self.run_test("Logout", "POST", "auth/logout", 200)
