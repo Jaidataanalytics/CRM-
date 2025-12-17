@@ -5,22 +5,22 @@
 - Frontend testing with auth required
 
 ## Features to Test
-1. Dashboard with Qualified/Faulty KPI cards (KVA cards removed)
-2. Lead Detail Popup on clicking lead rows in Dashboard
-3. Qualification Questions management in Admin
-4. Qualification threshold setting
-5. Qualify Lead dialog in Manage Leads
-6. Charts with metrics (Won, Lost, Qualified, Conversion Rate)
-7. Filter bar with State, Dealer, Employee, Segment dropdowns
-8. Charts page with 3 separate dropdowns (Metric, Group By, Chart Type)
-9. Admin > Data Management tab with historical data upload feature
+1. Dashboard with KPI cards
+2. Lead Detail Popup on clicking lead rows
+3. Filter bar with State, Dealer, Employee, Segment dropdowns
+4. Charts page with 3 separate dropdowns (Metric, Group By, Chart Type)
+5. Insights page with Top Performers, Conversion Analysis, Segment Analysis tabs
+6. Comparison page with State/Dealer/Market Data tabs
+7. Forecast page with AI-powered predictions (GPT-4o)
+8. Admin page with User Management, Qualification Questions, Closure Questions, Data Management, Activity Logs tabs
+9. Role-based access: Manager cannot see Admin, Employee cannot see Admin/Forecast
 
 ## Test User
 - Username: admin
 - Password: admin123
 
 ## Incorporate User Feedback
-- Verify filter bar dropdowns work correctly
-- Verify Charts page has Metric, Group By, and Chart Type dropdowns
-- Verify Admin Data Management tab shows data stats and upload section
-- Test historical data upload endpoint (backend)
+- Verify all navigation works correctly
+- Test State Comparison and Dealer Comparison tables
+- Verify Forecast page has configuration options
+- Test Insights tabs are functional with data
