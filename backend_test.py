@@ -83,6 +83,22 @@ class LeadManagementAPITester:
         self.run_test("Backend Health Check", "GET", "", 200)
         self.run_test("Health Endpoint", "GET", "health", 200)
 
+    def test_login(self):
+        """Test login and get session token"""
+        print("\n=== LOGIN TEST ===")
+        
+        # Test login
+        login_data = {"username": "admin", "password": "admin123"}
+        success, response = self.run_test("Login", "POST", "auth/login", 200, login_data)
+        
+        if success and "session_token" in response:
+            self.session_token = response["session_token"]
+            print(f"✅ Session token obtained: {self.session_token[:20]}...")
+            return True
+        else:
+            print("❌ Failed to get session token")
+            return False
+
     def test_auth_me_endpoint(self):
         """Test /me endpoint"""
         print("\n=== AUTHENTICATION TESTS ===")
