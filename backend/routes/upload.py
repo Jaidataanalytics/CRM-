@@ -280,7 +280,7 @@ async def upload_leads(
                                        'last_followup_date', 'enquiry_closure_date']:
                             lead_data[db_field] = parse_date(val)
                         # Handle numeric fields
-                        elif db_field == 'kva':
+                        elif db_field in ['kva', 'expected_value']:
                             cleaned = clean_value(val)
                             if cleaned is not None:
                                 try:
