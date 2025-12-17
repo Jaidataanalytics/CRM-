@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response, Depends
+from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
+from passlib.context import CryptContext
 import httpx
 import uuid
 import logging
@@ -10,6 +12,22 @@ from models.activity_log import ActivityLog
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
 
 
 async def get_db(request: Request):
