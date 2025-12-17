@@ -112,15 +112,81 @@ async def generate_forecast(
         if location:
             filters_applied.append(f"Location: {location}")
         
-        prompt = f"""Based on the following historical lead data, generate a {horizon}-month forecast.
+        # Get distribution data for detailed breakdown
+        state_dist = await db.leads.aggregate([
+            {"$match": query},
+            {"$group": {"_id": "$state", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]).to_list(50)
+        
+        dealer_dist = await db.leads.aggregate([
+            {"$match": query},
+            {"$group": {"_id": "$dealer", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]).to_list(50)
+        
+        segment_dist = await db.leads.aggregate([
+            {"$match": query},
+            {"$group": {"_id": "$segment", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]).to_list(50)
+        
+        employee_dist = await db.leads.aggregate([
+            {"$match": query},
+            {"$group": {"_id": "$employee_name", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}}
+        ]).to_list(50)
+        
+        total_leads = sum([d["count"] for d in state_dist])
+        
+        dist_summary = f"""
+Distribution of {total_leads} total leads:
+By State: {', '.join([f"{d['_id']}: {d['count']} ({round(d['count']/total_leads*100,1)}%)" for d in state_dist[:5] if d['_id']])}
+By Segment: {', '.join([f"{d['_id']}: {d['count']} ({round(d['count']/total_leads*100,1)}%)" for d in segment_dist[:5] if d['_id']])}
+Top Dealers: {', '.join([f"{d['_id']}: {d['count']}" for d in dealer_dist[:5] if d['_id']])}
+Top Employees: {', '.join([f"{d['_id']}: {d['count']}" for d in employee_dist[:5] if d['_id']])}
+"""
+        
+        prompt = f"""Based on the following historical lead data, generate a {horizon}-month forecast with DETAILED BREAKDOWN.
         
         Filters applied: {', '.join(filters_applied) if filters_applied else 'None (all data)'}
         
-        Historical Data:
+        Historical Data by Month:
         {data_summary}
         
-        Please analyze trends, seasonality, and provide predictions for the next {horizon} months.
-        Include confidence levels and any recommendations."""
+        Current Distribution:
+        {dist_summary}
+        
+        Please analyze trends and provide predictions for the next {horizon} months.
+        
+        IMPORTANT: For EACH predicted month, provide a detailed breakdown showing:
+        - How many leads each STATE should expect
+        - How many leads each top DEALER should expect  
+        - How many leads each SEGMENT should expect
+        - How many leads each top EMPLOYEE should expect
+        
+        Base the distribution on historical patterns but account for trends.
+        
+        Format your response as JSON:
+        {{
+            "predictions": [
+                {{
+                    "month": "YYYY-MM", 
+                    "predicted_enquiries": number, 
+                    "predicted_closures": number, 
+                    "confidence": "high/medium/low",
+                    "breakdown": {{
+                        "by_state": [{{"name": "State Name", "predicted": number, "percentage": number}}],
+                        "by_dealer": [{{"name": "Dealer Name", "predicted": number, "percentage": number}}],
+                        "by_segment": [{{"name": "Segment Name", "predicted": number, "percentage": number}}],
+                        "by_employee": [{{"name": "Employee Name", "predicted": number, "percentage": number}}]
+                    }}
+                }}
+            ],
+            "summary": "Brief explanation of the forecast",
+            "factors": ["Key factors considered"],
+            "recommendations": ["Actionable recommendations"]
+        }}"""
         
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
