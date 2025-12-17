@@ -60,6 +60,11 @@ const Admin = () => {
     options: [{ text: '', score: 0 }],
     is_required: true
   });
+  
+  // Data Management state
+  const [dataStats, setDataStats] = useState(null);
+  const [uploadingHistorical, setUploadingHistorical] = useState(false);
+  const [historicalUploadResult, setHistoricalUploadResult] = useState(null);
 
   useEffect(() => {
     loadData();
