@@ -78,15 +78,20 @@ const Leads = () => {
 
   useEffect(() => {
     loadLeads();
-  }, [page, buildQueryParams]);
+  }, [page, buildQueryParams, searchQuery, searchField]);
 
   const loadLeads = async () => {
     setLoading(true);
     try {
       const queryParams = buildQueryParams();
-      const res = await axios.get(`${API}/leads?${queryParams}&page=${page}&limit=20`, {
-        withCredentials: true
-      });
+      let url = `${API}/leads?${queryParams}&page=${page}&limit=20`;
+      
+      // Add search params
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}&search_field=${searchField}`;
+      }
+      
+      const res = await axios.get(url, { withCredentials: true });
       setLeads(res.data.leads || []);
       setTotalPages(res.data.pages || 1);
     } catch (error) {
@@ -95,6 +100,17 @@ const Leads = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setPage(1);
+    loadLeads();
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setPage(1);
   };
 
   const handleInputChange = (field, value) => {
