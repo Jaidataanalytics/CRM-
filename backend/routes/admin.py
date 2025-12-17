@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Request, Depends, Query
+from fastapi import APIRouter, HTTPException, Request, Depends, Query, UploadFile, File
 from typing import Optional, List
 from datetime import datetime, timezone
 import logging
+import io
 
 from models.user import User, UserCreate, UserResponse, UserRole
 from models.activity_log import ActivityLog
+from models.lead import Lead
 from routes.auth import get_current_user, require_roles
 
 logger = logging.getLogger(__name__)
