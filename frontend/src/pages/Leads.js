@@ -190,6 +190,47 @@ const Leads = () => {
     }
   };
 
+  // Qualification functions
+  const openQualifyDialog = async (lead) => {
+    setQualifyingLead(lead);
+    try {
+      const res = await axios.get(`${API}/qualification/questions`, { withCredentials: true });
+      setQualificationQuestions(res.data.questions || []);
+      
+      // Pre-fill existing answers
+      const existingAnswers = {};
+      (lead.qualification_answers || []).forEach(a => {
+        existingAnswers[a.question_id] = a.option_id;
+      });
+      setQualificationAnswers(existingAnswers);
+      setIsQualifyDialogOpen(true);
+    } catch (error) {
+      toast.error('Failed to load qualification questions');
+    }
+  };
+
+  const handleQualificationSubmit = async () => {
+    const answers = Object.entries(qualificationAnswers).map(([question_id, option_id]) => ({
+      question_id,
+      option_id
+    }));
+    
+    try {
+      const res = await axios.post(`${API}/qualification/leads/${qualifyingLead.lead_id}/qualify`, 
+        { answers },
+        { withCredentials: true }
+      );
+      
+      toast.success(`Lead ${res.data.is_qualified ? 'Qualified' : 'marked as Faulty'} (Score: ${res.data.total_score}/${res.data.threshold})`);
+      setIsQualifyDialogOpen(false);
+      setQualifyingLead(null);
+      setQualificationAnswers({});
+      loadLeads();
+    } catch (error) {
+      toast.error('Failed to submit qualification');
+    }
+  };
+
   const getStatusBadge = (status) => {
     const variants = {
       'Closed-Won': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
