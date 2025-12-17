@@ -399,21 +399,65 @@ def clean_value(val):
 
 def parse_date(val):
     """Parse date value to string format"""
+    import pandas as pd
+    
     if val is None:
         return None
+    
+    # Handle pandas NaT
+    if pd.isna(val):
+        return None
+    
+    # Handle datetime objects
     if isinstance(val, datetime):
         return val.strftime("%Y-%m-%d")
+    
+    # Handle pandas Timestamp
+    if hasattr(val, 'strftime'):
+        try:
+            return val.strftime("%Y-%m-%d")
+        except:
+            return None
+    
+    # Handle string dates
     if isinstance(val, str):
         val = val.strip()
         if not val:
             return None
-        for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"]:
+        
+        # Try multiple date formats
+        date_formats = [
+            "%Y-%m-%d",           # 2023-04-01
+            "%d-%m-%Y",           # 01-04-2023
+            "%d/%m/%Y",           # 01/04/2023
+            "%Y/%m/%d",           # 2023/04/01
+            "%d %b %Y",           # 01 Apr 2023
+            "%d %B %Y",           # 01 April 2023
+            "%b %d, %Y",          # Apr 01, 2023
+            "%B %d, %Y",          # April 01, 2023
+            "%d-%b-%Y",           # 01-Apr-2023
+            "%d-%B-%Y",           # 01-April-2023
+            "%m/%d/%Y",           # 04/01/2023
+            "%m-%d-%Y",           # 04-01-2023
+        ]
+        
+        for fmt in date_formats:
             try:
                 return datetime.strptime(val, fmt).strftime("%Y-%m-%d")
             except ValueError:
                 continue
-        return val
-    return str(val)
+        
+        # If no format matched, try pandas to_datetime as fallback
+        try:
+            parsed = pd.to_datetime(val, dayfirst=True)
+            if pd.notna(parsed):
+                return parsed.strftime("%Y-%m-%d")
+        except:
+            pass
+        
+        return None
+    
+    return None
 
 
 @router.post("/upload-historical-data")
