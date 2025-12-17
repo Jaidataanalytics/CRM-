@@ -165,13 +165,13 @@ By Employee ({len(employee_list)} employees): {', '.join([f"{d['name']}: {d['cou
         
         Please analyze trends and provide predictions for the next {horizon} months.
         
-        IMPORTANT: For EACH predicted month, provide a detailed breakdown showing:
-        - How many leads each STATE should expect
-        - How many leads each top DEALER should expect  
-        - How many leads each SEGMENT should expect
-        - How many leads each top EMPLOYEE should expect
+        IMPORTANT: For EACH predicted month, provide a COMPLETE detailed breakdown showing:
+        - How many leads EACH STATE should expect (ALL {len(state_list)} states)
+        - How many leads EACH DEALER should expect (ALL {len(dealer_list)} dealers)
+        - How many leads EACH SEGMENT should expect (ALL {len(segment_list)} segments)
+        - How many leads EACH EMPLOYEE should expect (ALL {len(employee_list)} employees)
         
-        Base the distribution on historical patterns but account for trends.
+        Use the historical distribution percentages to calculate predicted counts for each entity.
         
         Format your response as JSON:
         {{
@@ -192,7 +192,9 @@ By Employee ({len(employee_list)} employees): {', '.join([f"{d['name']}: {d['cou
             "summary": "Brief explanation of the forecast",
             "factors": ["Key factors considered"],
             "recommendations": ["Actionable recommendations"]
-        }}"""
+        }}
+        
+        IMPORTANT: Include ALL entities from the distribution data, not just top 5."""
         
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
