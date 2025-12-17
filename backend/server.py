@@ -59,10 +59,21 @@ app.include_router(api_router)
 # Store db in app state for route access
 app.state.db = db
 
+# Configure CORS
+cors_origins = os.environ.get('CORS_ORIGINS', '*')
+if cors_origins == '*':
+    # When credentials are allowed, we need specific origins
+    cors_origins = [
+        "http://localhost:3000",
+        "https://salesforge-31.preview.emergentagent.com"
+    ]
+else:
+    cors_origins = cors_origins.split(',')
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
