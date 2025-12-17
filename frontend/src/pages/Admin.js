@@ -72,6 +72,16 @@ const Admin = () => {
   const [availableFields, setAvailableFields] = useState({});
   const [fieldCounts, setFieldCounts] = useState({});
   const [savingMetric, setSavingMetric] = useState(null);
+  const [showCreateMetric, setShowCreateMetric] = useState(false);
+  const [newMetric, setNewMetric] = useState({
+    metric_id: '',
+    metric_name: '',
+    description: '',
+    field_name: 'segment',
+    field_values: [],
+    color: 'primary',
+    show_on_dashboard: true
+  });
 
   useEffect(() => {
     loadData();
