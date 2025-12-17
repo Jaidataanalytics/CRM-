@@ -5,22 +5,23 @@
 - Frontend testing with auth required
 
 ## Features to Test
-1. Dashboard with KPI cards
-2. Lead Detail Popup on clicking lead rows
-3. Filter bar with State, Dealer, Employee, Segment dropdowns
-4. Charts page with 3 separate dropdowns (Metric, Group By, Chart Type)
-5. Insights page with Top Performers, Conversion Analysis, Segment Analysis tabs
-6. Comparison page with State/Dealer/Market Data tabs
-7. Forecast page with AI-powered predictions (GPT-4o)
-8. Admin page with User Management, Qualification Questions, Closure Questions, Data Management, Activity Logs tabs
-9. Role-based access: Manager cannot see Admin, Employee cannot see Admin/Forecast
+1. Dashboard with configurable KPI cards (Total, Won, Lost, Open, Hot, Warm, Cold, Closed)
+2. Admin Metric Settings tab with:
+   - View existing metrics with show/hide toggle
+   - Create Custom Metric form with field selection
+   - Delete custom metrics
+3. Comparison page with 4 tabs: State, Dealer, Area, Employee
+   - Session-based market data input
+   - Performance charts and tables
+4. Historical data upload in Data Management
+5. Filter bar, Charts, Insights, Forecast pages
 
 ## Test User
 - Username: admin
 - Password: admin123
 
 ## Incorporate User Feedback
-- Verify all navigation works correctly
-- Test State Comparison and Dealer Comparison tables
-- Verify Forecast page has configuration options
-- Test Insights tabs are functional with data
+- Test Create Custom Metric workflow
+- Verify metrics can be toggled on/off dashboard
+- Test Comparison page market data input
+- Verify all KPIs update based on metric settings
