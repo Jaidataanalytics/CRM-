@@ -262,3 +262,268 @@ async def get_admin_stats(
             for r in role_distribution
         ]
     }
+
+
+# Column mapping from Excel to database fields
+COLUMN_MAPPING = {
+    "Zone": "zone",
+    "State": "state",
+    "Area": "area",
+    "Office": "office",
+    "Dealer": "dealer",
+    "Branch": "branch",
+    "Location": "location",
+    "Employee Code": "employee_code",
+    "Employee Name": "employee_name",
+    "Employee Status": "employee_status",
+    "Enquiry No": "enquiry_no",
+    "Enquiry Date": "enquiry_date",
+    "Customer Type": "customer_type",
+    "Corporate Name": "corporate_name",
+    "Name": "name",
+    "Phone Number": "phone_number",
+    "Email Address": "email_address",
+    "PinCode": "pincode",
+    "Tehsil": "tehsil",
+    "District": "district",
+    "KVA": "kva",
+    "Phase": "phase",
+    "Qty": "qty",
+    "Remarks": "remarks",
+    "EnquiryStatus": "enquiry_status",
+    "EnquiryType": "enquiry_type",
+    "Enquiry Stage": "enquiry_stage",
+    "EO/PO Date": "eo_po_date",
+    "Planned Followup Date": "planned_followup_date",
+    "Source": "source",
+    "Source From": "source_from",
+    "Events": "events",
+    "No of Follow-ups": "no_of_followups",
+    "Segment": "segment",
+    "SubSegment": "sub_segment",
+    "DG Ownership": "dg_ownership",
+    "Created By": "created_by",
+    "PAN NO.": "pan_no",
+    "LastFollowupDate": "last_followup_date",
+    "Enquiry Closure Date": "enquiry_closure_date",
+    "Finance Required": "finance_required",
+    "Finance Company": "finance_company",
+    "Referred By": "referred_by"
+}
+
+
+def clean_value(val):
+    """Clean and convert value"""
+    if val is None or (isinstance(val, float) and str(val) == 'nan'):
+        return None
+    if isinstance(val, str):
+        val = val.strip()
+        if val == '' or val.lower() == 'nan':
+            return None
+    return val
+
+
+def parse_date(val):
+    """Parse date value to string format"""
+    if val is None:
+        return None
+    if isinstance(val, datetime):
+        return val.strftime("%Y-%m-%d")
+    if isinstance(val, str):
+        val = val.strip()
+        if not val:
+            return None
+        for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"]:
+            try:
+                return datetime.strptime(val, fmt).strftime("%Y-%m-%d")
+            except ValueError:
+                continue
+        return val
+    return str(val)
+
+
+@router.post("/upload-historical-data")
+async def upload_historical_data(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """
+    Upload historical lead data. This will:
+    1. Parse the Excel file to find the date range
+    2. Delete all existing leads with enquiry_date up to the max date in the file
+    3. Insert all leads from the uploaded file
+    """
+    db = await get_db(request)
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
+    
+    try:
+        import pandas as pd
+        import uuid as uuid_module
+        
+        content = await file.read()
+        df = pd.read_excel(io.BytesIO(content))
+        
+        if df.empty:
+            raise HTTPException(status_code=400, detail="The uploaded file is empty")
+        
+        # Find the date column
+        date_column = None
+        for col in ["Enquiry Date", "enquiry_date"]:
+            if col in df.columns:
+                date_column = col
+                break
+        
+        if not date_column:
+            raise HTTPException(status_code=400, detail="No 'Enquiry Date' column found in file")
+        
+        # Parse all dates and find min/max
+        dates = []
+        for val in df[date_column]:
+            parsed = parse_date(val)
+            if parsed:
+                dates.append(parsed)
+        
+        if not dates:
+            raise HTTPException(status_code=400, detail="No valid dates found in the file")
+        
+        min_date = min(dates)
+        max_date = max(dates)
+        
+        # Delete existing leads within the date range (up to max date)
+        delete_result = await db.leads.delete_many({
+            "enquiry_date": {"$lte": max_date}
+        })
+        deleted_count = delete_result.deleted_count
+        
+        # Insert new leads
+        created_count = 0
+        errors = []
+        
+        for idx, row in df.iterrows():
+            try:
+                lead_data = {}
+                
+                for excel_col, db_field in COLUMN_MAPPING.items():
+                    if excel_col in df.columns:
+                        val = row[excel_col]
+                        
+                        if db_field in ['enquiry_date', 'eo_po_date', 'planned_followup_date', 
+                                       'last_followup_date', 'enquiry_closure_date']:
+                            lead_data[db_field] = parse_date(val)
+                        elif db_field == 'kva':
+                            cleaned = clean_value(val)
+                            if cleaned is not None:
+                                try:
+                                    lead_data[db_field] = float(cleaned)
+                                except (ValueError, TypeError):
+                                    lead_data[db_field] = None
+                            else:
+                                lead_data[db_field] = None
+                        elif db_field in ['qty', 'no_of_followups']:
+                            cleaned = clean_value(val)
+                            if cleaned is not None:
+                                try:
+                                    lead_data[db_field] = int(float(cleaned))
+                                except (ValueError, TypeError):
+                                    lead_data[db_field] = None
+                            else:
+                                lead_data[db_field] = None
+                        else:
+                            lead_data[db_field] = clean_value(val)
+                
+                # Create new lead
+                lead = Lead(**lead_data)
+                lead_doc = lead.model_dump()
+                lead_doc["created_at"] = lead_doc["created_at"].isoformat()
+                lead_doc["updated_at"] = lead_doc["updated_at"].isoformat()
+                await db.leads.insert_one(lead_doc)
+                created_count += 1
+                    
+            except Exception as e:
+                errors.append({"row": idx + 2, "error": str(e)})
+                continue
+        
+        # Log activity
+        activity = ActivityLog(
+            user_id=current_user.user_id,
+            action="historical_data_upload",
+            resource_type="lead",
+            details={
+                "filename": file.filename,
+                "date_range": f"{min_date} to {max_date}",
+                "deleted": deleted_count,
+                "created": created_count,
+                "errors": len(errors)
+            }
+        )
+        activity_doc = activity.model_dump()
+        activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+        await db.activity_logs.insert_one(activity_doc)
+        
+        return {
+            "success": True,
+            "date_range": {"min": min_date, "max": max_date},
+            "deleted": deleted_count,
+            "created": created_count,
+            "errors": errors[:10] if errors else [],
+            "total_errors": len(errors),
+            "message": f"Replaced {deleted_count} leads with {created_count} new leads for dates up to {max_date}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Historical upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+
+
+@router.get("/data-stats")
+async def get_data_stats(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Get data statistics for the data management tab"""
+    db = await get_db(request)
+    
+    total_leads = await db.leads.count_documents({})
+    
+    # Get date range of existing data
+    date_pipeline = [
+        {"$match": {"enquiry_date": {"$ne": None}}},
+        {"$group": {
+            "_id": None,
+            "min_date": {"$min": "$enquiry_date"},
+            "max_date": {"$max": "$enquiry_date"}
+        }}
+    ]
+    date_result = await db.leads.aggregate(date_pipeline).to_list(1)
+    
+    min_date = date_result[0]["min_date"] if date_result else None
+    max_date = date_result[0]["max_date"] if date_result else None
+    
+    # Get leads by month (last 12 months)
+    monthly_pipeline = [
+        {"$match": {"enquiry_date": {"$ne": None}}},
+        {"$addFields": {
+            "month": {"$substr": ["$enquiry_date", 0, 7]}
+        }},
+        {"$group": {"_id": "$month", "count": {"$sum": 1}}},
+        {"$sort": {"_id": -1}},
+        {"$limit": 12}
+    ]
+    monthly_data = await db.leads.aggregate(monthly_pipeline).to_list(12)
+    
+    return {
+        "total_leads": total_leads,
+        "date_range": {
+            "min": min_date,
+            "max": max_date
+        },
+        "monthly_distribution": [
+            {"month": m["_id"], "count": m["count"]}
+            for m in monthly_data
+        ]
+    }
