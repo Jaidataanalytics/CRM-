@@ -76,6 +76,7 @@ const Admin = () => {
   useEffect(() => {
     loadData();
     loadDataStats();
+    loadMetricSettings();
   }, []);
 
   useEffect(() => {
