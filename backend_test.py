@@ -233,6 +233,68 @@ class LeadManagementAPITester:
             else:
                 print(f"⚠️  Warning: Qualification metrics not found in KPI response")
 
+    def test_upload_endpoints(self):
+        """Test upload endpoints specifically for Excel bulk upload"""
+        print("\n=== UPLOAD TESTS ===")
+        
+        # Test get upload template
+        self.run_test("Get Upload Template", "GET", "upload/template", 200)
+        
+        # Test upload Excel file
+        import os
+        test_file_path = "/app/backend/bulk_test_50.xlsx"
+        
+        if os.path.exists(test_file_path):
+            print(f"\n🔍 Testing Excel Upload with file: {test_file_path}")
+            
+            # Use requests to upload file
+            url = f"{self.base_url}/api/upload/leads"
+            headers = {'Authorization': f'Bearer {self.session_token}'}
+            
+            try:
+                with open(test_file_path, 'rb') as f:
+                    files = {'file': ('bulk_test_50.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                    response = requests.post(url, files=files, headers=headers, timeout=30)
+                
+                self.tests_run += 1
+                success = response.status_code == 200
+                if success:
+                    self.tests_passed += 1
+                    print(f"✅ Passed - Excel Upload Status: {response.status_code}")
+                    try:
+                        response_data = response.json()
+                        print(f"   Upload Result: Created: {response_data.get('created', 0)}, Updated: {response_data.get('updated', 0)}")
+                        if response_data.get('total_errors', 0) > 0:
+                            print(f"   Errors: {response_data.get('total_errors', 0)}")
+                    except:
+                        pass
+                else:
+                    print(f"❌ Failed - Expected 200, got {response.status_code}")
+                    try:
+                        error_data = response.json()
+                        print(f"   Error: {error_data}")
+                    except:
+                        print(f"   Raw response: {response.text[:200]}")
+                    self.failed_tests.append({
+                        "test": "Excel Upload",
+                        "endpoint": "upload/leads",
+                        "expected": 200,
+                        "actual": response.status_code,
+                        "error": response.text[:200]
+                    })
+                    
+            except Exception as e:
+                print(f"❌ Failed - Error: {str(e)}")
+                self.failed_tests.append({
+                    "test": "Excel Upload",
+                    "endpoint": "upload/leads",
+                    "expected": 200,
+                    "actual": "Exception",
+                    "error": str(e)
+                })
+        else:
+            print(f"⚠️  Test file not found: {test_file_path}")
+
     def test_admin_endpoints(self):
         """Test admin endpoints (Admin role required)"""
         print("\n=== ADMIN TESTS ===")
