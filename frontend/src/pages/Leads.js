@@ -435,7 +435,7 @@ const Leads = () => {
                     <TableHead>State</TableHead>
                     <TableHead>Dealer</TableHead>
                     <TableHead>Segment</TableHead>
-                    <TableHead>KVA</TableHead>
+                    <TableHead>Qualified</TableHead>
                     <TableHead>Stage</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
