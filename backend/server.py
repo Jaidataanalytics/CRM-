@@ -33,6 +33,8 @@ from routes.admin import router as admin_router
 from routes.forecast import router as forecast_router
 from routes.insights import router as insights_router
 from routes.upload import router as upload_router
+from routes.qualification import router as qualification_router
+from routes.lead_activity import router as lead_activity_router
 
 # Include all routers
 api_router.include_router(auth_router)
@@ -43,6 +45,8 @@ api_router.include_router(admin_router)
 api_router.include_router(forecast_router)
 api_router.include_router(insights_router)
 api_router.include_router(upload_router)
+api_router.include_router(qualification_router)
+api_router.include_router(lead_activity_router)
 
 # Health check endpoint
 @api_router.get("/")
