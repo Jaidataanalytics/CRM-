@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timezone
+from pydantic import BaseModel
 import logging
 
 from models.user import User, UserRole
@@ -9,6 +10,29 @@ from routes.auth import get_current_user, require_roles
 
 router = APIRouter(prefix="/metric-settings", tags=["Metric Settings"])
 logger = logging.getLogger(__name__)
+
+
+class CustomMetricCreate(BaseModel):
+    metric_id: str
+    metric_name: str
+    description: Optional[str] = ""
+    field_name: str
+    field_values: List[str]
+    color: Optional[str] = "primary"
+    icon: Optional[str] = "BarChart3"
+    show_on_dashboard: bool = True
+    dashboard_order: Optional[int] = 99
+
+
+class MetricUpdate(BaseModel):
+    metric_name: Optional[str] = None
+    description: Optional[str] = None
+    field_values: Optional[List[str]] = None
+    is_active: Optional[bool] = None
+    color: Optional[str] = None
+    icon: Optional[str] = None
+    show_on_dashboard: Optional[bool] = None
+    dashboard_order: Optional[int] = None
 
 
 async def get_db(request: Request):
@@ -28,17 +52,31 @@ async def get_metric_settings(
     
     # If no saved metrics, use defaults
     if not saved_metrics:
-        # Initialize with defaults
         for metric in DEFAULT_METRICS:
-            metric["updated_at"] = datetime.now(timezone.utc).isoformat()
-            await db.metric_settings.insert_one(metric)
-        saved_metrics = DEFAULT_METRICS
+            metric_doc = {
+                **metric,
+                "color": metric.get("color", "primary"),
+                "icon": metric.get("icon", "BarChart3"),
+                "show_on_dashboard": metric.get("show_on_dashboard", True),
+                "dashboard_order": metric.get("dashboard_order", 99),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.metric_settings.insert_one(metric_doc)
+        saved_metrics = await db.metric_settings.find({}, {"_id": 0}).to_list(100)
+    
+    # Sort by dashboard_order
+    saved_metrics.sort(key=lambda x: x.get("dashboard_order", 99))
     
     # Get available field values from leads collection
     available_fields = {
         "enquiry_stage": await db.leads.distinct("enquiry_stage"),
         "enquiry_status": await db.leads.distinct("enquiry_status"),
-        "enquiry_type": await db.leads.distinct("enquiry_type")
+        "enquiry_type": await db.leads.distinct("enquiry_type"),
+        "segment": await db.leads.distinct("segment"),
+        "state": await db.leads.distinct("state"),
+        "dealer": await db.leads.distinct("dealer"),
+        "source": await db.leads.distinct("source"),
+        "customer_type": await db.leads.distinct("customer_type")
     }
     
     # Clean up None values
@@ -64,36 +102,40 @@ async def get_metric_settings(
 async def update_metric_setting(
     request: Request,
     metric_id: str,
-    metric_update: dict,
+    metric_update: MetricUpdate,
     current_user: User = Depends(require_roles(UserRole.ADMIN))
 ):
     """Update a specific metric configuration"""
     db = await get_db(request)
     
-    # Validate metric_id
     existing = await db.metric_settings.find_one({"metric_id": metric_id})
     if not existing:
         raise HTTPException(status_code=404, detail=f"Metric '{metric_id}' not found")
     
-    # Update the metric
-    update_data = {
-        "field_values": metric_update.get("field_values", existing.get("field_values", [])),
-        "is_active": metric_update.get("is_active", existing.get("is_active", True)),
-        "updated_at": datetime.now(timezone.utc).isoformat()
-    }
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
     
-    # Optionally update name and description
-    if "metric_name" in metric_update:
-        update_data["metric_name"] = metric_update["metric_name"]
-    if "description" in metric_update:
-        update_data["description"] = metric_update["description"]
+    if metric_update.field_values is not None:
+        update_data["field_values"] = metric_update.field_values
+    if metric_update.is_active is not None:
+        update_data["is_active"] = metric_update.is_active
+    if metric_update.metric_name is not None:
+        update_data["metric_name"] = metric_update.metric_name
+    if metric_update.description is not None:
+        update_data["description"] = metric_update.description
+    if metric_update.color is not None:
+        update_data["color"] = metric_update.color
+    if metric_update.icon is not None:
+        update_data["icon"] = metric_update.icon
+    if metric_update.show_on_dashboard is not None:
+        update_data["show_on_dashboard"] = metric_update.show_on_dashboard
+    if metric_update.dashboard_order is not None:
+        update_data["dashboard_order"] = metric_update.dashboard_order
     
     await db.metric_settings.update_one(
         {"metric_id": metric_id},
         {"$set": update_data}
     )
     
-    # Return updated metric
     updated = await db.metric_settings.find_one({"metric_id": metric_id}, {"_id": 0})
     return updated
 
@@ -106,45 +148,51 @@ async def reset_metric_settings(
     """Reset all metric settings to defaults"""
     db = await get_db(request)
     
-    # Delete all existing settings
     await db.metric_settings.delete_many({})
     
-    # Insert defaults
-    for metric in DEFAULT_METRICS:
-        metric["updated_at"] = datetime.now(timezone.utc).isoformat()
-        await db.metric_settings.insert_one(metric)
+    for i, metric in enumerate(DEFAULT_METRICS):
+        metric_doc = {
+            **metric,
+            "color": metric.get("color", "primary"),
+            "icon": metric.get("icon", "BarChart3"),
+            "show_on_dashboard": True,
+            "dashboard_order": i,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.metric_settings.insert_one(metric_doc)
     
-    return {"message": "Metric settings reset to defaults", "metrics": DEFAULT_METRICS}
+    return {"message": "Metric settings reset to defaults"}
 
 
-@router.post("/add")
-async def add_custom_metric(
+@router.post("/create")
+async def create_custom_metric(
     request: Request,
-    metric: dict,
+    metric: CustomMetricCreate,
     current_user: User = Depends(require_roles(UserRole.ADMIN))
 ):
-    """Add a new custom metric"""
+    """Create a new custom metric"""
     db = await get_db(request)
     
-    # Check if metric_id already exists
-    existing = await db.metric_settings.find_one({"metric_id": metric.get("metric_id")})
+    existing = await db.metric_settings.find_one({"metric_id": metric.metric_id})
     if existing:
-        raise HTTPException(status_code=400, detail=f"Metric '{metric.get('metric_id')}' already exists")
+        raise HTTPException(status_code=400, detail=f"Metric '{metric.metric_id}' already exists")
     
-    # Validate required fields
-    required = ["metric_id", "metric_name", "field_name", "field_values"]
-    for field in required:
-        if field not in metric:
-            raise HTTPException(status_code=400, detail=f"Missing required field: {field}")
+    # Get max order
+    max_order_doc = await db.metric_settings.find_one(sort=[("dashboard_order", -1)])
+    max_order = max_order_doc.get("dashboard_order", 0) if max_order_doc else 0
     
-    # Create new metric
     new_metric = {
-        "metric_id": metric["metric_id"],
-        "metric_name": metric["metric_name"],
-        "description": metric.get("description", ""),
-        "field_name": metric["field_name"],
-        "field_values": metric["field_values"],
-        "is_active": metric.get("is_active", True),
+        "metric_id": metric.metric_id,
+        "metric_name": metric.metric_name,
+        "description": metric.description or "",
+        "field_name": metric.field_name,
+        "field_values": metric.field_values,
+        "is_active": True,
+        "is_custom": True,
+        "color": metric.color or "primary",
+        "icon": metric.icon or "BarChart3",
+        "show_on_dashboard": metric.show_on_dashboard,
+        "dashboard_order": metric.dashboard_order if metric.dashboard_order != 99 else max_order + 1,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -158,16 +206,33 @@ async def delete_metric(
     metric_id: str,
     current_user: User = Depends(require_roles(UserRole.ADMIN))
 ):
-    """Delete a custom metric (cannot delete default metrics)"""
+    """Delete a custom metric"""
     db = await get_db(request)
     
-    # Check if it's a default metric
-    default_ids = [m["metric_id"] for m in DEFAULT_METRICS]
-    if metric_id in default_ids:
-        raise HTTPException(status_code=400, detail="Cannot delete default metrics. You can disable them instead.")
-    
-    result = await db.metric_settings.delete_one({"metric_id": metric_id})
-    if result.deleted_count == 0:
+    existing = await db.metric_settings.find_one({"metric_id": metric_id})
+    if not existing:
         raise HTTPException(status_code=404, detail=f"Metric '{metric_id}' not found")
     
+    if not existing.get("is_custom", False):
+        raise HTTPException(status_code=400, detail="Cannot delete default metrics. You can hide them instead.")
+    
+    await db.metric_settings.delete_one({"metric_id": metric_id})
     return {"message": f"Metric '{metric_id}' deleted"}
+
+
+@router.put("/reorder")
+async def reorder_metrics(
+    request: Request,
+    order: List[str],  # List of metric_ids in desired order
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Reorder metrics on dashboard"""
+    db = await get_db(request)
+    
+    for i, metric_id in enumerate(order):
+        await db.metric_settings.update_one(
+            {"metric_id": metric_id},
+            {"$set": {"dashboard_order": i}}
+        )
+    
+    return {"message": "Metrics reordered successfully"}
