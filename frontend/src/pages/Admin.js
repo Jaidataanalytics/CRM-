@@ -567,11 +567,131 @@ const Admin = () => {
                 Define which field values should be counted for each metric on the dashboard
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={resetMetricSettings}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset to Defaults
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setShowCreateMetric(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Custom Metric
+              </Button>
+              <Button variant="outline" size="sm" onClick={resetMetricSettings}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Reset to Defaults
+              </Button>
+            </div>
           </div>
+
+          {/* Create Custom Metric Form */}
+          {showCreateMetric && (
+            <Card className="border-primary">
+              <CardHeader>
+                <CardTitle className="text-lg">Create Custom Metric</CardTitle>
+                <CardDescription>Add a new metric to track on the dashboard</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Metric ID (unique, no spaces)</Label>
+                    <Input
+                      placeholder="e.g., rental_leads"
+                      value={newMetric.metric_id}
+                      onChange={(e) => setNewMetric(prev => ({ ...prev, metric_id: e.target.value.toLowerCase().replace(/\s/g, '_') }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Display Name</Label>
+                    <Input
+                      placeholder="e.g., Rental Leads"
+                      value={newMetric.metric_name}
+                      onChange={(e) => setNewMetric(prev => ({ ...prev, metric_name: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Input
+                    placeholder="e.g., Leads from rental segment"
+                    value={newMetric.description}
+                    onChange={(e) => setNewMetric(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Field to Filter By</Label>
+                    <Select 
+                      value={newMetric.field_name} 
+                      onValueChange={(v) => setNewMetric(prev => ({ ...prev, field_name: v, field_values: [] }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(availableFields).map(field => (
+                          <SelectItem key={field} value={field}>{field}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Color</Label>
+                    <Select 
+                      value={newMetric.color} 
+                      onValueChange={(v) => setNewMetric(prev => ({ ...prev, color: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">Primary (Blue)</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="red">Red</SelectItem>
+                        <SelectItem value="yellow">Yellow</SelectItem>
+                        <SelectItem value="orange">Orange</SelectItem>
+                        <SelectItem value="purple">Purple</SelectItem>
+                        <SelectItem value="blue">Blue</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Select Values to Count</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-48 overflow-y-auto p-2 border rounded-md">
+                    {availableFields[newMetric.field_name]?.map(value => (
+                      <div
+                        key={value}
+                        className={`flex items-center gap-2 p-2 rounded cursor-pointer ${
+                          newMetric.field_values.includes(value) ? 'bg-primary/10 border border-primary' : 'bg-muted/50'
+                        }`}
+                        onClick={() => {
+                          setNewMetric(prev => ({
+                            ...prev,
+                            field_values: prev.field_values.includes(value)
+                              ? prev.field_values.filter(v => v !== value)
+                              : [...prev.field_values, value]
+                          }));
+                        }}
+                      >
+                        <Checkbox checked={newMetric.field_values.includes(value)} className="pointer-events-none" />
+                        <span className="text-sm">{value}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          ({fieldCounts[newMetric.field_name]?.[value] || 0})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={newMetric.show_on_dashboard}
+                    onCheckedChange={(checked) => setNewMetric(prev => ({ ...prev, show_on_dashboard: checked }))}
+                  />
+                  <Label>Show on Dashboard</Label>
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setShowCreateMetric(false)}>Cancel</Button>
+                  <Button onClick={createCustomMetric}>Create Metric</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {metricSettings ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
