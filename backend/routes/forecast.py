@@ -139,12 +139,18 @@ async def generate_forecast(
         
         total_leads = sum([d["count"] for d in state_dist])
         
+        # Prepare complete distribution data for breakdown
+        state_list = [{"name": d["_id"], "count": d["count"], "pct": round(d["count"]/total_leads*100, 1)} for d in state_dist if d["_id"]]
+        dealer_list = [{"name": d["_id"], "count": d["count"], "pct": round(d["count"]/total_leads*100, 1)} for d in dealer_dist if d["_id"]]
+        segment_list = [{"name": d["_id"], "count": d["count"], "pct": round(d["count"]/total_leads*100, 1)} for d in segment_dist if d["_id"]]
+        employee_list = [{"name": d["_id"], "count": d["count"], "pct": round(d["count"]/total_leads*100, 1)} for d in employee_dist if d["_id"]]
+        
         dist_summary = f"""
 Distribution of {total_leads} total leads:
-By State: {', '.join([f"{d['_id']}: {d['count']} ({round(d['count']/total_leads*100,1)}%)" for d in state_dist[:5] if d['_id']])}
-By Segment: {', '.join([f"{d['_id']}: {d['count']} ({round(d['count']/total_leads*100,1)}%)" for d in segment_dist[:5] if d['_id']])}
-Top Dealers: {', '.join([f"{d['_id']}: {d['count']}" for d in dealer_dist[:5] if d['_id']])}
-Top Employees: {', '.join([f"{d['_id']}: {d['count']}" for d in employee_dist[:5] if d['_id']])}
+By State ({len(state_list)} states): {', '.join([f"{d['name']}: {d['count']} ({d['pct']}%)" for d in state_list])}
+By Segment ({len(segment_list)} segments): {', '.join([f"{d['name']}: {d['count']} ({d['pct']}%)" for d in segment_list])}
+By Dealer ({len(dealer_list)} dealers): {', '.join([f"{d['name']}: {d['count']}" for d in dealer_list[:10]])}... and {len(dealer_list)-10} more
+By Employee ({len(employee_list)} employees): {', '.join([f"{d['name']}: {d['count']}" for d in employee_list[:10]])}... and {len(employee_list)-10} more
 """
         
         prompt = f"""Based on the following historical lead data, generate a {horizon}-month forecast with DETAILED BREAKDOWN.
