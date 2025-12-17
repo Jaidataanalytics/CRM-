@@ -443,15 +443,26 @@ async def upload_historical_data(
         if df.empty:
             raise HTTPException(status_code=400, detail="The uploaded file is empty")
         
-        # Find the date column
+        # Find the date column (try multiple variations)
         date_column = None
-        for col in ["Enquiry Date", "enquiry_date"]:
+        date_column_variations = [
+            "Enquiry Date", "enquiry_date", "Enquiry date", "ENQUIRY DATE",
+            "Date", "date", "DATE", "EnquiryDate", "enquirydate"
+        ]
+        for col in date_column_variations:
             if col in df.columns:
                 date_column = col
                 break
         
+        # If still not found, try to find any column with 'date' in the name
         if not date_column:
-            raise HTTPException(status_code=400, detail="No 'Enquiry Date' column found in file")
+            for col in df.columns:
+                if 'date' in col.lower() and 'enquiry' in col.lower():
+                    date_column = col
+                    break
+        
+        if not date_column:
+            raise HTTPException(status_code=400, detail="No 'Enquiry Date' column found in file. Expected columns: Enquiry Date, enquiry_date, etc.")
         
         # Parse all dates and find min/max
         dates = []
