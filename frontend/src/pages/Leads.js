@@ -518,6 +518,71 @@ const Leads = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Qualification Dialog */}
+      <Dialog open={isQualifyDialogOpen} onOpenChange={(open) => {
+        setIsQualifyDialogOpen(open);
+        if (!open) {
+          setQualifyingLead(null);
+          setQualificationAnswers({});
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-emerald-600" />
+              Qualify Lead
+            </DialogTitle>
+            <DialogDescription>
+              Answer the qualification questions for: <strong>{qualifyingLead?.name || qualifyingLead?.enquiry_no}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          {qualificationQuestions.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground">
+              <p>No qualification questions defined.</p>
+              <p className="text-sm mt-2">Please add questions in Admin Panel → Qualification Questions</p>
+            </div>
+          ) : (
+            <div className="space-y-4 pt-4">
+              {qualificationQuestions.map((q, idx) => (
+                <div key={q.question_id} className="space-y-2">
+                  <Label className="flex items-center justify-between">
+                    <span>{idx + 1}. {q.question}</span>
+                    {q.is_required && <Badge variant="outline" className="text-xs">Required</Badge>}
+                  </Label>
+                  {q.description && <p className="text-xs text-muted-foreground">{q.description}</p>}
+                  <Select 
+                    value={qualificationAnswers[q.question_id] || ''} 
+                    onValueChange={(v) => setQualificationAnswers(prev => ({ ...prev, [q.question_id]: v }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an answer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {q.options?.map(opt => (
+                        <SelectItem key={opt.option_id} value={opt.option_id}>
+                          {opt.text} (+{opt.score} pts)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsQualifyDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleQualificationSubmit} className="gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  Submit Qualification
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
