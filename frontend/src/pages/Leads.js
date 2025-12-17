@@ -455,14 +455,31 @@ const Leads = () => {
                         <TableCell>{lead.state || '-'}</TableCell>
                         <TableCell>{lead.dealer || '-'}</TableCell>
                         <TableCell>{lead.segment || '-'}</TableCell>
-                        <TableCell>{lead.kva || '-'}</TableCell>
+                        <TableCell>
+                          {lead.is_qualified === true && (
+                            <Badge className="bg-green-100 text-green-800 gap-1">
+                              <ShieldCheck className="h-3 w-3" /> Yes
+                            </Badge>
+                          )}
+                          {lead.is_qualified === false && (
+                            <Badge className="bg-red-100 text-red-800 gap-1">
+                              <ShieldX className="h-3 w-3" /> No
+                            </Badge>
+                          )}
+                          {lead.is_qualified === undefined && (
+                            <Badge variant="outline">-</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>{getStatusBadge(lead.enquiry_stage)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(lead)}>
+                            <Button variant="ghost" size="icon" onClick={() => openQualifyDialog(lead)} title="Qualify Lead">
+                              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(lead)} title="Edit Lead">
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(lead.lead_id)}>
+                            <Button variant="ghost" size="icon" onClick={() => handleDelete(lead.lead_id)} title="Delete Lead">
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
