@@ -1,9 +1,57 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, checkAuth } = useAuth();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [credentials, setCredentials] = useState({
+    username: '',
+    password: ''
+  });
+
+  const handleInputChange = (e) => {
+    setCredentials(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handlePasswordLogin = async (e) => {
+    e.preventDefault();
+    
+    if (!credentials.username || !credentials.password) {
+      toast.error('Please enter username and password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await axios.post(`${API}/auth/login`, credentials, {
+        withCredentials: true
+      });
+      
+      toast.success(`Welcome, ${response.data.name}!`);
+      await checkAuth();
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.detail || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div 
@@ -31,13 +79,68 @@ const Login = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground text-center">
-            Sign in to access your dashboard, manage leads, and view analytics.
+          {/* Username/Password Form */}
+          <form onSubmit={handlePasswordLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="Enter username"
+                value={credentials.username}
+                onChange={handleInputChange}
+                disabled={isLoading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter password"
+                value={credentials.password}
+                onChange={handleInputChange}
+                disabled={isLoading}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          {/* Demo credentials hint */}
+          <p className="text-xs text-center text-muted-foreground">
+            Demo: username <span className="font-mono bg-muted px-1 rounded">admin</span> / password <span className="font-mono bg-muted px-1 rounded">admin123</span>
           </p>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <Separator className="w-full" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Google OAuth */}
           <Button 
             onClick={login} 
+            variant="outline"
             className="w-full gap-2"
-            size="lg"
+            disabled={isLoading}
             data-testid="google-login-btn"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
