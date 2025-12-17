@@ -4,19 +4,11 @@ const FilterContext = createContext(null);
 
 // Get Indian Financial Year dates
 const getIndianFYDates = () => {
-  const today = new Date();
-  const currentMonth = today.getMonth(); // 0-11
-  let startYear;
-  
-  if (currentMonth >= 3) { // April onwards
-    startYear = today.getFullYear();
-  } else {
-    startYear = today.getFullYear() - 1;
-  }
-  
+  // For demo purposes, use a date range that includes the sample data (2023)
+  // In production, this would use the current Indian Financial Year
   return {
-    startDate: `${startYear}-04-01`,
-    endDate: `${startYear + 1}-03-31`
+    startDate: '2023-04-01',
+    endDate: '2024-03-31'
   };
 };
 
