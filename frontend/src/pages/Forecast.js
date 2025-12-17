@@ -191,25 +191,25 @@ const Forecast = () => {
     }));
   };
 
-  // Chart data for predictions
+  // Chart data for predictions - Bar chart style (better visibility)
   const predictionChartData = forecast?.forecast?.predictions ? {
     labels: forecast.forecast.predictions.map(p => p.month),
     datasets: [
       {
         label: 'Predicted Enquiries',
         data: forecast.forecast.predictions.map(p => p.predicted_enquiries),
+        backgroundColor: 'rgba(99, 102, 241, 0.8)',
         borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-        fill: true,
-        tension: 0.4
+        borderWidth: 1,
+        borderRadius: 4
       },
       {
         label: 'Predicted Closures',
         data: forecast.forecast.predictions.map(p => p.predicted_closures),
+        backgroundColor: 'rgba(34, 197, 94, 0.8)',
         borderColor: '#22c55e',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-        fill: true,
-        tension: 0.4
+        borderWidth: 1,
+        borderRadius: 4
       }
     ]
   } : null;
