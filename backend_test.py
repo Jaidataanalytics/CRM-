@@ -6,7 +6,7 @@ import json
 class LeadManagementAPITester:
     def __init__(self, base_url="https://salesforge-31.preview.emergentagent.com"):
         self.base_url = base_url
-        self.session_token = "test_session_1765964527002"
+        self.session_token = "test_session_1765964700523"
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
