@@ -423,8 +423,9 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="users">User Management</TabsTrigger>
+          <TabsTrigger value="metrics">Metric Settings</TabsTrigger>
           <TabsTrigger value="qualification">Qualification Questions</TabsTrigger>
           <TabsTrigger value="closure">Closure Questions</TabsTrigger>
           <TabsTrigger value="data">Data Management</TabsTrigger>
