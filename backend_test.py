@@ -129,6 +129,94 @@ class LeadManagementAPITester:
         self.run_test("Get Top Performers", "GET", "insights/top-performers", 200)
         self.run_test("Get Segment Analysis", "GET", "insights/segment-analysis", 200)
 
+    def test_qualification_endpoints(self):
+        """Test qualification system endpoints"""
+        print("\n=== QUALIFICATION SYSTEM TESTS ===")
+        
+        # Test get qualification questions
+        self.run_test("Get Qualification Questions", "GET", "qualification/questions", 200)
+        
+        # Test get qualification settings
+        self.run_test("Get Qualification Settings", "GET", "qualification/settings", 200)
+        
+        # Test create qualification question (Admin only)
+        question_data = {
+            "question": "Is the budget confirmed?",
+            "description": "Test question for qualification",
+            "options": [
+                {"text": "Yes, confirmed", "score": 10},
+                {"text": "Partially confirmed", "score": 5},
+                {"text": "Not confirmed", "score": 0}
+            ],
+            "is_required": True,
+            "order": 1
+        }
+        success, response = self.run_test("Create Qualification Question", "POST", "qualification/questions", 200, question_data)
+        
+        # Store question ID for later tests
+        question_id = response.get("question_id") if success else None
+        
+        # Test update qualification settings (Admin only)
+        settings_data = {"threshold_score": 15}
+        self.run_test("Update Qualification Settings", "PUT", "qualification/settings", 200, settings_data)
+        
+        # Test qualify a lead (need to get a lead first)
+        success, leads_response = self.run_test("Get Leads for Qualification", "GET", "leads?limit=1", 200)
+        if success and leads_response.get("leads"):
+            lead_id = leads_response["leads"][0]["lead_id"]
+            
+            # Test qualify lead endpoint
+            if question_id:
+                qualify_data = {
+                    "answers": [
+                        {"question_id": question_id, "option_id": "opt_1"}
+                    ]
+                }
+                self.run_test("Qualify Lead", "POST", f"qualification/leads/{lead_id}/qualify", 200, qualify_data)
+                
+                # Test get lead qualification
+                self.run_test("Get Lead Qualification", "GET", f"qualification/leads/{lead_id}/qualification", 200)
+        
+        # Clean up - delete test question
+        if question_id:
+            self.run_test("Delete Test Question", "DELETE", f"qualification/questions/{question_id}", 200)
+
+    def test_lead_activity_endpoints(self):
+        """Test lead activity endpoints"""
+        print("\n=== LEAD ACTIVITY TESTS ===")
+        
+        # Get a lead first
+        success, leads_response = self.run_test("Get Leads for Activity", "GET", "leads?limit=1", 200)
+        if success and leads_response.get("leads"):
+            lead_id = leads_response["leads"][0]["lead_id"]
+            
+            # Test get lead activities
+            self.run_test("Get Lead Activities", "GET", f"lead-activities/{lead_id}", 200)
+            
+            # Test get lead followups
+            self.run_test("Get Lead Followups", "GET", f"lead-activities/{lead_id}/followups", 200)
+            
+            # Test add followup
+            followup_data = {
+                "followup_date": "2025-01-20",
+                "notes": "Test followup note",
+                "outcome": "Interested"
+            }
+            self.run_test("Add Lead Followup", "POST", f"lead-activities/{lead_id}/followups", 200, followup_data)
+
+    def test_kpi_qualification_metrics(self):
+        """Test KPI endpoints for qualification metrics"""
+        print("\n=== KPI QUALIFICATION METRICS TESTS ===")
+        
+        # Test KPIs to ensure qualified_leads and faulty_leads are returned
+        success, response = self.run_test("Get KPIs with Qualification Metrics", "GET", "kpis", 200)
+        if success:
+            # Check if qualification metrics are present
+            if "qualified_leads" in response and "faulty_leads" in response:
+                print(f"✅ Qualification metrics found - Qualified: {response.get('qualified_leads', 0)}, Faulty: {response.get('faulty_leads', 0)}")
+            else:
+                print(f"⚠️  Warning: Qualification metrics not found in KPI response")
+
     def test_admin_endpoints(self):
         """Test admin endpoints (Admin role required)"""
         print("\n=== ADMIN TESTS ===")
