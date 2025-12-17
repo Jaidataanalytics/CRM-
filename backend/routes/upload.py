@@ -5,7 +5,6 @@ import io
 import uuid
 
 from models.user import User, UserRole
-from models.lead import Lead
 from models.activity_log import ActivityLog
 from routes.auth import get_current_user
 
@@ -17,57 +16,134 @@ async def get_db(request: Request):
     return request.app.state.db
 
 
-# Column mapping from Excel to database fields
+# Column mapping from Excel to database fields (supports multiple variations)
 COLUMN_MAPPING = {
+    # Zone
     "Zone": "zone",
+    "zone": "zone",
+    # State
     "State": "state",
+    "state": "state",
+    # Area/Office variations
     "Area": "area",
+    "area": "area",
     "Office": "office",
+    "office": "office",
+    "Area Office": "area",
+    "area office": "area",
+    # Dealer
     "Dealer": "dealer",
+    "dealer": "dealer",
+    # Branch
     "Branch": "branch",
+    "branch": "branch",
+    # Location/Address
     "Location": "location",
+    "location": "location",
+    "Address": "address",
+    "address": "address",
+    # Employee fields
     "Employee Code": "employee_code",
+    "employee code": "employee_code",
     "Employee Name": "employee_name",
+    "employee name": "employee_name",
     "Employee Status": "employee_status",
+    "employee status": "employee_status",
+    # Enquiry fields
     "Enquiry No": "enquiry_no",
+    "enquiry no": "enquiry_no",
     "Enquiry Date": "enquiry_date",
+    "enquiry date": "enquiry_date",
+    # Customer fields
     "Customer Type": "customer_type",
+    "customer type": "customer_type",
     "Corporate Name": "corporate_name",
+    "corporate name": "corporate_name",
     "Name": "name",
+    "name": "name",
     "Phone Number": "phone_number",
+    "phone number": "phone_number",
+    "Phone": "phone_number",
+    "phone": "phone_number",
     "Email Address": "email_address",
+    "email address": "email_address",
+    "Email": "email_address",
+    "email": "email_address",
     "PinCode": "pincode",
+    "pincode": "pincode",
+    "Pin Code": "pincode",
     "Tehsil": "tehsil",
+    "tehsil": "tehsil",
     "District": "district",
+    "district": "district",
+    # Product fields
     "KVA": "kva",
+    "kva": "kva",
     "Phase": "phase",
+    "phase": "phase",
     "Qty": "qty",
+    "qty": "qty",
+    "Quantity": "qty",
     "Remarks": "remarks",
+    "remarks": "remarks",
+    # Status fields
     "EnquiryStatus": "enquiry_status",
+    "Enquiry Status": "enquiry_status",
+    "enquiry status": "enquiry_status",
     "EnquiryType": "enquiry_type",
+    "Enquiry Type": "enquiry_type",
+    "enquiry type": "enquiry_type",
     "Enquiry Stage": "enquiry_stage",
+    "enquiry stage": "enquiry_stage",
+    # Date fields
     "EO/PO Date": "eo_po_date",
+    "eo/po date": "eo_po_date",
     "Planned Followup Date": "planned_followup_date",
-    "Source": "source",
-    "Source From": "source_from",
-    "Events": "events",
-    "No of Follow-ups": "no_of_followups",
-    "Segment": "segment",
-    "SubSegment": "sub_segment",
-    "DG Ownership": "dg_ownership",
-    "Created By": "created_by",
-    "PAN NO.": "pan_no",
+    "planned followup date": "planned_followup_date",
     "LastFollowupDate": "last_followup_date",
+    "Last Followup Date": "last_followup_date",
+    "last followup date": "last_followup_date",
     "Enquiry Closure Date": "enquiry_closure_date",
+    "enquiry closure date": "enquiry_closure_date",
+    # Source fields
+    "Source": "source",
+    "source": "source",
+    "Source From": "source_from",
+    "source from": "source_from",
+    "Events": "events",
+    "events": "events",
+    "No of Follow-ups": "no_of_followups",
+    "no of follow-ups": "no_of_followups",
+    "Followups": "no_of_followups",
+    # Segment fields
+    "Segment": "segment",
+    "segment": "segment",
+    "SubSegment": "sub_segment",
+    "sub segment": "sub_segment",
+    "Sub Segment": "sub_segment",
+    "DG Ownership": "dg_ownership",
+    "dg ownership": "dg_ownership",
+    # Other fields
+    "Created By": "created_by",
+    "created by": "created_by",
+    "PAN NO.": "pan_no",
+    "pan no.": "pan_no",
+    "PAN": "pan_no",
     "Finance Required": "finance_required",
+    "finance required": "finance_required",
     "Finance Company": "finance_company",
-    "Referred By": "referred_by"
+    "finance company": "finance_company",
+    "Referred By": "referred_by",
+    "referred by": "referred_by"
 }
 
 
 def clean_value(val):
     """Clean and convert value"""
-    if val is None or (isinstance(val, float) and str(val) == 'nan'):
+    import pandas as pd
+    if val is None or pd.isna(val):
+        return None
+    if isinstance(val, float) and str(val) == 'nan':
         return None
     if isinstance(val, str):
         val = val.strip()
@@ -77,23 +153,66 @@ def clean_value(val):
 
 
 def parse_date(val):
-    """Parse date value to string format"""
-    if val is None:
+    """Parse date value to string format - handles multiple formats"""
+    import pandas as pd
+    
+    if val is None or pd.isna(val):
         return None
+    
+    # Handle datetime objects
     if isinstance(val, datetime):
         return val.strftime("%Y-%m-%d")
+    
+    # Handle pandas Timestamp
+    if hasattr(val, 'strftime'):
+        try:
+            return val.strftime("%Y-%m-%d")
+        except:
+            return None
+    
+    # Handle string dates
     if isinstance(val, str):
         val = val.strip()
         if not val:
             return None
-        # Try various formats
-        for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"]:
+        
+        # Check if already in correct format
+        if len(val) == 10 and val[4] == '-' and val[7] == '-':
+            return val
+        
+        # Try multiple date formats
+        date_formats = [
+            "%Y-%m-%d",           # 2023-04-01
+            "%d-%m-%Y",           # 01-04-2023
+            "%d/%m/%Y",           # 01/04/2023
+            "%Y/%m/%d",           # 2023/04/01
+            "%d %b %Y",           # 01 Apr 2023
+            "%d %B %Y",           # 01 April 2023
+            "%b %d, %Y",          # Apr 01, 2023
+            "%B %d, %Y",          # April 01, 2023
+            "%d-%b-%Y",           # 01-Apr-2023
+            "%d-%B-%Y",           # 01-April-2023
+            "%m/%d/%Y",           # 04/01/2023
+            "%m-%d-%Y",           # 04-01-2023
+        ]
+        
+        for fmt in date_formats:
             try:
                 return datetime.strptime(val, fmt).strftime("%Y-%m-%d")
             except ValueError:
                 continue
-        return val
-    return str(val)
+        
+        # Fallback to pandas
+        try:
+            parsed = pd.to_datetime(val, dayfirst=True)
+            if pd.notna(parsed):
+                return parsed.strftime("%Y-%m-%d")
+        except:
+            pass
+        
+        return None
+    
+    return None
 
 
 @router.post("/leads")
@@ -113,6 +232,9 @@ async def upload_leads(
         
         content = await file.read()
         df = pd.read_excel(io.BytesIO(content))
+        
+        if df.empty:
+            raise HTTPException(status_code=400, detail="The uploaded file is empty")
         
         created_count = 0
         updated_count = 0
@@ -150,40 +272,50 @@ async def upload_leads(
                             else:
                                 lead_data[db_field] = None
                         else:
-                            lead_data[db_field] = clean_value(val)
+                            cleaned = clean_value(val)
+                            # Convert to string if not None
+                            if cleaned is not None:
+                                lead_data[db_field] = str(cleaned) if not isinstance(cleaned, str) else cleaned
+                            else:
+                                lead_data[db_field] = None
                 
                 enquiry_no = lead_data.get('enquiry_no')
                 
                 if enquiry_no:
                     # Check if lead exists
-                    existing = await db.leads.find_one({"enquiry_no": enquiry_no})
+                    existing = await db.leads.find_one({"enquiry_no": str(enquiry_no)})
                     
                     if existing:
                         # Update existing lead
                         lead_data["updated_at"] = datetime.now(timezone.utc).isoformat()
                         await db.leads.update_one(
-                            {"enquiry_no": enquiry_no},
+                            {"enquiry_no": str(enquiry_no)},
                             {"$set": lead_data}
                         )
                         updated_count += 1
                     else:
-                        # Create new lead
-                        lead = Lead(**lead_data)
-                        lead_doc = lead.model_dump()
-                        lead_doc["created_at"] = lead_doc["created_at"].isoformat()
-                        lead_doc["updated_at"] = lead_doc["updated_at"].isoformat()
+                        # Create new lead - directly without Pydantic
+                        lead_doc = {
+                            "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
+                            **lead_data,
+                            "created_at": datetime.now(timezone.utc).isoformat(),
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }
                         await db.leads.insert_one(lead_doc)
                         created_count += 1
                 else:
-                    # Create new lead without enquiry_no
-                    lead = Lead(**lead_data)
-                    lead_doc = lead.model_dump()
-                    lead_doc["created_at"] = lead_doc["created_at"].isoformat()
-                    lead_doc["updated_at"] = lead_doc["updated_at"].isoformat()
+                    # Create new lead without enquiry_no - directly without Pydantic
+                    lead_doc = {
+                        "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
+                        **lead_data,
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
                     await db.leads.insert_one(lead_doc)
                     created_count += 1
                     
             except Exception as e:
+                logger.error(f"Row {idx + 2} error: {e}")
                 errors.append({"row": idx + 2, "error": str(e)})
                 continue
         
@@ -207,10 +339,13 @@ async def upload_leads(
             "success": True,
             "created": created_count,
             "updated": updated_count,
-            "errors": errors[:10] if errors else [],  # Return first 10 errors
-            "total_errors": len(errors)
+            "errors": errors[:10] if errors else [],
+            "total_errors": len(errors),
+            "message": f"Successfully processed: {created_count} created, {updated_count} updated"
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Upload error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
@@ -222,9 +357,17 @@ async def get_upload_template(
 ):
     """Get the column template for upload"""
     return {
-        "columns": list(COLUMN_MAPPING.keys()),
-        "required_columns": ["Enquiry No", "State", "Dealer", "Employee Name"],
+        "columns": ["Zone", "State", "Area Office", "Dealer", "Branch", "Location", 
+                   "Employee Code", "Employee Name", "Employee Status", "Enquiry No",
+                   "Enquiry Date", "Customer Type", "Corporate Name", "Name", 
+                   "Phone Number", "Email", "PinCode", "Tehsil", "District",
+                   "KVA", "Phase", "Qty", "Remarks", "Enquiry Status", "Enquiry Type",
+                   "Enquiry Stage", "EO/PO Date", "Planned Followup Date", "Source",
+                   "Source From", "Events", "No of Follow-ups", "Segment", "SubSegment",
+                   "DG Ownership", "Created By", "PAN NO.", "Last Followup Date",
+                   "Enquiry Closure Date", "Finance Required", "Finance Company", "Referred By"],
+        "required_columns": ["Name", "State"],
         "date_columns": ["Enquiry Date", "EO/PO Date", "Planned Followup Date", 
-                        "LastFollowupDate", "Enquiry Closure Date"],
+                        "Last Followup Date", "Enquiry Closure Date"],
         "numeric_columns": ["KVA", "Qty", "No of Follow-ups"]
     }
