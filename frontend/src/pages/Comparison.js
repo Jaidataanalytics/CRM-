@@ -84,7 +84,9 @@ const Comparison = () => {
     setLoading(true);
     try {
       const queryParams = buildQueryParams();
-      const [statesRes, dealersRes, areasRes, employeesRes, filtersRes] = await Promise.all([
+      
+      // Load data in parallel but handle individual failures
+      const [statesRes, dealersRes, areasRes, employeesRes, filtersRes] = await Promise.allSettled([
         axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=area&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
@@ -93,18 +95,20 @@ const Comparison = () => {
       ]);
       
       setPerformanceData({
-        states: statesRes.data.performers || [],
-        dealers: dealersRes.data.performers || [],
-        areas: areasRes.data.performers || [],
-        employees: employeesRes.data.performers || []
+        states: statesRes.status === 'fulfilled' ? statesRes.value.data.performers || [] : [],
+        dealers: dealersRes.status === 'fulfilled' ? dealersRes.value.data.performers || [] : [],
+        areas: areasRes.status === 'fulfilled' ? areasRes.value.data.performers || [] : [],
+        employees: employeesRes.status === 'fulfilled' ? employeesRes.value.data.performers || [] : []
       });
       
-      setAvailableFilters({
-        states: filtersRes.data.states || [],
-        dealers: filtersRes.data.dealers || [],
-        areas: filtersRes.data.areas || [],
-        employees: filtersRes.data.employees || []
-      });
+      if (filtersRes.status === 'fulfilled') {
+        setAvailableFilters({
+          states: filtersRes.value.data.states || [],
+          dealers: filtersRes.value.data.dealers || [],
+          areas: filtersRes.value.data.areas || [],
+          employees: filtersRes.value.data.employees || []
+        });
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load comparison data');
