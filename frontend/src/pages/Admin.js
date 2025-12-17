@@ -696,15 +696,41 @@ const Admin = () => {
           {metricSettings ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {metricSettings.map((metric) => (
-                <Card key={metric.metric_id} className="relative">
+                <Card key={metric.metric_id} className={`relative ${!metric.show_on_dashboard ? 'opacity-60' : ''}`}>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4" />
-                      {metric.metric_name}
-                      {savingMetric === metric.metric_id && (
-                        <Badge variant="secondary" className="text-xs">Saving...</Badge>
-                      )}
-                    </CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4" />
+                        {metric.metric_name}
+                        {savingMetric === metric.metric_id && (
+                          <Badge variant="secondary" className="text-xs">Saving...</Badge>
+                        )}
+                        {metric.is_custom && (
+                          <Badge variant="outline" className="text-xs">Custom</Badge>
+                        )}
+                      </CardTitle>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2"
+                          onClick={() => toggleMetricDashboard(metric)}
+                          title={metric.show_on_dashboard ? 'Hide from dashboard' : 'Show on dashboard'}
+                        >
+                          {metric.show_on_dashboard ? <Check className="h-3 w-3 text-green-600" /> : <X className="h-3 w-3 text-muted-foreground" />}
+                        </Button>
+                        {metric.is_custom && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-destructive hover:text-destructive"
+                            onClick={() => deleteCustomMetric(metric.metric_id)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                     <CardDescription className="text-xs">
                       {metric.description}
                     </CardDescription>
