@@ -31,14 +31,34 @@ async def get_leads(
     kva_max: Optional[float] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    search: Optional[str] = None,
+    search_field: Optional[str] = None,
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=500)
 ):
-    """Get leads with filtering and pagination"""
+    """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
     
     # Build filter query
     query = {}
+    
+    # Search functionality
+    if search and search.strip():
+        search_term = search.strip()
+        if search_field and search_field in ['name', 'phone_number', 'email_address', 'enquiry_no', 'dealer', 'state', 'employee_name']:
+            # Search in specific field
+            query[search_field] = {"$regex": search_term, "$options": "i"}
+        else:
+            # Search in multiple fields
+            query["$or"] = [
+                {"name": {"$regex": search_term, "$options": "i"}},
+                {"phone_number": {"$regex": search_term, "$options": "i"}},
+                {"email_address": {"$regex": search_term, "$options": "i"}},
+                {"enquiry_no": {"$regex": search_term, "$options": "i"}},
+                {"dealer": {"$regex": search_term, "$options": "i"}},
+                {"state": {"$regex": search_term, "$options": "i"}},
+                {"employee_name": {"$regex": search_term, "$options": "i"}}
+            ]
     
     if state:
         query["state"] = state
