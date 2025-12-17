@@ -373,6 +373,7 @@ const Admin = () => {
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="qualification">Qualification Questions</TabsTrigger>
           <TabsTrigger value="closure">Closure Questions</TabsTrigger>
+          <TabsTrigger value="data">Data Management</TabsTrigger>
           <TabsTrigger value="logs">Activity Logs</TabsTrigger>
         </TabsList>
 
