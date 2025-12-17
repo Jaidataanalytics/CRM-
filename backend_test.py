@@ -167,15 +167,20 @@ def main():
     
     tester = LeadManagementAPITester()
     
-    # Run all test suites
+    # Run all test suites (logout test moved to end)
     tester.test_health_endpoints()
     tester.test_without_auth()
-    tester.test_auth_endpoints()
+    
+    # Test authenticated endpoints first
+    tester.test_auth_me_endpoint()
     tester.test_kpi_endpoints()
     tester.test_leads_endpoints()
     tester.test_filter_endpoints()
     tester.test_insights_endpoints()
     tester.test_admin_endpoints()
+    
+    # Test logout last (invalidates session)
+    tester.test_logout_endpoint()
     
     # Print final results
     print(f"\n{'='*50}")
