@@ -71,6 +71,10 @@ const Leads = () => {
   const [qualifyingLead, setQualifyingLead] = useState(null);
   const [qualificationQuestions, setQualificationQuestions] = useState([]);
   const [qualificationAnswers, setQualificationAnswers] = useState({});
+  
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchField, setSearchField] = useState('name');
 
   useEffect(() => {
     loadLeads();
