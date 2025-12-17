@@ -223,6 +223,15 @@ class LeadManagementAPITester:
         
         self.run_test("Get Users (Admin)", "GET", "admin/users", 200)
         self.run_test("Get Admin Stats", "GET", "admin/stats", 200)
+        
+        # Test new data-stats endpoint for Data Management tab
+        self.run_test("Get Data Stats (Admin)", "GET", "admin/data-stats", 200)
+        
+        # Test closure questions endpoints
+        self.run_test("Get Closure Questions", "GET", "admin/closure-questions", 200)
+        
+        # Test activity logs endpoint
+        self.run_test("Get Activity Logs", "GET", "admin/activity-logs?page=1&limit=10", 200)
 
     def test_without_auth(self):
         """Test endpoints without authentication"""
