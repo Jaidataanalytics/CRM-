@@ -110,6 +110,58 @@ const Admin = () => {
     }
   };
 
+  const loadDataStats = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/data-stats`, { withCredentials: true });
+      setDataStats(res.data);
+    } catch (error) {
+      console.error('Error loading data stats:', error);
+    }
+  };
+
+  const handleHistoricalUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('Please upload an Excel file (.xlsx or .xls)');
+      return;
+    }
+    
+    const confirmed = window.confirm(
+      'Warning: This will REPLACE all leads with dates up to the maximum date in your file. ' +
+      'This action cannot be undone. Are you sure you want to continue?'
+    );
+    
+    if (!confirmed) {
+      event.target.value = '';
+      return;
+    }
+    
+    setUploadingHistorical(true);
+    setHistoricalUploadResult(null);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await axios.post(`${API}/admin/upload-historical-data`, formData, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setHistoricalUploadResult(res.data);
+      toast.success(res.data.message || 'Historical data uploaded successfully');
+      loadDataStats();
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to upload historical data');
+      setHistoricalUploadResult({ success: false, error: error.response?.data?.detail });
+    } finally {
+      setUploadingHistorical(false);
+      event.target.value = '';
+    }
+  };
+
   const updateUserRole = async (userId, newRole) => {
     try {
       await axios.put(`${API}/admin/users/${userId}/role`, 
