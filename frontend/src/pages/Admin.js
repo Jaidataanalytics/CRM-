@@ -497,6 +497,105 @@ const Admin = () => {
           </Card>
         </TabsContent>
 
+        {/* Metric Settings Tab */}
+        <TabsContent value="metrics" className="space-y-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold">Configure KPI Metrics</h3>
+              <p className="text-sm text-muted-foreground">
+                Define which field values should be counted for each metric on the dashboard
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={resetMetricSettings}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset to Defaults
+            </Button>
+          </div>
+
+          {metricSettings ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {metricSettings.map((metric) => (
+                <Card key={metric.metric_id} className="relative">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      {metric.metric_name}
+                      {savingMetric === metric.metric_id && (
+                        <Badge variant="secondary" className="text-xs">Saving...</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      {metric.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-2">
+                    <div className="mb-2">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        Field: <code className="bg-muted px-1 rounded">{metric.field_name}</code>
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {availableFields[metric.field_name]?.map((value) => {
+                        const isSelected = metric.field_values?.includes(value);
+                        const count = fieldCounts[metric.field_name]?.[value] || 0;
+                        return (
+                          <div
+                            key={value}
+                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
+                              isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50 hover:bg-muted'
+                            }`}
+                            onClick={() => toggleMetricValue(metric, value)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Checkbox 
+                                checked={isSelected} 
+                                className="pointer-events-none"
+                              />
+                              <span className="text-sm font-medium">{value}</span>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {count.toLocaleString()} leads
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                      {(!availableFields[metric.field_name] || availableFields[metric.field_name].length === 0) && (
+                        <p className="text-sm text-muted-foreground">No values found for this field</p>
+                      )}
+                    </div>
+                    <div className="mt-3 pt-2 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        Currently counting: <span className="font-medium text-foreground">
+                          {metric.field_values?.length > 0 ? metric.field_values.join(', ') : 'None selected'}
+                        </span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center p-8">
+              <Skeleton className="h-48 w-full" />
+            </div>
+          )}
+
+          {/* Legend */}
+          <Card className="mt-4">
+            <CardContent className="pt-4">
+              <h4 className="font-medium mb-2">How it works:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Click on values to toggle them on/off for each metric</li>
+                <li>• Changes are saved automatically</li>
+                <li>• The dashboard KPIs will update based on your selections</li>
+                <li>• <strong>Won Leads</strong>: Leads counted as successful conversions</li>
+                <li>• <strong>Lost Leads</strong>: Leads counted as unsuccessful</li>
+                <li>• <strong>Conversion Rate</strong>: Won / (Won + Lost) × 100</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Qualification Questions Tab */}
         <TabsContent value="qualification" className="space-y-4">
           {/* Threshold Setting */}
