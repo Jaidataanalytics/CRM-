@@ -77,18 +77,25 @@ async def get_kpis(
     hot_query = {**base_query, "enquiry_type": "Hot"}
     hot_leads = await db.leads.count_documents(hot_query)
     
+    # Warm leads
+    warm_query = {**base_query, "enquiry_type": "Warm"}
+    warm_leads = await db.leads.count_documents(warm_query)
+    
+    # Cold leads
+    cold_query = {**base_query, "enquiry_type": "Cold"}
+    cold_leads = await db.leads.count_documents(cold_query)
+    
+    # Qualified leads
+    qualified_query = {**base_query, "is_qualified": True}
+    qualified_leads = await db.leads.count_documents(qualified_query)
+    
+    # Faulty leads (explicitly marked as not qualified after being evaluated)
+    faulty_query = {**base_query, "is_qualified": False, "qualification_score": {"$exists": True}}
+    faulty_leads = await db.leads.count_documents(faulty_query)
+    
     # Conversion rate
     closed_total = won_leads + lost_leads
     conversion_rate = (won_leads / closed_total * 100) if closed_total > 0 else 0
-    
-    # Average KVA
-    pipeline = [
-        {"$match": {**base_query, "kva": {"$ne": None}}},
-        {"$group": {"_id": None, "avg_kva": {"$avg": "$kva"}, "total_kva": {"$sum": "$kva"}}}
-    ]
-    kva_result = await db.leads.aggregate(pipeline).to_list(1)
-    avg_kva = kva_result[0]["avg_kva"] if kva_result else 0
-    total_kva = kva_result[0]["total_kva"] if kva_result else 0
     
     # Leads by segment
     segment_pipeline = [
@@ -105,15 +112,31 @@ async def get_kpis(
     ]
     stage_distribution = await db.leads.aggregate(stage_pipeline).to_list(10)
     
+    # Leads by type (Hot/Warm/Cold)
+    type_distribution = [
+        {"type": "Hot", "count": hot_leads},
+        {"type": "Warm", "count": warm_leads},
+        {"type": "Cold", "count": cold_leads}
+    ]
+    
+    # Qualification distribution
+    qualification_distribution = [
+        {"status": "Qualified", "count": qualified_leads},
+        {"status": "Faulty", "count": faulty_leads},
+        {"status": "Not Evaluated", "count": total_leads - qualified_leads - faulty_leads}
+    ]
+    
     return {
         "total_leads": total_leads,
         "won_leads": won_leads,
         "lost_leads": lost_leads,
         "open_leads": open_leads,
         "hot_leads": hot_leads,
+        "warm_leads": warm_leads,
+        "cold_leads": cold_leads,
+        "qualified_leads": qualified_leads,
+        "faulty_leads": faulty_leads,
         "conversion_rate": round(conversion_rate, 2),
-        "avg_kva": round(avg_kva, 2) if avg_kva else 0,
-        "total_kva": round(total_kva, 2) if total_kva else 0,
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
             for s in segment_distribution
@@ -122,6 +145,8 @@ async def get_kpis(
             {"stage": s["_id"] or "Unknown", "count": s["count"]}
             for s in stage_distribution
         ],
+        "type_distribution": type_distribution,
+        "qualification_distribution": qualification_distribution,
         "date_range": {
             "start_date": start_date,
             "end_date": end_date
