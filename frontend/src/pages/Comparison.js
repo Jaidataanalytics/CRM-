@@ -78,8 +78,8 @@ const Comparison = () => {
     setLoading(true);
     try {
       const [statesRes, dealersRes, filtersRes] = await Promise.all([
-        axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=50`, { withCredentials: true }),
-        axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=50`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=50&${buildQueryParams()}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=50&${buildQueryParams()}`, { withCredentials: true }),
         axios.get(`${API}/filters/states`, { withCredentials: true })
       ]);
       setStateData(statesRes.data.performers || []);
