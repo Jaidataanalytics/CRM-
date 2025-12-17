@@ -95,8 +95,8 @@ const Comparison = () => {
 
   const loadDistrictData = async (state) => {
     try {
-      // Get district-wise data from leads grouped by district
-      const res = await axios.get(`${API}/comparison/district-performance?state=${state}`, { withCredentials: true });
+      // Get district-wise data from insights
+      const res = await axios.get(`${API}/insights/district-performance?state=${state}`, { withCredentials: true });
       setDistrictData(res.data.districts || []);
     } catch (error) {
       console.error('Error loading district data:', error);
