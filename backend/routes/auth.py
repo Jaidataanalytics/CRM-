@@ -92,6 +92,86 @@ def require_roles(*roles: UserRole):
     return check_role
 
 
+@router.post("/login")
+async def login(login_data: LoginRequest, request: Request, response: Response):
+    """Login with username/password"""
+    db = await get_db(request)
+    
+    # Find user by username (email) or username field
+    user_doc = await db.users.find_one(
+        {"$or": [
+            {"email": login_data.username},
+            {"username": login_data.username}
+        ]},
+        {"_id": 0}
+    )
+    
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    # Check password
+    stored_password = user_doc.get("password_hash")
+    if not stored_password:
+        raise HTTPException(status_code=401, detail="Password login not enabled for this account")
+    
+    if not verify_password(login_data.password, stored_password):
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    
+    # Check if user is active
+    if not user_doc.get("is_active", True):
+        raise HTTPException(status_code=401, detail="Account is deactivated")
+    
+    user = User(**user_doc)
+    
+    # Create session token
+    session_token = f"sess_{uuid.uuid4().hex}"
+    
+    # Create session
+    session = UserSession(
+        user_id=user.user_id,
+        session_token=session_token,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=7)
+    )
+    session_doc = session.model_dump()
+    session_doc["expires_at"] = session_doc["expires_at"].isoformat()
+    session_doc["created_at"] = session_doc["created_at"].isoformat()
+    
+    # Delete old sessions for this user
+    await db.user_sessions.delete_many({"user_id": user.user_id})
+    await db.user_sessions.insert_one(session_doc)
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=user.user_id,
+        action="login",
+        resource_type="auth",
+        details={"method": "password"}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        max_age=7 * 24 * 60 * 60,
+        path="/"
+    )
+    
+    return {
+        "user_id": user.user_id,
+        "email": user.email,
+        "name": user.name,
+        "picture": user.picture,
+        "role": user.role.value,
+        "token": session_token
+    }
+
+
 @router.post("/session")
 async def create_session(request: Request, response: Response):
     """Exchange session_id from Emergent Auth for session_token"""
