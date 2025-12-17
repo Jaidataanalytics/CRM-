@@ -32,7 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, ShieldCheck, ShieldX } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
