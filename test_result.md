@@ -1,27 +1,43 @@
-# Test Result for Lead Management Dashboard
+# Test Results - LeadForge Dashboard
+
+## Latest Test: Upload Excel Feature Verification
+**Date**: 2025-12-17
+**Status**: PASSED
+
+### Test Summary
+1. **Backend Upload API** - ✅ PASSED
+   - Created sample Excel file with 100 leads (2025 dates)
+   - Upload endpoint returned: `{"success": true, "created": 100, "updated": 0, "errors": []}`
+   
+2. **Backend Column Mapping Fix** - ✅ PASSED
+   - Added missing column mappings: "Customer Name", "Inquiry Date", "Lead Status", "Product", "Employee", "Expected Value", "Follow Up Date", "Closure Date", "Priority", "City"
+   - All columns now properly mapped to database fields
+
+3. **Frontend Integration** - ✅ PASSED
+   - Uploaded file with 50 leads within default date range (Apr 2023 - Mar 2024)
+   - Search for "BULK_TEST_LEAD" returned all 50 uploaded leads
+   - Data displayed correctly in table (Name, State, Dealer, Segment)
+
+### Key Fixes Applied
+- `/app/backend/routes/upload.py`: Updated COLUMN_MAPPING to include additional column variations:
+  - "Customer Name" → "name"
+  - "Inquiry Date" → "enquiry_date"  
+  - "Lead Status" → "lead_status"
+  - "Product" → "product"
+  - "Employee" → "employee_name"
+  - "Expected Value" → "expected_value"
+  - "Follow Up Date" → "planned_followup_date"
+  - "Closure Date" → "enquiry_closure_date"
+  - "Priority" → "priority"
+  - "City" → "city"
+
+### Notes
+- The default date filter (Apr 2023 - Mar 2024) will hide leads with dates outside this range
+- Leads uploaded with dates in 2025 won't show by default but ARE in the database
+- User should adjust date filter to see leads from different time periods
 
 ## Testing Protocol
-- Backend testing required
-- Frontend testing with auth required
-
-## Features to Test
-1. Dashboard with configurable KPI cards (Total, Won, Lost, Open, Hot, Warm, Cold, Closed)
-2. Admin Metric Settings tab with:
-   - View existing metrics with show/hide toggle
-   - Create Custom Metric form with field selection
-   - Delete custom metrics
-3. Comparison page with 4 tabs: State, Dealer, Area, Employee
-   - Session-based market data input
-   - Performance charts and tables
-4. Historical data upload in Data Management
-5. Filter bar, Charts, Insights, Forecast pages
-
-## Test User
-- Username: admin
-- Password: admin123
+- Last updated: 2025-12-17
 
 ## Incorporate User Feedback
-- Test Create Custom Metric workflow
-- Verify metrics can be toggled on/off dashboard
-- Test Comparison page market data input
-- Verify all KPIs update based on metric settings
+- None pending
