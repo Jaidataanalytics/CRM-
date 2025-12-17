@@ -76,8 +76,16 @@ def parse_date(val):
     """Parse date value to string format"""
     if val is None:
         return None
+    # Handle pandas NaT
+    if pd.isna(val):
+        return None
     if isinstance(val, datetime):
         return val.strftime("%Y-%m-%d")
+    if hasattr(val, 'strftime'):  # pandas Timestamp
+        try:
+            return val.strftime("%Y-%m-%d")
+        except:
+            return None
     if isinstance(val, str):
         val = val.strip()
         if not val:
