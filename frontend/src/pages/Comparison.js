@@ -242,8 +242,8 @@ const Comparison = () => {
                       {({ geographies }) =>
                         geographies.map(geo => {
                           const name = geo.properties.NAME_1 || geo.properties.st_nm || geo.properties.name || geo.properties.NAME || geo.properties.district;
-                          const performance = selectedState ? getDistrictPerformance(name) : getStatePerformance(name);
-                          const maxVal = selectedState ? maxDistrictLeads : maxStateLeads;
+                          const performance = selectedState !== 'all' ? getDistrictPerformance(name) : getStatePerformance(name);
+                          const maxVal = selectedState !== 'all' ? maxDistrictLeads : maxStateLeads;
                           
                           return (
                             <Geography
@@ -298,7 +298,7 @@ const Comparison = () => {
                   </div>
                 </div>
 
-                {selectedState && (
+                {selectedState !== 'all' && (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -315,12 +315,12 @@ const Comparison = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">
-                  {selectedState ? 'District Rankings' : 'State Rankings'}
+                  {selectedState !== 'all' ? 'District Rankings' : 'State Rankings'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="max-h-[500px] overflow-y-auto">
                 <div className="space-y-2">
-                  {(selectedState ? districtData : stateData).slice(0, 15).map((item, idx) => (
+                  {(selectedState !== 'all' ? districtData : stateData).slice(0, 15).map((item, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2">
                         <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -338,7 +338,7 @@ const Comparison = () => {
                       </div>
                     </div>
                   ))}
-                  {(selectedState ? districtData : stateData).length === 0 && (
+                  {(selectedState !== 'all' ? districtData : stateData).length === 0 && (
                     <p className="text-center text-muted-foreground py-4">No data available</p>
                   )}
                 </div>
