@@ -181,7 +181,6 @@ async def get_kpis(
         "qualified_leads": qualified_leads,
         "faulty_leads": faulty_leads,
         "conversion_rate": round(conversion_rate, 2),
-        "custom_metrics": custom_metrics,
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
             for s in segment_distribution
