@@ -1,0 +1,182 @@
+{
+  "identity": {
+    "persona": "E1",
+    "philosophy": "Fusion over Imitation. Emotion First. Content is King.",
+    "anti_patterns": [
+      "Generic 'SaaS Blue' everywhere",
+      "Inter font for headings",
+      "Center-aligned everything",
+      "Gradient overload",
+      "Teal colors (#1B93A4) in dashboards"
+    ]
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Manrope, sans-serif",
+      "body": "IBM Plex Sans, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "weights": {
+      "heading": "600 (SemiBold) or 700 (Bold)",
+      "body": "400 (Regular) or 500 (Medium)"
+    },
+    "sizes": {
+      "h1": "text-3xl md:text-4xl tracking-tight",
+      "h2": "text-2xl md:text-3xl tracking-tight",
+      "h3": "text-xl md:text-2xl tracking-tight",
+      "body": "text-sm md:text-base leading-relaxed",
+      "small": "text-xs tracking-wide uppercase"
+    },
+    "instructions": "Import fonts via Google Fonts in index.css. Use Manrope for all headings (h1-h3) and IBM Plex Sans for body text, inputs, and tables."
+  },
+  "colors": {
+    "theme_strategy": "Auto (System Preference) with 'Control Room' aesthetic",
+    "palette": {
+      "light": {
+        "background": "210 40% 98%",
+        "foreground": "222 47% 11%",
+        "card": "0 0% 100%",
+        "card_foreground": "222 47% 11%",
+        "popover": "0 0% 100%",
+        "popover_foreground": "222 47% 11%",
+        "primary": "243 75% 59%",
+        "primary_foreground": "210 40% 98%",
+        "secondary": "210 40% 96.1%",
+        "secondary_foreground": "222 47% 11%",
+        "muted": "210 40% 96.1%",
+        "muted_foreground": "215.4 16.3% 46.9%",
+        "accent": "210 40% 96.1%",
+        "accent_foreground": "222 47% 11%",
+        "destructive": "0 84.2% 60.2%",
+        "destructive_foreground": "210 40% 98%",
+        "border": "214.3 31.8% 91.4%",
+        "input": "214.3 31.8% 91.4%",
+        "ring": "222.2 84% 4.9%"
+      },
+      "dark": {
+        "background": "222 47% 11%",
+        "foreground": "210 40% 98%",
+        "card": "222 47% 11%",
+        "card_foreground": "210 40% 98%",
+        "popover": "222 47% 11%",
+        "popover_foreground": "210 40% 98%",
+        "primary": "243 75% 59%",
+        "primary_foreground": "222 47% 11%",
+        "secondary": "217.2 32.6% 17.5%",
+        "secondary_foreground": "210 40% 98%",
+        "muted": "217.2 32.6% 17.5%",
+        "muted_foreground": "215 20.2% 65.1%",
+        "accent": "217.2 32.6% 17.5%",
+        "accent_foreground": "210 40% 98%",
+        "destructive": "0 62.8% 30.6%",
+        "destructive_foreground": "210 40% 98%",
+        "border": "217.2 32.6% 17.5%",
+        "input": "217.2 32.6% 17.5%",
+        "ring": "212.7 26.8% 83.9%"
+      },
+      "charts": {
+        "chart_1": "243 75% 59%",
+        "chart_2": "142 71% 45%",
+        "chart_3": "32 95% 44%",
+        "chart_4": "346 84% 61%",
+        "chart_5": "270 50% 40%"
+      }
+    },
+    "usage_rules": [
+      "Use HSL values in index.css variables.",
+      "Primary color (Indigo) is for main actions and active states.",
+      "Destructive (Red) for critical actions.",
+      "Muted foreground for secondary text/labels.",
+      "Borders should be subtle (Slate-200 in light, Slate-800 in dark)."
+    ]
+  },
+  "layout": {
+    "grid_system": "The 'Control Room' Grid",
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "element_gap": "gap-4 md:gap-6",
+      "internal_padding": "p-4 or p-6"
+    },
+    "structure": {
+      "dashboard": "grid grid-cols-1 md:grid-cols-12 gap-6",
+      "sidebar": "Fixed width (w-64) or collapsible. Dark mode sidebar preferred even in light theme for contrast.",
+      "card": "h-full flex flex-col"
+    },
+    "z_index": {
+      "toast": 50,
+      "modal": 40,
+      "dropdown": 30,
+      "sticky_header": 20
+    }
+  },
+  "components": {
+    "buttons": {
+      "style": "rounded-md font-medium transition-all active:scale-95",
+      "variants": {
+        "default": "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm",
+        "outline": "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        "ghost": "hover:bg-accent hover:text-accent-foreground"
+      }
+    },
+    "cards": {
+      "style": "rounded-md border bg-card text-card-foreground shadow-sm",
+      "header": "p-6 flex flex-row items-center justify-between space-y-0 pb-2",
+      "content": "p-6 pt-0"
+    },
+    "inputs": {
+      "style": "rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+    },
+    "tables": {
+      "style": "w-full caption-bottom text-sm",
+      "header": "h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+      "row": "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+      "cell": "p-2 align-middle [&:has([role=checkbox])]:pr-0"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-md bg-background/80 border-b border-border/40 sticky top-0 z-20",
+    "gradients": "Use subtle gradients for active states or chart fills, NOT for backgrounds.",
+    "shadows": "shadow-sm for cards, shadow-md for dropdowns/popovers.",
+    "borders": "1px solid border-color. Use 'Grid Borders' style for dashboard metrics."
+  },
+  "assets": {
+    "images": [
+      {
+        "category": "login_background",
+        "url": "https://images.unsplash.com/photo-1599417262825-fc78c4784982?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwzfHxpbmR1c3RyaWFsJTIwZGllc2VsJTIwZ2VuZXJhdG9yfGVufDB8fHxibGFja19hbmRfd2hpdGV8MTc2NTk2MzUxNHww&ixlib=rb-4.1.0&q=85",
+        "description": "Grayscale industrial machine, suitable for login page background with overlay."
+      },
+      {
+        "category": "user_avatar",
+        "url": "https://images.pexels.com/photos/5301744/pexels-photo-5301744.jpeg",
+        "description": "Professional portrait for user profile or top performer."
+      },
+      {
+        "category": "company_logo",
+        "url": "https://images.unsplash.com/photo-1628760584600-6c31148991e9?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMHRlY2glMjBjb21wYW55JTIwbG9nb3xlbnwwfHx8fDE3NjU5NjM1MTh8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Abstract tech logo for the dashboard branding."
+      }
+    ],
+    "icons": "Use lucide-react for all UI icons. Use @phosphor-icons/react for marketing or feature highlights if needed."
+  },
+  "charts_and_maps": {
+    "library": "Recharts for charts, React Simple Maps for India map.",
+    "style": "Minimalist, no grid lines (or very subtle), customized tooltips.",
+    "colors": "Use the chart colors defined in the palette. Ensure high contrast against background."
+  },
+  "accessibility": {
+    "contrast": "Ensure text meets WCAG AA (4.5:1). Use APCA for fine-tuning.",
+    "focus": "Visible focus rings on all interactive elements.",
+    "aria": "Use aria-labels for icon-only buttons."
+  },
+  "universal_guidelines": [
+    "Do not use 'Inter' font for headings.",
+    "Do not use teal colors (#1B93A4).",
+    "Do not center-align the main app container.",
+    "Use 'sonner' for toasts.",
+    "Use 'data-testid' on all interactive elements.",
+    "Create components in 'src/components/ui' if they don't exist, following Shadcn patterns.",
+    "Use 'export const' for components and 'export default' for pages."
+  ],
+  "instructions_to_main_agent": "Read this file first. Update 'tailwind.config.js' and 'index.css' with the provided values. Install necessary fonts. Build the layout using the 'Control Room' grid strategy. Use the provided image URLs for placeholders."
+}
