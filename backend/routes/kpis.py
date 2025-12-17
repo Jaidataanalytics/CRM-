@@ -196,6 +196,7 @@ async def get_kpis(
             "start_date": start_date,
             "end_date": end_date
         },
+        "dashboard_metrics": dashboard_metrics,
         "metric_configs": {
             "won_leads": won_config,
             "lost_leads": lost_config,
