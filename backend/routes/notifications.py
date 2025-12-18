@@ -64,7 +64,7 @@ async def get_notifications(
     today_query = {
         **base_query,
         "planned_followup_date": today,
-        "enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}
+        "enquiry_stage": {"$nin": CLOSED_STAGES}
     }
     today_leads = await db.leads.find(today_query, {"_id": 0}).to_list(50)
     
