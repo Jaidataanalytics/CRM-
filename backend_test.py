@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class LeadManagementAPITester:
-    def __init__(self, base_url="https://lead-analytics-6.preview.emergentagent.com"):
+    def __init__(self, base_url="https://leadforge-dash-1.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = None
         self.tests_run = 0
