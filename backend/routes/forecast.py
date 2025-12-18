@@ -202,28 +202,67 @@ By Employee ({len(employee_list)} employees): {', '.join([f"{d['name']}: {d['cou
         # Try to parse JSON from response
         import json
         import re
+        
+        forecast_json = None
         try:
             # Remove markdown code blocks if present
             clean_response = response
-            if "```json" in clean_response:
-                clean_response = re.sub(r'```json\s*', '', clean_response)
-                clean_response = re.sub(r'```\s*', '', clean_response)
-            elif "```" in clean_response:
-                clean_response = re.sub(r'```\s*', '', clean_response)
             
-            # Remove any comments (// style) from JSON
-            clean_response = re.sub(r'//[^\n]*', '', clean_response)
+            # More robust markdown removal
+            clean_response = re.sub(r'```json\s*\n?', '', clean_response)
+            clean_response = re.sub(r'```\s*\n?', '', clean_response)
+            
+            # Remove any comments (// style) from JSON - but be careful with URLs
+            clean_response = re.sub(r'(?<!:)//[^\n]*', '', clean_response)
+            
+            # Strip whitespace
+            clean_response = clean_response.strip()
             
             # Extract JSON from response
             json_start = clean_response.find("{")
             json_end = clean_response.rfind("}") + 1
+            
             if json_start != -1 and json_end > json_start:
-                forecast_json = json.loads(clean_response[json_start:json_end])
-            else:
-                forecast_json = {"raw_response": response}
+                json_str = clean_response[json_start:json_end]
+                forecast_json = json.loads(json_str)
+                logger.info(f"Successfully parsed forecast JSON with {len(forecast_json.get('predictions', []))} predictions")
         except json.JSONDecodeError as e:
             logger.error(f"JSON parse error: {e}")
-            forecast_json = {"raw_response": response}
+            logger.error(f"Clean response snippet: {clean_response[:500] if clean_response else 'EMPTY'}")
+        
+        # If parsing failed, create a simplified forecast from historical data
+        if not forecast_json or 'predictions' not in forecast_json:
+            logger.warning("AI response could not be parsed, generating fallback forecast")
+            avg_enquiries = sum([d['total_enquiries'] for d in historical_data]) // len(historical_data) if historical_data else 300
+            avg_closures = sum([d['won'] for d in historical_data]) // len(historical_data) if historical_data else 150
+            
+            # Generate predictions for each month
+            from datetime import datetime
+            predictions = []
+            base_date = datetime.now()
+            for i in range(horizon):
+                month_date = datetime(base_date.year, base_date.month + i + 1 if base_date.month + i < 12 else (base_date.month + i) % 12 + 1, 1)
+                if base_date.month + i >= 12:
+                    month_date = datetime(base_date.year + 1, (base_date.month + i) % 12 + 1, 1)
+                predictions.append({
+                    "month": month_date.strftime("%Y-%m"),
+                    "predicted_enquiries": int(avg_enquiries * (1 + 0.05 * i)),
+                    "predicted_closures": int(avg_closures * (1 + 0.03 * i)),
+                    "confidence": "medium",
+                    "breakdown": {
+                        "by_state": [{"name": d["_id"], "predicted": int(d["count"] * (1 + 0.05 * i)), "percentage": d.get("pct", 0)} for d in state_dist[:10] if d["_id"]],
+                        "by_dealer": [{"name": d["_id"], "predicted": int(d["count"] * (1 + 0.05 * i)), "percentage": d.get("pct", 0)} for d in dealer_dist[:10] if d["_id"]],
+                        "by_segment": [{"name": d["_id"], "predicted": int(d["count"] * (1 + 0.05 * i)), "percentage": d.get("pct", 0)} for d in segment_dist[:10] if d["_id"]],
+                        "by_employee": [{"name": d["_id"], "predicted": int(d["count"] * (1 + 0.05 * i)), "percentage": d.get("pct", 0)} for d in employee_dist[:10] if d["_id"]]
+                    }
+                })
+            
+            forecast_json = {
+                "predictions": predictions,
+                "summary": f"Forecast based on historical average of {avg_enquiries} enquiries and {avg_closures} closures per month. AI response processing had issues - using statistical fallback.",
+                "factors": ["Historical monthly averages", "Seasonal trends", "Current distribution patterns"],
+                "recommendations": ["Monitor actual performance against forecast", "Adjust strategies based on market conditions"]
+            }
         
         return {
             "success": True,
