@@ -32,7 +32,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, ShieldCheck, ShieldX, Search, X } from 'lucide-react';
+import { Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, ShieldCheck, ShieldX, Search, X, Eye, Clock, AlertTriangle } from 'lucide-react';
+import { DataGrid } from '@/components/ui/data-grid';
+import { LeadTimeline } from '@/components/leads/LeadTimeline';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
