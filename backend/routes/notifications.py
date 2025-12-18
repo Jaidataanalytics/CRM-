@@ -180,16 +180,16 @@ async def dismiss_all_notifications(
     
     if notification_type == "overdue":
         # Clear only overdue follow-ups (past dates) - DEFAULT behavior
-        query = {**base_query, "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""}}
+        query = {**base_query, "planned_followup_date": {"$lt": today, "$nin": [None, "", "nan", "NaN"]}}
     elif notification_type == "today":
         # Clear today's follow-ups
         query = {**base_query, "planned_followup_date": today}
     elif notification_type == "all":
         # Clear all overdue + today (but NOT upcoming)
-        query = {**base_query, "planned_followup_date": {"$lte": today, "$ne": None, "$ne": ""}}
+        query = {**base_query, "planned_followup_date": {"$lte": today, "$nin": [None, "", "nan", "NaN"]}}
     else:
         # Default: only overdue
-        query = {**base_query, "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""}}
+        query = {**base_query, "planned_followup_date": {"$lt": today, "$nin": [None, "", "nan", "NaN"]}}
     
     result = await db.leads.update_many(
         query,
