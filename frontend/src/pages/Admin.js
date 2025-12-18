@@ -538,11 +538,84 @@ const Admin = () => {
         {/* Users Tab */}
         <TabsContent value="users">
           <Card>
-            <CardHeader>
-              <CardTitle>Users</CardTitle>
-              <CardDescription>Manage user roles and access</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Users</CardTitle>
+                <CardDescription>Manage user roles and access</CardDescription>
+              </div>
+              <Button onClick={() => setShowAddUser(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
             </CardHeader>
             <CardContent>
+              {/* Add User Form */}
+              {showAddUser && (
+                <Card className="mb-6 border-primary">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Add New User</CardTitle>
+                    <CardDescription>Create a new user account</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Full Name *</Label>
+                        <Input
+                          placeholder="John Doe"
+                          value={newUser.name}
+                          onChange={(e) => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email *</Label>
+                        <Input
+                          type="email"
+                          placeholder="john@example.com"
+                          value={newUser.email}
+                          onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Username</Label>
+                        <Input
+                          placeholder="johndoe"
+                          value={newUser.username}
+                          onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Password *</Label>
+                        <Input
+                          type="password"
+                          placeholder="••••••••"
+                          value={newUser.password}
+                          onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Role</Label>
+                        <Select value={newUser.role} onValueChange={(v) => setNewUser(prev => ({ ...prev, role: v }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Admin">Admin</SelectItem>
+                            <SelectItem value="Manager">Manager</SelectItem>
+                            <SelectItem value="Employee">Employee</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setShowAddUser(false)}>Cancel</Button>
+                      <Button onClick={createUser} disabled={creatingUser}>
+                        {creatingUser ? 'Creating...' : 'Create User'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -584,13 +657,24 @@ const Admin = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => toggleUserStatus(user.user_id, user.is_active)}
-                        >
-                          {user.is_active ? <UserX className="h-4 w-4 text-destructive" /> : <UserCheck className="h-4 w-4 text-green-500" />}
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => toggleUserStatus(user.user_id, user.is_active)}
+                            title={user.is_active ? 'Deactivate' : 'Activate'}
+                          >
+                            {user.is_active ? <UserX className="h-4 w-4 text-destructive" /> : <UserCheck className="h-4 w-4 text-green-500" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteUser(user.user_id, user.name)}
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
