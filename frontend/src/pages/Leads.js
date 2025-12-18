@@ -93,12 +93,16 @@ const Leads = () => {
     loadLeads();
   }, [buildQueryParams, searchQuery, searchField]);
 
+  // Page size for server-side pagination
+  const [pageSize, setPageSize] = useState(50);
+  const [totalLeads, setTotalLeads] = useState(0);
+
   const loadLeads = async () => {
     setLoading(true);
     try {
       const queryParams = buildQueryParams();
-      // Load all records matching the filter - DataGrid handles pagination
-      let url = `${API}/leads?${queryParams}&limit=5000`;
+      // Use server-side pagination for better performance
+      let url = `${API}/leads?${queryParams}&page=${page}&limit=${pageSize}`;
       
       // Add search params
       if (searchQuery.trim()) {
@@ -107,6 +111,7 @@ const Leads = () => {
       
       const res = await axios.get(url, { withCredentials: true });
       setLeads(res.data.leads || []);
+      setTotalLeads(res.data.total || 0);
       setTotalPages(res.data.pages || 1);
     } catch (error) {
       console.error('Error loading leads:', error);
