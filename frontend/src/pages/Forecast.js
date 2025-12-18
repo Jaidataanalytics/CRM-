@@ -109,10 +109,10 @@ const BreakdownSection = ({ title, icon: Icon, data, expanded, onToggle }) => {
                 {data.map((item, idx) => (
                   <TableRow key={idx}>
                     <TableCell className="font-medium">{item.name || 'Unknown'}</TableCell>
-                    <TableCell className="text-right">{item.predicted?.toLocaleString() || 0}</TableCell>
-                    <TableCell className="text-right">{item.percentage?.toFixed(1) || 0}%</TableCell>
+                    <TableCell className="text-right">{typeof item.predicted === 'number' ? item.predicted.toLocaleString() : 0}</TableCell>
+                    <TableCell className="text-right">{typeof item.percentage === 'number' ? item.percentage.toFixed(1) : '0.0'}%</TableCell>
                     <TableCell>
-                      <Progress value={item.percentage || 0} className="h-2" />
+                      <Progress value={typeof item.percentage === 'number' ? item.percentage : 0} className="h-2" />
                     </TableCell>
                   </TableRow>
                 ))}
