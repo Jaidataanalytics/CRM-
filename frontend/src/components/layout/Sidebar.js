@@ -103,7 +103,21 @@ export const Sidebar = () => {
                 title={item.label}
               >
                 <item.icon className="h-5 w-5 flex-shrink-0" />
-                {!collapsed && <span className="text-sm">{item.label}</span>}
+                {!collapsed && (
+                  <span className="text-sm flex-1 flex items-center justify-between">
+                    {item.label}
+                    {item.path === '/leads' && overdueCount > 0 && (
+                      <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1.5 text-xs animate-pulse">
+                        {overdueCount > 99 ? '99+' : overdueCount}
+                      </Badge>
+                    )}
+                  </span>
+                )}
+                {collapsed && item.path === '/leads' && overdueCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-[10px] font-bold">
+                    !
+                  </span>
+                )}
               </NavLink>
             </li>
           ))}
