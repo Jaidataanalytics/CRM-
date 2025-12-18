@@ -201,15 +201,28 @@ By Employee ({len(employee_list)} employees): {', '.join([f"{d['name']}: {d['cou
         
         # Try to parse JSON from response
         import json
+        import re
         try:
+            # Remove markdown code blocks if present
+            clean_response = response
+            if "```json" in clean_response:
+                clean_response = re.sub(r'```json\s*', '', clean_response)
+                clean_response = re.sub(r'```\s*', '', clean_response)
+            elif "```" in clean_response:
+                clean_response = re.sub(r'```\s*', '', clean_response)
+            
+            # Remove any comments (// style) from JSON
+            clean_response = re.sub(r'//[^\n]*', '', clean_response)
+            
             # Extract JSON from response
-            json_start = response.find("{")
-            json_end = response.rfind("}") + 1
+            json_start = clean_response.find("{")
+            json_end = clean_response.rfind("}") + 1
             if json_start != -1 and json_end > json_start:
-                forecast_json = json.loads(response[json_start:json_end])
+                forecast_json = json.loads(clean_response[json_start:json_end])
             else:
                 forecast_json = {"raw_response": response}
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parse error: {e}")
             forecast_json = {"raw_response": response}
         
         return {
