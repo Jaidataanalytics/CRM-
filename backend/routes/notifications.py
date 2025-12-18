@@ -66,7 +66,7 @@ async def get_notifications(
         "planned_followup_date": today,
         "enquiry_stage": {"$nin": CLOSED_STAGES}
     }
-    today_leads = await db.leads.find(today_query, {"_id": 0}).to_list(50)
+    today_leads = await db.leads.find(today_query, {"_id": 0}).to_list(20)
     
     for lead in today_leads:
         notifications.append({
