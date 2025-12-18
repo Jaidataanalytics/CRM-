@@ -2,13 +2,23 @@ import { createContext, useContext, useState, useCallback } from 'react';
 
 const FilterContext = createContext(null);
 
-// Get Indian Financial Year dates
+// Get Indian Financial Year dates (April 1st to present date)
 const getIndianFYDates = () => {
-  // For demo purposes, use a date range that includes the sample data (2023)
-  // In production, this would use the current Indian Financial Year
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-indexed (0 = January, 3 = April)
+  
+  // Indian Financial Year starts on April 1st
+  // If current month is before April (0-2), FY started previous year
+  // If current month is April or later (3-11), FY started this year
+  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+  
+  const startDate = `${fyStartYear}-04-01`;
+  const endDate = today.toISOString().split('T')[0]; // Today's date in YYYY-MM-DD
+  
   return {
-    startDate: '2023-04-01',
-    endDate: '2024-03-31'
+    startDate,
+    endDate
   };
 };
 
