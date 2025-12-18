@@ -40,7 +40,7 @@ async def get_notifications(
     # 1. CRITICAL: Missed follow-ups (past dates, not closed)
     missed_query = {
         **base_query,
-        "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""},
+        "planned_followup_date": {"$lt": today, "$nin": [None, "", "nan", "NaN"]},
         "enquiry_stage": {"$nin": CLOSED_STAGES}
     }
     missed_leads = await db.leads.find(missed_query, {"_id": 0}).to_list(50)
