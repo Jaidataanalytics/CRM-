@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 import logging
 import io
+import uuid
 
 from models.user import User, UserCreate, UserResponse, UserRole
 from models.activity_log import ActivityLog
