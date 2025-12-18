@@ -34,11 +34,14 @@ async def get_notifications(
     if current_user.role == UserRole.EMPLOYEE:
         base_query["employee_name"] = current_user.name
     
+    # Closed/Won stages that should NOT have follow-up reminders
+    CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
+    
     # 1. CRITICAL: Missed follow-ups (past dates, not closed)
     missed_query = {
         **base_query,
         "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""},
-        "enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}
+        "enquiry_stage": {"$nin": CLOSED_STAGES}
     }
     missed_leads = await db.leads.find(missed_query, {"_id": 0}).to_list(50)
     
