@@ -31,15 +31,19 @@ export const DataGrid = ({
   onRowClick,
   onSelectionChange,
   selectable = false,
-  pageSize = 20,
+  initialPageSize = 20,
   className,
-  emptyMessage = "No data available"
+  emptyMessage = "No data available",
+  showPageSizeSelector = true
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filters, setFilters] = useState({});
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
+  const [pageSize, setPageSize] = useState(initialPageSize);
+
+  const PAGE_SIZE_OPTIONS = [20, 50, 100, 200, 'All'];
 
   // Handle sorting
   const handleSort = (key) => {
