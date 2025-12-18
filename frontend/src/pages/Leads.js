@@ -91,7 +91,7 @@ const Leads = () => {
 
   useEffect(() => {
     loadLeads();
-  }, [buildQueryParams, searchQuery, searchField]);
+  }, [buildQueryParams, searchQuery, searchField, page, pageSize]);
 
   // Page size for server-side pagination
   const [pageSize, setPageSize] = useState(50);
