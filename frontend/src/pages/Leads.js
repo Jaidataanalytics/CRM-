@@ -271,6 +271,90 @@ const Leads = () => {
     return <Badge className={variants[status] || 'bg-gray-100 text-gray-800'}>{status || 'N/A'}</Badge>;
   };
 
+  const handleViewLead = (lead) => {
+    setSelectedLead(lead);
+    setShowLeadDetail(true);
+  };
+
+  // Check if follow-up is overdue
+  const isFollowupOverdue = (date) => {
+    if (!date) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return date < today;
+  };
+
+  const isFollowupToday = (date) => {
+    if (!date) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return date === today;
+  };
+
+  // DataGrid columns configuration
+  const gridColumns = [
+    { key: 'enquiry_no', label: 'Enquiry No', sortable: true },
+    { key: 'name', label: 'Name', sortable: true, render: (val, row) => val || row.corporate_name || '-' },
+    { key: 'state', label: 'State', sortable: true },
+    { key: 'dealer', label: 'Dealer', sortable: true },
+    { key: 'segment', label: 'Segment', sortable: true },
+    { 
+      key: 'planned_followup_date', 
+      label: 'Follow-up', 
+      sortable: true,
+      render: (val, row) => {
+        if (!val) return '-';
+        const overdue = isFollowupOverdue(val);
+        const today = isFollowupToday(val);
+        return (
+          <div className="flex items-center gap-1">
+            {overdue && <AlertTriangle className="h-4 w-4 text-red-500" />}
+            {today && <Clock className="h-4 w-4 text-amber-500" />}
+            <span className={overdue ? 'text-red-600 font-medium' : today ? 'text-amber-600' : ''}>
+              {val}
+            </span>
+          </div>
+        );
+      }
+    },
+    { 
+      key: 'is_qualified', 
+      label: 'Qualified', 
+      sortable: true,
+      render: (val) => {
+        if (val === true) return <Badge className="bg-green-100 text-green-800 gap-1"><ShieldCheck className="h-3 w-3" /> Yes</Badge>;
+        if (val === false) return <Badge className="bg-red-100 text-red-800 gap-1"><ShieldX className="h-3 w-3" /> No</Badge>;
+        return <Badge variant="outline">-</Badge>;
+      }
+    },
+    { 
+      key: 'enquiry_stage', 
+      label: 'Stage', 
+      sortable: true,
+      render: (val) => getStatusBadge(val)
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      sortable: false,
+      filterable: false,
+      render: (_, row) => (
+        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="icon" onClick={() => handleViewLead(row)} title="View Details">
+            <Eye className="h-4 w-4 text-blue-600" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => openQualifyDialog(row)} title="Qualify Lead">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => handleEdit(row)} title="Edit Lead">
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => handleDelete(row.lead_id)} title="Delete Lead">
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
