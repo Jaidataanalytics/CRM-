@@ -1,46 +1,30 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: New Features Implementation
+## Latest Test: Bug Fixes
 **Date**: 2025-12-18
 **Status**: IN PROGRESS
 
-### Features Implemented
+### Fixes Implemented
 
-1. **Global Search** - ✅ WORKING
-   - Search bar in header ("Search leads, dealers, employees...")
-   - Live search results dropdown
-   - Click to navigate to lead
+1. **Default Date Filter** - Changed to current Indian FY (April 1, 2025)
+2. **Manage Leads Performance** - Implemented server-side pagination (50 rows default)
+3. **Notification Query Bug** - Fixed MongoDB query using $nin instead of multiple $ne
+4. **Follow-up Warning Logic** - Fixed to exclude closed stages (Closed-Won, Order Booked, etc.)
+5. **Scrollable Notifications** - Added max-height and flex layout
 
-2. **Notification Bell** - ✅ WORKING
-   - Shows count of pending follow-ups
-   - Dropdown with categorized notifications:
-     - Critical (Missed follow-ups - red)
-     - Warning (Due today - amber)
-     - Info (Upcoming - blue)
+### Testing Required
 
-3. **Interactive DataGrid** - ✅ WORKING
-   - Sortable columns (click header to sort)
-   - Filter row (toggle with "Filters" button)
-   - Individual column filters
-   - Pagination controls
-
-4. **Lead Detail Panel** - ✅ WORKING
-   - Opens on row click or View button
-   - Shows all lead information
-   - Follow-up overdue alert (red banner)
-   - Follow-up today alert (amber banner)
-   - Activity Timeline section
-
-5. **Branding Update** - ✅ WORKING
-   - Changed from "LeadForge" to "Sharda"
-   - New logo displayed
-
-6. **Date Filter Enhancement** - ✅ WORKING
-   - Month/Year dropdown selectors
-   - Dynamic current FY to today
+1. Verify default date starts from April 1, 2025 (current FY)
+2. Verify Manage Leads loads quickly (~1 second vs 11+ seconds before)
+3. Verify notifications API returns correct counts
+4. Verify "Closed-Won" and "Order Booked" leads do NOT show follow-up warnings
+5. Verify notification dropdown is scrollable
 
 ## Testing Protocol
 - Last updated: 2025-12-18
 
 ## Incorporate User Feedback
-- None pending
+- Manage lead page loads slow - FIXED
+- Won leads showing follow up due - FIXED
+- Default date from April 2023 should be April 2025 - FIXED
+- Notifications scrollable - FIXED
