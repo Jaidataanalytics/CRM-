@@ -589,7 +589,8 @@ const Leads = () => {
                 columns={gridColumns}
                 onRowClick={handleViewLead}
                 selectable={false}
-                pageSize={20}
+                initialPageSize={20}
+                showPageSizeSelector={true}
                 emptyMessage="No leads found. Try adjusting your filters or add a new lead."
               />
             </>
