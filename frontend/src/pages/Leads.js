@@ -581,93 +581,14 @@ const Leads = () => {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Enquiry No</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>State</TableHead>
-                    <TableHead>Dealer</TableHead>
-                    <TableHead>Segment</TableHead>
-                    <TableHead>Qualified</TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leads.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                        No leads found
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    leads.map((lead) => (
-                      <TableRow key={lead.lead_id}>
-                        <TableCell className="font-mono text-sm">{lead.enquiry_no || '-'}</TableCell>
-                        <TableCell>{lead.name || lead.corporate_name || '-'}</TableCell>
-                        <TableCell>{lead.state || '-'}</TableCell>
-                        <TableCell>{lead.dealer || '-'}</TableCell>
-                        <TableCell>{lead.segment || '-'}</TableCell>
-                        <TableCell>
-                          {lead.is_qualified === true && (
-                            <Badge className="bg-green-100 text-green-800 gap-1">
-                              <ShieldCheck className="h-3 w-3" /> Yes
-                            </Badge>
-                          )}
-                          {lead.is_qualified === false && (
-                            <Badge className="bg-red-100 text-red-800 gap-1">
-                              <ShieldX className="h-3 w-3" /> No
-                            </Badge>
-                          )}
-                          {lead.is_qualified === undefined && (
-                            <Badge variant="outline">-</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(lead.enquiry_stage)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openQualifyDialog(lead)} title="Qualify Lead">
-                              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(lead)} title="Edit Lead">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDelete(lead.lead_id)} title="Delete Lead">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-              
-              {/* Pagination */}
-              <div className="flex items-center justify-between p-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <DataGrid
+                data={leads}
+                columns={gridColumns}
+                onRowClick={handleViewLead}
+                selectable={false}
+                pageSize={20}
+                emptyMessage="No leads found. Try adjusting your filters or add a new lead."
+              />
             </>
           )}
         </CardContent>
