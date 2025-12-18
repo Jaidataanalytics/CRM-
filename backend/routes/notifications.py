@@ -210,6 +210,9 @@ async def get_notification_summary(
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     three_days = (datetime.now(timezone.utc) + timedelta(days=3)).strftime("%Y-%m-%d")
     
+    # Closed/Won stages that should NOT have follow-up reminders
+    CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
+    
     base_query = {}
     if current_user.role == UserRole.EMPLOYEE:
         base_query["employee_name"] = current_user.name
@@ -218,21 +221,21 @@ async def get_notification_summary(
     missed_count = await db.leads.count_documents({
         **base_query,
         "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""},
-        "enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}
+        "enquiry_stage": {"$nin": CLOSED_STAGES}
     })
     
     # Count today
     today_count = await db.leads.count_documents({
         **base_query,
         "planned_followup_date": today,
-        "enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}
+        "enquiry_stage": {"$nin": CLOSED_STAGES}
     })
     
     # Count upcoming
     upcoming_count = await db.leads.count_documents({
         **base_query,
         "planned_followup_date": {"$gt": today, "$lte": three_days},
-        "enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}
+        "enquiry_stage": {"$nin": CLOSED_STAGES}
     })
     
     return {
