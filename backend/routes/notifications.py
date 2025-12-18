@@ -163,37 +163,36 @@ async def dismiss_all_notifications(
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
-    """Dismiss all notifications for the current user"""
+    """Dismiss overdue notifications only (not upcoming)"""
     db = await get_db(request)
     body = await request.json()
-    notification_type = body.get("type", "all")  # "critical", "warning", "info", or "all"
+    notification_type = body.get("type", "overdue")  # "overdue" (default), "today", or "all"
     
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    three_days = (datetime.now(timezone.utc) + timedelta(days=3)).strftime("%Y-%m-%d")
     
     base_query = {"enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}}
     if current_user.role == UserRole.EMPLOYEE:
         base_query["employee_name"] = current_user.name
     
-    if notification_type == "critical":
-        # Clear all missed follow-ups
+    if notification_type == "overdue":
+        # Clear only overdue follow-ups (past dates) - DEFAULT behavior
         query = {**base_query, "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""}}
-    elif notification_type == "warning":
+    elif notification_type == "today":
         # Clear today's follow-ups
         query = {**base_query, "planned_followup_date": today}
-    elif notification_type == "info":
-        # Clear upcoming follow-ups
-        query = {**base_query, "planned_followup_date": {"$gt": today, "$lte": three_days}}
+    elif notification_type == "all":
+        # Clear all overdue + today (but NOT upcoming)
+        query = {**base_query, "planned_followup_date": {"$lte": today, "$ne": None, "$ne": ""}}
     else:
-        # Clear all
-        query = {**base_query, "planned_followup_date": {"$ne": None, "$ne": ""}}
+        # Default: only overdue
+        query = {**base_query, "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""}}
     
     result = await db.leads.update_many(
         query,
         {"$set": {"planned_followup_date": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
     
-    return {"message": f"Cleared {result.modified_count} notifications"}
+    return {"message": f"Cleared {result.modified_count} overdue follow-ups", "cleared_count": result.modified_count}
 
 
 @router.get("/summary")
