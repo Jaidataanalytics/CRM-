@@ -131,11 +131,17 @@ export const DataGrid = ({
   }, [data, filters, sortConfig]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredData.length / pageSize);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  const effectivePageSize = pageSize === 'All' ? filteredData.length : pageSize;
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / effectivePageSize));
+  const paginatedData = pageSize === 'All' 
+    ? filteredData 
+    : filteredData.slice((currentPage - 1) * effectivePageSize, currentPage * effectivePageSize);
+
+  // Handle page size change
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page
+  };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return <ChevronsUpDown className="h-4 w-4 opacity-50" />;
