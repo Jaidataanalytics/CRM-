@@ -298,22 +298,65 @@ const Admin = () => {
     
     setUploadingHistorical(true);
     setHistoricalUploadResult(null);
+    setUploadProgress({ progress: 0, message: 'Uploading file...', status: 'uploading' });
     
     const formData = new FormData();
     formData.append('file', file);
     
     try {
+      // Start upload with progress tracking
       const res = await axios.post(`${API}/admin/upload-historical-data`, formData, {
         withCredentials: true,
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 600000, // 10 minute timeout for large files
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress({ 
+            progress: Math.min(percentCompleted, 30), // Upload is 0-30%
+            message: `Uploading file... ${percentCompleted}%`, 
+            status: 'uploading' 
+          });
+        }
       });
+      
+      // If we have an upload_id, poll for processing progress
+      if (res.data.upload_id) {
+        const uploadId = res.data.upload_id;
+        let polling = true;
+        
+        while (polling) {
+          try {
+            const progressRes = await axios.get(`${API}/admin/upload-progress/${uploadId}`, { withCredentials: true });
+            const progressData = progressRes.data;
+            
+            if (progressData.status === 'complete' || progressData.status === 'not_found') {
+              polling = false;
+            } else {
+              // Processing progress is 30-100%
+              const adjustedProgress = 30 + (progressData.progress * 0.7);
+              setUploadProgress({
+                progress: Math.min(adjustedProgress, 99),
+                message: progressData.message || 'Processing...',
+                status: progressData.status
+              });
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          } catch (e) {
+            polling = false;
+          }
+        }
+      }
+      
+      setUploadProgress({ progress: 100, message: 'Complete!', status: 'complete' });
       setHistoricalUploadResult(res.data);
       toast.success(res.data.message || 'Historical data uploaded successfully');
       loadDataStats();
       loadData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to upload historical data');
-      setHistoricalUploadResult({ success: false, error: error.response?.data?.detail });
+      const errorMsg = error.response?.data?.detail || error.message || 'Failed to upload historical data';
+      toast.error(errorMsg);
+      setHistoricalUploadResult({ success: false, error: errorMsg });
+      setUploadProgress({ progress: 0, message: errorMsg, status: 'error' });
     } finally {
       setUploadingHistorical(false);
       event.target.value = '';
