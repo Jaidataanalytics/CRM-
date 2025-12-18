@@ -595,6 +595,8 @@ const Leads = () => {
                 selectable={false}
                 initialPageSize={pageSize}
                 showPageSizeSelector={false}
+                serverPagination={true}
+                totalRecords={totalLeads}
                 emptyMessage="No leads found. Try adjusting your filters or add a new lead."
               />
               
