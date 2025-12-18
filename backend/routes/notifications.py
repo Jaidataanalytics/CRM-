@@ -125,6 +125,77 @@ async def get_notifications(
     }
 
 
+@router.post("/dismiss")
+async def dismiss_notification(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Dismiss a notification by updating the lead's follow-up date"""
+    db = await get_db(request)
+    body = await request.json()
+    lead_id = body.get("lead_id")
+    action = body.get("action", "snooze")  # "snooze" or "clear"
+    
+    if not lead_id:
+        raise HTTPException(status_code=400, detail="lead_id is required")
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    if action == "clear":
+        # Clear by removing the follow-up date
+        await db.leads.update_one(
+            {"lead_id": lead_id},
+            {"$set": {"planned_followup_date": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    else:
+        # Snooze by setting follow-up to tomorrow
+        tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+        await db.leads.update_one(
+            {"lead_id": lead_id},
+            {"$set": {"planned_followup_date": tomorrow, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    return {"message": f"Notification {action}ed successfully"}
+
+
+@router.post("/dismiss-all")
+async def dismiss_all_notifications(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Dismiss all notifications for the current user"""
+    db = await get_db(request)
+    body = await request.json()
+    notification_type = body.get("type", "all")  # "critical", "warning", "info", or "all"
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    three_days = (datetime.now(timezone.utc) + timedelta(days=3)).strftime("%Y-%m-%d")
+    
+    base_query = {"enquiry_stage": {"$nin": ["Closed-Won", "Closed-Lost"]}}
+    if current_user.role == UserRole.EMPLOYEE:
+        base_query["employee_name"] = current_user.name
+    
+    if notification_type == "critical":
+        # Clear all missed follow-ups
+        query = {**base_query, "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""}}
+    elif notification_type == "warning":
+        # Clear today's follow-ups
+        query = {**base_query, "planned_followup_date": today}
+    elif notification_type == "info":
+        # Clear upcoming follow-ups
+        query = {**base_query, "planned_followup_date": {"$gt": today, "$lte": three_days}}
+    else:
+        # Clear all
+        query = {**base_query, "planned_followup_date": {"$ne": None, "$ne": ""}}
+    
+    result = await db.leads.update_many(
+        query,
+        {"$set": {"planned_followup_date": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    return {"message": f"Cleared {result.modified_count} notifications"}
+
+
 @router.get("/summary")
 async def get_notification_summary(
     request: Request,
