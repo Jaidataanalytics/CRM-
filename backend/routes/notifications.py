@@ -220,7 +220,7 @@ async def get_notification_summary(
     # Count missed
     missed_count = await db.leads.count_documents({
         **base_query,
-        "planned_followup_date": {"$lt": today, "$ne": None, "$ne": ""},
+        "planned_followup_date": {"$lt": today, "$nin": [None, "", "nan", "NaN"]},
         "enquiry_stage": {"$nin": CLOSED_STAGES}
     })
     
