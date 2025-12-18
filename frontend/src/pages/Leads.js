@@ -676,92 +676,150 @@ const Leads = () => {
           </SheetHeader>
           
           {selectedLead && (
-            <div className="mt-6 space-y-6">
-              {/* Follow-up Alert */}
+            <div className="mt-4 space-y-4">
+              {/* Follow-up Alerts */}
               {selectedLead.planned_followup_date && isFollowupOverdue(selectedLead.planned_followup_date) && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-800">
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-800">
                   <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                    <AlertTriangle className="h-5 w-5" />
-                    <span className="font-semibold">⚠️ FOLLOW-UP OVERDUE</span>
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-semibold text-sm">⚠️ FOLLOW-UP OVERDUE - {selectedLead.planned_followup_date}</span>
                   </div>
-                  <p className="text-sm text-red-600 mt-1 dark:text-red-300">
-                    Follow-up was scheduled for {selectedLead.planned_followup_date}
-                  </p>
                 </div>
               )}
               
               {selectedLead.planned_followup_date && isFollowupToday(selectedLead.planned_followup_date) && (
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800">
                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                    <Clock className="h-5 w-5" />
-                    <span className="font-semibold">📅 FOLLOW-UP TODAY</span>
+                    <Clock className="h-4 w-4" />
+                    <span className="font-semibold text-sm">📅 FOLLOW-UP TODAY</span>
                   </div>
-                  <p className="text-sm text-amber-600 mt-1 dark:text-amber-300">
-                    Don't forget to follow up with this lead today!
-                  </p>
                 </div>
               )}
 
-              {/* Lead Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Name</Label>
-                  <p className="font-medium">{selectedLead.name || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Enquiry No</Label>
-                  <p className="font-mono">{selectedLead.enquiry_no || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Phone</Label>
-                  <p>{selectedLead.phone_number || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Email</Label>
-                  <p>{selectedLead.email_address || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">State</Label>
-                  <p>{selectedLead.state || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Dealer</Label>
-                  <p>{selectedLead.dealer || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Segment</Label>
-                  <p>{selectedLead.segment || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Employee</Label>
-                  <p>{selectedLead.employee_name || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Stage</Label>
-                  <p>{getStatusBadge(selectedLead.enquiry_stage)}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">KVA</Label>
-                  <p>{selectedLead.kva || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Enquiry Date</Label>
-                  <p>{selectedLead.enquiry_date || '-'}</p>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Follow-up Date</Label>
-                  <p className={isFollowupOverdue(selectedLead.planned_followup_date) ? 'text-red-600 font-medium' : ''}>
-                    {selectedLead.planned_followup_date || '-'}
-                  </p>
+              {/* Key Info Banner */}
+              <div className="p-4 bg-primary/5 border rounded-lg">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Name</Label>
+                    <p className="font-semibold text-lg">{selectedLead.name || selectedLead.corporate_name || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Stage</Label>
+                    <p>{getStatusBadge(selectedLead.enquiry_stage)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Dealer</Label>
+                    <p className="font-medium">{selectedLead.dealer || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Employee</Label>
+                    <p className="font-medium">{selectedLead.employee_name || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Segment</Label>
+                    <p>{selectedLead.segment || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Enquiry Date</Label>
+                    <p>{selectedLead.enquiry_date || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Follow-up Date</Label>
+                    <p className={isFollowupOverdue(selectedLead.planned_followup_date) ? 'text-red-600 font-semibold' : ''}>
+                      {selectedLead.planned_followup_date || '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Enquiry Status</Label>
+                    <p>{selectedLead.enquiry_status || selectedLead.enquiry_type || '-'}</p>
+                  </div>
                 </div>
               </div>
 
-              {selectedLead.remarks && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Remarks</Label>
-                  <p className="text-sm mt-1 p-3 bg-muted rounded-lg">{selectedLead.remarks}</p>
-                </div>
-              )}
+              {/* Tabbed Content for All Details */}
+              <Tabs defaultValue="contact" className="w-full">
+                <TabsList className="grid w-full grid-cols-5 h-auto">
+                  <TabsTrigger value="contact" className="text-xs py-2">Contact</TabsTrigger>
+                  <TabsTrigger value="location" className="text-xs py-2">Location</TabsTrigger>
+                  <TabsTrigger value="product" className="text-xs py-2">Product</TabsTrigger>
+                  <TabsTrigger value="dates" className="text-xs py-2">Dates</TabsTrigger>
+                  <TabsTrigger value="other" className="text-xs py-2">Other</TabsTrigger>
+                </TabsList>
+
+                {/* Contact Info Tab */}
+                <TabsContent value="contact" className="mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Phone</Label><p className="text-sm">{selectedLead.phone_number || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Email</Label><p className="text-sm break-all">{selectedLead.email_address || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Customer Type</Label><p className="text-sm">{selectedLead.customer_type || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Corporate Name</Label><p className="text-sm">{selectedLead.corporate_name || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Referred By</Label><p className="text-sm">{selectedLead.referred_by || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Source</Label><p className="text-sm">{selectedLead.source || selectedLead.source_from || '-'}</p></div>
+                  </div>
+                </TabsContent>
+
+                {/* Location Tab */}
+                <TabsContent value="location" className="mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Zone</Label><p className="text-sm">{selectedLead.zone || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">State</Label><p className="text-sm">{selectedLead.state || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Area Office</Label><p className="text-sm">{selectedLead.area || selectedLead.office || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Branch</Label><p className="text-sm">{selectedLead.branch || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">District</Label><p className="text-sm">{selectedLead.district || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Tehsil</Label><p className="text-sm">{selectedLead.tehsil || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">City</Label><p className="text-sm">{selectedLead.city || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Pin Code</Label><p className="text-sm">{selectedLead.pincode || '-'}</p></div>
+                    <div className="col-span-2"><Label className="text-xs text-muted-foreground">Address</Label><p className="text-sm">{selectedLead.address || selectedLead.location || '-'}</p></div>
+                  </div>
+                </TabsContent>
+
+                {/* Product Tab */}
+                <TabsContent value="product" className="mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Product</Label><p className="text-sm">{selectedLead.product || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">KVA</Label><p className="text-sm">{selectedLead.kva || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Phase</Label><p className="text-sm">{selectedLead.phase || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Quantity</Label><p className="text-sm">{selectedLead.qty || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Sub Segment</Label><p className="text-sm">{selectedLead.sub_segment || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">DG Ownership</Label><p className="text-sm">{selectedLead.dg_ownership || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Expected Value</Label><p className="text-sm">{selectedLead.expected_value ? `₹${selectedLead.expected_value.toLocaleString()}` : '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Priority</Label><p className="text-sm">{selectedLead.priority || '-'}</p></div>
+                  </div>
+                </TabsContent>
+
+                {/* Dates Tab */}
+                <TabsContent value="dates" className="mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Enquiry No</Label><p className="text-sm font-mono">{selectedLead.enquiry_no || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Enquiry Date</Label><p className="text-sm">{selectedLead.enquiry_date || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">EO/PO Date</Label><p className="text-sm">{selectedLead.eo_po_date || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Planned Follow-up</Label><p className="text-sm">{selectedLead.planned_followup_date || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Last Follow-up</Label><p className="text-sm">{selectedLead.last_followup_date || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">No. of Follow-ups</Label><p className="text-sm">{selectedLead.no_of_followups || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Closure Date</Label><p className="text-sm">{selectedLead.enquiry_closure_date || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Created At</Label><p className="text-sm">{selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleDateString() : '-'}</p></div>
+                  </div>
+                </TabsContent>
+
+                {/* Other Tab */}
+                <TabsContent value="other" className="mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Employee Code</Label><p className="text-sm">{selectedLead.employee_code || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Employee Status</Label><p className="text-sm">{selectedLead.employee_status || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Enquiry Type</Label><p className="text-sm">{selectedLead.enquiry_type || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Enquiry Status</Label><p className="text-sm">{selectedLead.enquiry_status || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Events</Label><p className="text-sm">{selectedLead.events || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Created By</Label><p className="text-sm">{selectedLead.created_by || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">PAN No</Label><p className="text-sm">{selectedLead.pan_no || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Finance Required</Label><p className="text-sm">{selectedLead.finance_required || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Finance Company</Label><p className="text-sm">{selectedLead.finance_company || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Qualified</Label><p className="text-sm">{selectedLead.is_qualified === true ? 'Yes' : selectedLead.is_qualified === false ? 'No' : '-'}</p></div>
+                    <div className="col-span-2"><Label className="text-xs text-muted-foreground">Remarks</Label><p className="text-sm p-2 bg-muted rounded mt-1">{selectedLead.remarks || '-'}</p></div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <Separator />
 
               {/* Action Buttons */}
               <div className="flex gap-2">
