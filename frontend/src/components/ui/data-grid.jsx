@@ -271,11 +271,28 @@ export const DataGrid = ({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground">
-            Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length}
+            Showing {pageSize === 'All' ? filteredData.length : `${(currentPage - 1) * effectivePageSize + 1} to ${Math.min(currentPage * effectivePageSize, filteredData.length)}`} of {filteredData.length}
           </div>
+          {showPageSizeSelector && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Rows:</span>
+              <Select value={String(pageSize)} onValueChange={(v) => handlePageSizeChange(v === 'All' ? 'All' : Number(v))}>
+                <SelectTrigger className="h-8 w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map(size => (
+                    <SelectItem key={size} value={String(size)}>{size}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        {pageSize !== 'All' && totalPages > 1 && (
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
@@ -317,8 +334,8 @@ export const DataGrid = ({
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
