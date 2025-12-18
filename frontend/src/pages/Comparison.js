@@ -87,10 +87,10 @@ const Comparison = () => {
       
       // Load data in parallel but handle individual failures
       const [statesRes, dealersRes, areasRes, employeesRes, filtersRes] = await Promise.allSettled([
-        axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
-        axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
-        axios.get(`${API}/insights/top-performers?by=area&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
-        axios.get(`${API}/insights/top-performers?by=employee&metric=total&limit=100&${queryParams}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=area&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=employee&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/filters/all`, { withCredentials: true })
       ]);
       
