@@ -181,7 +181,9 @@ export const DataGrid = ({
           )}
         </div>
         <div className="text-sm text-muted-foreground">
-          {filteredData.length} of {data.length} records
+          {serverPagination 
+            ? `${data.length} of ${(totalRecords || data.length).toLocaleString()} records` 
+            : `${filteredData.length} of ${data.length} records`}
           {selectedRows.size > 0 && ` • ${selectedRows.size} selected`}
         </div>
       </div>
