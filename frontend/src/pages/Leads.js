@@ -78,6 +78,13 @@ const Leads = () => {
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [searchField, setSearchField] = useState('name');
+  
+  // Lead detail panel
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [showLeadDetail, setShowLeadDetail] = useState(false);
+  
+  // View mode - 'table' or 'grid'
+  const [viewMode, setViewMode] = useState('grid');
 
   useEffect(() => {
     loadLeads();
