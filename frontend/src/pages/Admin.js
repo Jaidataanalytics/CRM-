@@ -66,6 +66,7 @@ const Admin = () => {
   const [dataStats, setDataStats] = useState(null);
   const [uploadingHistorical, setUploadingHistorical] = useState(false);
   const [historicalUploadResult, setHistoricalUploadResult] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState({ progress: 0, message: '', status: '' });
   
   // Metric Settings state
   const [metricSettings, setMetricSettings] = useState(null);
