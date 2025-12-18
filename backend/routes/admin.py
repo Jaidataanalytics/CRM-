@@ -568,6 +568,17 @@ def parse_date(val):
     return None
 
 
+# Global upload progress tracking
+upload_progress = {}
+
+@router.get("/upload-progress/{upload_id}")
+async def get_upload_progress(upload_id: str):
+    """Get the progress of an ongoing upload"""
+    if upload_id in upload_progress:
+        return upload_progress[upload_id]
+    return {"status": "not_found", "progress": 0}
+
+
 @router.post("/upload-historical-data")
 async def upload_historical_data(
     request: Request,
@@ -575,25 +586,39 @@ async def upload_historical_data(
     current_user: User = Depends(require_roles(UserRole.ADMIN))
 ):
     """
-    Upload historical lead data. This will:
+    Upload historical lead data with batch processing for large files.
+    This will:
     1. Parse the Excel file to find the date range
     2. Delete all existing leads with enquiry_date up to the max date in the file
-    3. Insert all leads from the uploaded file
+    3. Insert all leads from the uploaded file in batches
     """
     db = await get_db(request)
     
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
     
+    # Generate upload ID for progress tracking
+    upload_id = f"upload_{uuid.uuid4().hex[:8]}"
+    upload_progress[upload_id] = {
+        "status": "reading_file",
+        "progress": 0,
+        "total": 0,
+        "processed": 0,
+        "message": "Reading Excel file..."
+    }
+    
     try:
         import pandas as pd
-        import uuid as uuid_module
         
         content = await file.read()
         df = pd.read_excel(io.BytesIO(content))
         
         if df.empty:
             raise HTTPException(status_code=400, detail="The uploaded file is empty")
+        
+        total_rows = len(df)
+        upload_progress[upload_id]["total"] = total_rows
+        upload_progress[upload_id]["message"] = f"Processing {total_rows} rows..."
         
         # Find the date column (try multiple variations)
         date_column = None
@@ -617,6 +642,9 @@ async def upload_historical_data(
             raise HTTPException(status_code=400, detail="No 'Enquiry Date' column found in file. Expected columns: Enquiry Date, enquiry_date, etc.")
         
         # Parse all dates and find min/max
+        upload_progress[upload_id]["status"] = "parsing_dates"
+        upload_progress[upload_id]["message"] = "Parsing dates..."
+        
         dates = []
         for val in df[date_column]:
             parsed = parse_date(val)
@@ -630,14 +658,22 @@ async def upload_historical_data(
         max_date = max(dates)
         
         # Delete existing leads within the date range (up to max date)
+        upload_progress[upload_id]["status"] = "deleting_old"
+        upload_progress[upload_id]["message"] = f"Deleting existing leads up to {max_date}..."
+        
         delete_result = await db.leads.delete_many({
             "enquiry_date": {"$lte": max_date}
         })
         deleted_count = delete_result.deleted_count
         
-        # Insert new leads
+        # Process and prepare lead documents in batches
+        upload_progress[upload_id]["status"] = "processing"
+        upload_progress[upload_id]["message"] = "Processing lead data..."
+        
+        BATCH_SIZE = 500
         created_count = 0
         errors = []
+        batch = []
         
         for idx, row in df.iterrows():
             try:
@@ -659,7 +695,7 @@ async def upload_historical_data(
                                     lead_data[db_field] = None
                             else:
                                 lead_data[db_field] = None
-                        elif db_field in ['qty', 'no_of_followups']:
+                        elif db_field in ['qty', 'no_of_followups', 'expected_value']:
                             cleaned = clean_value(val)
                             if cleaned is not None:
                                 try:
@@ -670,27 +706,47 @@ async def upload_historical_data(
                                 lead_data[db_field] = None
                         else:
                             cleaned = clean_value(val)
-                            # Convert to string if not None to avoid type issues
                             if cleaned is not None:
                                 lead_data[db_field] = str(cleaned) if not isinstance(cleaned, str) else cleaned
                             else:
                                 lead_data[db_field] = None
                 
-                # Create lead document directly without Pydantic validation to avoid issues
-                import uuid as uuid_mod
+                # Create lead document
                 lead_doc = {
-                    "lead_id": f"lead_{uuid_mod.uuid4().hex[:12]}",
+                    "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                     **lead_data,
                     "created_at": datetime.now(timezone.utc).isoformat(),
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
-                await db.leads.insert_one(lead_doc)
-                created_count += 1
+                batch.append(lead_doc)
+                
+                # Insert batch when full
+                if len(batch) >= BATCH_SIZE:
+                    await db.leads.insert_many(batch)
+                    created_count += len(batch)
+                    batch = []
+                    
+                    # Update progress
+                    progress = int((idx + 1) / total_rows * 100)
+                    upload_progress[upload_id]["progress"] = progress
+                    upload_progress[upload_id]["processed"] = idx + 1
+                    upload_progress[upload_id]["message"] = f"Inserted {created_count} of {total_rows} leads ({progress}%)"
                     
             except Exception as e:
                 logger.error(f"Row {idx + 2} error: {e}")
-                errors.append({"row": idx + 2, "error": str(e)})
+                if len(errors) < 100:  # Limit error collection
+                    errors.append({"row": idx + 2, "error": str(e)})
                 continue
+        
+        # Insert remaining batch
+        if batch:
+            await db.leads.insert_many(batch)
+            created_count += len(batch)
+        
+        upload_progress[upload_id]["status"] = "complete"
+        upload_progress[upload_id]["progress"] = 100
+        upload_progress[upload_id]["processed"] = total_rows
+        upload_progress[upload_id]["message"] = f"Completed! Inserted {created_count} leads"
         
         # Log activity
         activity = ActivityLog(
@@ -709,8 +765,17 @@ async def upload_historical_data(
         activity_doc["created_at"] = activity_doc["created_at"].isoformat()
         await db.activity_logs.insert_one(activity_doc)
         
+        # Clean up progress after a delay (keep for 5 minutes)
+        import asyncio
+        async def cleanup_progress():
+            await asyncio.sleep(300)
+            if upload_id in upload_progress:
+                del upload_progress[upload_id]
+        asyncio.create_task(cleanup_progress())
+        
         return {
             "success": True,
+            "upload_id": upload_id,
             "date_range": {"min": min_date, "max": max_date},
             "deleted": deleted_count,
             "created": created_count,
