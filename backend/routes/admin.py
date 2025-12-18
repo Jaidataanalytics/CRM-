@@ -29,6 +29,113 @@ async def get_users(
     return [UserResponse(**u) for u in users]
 
 
+@router.post("/users")
+async def create_user(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Create a new user (Admin only)"""
+    db = await get_db(request)
+    body = await request.json()
+    
+    # Validate required fields
+    if not body.get("email") or not body.get("name"):
+        raise HTTPException(status_code=400, detail="Email and name are required")
+    
+    if not body.get("password") and not body.get("google_id"):
+        raise HTTPException(status_code=400, detail="Password is required for non-Google users")
+    
+    # Check if email already exists
+    existing = await db.users.find_one({"email": body.get("email")})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Check if username already exists
+    if body.get("username"):
+        existing_username = await db.users.find_one({"username": body.get("username")})
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Username already taken")
+    
+    # Create user
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    
+    user_data = {
+        "user_id": f"user_{uuid.uuid4().hex[:12]}",
+        "email": body.get("email"),
+        "name": body.get("name"),
+        "username": body.get("username", body.get("email").split("@")[0]),
+        "role": body.get("role", "Employee"),
+        "is_active": True,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if body.get("password"):
+        user_data["password_hash"] = pwd_context.hash(body.get("password"))
+    
+    if body.get("google_id"):
+        user_data["google_id"] = body.get("google_id")
+    
+    if body.get("picture"):
+        user_data["picture"] = body.get("picture")
+    
+    await db.users.insert_one(user_data)
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="create_user",
+        resource_type="user",
+        resource_id=user_data["user_id"],
+        details={"email": user_data["email"], "role": user_data["role"]}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {
+        "message": "User created successfully",
+        "user_id": user_data["user_id"],
+        "email": user_data["email"],
+        "name": user_data["name"],
+        "role": user_data["role"]
+    }
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Delete a user (Admin only)"""
+    db = await get_db(request)
+    
+    # Prevent self-deletion
+    if user_id == current_user.user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete yourself")
+    
+    result = await db.users.delete_one({"user_id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="delete_user",
+        resource_type="user",
+        resource_id=user_id,
+        details={}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {"message": "User deleted successfully"}
+
+
 @router.put("/users/{user_id}/role")
 async def update_user_role(
     user_id: str,
