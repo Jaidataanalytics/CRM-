@@ -233,6 +233,37 @@ const Admin = () => {
     }
   };
 
+  // User management functions
+  const createUser = async () => {
+    if (!newUser.name || !newUser.email || !newUser.password) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    setCreatingUser(true);
+    try {
+      await axios.post(`${API}/admin/users`, newUser, { withCredentials: true });
+      toast.success('User created successfully');
+      setShowAddUser(false);
+      setNewUser({ name: '', email: '', username: '', password: '', role: 'Employee' });
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create user');
+    } finally {
+      setCreatingUser(false);
+    }
+  };
+
+  const deleteUser = async (userId, userName) => {
+    if (!window.confirm(`Delete user "${userName}"? This action cannot be undone.`)) return;
+    try {
+      await axios.delete(`${API}/admin/users/${userId}`, { withCredentials: true });
+      toast.success('User deleted successfully');
+      loadData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete user');
+    }
+  };
+
   const toggleMetricDashboard = async (metric) => {
     try {
       await axios.put(`${API}/metric-settings/${metric.metric_id}`, 
