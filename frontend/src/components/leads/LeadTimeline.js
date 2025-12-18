@@ -56,7 +56,7 @@ export const LeadTimeline = ({ leadId, className }) => {
   const loadActivities = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/lead-activity/${leadId}`, { withCredentials: true });
+      const res = await axios.get(`${API}/lead-activities/${leadId}`, { withCredentials: true });
       setActivities(res.data.activities || []);
     } catch (err) {
       console.error('Failed to load activities:', err);
