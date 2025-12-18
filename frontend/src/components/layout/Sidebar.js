@@ -37,6 +37,22 @@ export const Sidebar = () => {
   const { user, logout, hasRole } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+  const [overdueCount, setOverdueCount] = useState(0);
+
+  // Fetch overdue count
+  useEffect(() => {
+    const fetchOverdueCount = async () => {
+      try {
+        const res = await axios.get(`${API}/notifications/summary`, { withCredentials: true });
+        setOverdueCount(res.data.critical + res.data.warning);
+      } catch (err) {
+        console.error('Failed to fetch overdue count');
+      }
+    };
+    fetchOverdueCount();
+    const interval = setInterval(fetchOverdueCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
