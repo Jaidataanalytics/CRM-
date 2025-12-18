@@ -91,13 +91,14 @@ const Leads = () => {
 
   useEffect(() => {
     loadLeads();
-  }, [page, buildQueryParams, searchQuery, searchField]);
+  }, [buildQueryParams, searchQuery, searchField]);
 
   const loadLeads = async () => {
     setLoading(true);
     try {
       const queryParams = buildQueryParams();
-      let url = `${API}/leads?${queryParams}&page=${page}&limit=20`;
+      // Load all records matching the filter - DataGrid handles pagination
+      let url = `${API}/leads?${queryParams}&limit=5000`;
       
       // Add search params
       if (searchQuery.trim()) {
