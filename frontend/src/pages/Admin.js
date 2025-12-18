@@ -1299,7 +1299,7 @@ const Admin = () => {
                   <Label htmlFor="historical-upload" className="cursor-pointer">
                     <span className="text-primary hover:underline">Click to upload</span> or drag and drop
                   </Label>
-                  <p className="text-sm text-muted-foreground">Excel files only (.xlsx, .xls)</p>
+                  <p className="text-sm text-muted-foreground">Excel files only (.xlsx, .xls) - Supports up to 50,000 rows</p>
                   <Input
                     id="historical-upload"
                     type="file"
@@ -1314,10 +1314,29 @@ const Admin = () => {
                     disabled={uploadingHistorical}
                     className="mt-2"
                   >
-                    {uploadingHistorical ? 'Uploading...' : 'Select File'}
+                    {uploadingHistorical ? 'Processing...' : 'Select File'}
                   </Button>
                 </div>
               </div>
+              
+              {/* Progress Bar */}
+              {uploadingHistorical && (
+                <div className="space-y-2 p-4 bg-muted rounded-lg">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{uploadProgress.message || 'Processing...'}</span>
+                    <span className="text-muted-foreground">{uploadProgress.progress}%</span>
+                  </div>
+                  <Progress value={uploadProgress.progress} className="h-3" />
+                  <p className="text-xs text-muted-foreground">
+                    {uploadProgress.status === 'uploading' && 'Uploading file to server...'}
+                    {uploadProgress.status === 'reading_file' && 'Reading Excel file...'}
+                    {uploadProgress.status === 'parsing_dates' && 'Parsing date fields...'}
+                    {uploadProgress.status === 'deleting_old' && 'Removing old records...'}
+                    {uploadProgress.status === 'processing' && 'Inserting new records in batches...'}
+                    {uploadProgress.status === 'complete' && 'Upload complete!'}
+                  </p>
+                </div>
+              )}
 
               {/* Upload Result */}
               {historicalUploadResult && (
