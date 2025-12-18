@@ -68,12 +68,12 @@ const Login = () => {
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
             <img 
-              src="https://images.unsplash.com/photo-1628760584600-6c31148991e9?crop=entropy&cs=srgb&fm=jpg&w=64&h=64&fit=crop" 
-              alt="Logo"
-              className="w-10 h-10 rounded-full object-cover"
+              src="/sharda-logo.png" 
+              alt="Sharda Logo"
+              className="w-16 h-16 object-contain"
             />
           </div>
-          <CardTitle className="font-heading text-2xl">LeadForge</CardTitle>
+          <CardTitle className="font-heading text-2xl">Sharda</CardTitle>
           <CardDescription className="text-base">
             Lead Management Dashboard
           </CardDescription>

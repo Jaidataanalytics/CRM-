@@ -50,7 +50,10 @@ export const Sidebar = () => {
       {/* Logo */}
       <div className="flex items-center justify-between p-4 border-b border-slate-700">
         {!collapsed && (
-          <h1 className="font-heading font-bold text-lg">LeadForge</h1>
+          <div className="flex items-center gap-2">
+            <img src="/sharda-logo.png" alt="Sharda" className="w-8 h-8 object-contain" />
+            <h1 className="font-heading font-bold text-lg">Sharda</h1>
+          </div>
         )}
         <Button 
           variant="ghost" 
