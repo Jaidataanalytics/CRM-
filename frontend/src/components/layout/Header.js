@@ -199,8 +199,8 @@ export const Header = () => {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[420px] p-0" align="end">
-          <div className="p-4 border-b">
+        <PopoverContent className="w-[420px] p-0 max-h-[80vh] flex flex-col" align="end">
+          <div className="p-4 border-b shrink-0">
             <h4 className="font-semibold flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Follow-up Notifications
@@ -220,7 +220,7 @@ export const Header = () => {
               )}
             </div>
           </div>
-          <ScrollArea className="max-h-[400px]">
+          <ScrollArea className="flex-1 overflow-auto" style={{ maxHeight: '400px' }}>
             {/* OVERDUE SECTION */}
             {notifications.filter(n => n.type === 'critical' || n.type === 'warning').length > 0 && (
               <div>
