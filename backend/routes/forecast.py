@@ -237,13 +237,11 @@ By Employee ({len(employee_list)} employees): {', '.join([f"{d['name']}: {d['cou
             avg_closures = sum([d['won'] for d in historical_data]) // len(historical_data) if historical_data else 150
             
             # Generate predictions for each month
-            from datetime import datetime
+            from dateutil.relativedelta import relativedelta
             predictions = []
-            base_date = datetime.now()
+            base_date = datetime.now(timezone.utc)
             for i in range(horizon):
-                month_date = datetime(base_date.year, base_date.month + i + 1 if base_date.month + i < 12 else (base_date.month + i) % 12 + 1, 1)
-                if base_date.month + i >= 12:
-                    month_date = datetime(base_date.year + 1, (base_date.month + i) % 12 + 1, 1)
+                month_date = base_date + relativedelta(months=i+1)
                 predictions.append({
                     "month": month_date.strftime("%Y-%m"),
                     "predicted_enquiries": int(avg_enquiries * (1 + 0.05 * i)),
