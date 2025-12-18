@@ -34,7 +34,7 @@ async def get_leads(
     search: Optional[str] = None,
     search_field: Optional[str] = None,
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=500)
+    limit: int = Query(50, ge=1, le=10000)
 ):
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
