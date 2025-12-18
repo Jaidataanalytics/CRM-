@@ -658,6 +658,126 @@ const Leads = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Lead Detail Sheet */}
+      <Sheet open={showLeadDetail} onOpenChange={setShowLeadDetail}>
+        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Lead Details
+            </SheetTitle>
+            <SheetDescription>
+              {selectedLead?.name || selectedLead?.enquiry_no}
+            </SheetDescription>
+          </SheetHeader>
+          
+          {selectedLead && (
+            <div className="mt-6 space-y-6">
+              {/* Follow-up Alert */}
+              {selectedLead.planned_followup_date && isFollowupOverdue(selectedLead.planned_followup_date) && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-800">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-semibold">⚠️ FOLLOW-UP OVERDUE</span>
+                  </div>
+                  <p className="text-sm text-red-600 mt-1 dark:text-red-300">
+                    Follow-up was scheduled for {selectedLead.planned_followup_date}
+                  </p>
+                </div>
+              )}
+              
+              {selectedLead.planned_followup_date && isFollowupToday(selectedLead.planned_followup_date) && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                    <Clock className="h-5 w-5" />
+                    <span className="font-semibold">📅 FOLLOW-UP TODAY</span>
+                  </div>
+                  <p className="text-sm text-amber-600 mt-1 dark:text-amber-300">
+                    Don't forget to follow up with this lead today!
+                  </p>
+                </div>
+              )}
+
+              {/* Lead Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Name</Label>
+                  <p className="font-medium">{selectedLead.name || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Enquiry No</Label>
+                  <p className="font-mono">{selectedLead.enquiry_no || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Phone</Label>
+                  <p>{selectedLead.phone_number || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Email</Label>
+                  <p>{selectedLead.email_address || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">State</Label>
+                  <p>{selectedLead.state || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Dealer</Label>
+                  <p>{selectedLead.dealer || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Segment</Label>
+                  <p>{selectedLead.segment || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Employee</Label>
+                  <p>{selectedLead.employee_name || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Stage</Label>
+                  <p>{getStatusBadge(selectedLead.enquiry_stage)}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">KVA</Label>
+                  <p>{selectedLead.kva || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Enquiry Date</Label>
+                  <p>{selectedLead.enquiry_date || '-'}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Follow-up Date</Label>
+                  <p className={isFollowupOverdue(selectedLead.planned_followup_date) ? 'text-red-600 font-medium' : ''}>
+                    {selectedLead.planned_followup_date || '-'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedLead.remarks && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Remarks</Label>
+                  <p className="text-sm mt-1 p-3 bg-muted rounded-lg">{selectedLead.remarks}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button onClick={() => { handleEdit(selectedLead); setShowLeadDetail(false); }} className="flex-1">
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Lead
+                </Button>
+                <Button variant="outline" onClick={() => { openQualifyDialog(selectedLead); setShowLeadDetail(false); }}>
+                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  Qualify
+                </Button>
+              </div>
+
+              {/* Activity Timeline */}
+              <LeadTimeline leadId={selectedLead.lead_id} />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
