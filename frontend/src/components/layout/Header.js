@@ -316,38 +316,18 @@ export const Header = () => {
               </div>
             )}
           </ScrollArea>
-          {notifications.length > 0 && (
-            <div className="p-2 border-t space-y-1">
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={async () => {
-                  if (window.confirm('Clear ALL notifications? This will remove follow-up dates from leads.')) {
-                    try {
-                      await axios.post(`${API}/notifications/dismiss-all`, { type: 'all' }, { withCredentials: true });
-                      fetchNotifications();
-                      fetchNotificationCounts();
-                    } catch (err) {
-                      console.error('Failed to clear notifications:', err);
-                    }
-                  }
-                }}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Clear All Notifications
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => {
-                  setNotifOpen(false);
-                  navigate('/leads');
-                }}
-              >
-                View All Leads
-              </Button>
-            </div>
-          )}
+          <div className="p-2 border-t">
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => {
+                setNotifOpen(false);
+                navigate('/leads');
+              }}
+            >
+              View All Leads
+            </Button>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
