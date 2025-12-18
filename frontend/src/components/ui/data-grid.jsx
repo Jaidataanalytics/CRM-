@@ -34,7 +34,9 @@ export const DataGrid = ({
   initialPageSize = 20,
   className,
   emptyMessage = "No data available",
-  showPageSizeSelector = true
+  showPageSizeSelector = true,
+  serverPagination = false,
+  totalRecords = null
 }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [filters, setFilters] = useState({});
