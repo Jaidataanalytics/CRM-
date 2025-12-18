@@ -12,11 +12,16 @@ import {
   Settings,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'KPIs', roles: ['Admin', 'Manager', 'Employee'] },
