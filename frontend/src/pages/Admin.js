@@ -83,6 +83,17 @@ const Admin = () => {
     show_on_dashboard: true
   });
 
+  // Add User state
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    username: '',
+    password: '',
+    role: 'Employee'
+  });
+  const [creatingUser, setCreatingUser] = useState(false);
+
   useEffect(() => {
     loadData();
     loadDataStats();
