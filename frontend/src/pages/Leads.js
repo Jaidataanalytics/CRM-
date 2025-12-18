@@ -66,6 +66,8 @@ const Leads = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalLeads, setTotalLeads] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [formData, setFormData] = useState(initialFormData);
@@ -92,10 +94,6 @@ const Leads = () => {
   useEffect(() => {
     loadLeads();
   }, [buildQueryParams, searchQuery, searchField, page, pageSize]);
-
-  // Page size for server-side pagination
-  const [pageSize, setPageSize] = useState(50);
-  const [totalLeads, setTotalLeads] = useState(0);
 
   const loadLeads = async () => {
     setLoading(true);
