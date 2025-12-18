@@ -198,62 +198,121 @@ export const Header = () => {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-96 p-0" align="end">
+        <PopoverContent className="w-[420px] p-0" align="end">
           <div className="p-4 border-b">
             <h4 className="font-semibold flex items-center gap-2">
               <Bell className="h-4 w-4" />
               Follow-up Notifications
             </h4>
-            <div className="flex gap-2 mt-2">
-              {notifCounts.critical > 0 && (
-                <Badge variant="destructive">{notifCounts.critical} Missed</Badge>
-              )}
-              {notifCounts.warning > 0 && (
-                <Badge className="bg-amber-500">{notifCounts.warning} Today</Badge>
+            <div className="flex gap-2 mt-2 flex-wrap">
+              {(notifCounts.critical > 0 || notifCounts.warning > 0) && (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {notifCounts.critical + notifCounts.warning} Overdue
+                </Badge>
               )}
               {notifCounts.info > 0 && (
-                <Badge variant="secondary">{notifCounts.info} Upcoming</Badge>
+                <Badge variant="outline" className="gap-1">
+                  <Clock className="h-3 w-3" />
+                  {notifCounts.info} Upcoming
+                </Badge>
               )}
             </div>
           </div>
-          <ScrollArea className="max-h-96">
-            {notifications.length > 0 ? (
-              <div className="divide-y">
-                {notifications.map((notif) => (
-                  <button
-                    key={notif.id}
-                    onClick={() => handleNotificationClick(notif)}
-                    className={cn(
-                      "w-full p-3 text-left hover:bg-muted/50 transition-colors border-l-4",
-                      notif.type === 'critical' && "border-l-red-500 bg-red-50/50 dark:bg-red-950/10",
-                      notif.type === 'warning' && "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/10",
-                      notif.type === 'info' && "border-l-blue-500"
-                    )}
+          <ScrollArea className="max-h-[400px]">
+            {/* OVERDUE SECTION */}
+            {notifications.filter(n => n.type === 'critical' || n.type === 'warning').length > 0 && (
+              <div>
+                <div className="px-4 py-2 bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-900 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-red-700 dark:text-red-400 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    OVERDUE FOLLOW-UPS
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-red-600 hover:text-red-700 hover:bg-red-100"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Clear all overdue follow-ups? This will remove follow-up dates from these leads.')) {
+                        try {
+                          const res = await axios.post(`${API}/notifications/dismiss-all`, { type: 'overdue' }, { withCredentials: true });
+                          toast.success(res.data.message);
+                          fetchNotifications();
+                          fetchNotificationCounts();
+                        } catch (err) {
+                          toast.error('Failed to clear notifications');
+                        }
+                      }
+                    }}
                   >
-                    <div className="flex items-start gap-3">
-                      {getNotificationIcon(notif.type)}
-                      <div className="flex-1 min-w-0">
-                        <div className={cn(
-                          "font-medium text-sm",
-                          notif.type === 'critical' && "text-red-700 dark:text-red-400"
-                        )}>
-                          {notif.title}
-                        </div>
-                        <div className="text-sm text-muted-foreground truncate">
-                          {notif.message}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {notif.dealer} • {notif.followup_date}
+                    Clear Overdue
+                  </Button>
+                </div>
+                <div className="divide-y">
+                  {notifications.filter(n => n.type === 'critical' || n.type === 'warning').slice(0, 10).map((notif) => (
+                    <button
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className="w-full p-3 text-left hover:bg-red-50/50 dark:hover:bg-red-950/20 transition-colors border-l-4 border-l-red-500 bg-red-50/30 dark:bg-red-950/10"
+                    >
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-red-700 dark:text-red-400">
+                            {notif.type === 'warning' ? '📅 Due TODAY' : `⚠️ ${notif.days_overdue} days overdue`}
+                          </div>
+                          <div className="text-sm truncate">{notif.lead_name || 'Unknown'}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {notif.dealer} • {notif.followup_date}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </div>
               </div>
-            ) : (
+            )}
+
+            {/* UPCOMING SECTION */}
+            {notifications.filter(n => n.type === 'info').length > 0 && (
+              <div>
+                <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border-b border-t border-blue-200 dark:border-blue-900">
+                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    UPCOMING FOLLOW-UPS
+                  </span>
+                </div>
+                <div className="divide-y">
+                  {notifications.filter(n => n.type === 'info').slice(0, 10).map((notif) => (
+                    <button
+                      key={notif.id}
+                      onClick={() => handleNotificationClick(notif)}
+                      className="w-full p-3 text-left hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors border-l-4 border-l-blue-500"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-4 w-4 text-blue-500 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-blue-700 dark:text-blue-400">
+                            In {notif.days_until} day{notif.days_until !== 1 ? 's' : ''}
+                          </div>
+                          <div className="text-sm truncate">{notif.lead_name || 'Unknown'}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {notif.dealer} • {notif.followup_date}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {notifications.length === 0 && (
               <div className="p-8 text-center text-muted-foreground">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>No pending follow-ups</p>
+                <p className="text-xs mt-1">Closed leads are excluded</p>
               </div>
             )}
           </ScrollArea>
