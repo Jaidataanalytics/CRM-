@@ -5,21 +5,37 @@ import { DayPicker } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  captionLayout = "dropdown-buttons",
+  fromYear = 2018,
+  toYear = new Date().getFullYear() + 1,
   ...props
 }) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      captionLayout={captionLayout}
+      fromYear={fromYear}
+      toYear={toYear}
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption: "flex justify-center pt-1 relative items-center gap-1",
+        caption_label: "text-sm font-medium hidden",
+        caption_dropdowns: "flex gap-1",
+        dropdown_month: "relative inline-flex",
+        dropdown_year: "relative inline-flex",
+        dropdown: "absolute inset-0 w-full appearance-none opacity-0 cursor-pointer z-10",
+        vhidden: "hidden",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -62,6 +78,23 @@ function Calendar({
         IconRight: ({ className, ...props }) => (
           <ChevronRight className={cn("h-4 w-4", className)} {...props} />
         ),
+        Dropdown: ({ value, onChange, children, ...props }) => {
+          const options = React.Children.toArray(children);
+          const selected = options.find((child) => child.props.value === value);
+          return (
+            <div className="relative">
+              <select
+                value={value}
+                onChange={onChange}
+                className="h-8 px-2 pr-6 text-sm font-medium bg-background border border-input rounded-md appearance-none cursor-pointer hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+                {...props}
+              >
+                {children}
+              </select>
+              <ChevronRight className="absolute right-1 top-1/2 -translate-y-1/2 h-4 w-4 rotate-90 opacity-50 pointer-events-none" />
+            </div>
+          );
+        },
       }}
       {...props} />
   );
