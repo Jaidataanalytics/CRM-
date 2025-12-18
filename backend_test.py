@@ -295,6 +295,19 @@ class LeadManagementAPITester:
         else:
             print(f"⚠️  Test file not found: {test_file_path}")
 
+    def test_notifications_endpoints(self):
+        """Test notification endpoints for follow-up alerts"""
+        print("\n=== NOTIFICATIONS TESTS ===")
+        
+        # Test get notifications summary (for badge count)
+        self.run_test("Get Notification Summary", "GET", "notifications/summary", 200)
+        
+        # Test get full notifications list
+        self.run_test("Get Notifications", "GET", "notifications", 200)
+        
+        # Test notifications with limit
+        self.run_test("Get Notifications with Limit", "GET", "notifications?limit=5", 200)
+
     def test_admin_endpoints(self):
         """Test admin endpoints (Admin role required)"""
         print("\n=== ADMIN TESTS ===")
