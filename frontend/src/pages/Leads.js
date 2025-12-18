@@ -283,15 +283,20 @@ const Leads = () => {
     setShowLeadDetail(true);
   };
 
-  // Check if follow-up is overdue
-  const isFollowupOverdue = (date) => {
+  // Closed stages that should NOT show follow-up warnings
+  const CLOSED_STAGES = ['Closed-Won', 'Closed-Lost', 'Closed-Dropped', 'Order Booked', 'Won', 'Lost'];
+
+  // Check if follow-up is overdue (only for open leads)
+  const isFollowupOverdue = (date, stage) => {
     if (!date) return false;
+    if (stage && CLOSED_STAGES.includes(stage)) return false; // Don't show warning for closed leads
     const today = new Date().toISOString().split('T')[0];
     return date < today;
   };
 
-  const isFollowupToday = (date) => {
+  const isFollowupToday = (date, stage) => {
     if (!date) return false;
+    if (stage && CLOSED_STAGES.includes(stage)) return false; // Don't show warning for closed leads
     const today = new Date().toISOString().split('T')[0];
     return date === today;
   };
