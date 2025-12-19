@@ -266,6 +266,9 @@ const Charts = () => {
             case 'lost':
               values = segRes.data.segments?.map(s => s.lost_leads) || [];
               break;
+            case 'open':
+              values = segRes.data.segments?.map(s => s.open_leads) || [];
+              break;
             case 'hot':
               values = segRes.data.segments?.map(s => s.hot_leads) || [];
               break;
