@@ -151,6 +151,59 @@ const Leads = () => {
     setPage(1);
   };
 
+  // Export leads to Excel
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const queryParams = buildQueryParams();
+      const response = await axios.get(`${API}/leads/export?${queryParams}&format=xlsx`, {
+        withCredentials: true,
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0,10)}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Export downloaded successfully');
+    } catch (error) {
+      console.error('Error exporting leads:', error);
+      toast.error('Failed to export leads');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Download template for bulk upload
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await axios.get(`${API}/leads/template`, {
+        withCredentials: true,
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'lead_upload_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Template downloaded');
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      toast.error('Failed to download template');
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
