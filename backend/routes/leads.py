@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request, Depends, Query
+from fastapi.responses import StreamingResponse
 from typing import Optional, List
 from datetime import datetime, timezone
 import logging
+import io
 
 from models.lead import Lead, LeadCreate, LeadUpdate, LeadResponse
 from models.user import User, UserRole
