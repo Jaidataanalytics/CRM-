@@ -128,6 +128,15 @@ class LeadManagementAPITester:
         
         # Test get leads with filters
         self.run_test("Get Leads with State Filter", "GET", "leads?state=Maharashtra&page=1&limit=5", 200)
+        
+        # Test NEW FEATURE: dropdown options endpoint
+        self.run_test("Get Dropdown Options", "GET", "leads/dropdown-options", 200)
+        
+        # Test NEW FEATURE: export leads to Excel
+        self.run_test("Export Leads to Excel", "GET", "leads/export?format=xlsx", 200)
+        
+        # Test NEW FEATURE: download template
+        self.run_test("Download Lead Template", "GET", "leads/template", 200)
 
     def test_filter_endpoints(self):
         """Test filter endpoints"""
