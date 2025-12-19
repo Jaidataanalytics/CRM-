@@ -19,7 +19,7 @@ async def get_top_performers(
     request: Request,
     current_user: User = Depends(get_current_user),
     by: str = Query("employee", enum=["employee", "dealer", "state", "area"]),
-    metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva"]),
+    metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva", "open", "lost"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = Query(10, ge=1, le=50)
