@@ -39,6 +39,9 @@ async def get_top_performers(
         "area": "$area"
     }.get(by, "$employee_name")
     
+    # Open stages - leads still being worked on
+    OPEN_STAGES = ["Prospecting", "Qualified", "Proposal", "Negotiation"]
+    
     pipeline = [
         {"$match": base_match},
         {
@@ -46,10 +49,13 @@ async def get_top_performers(
                 "_id": group_field,
                 "total_leads": {"$sum": 1},
                 "won_leads": {
-                    "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}
                 },
                 "lost_leads": {
-                    "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Lost"]}, 1, 0]}
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}
+                },
+                "open_leads": {
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", OPEN_STAGES]}, 1, 0]}
                 },
                 "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
             }
