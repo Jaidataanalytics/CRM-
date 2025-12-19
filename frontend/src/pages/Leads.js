@@ -94,10 +94,27 @@ const Leads = () => {
   
   // View mode - 'table' or 'grid'
   const [viewMode, setViewMode] = useState('grid');
+  
+  // Dropdown options for form fields
+  const [dropdownOptions, setDropdownOptions] = useState({});
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadLeads();
   }, [buildQueryParams, searchQuery, searchField, page, pageSize]);
+
+  // Load dropdown options on mount
+  useEffect(() => {
+    const loadDropdownOptions = async () => {
+      try {
+        const res = await axios.get(`${API}/leads/dropdown-options`, { withCredentials: true });
+        setDropdownOptions(res.data);
+      } catch (error) {
+        console.error('Error loading dropdown options:', error);
+      }
+    };
+    loadDropdownOptions();
+  }, []);
 
   const loadLeads = async () => {
     setLoading(true);
