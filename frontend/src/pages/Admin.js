@@ -907,47 +907,122 @@ const Admin = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-2">
-                    <div className="mb-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Field: <code className="bg-muted px-1 rounded">{metric.field_name}</code>
-                      </span>
+                    {/* Type badge */}
+                    <div className="mb-3 flex items-center gap-2">
+                      <Badge variant={metric.metric_type === 'formula' ? 'default' : metric.metric_type === 'calculated' ? 'secondary' : 'outline'}>
+                        {metric.metric_type || 'count'}
+                      </Badge>
+                      {metric.unit && <span className="text-xs text-muted-foreground">Unit: {metric.unit}</span>}
                     </div>
-                    <div className="space-y-2">
-                      {availableFields[metric.field_name]?.map((value) => {
-                        const isSelected = metric.field_values?.includes(value);
-                        const count = fieldCounts[metric.field_name]?.[value] || 0;
-                        return (
-                          <div
-                            key={value}
-                            className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
-                              isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50 hover:bg-muted'
-                            }`}
-                            onClick={() => toggleMetricValue(metric, value)}
-                          >
-                            <div className="flex items-center gap-2">
-                              <Checkbox 
-                                checked={isSelected} 
-                                className="pointer-events-none"
-                              />
-                              <span className="text-sm font-medium">{value}</span>
+                    
+                    {/* For count-based metrics: show field selection */}
+                    {(metric.metric_type === 'count' || !metric.metric_type) && metric.field_name && (
+                      <>
+                        <div className="mb-2">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Field: <code className="bg-muted px-1 rounded">{metric.field_name}</code>
+                          </span>
+                        </div>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {availableFields[metric.field_name]?.map((value) => {
+                            const isSelected = metric.field_values?.includes(value);
+                            const count = fieldCounts[metric.field_name]?.[value] || 0;
+                            return (
+                              <div
+                                key={value}
+                                className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors ${
+                                  isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50 hover:bg-muted'
+                                }`}
+                                onClick={() => toggleMetricValue(metric, value)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Checkbox 
+                                    checked={isSelected} 
+                                    className="pointer-events-none"
+                                  />
+                                  <span className="text-sm font-medium">{value}</span>
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {count.toLocaleString()} leads
+                                </Badge>
+                              </div>
+                            );
+                          })}
+                          {(!availableFields[metric.field_name] || availableFields[metric.field_name].length === 0) && (
+                            <p className="text-sm text-muted-foreground">No values found for this field</p>
+                          )}
+                        </div>
+                        <div className="mt-3 pt-2 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            Currently counting: <span className="font-medium text-foreground">
+                              {metric.field_values?.length > 0 ? metric.field_values.join(', ') : 'None selected'}
+                            </span>
+                          </p>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* For formula-based metrics: show formula editor */}
+                    {metric.metric_type === 'formula' && (
+                      <div className="space-y-3">
+                        <div className="p-3 bg-muted/50 rounded-lg">
+                          <p className="text-xs font-medium mb-2">Formula: Numerator / Denominator × 100</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Numerator</Label>
+                              <Select 
+                                value={metric.numerator_metric || ''} 
+                                onValueChange={(v) => updateFormulaMetric(metric.metric_id, 'numerator_metric', v)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Select metric" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="won_leads">Won Leads</SelectItem>
+                                  <SelectItem value="lost_leads">Lost Leads</SelectItem>
+                                  <SelectItem value="open_leads">Open Leads</SelectItem>
+                                  <SelectItem value="closed_leads">Closed Leads</SelectItem>
+                                  <SelectItem value="hot_leads">Hot Leads</SelectItem>
+                                  <SelectItem value="total_leads">Total Leads</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                            <Badge variant="outline" className="text-xs">
-                              {count.toLocaleString()} leads
-                            </Badge>
+                            <div>
+                              <Label className="text-xs">Denominator</Label>
+                              <Select 
+                                value={metric.denominator_metric || ''} 
+                                onValueChange={(v) => updateFormulaMetric(metric.metric_id, 'denominator_metric', v)}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue placeholder="Select metric(s)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="total_leads">Total Leads</SelectItem>
+                                  <SelectItem value="won_leads+lost_leads">Won + Lost</SelectItem>
+                                  <SelectItem value="open_leads">Open Leads</SelectItem>
+                                  <SelectItem value="closed_leads">Closed Leads</SelectItem>
+                                  <SelectItem value="hot_leads+warm_leads+cold_leads">Hot + Warm + Cold</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
-                        );
-                      })}
-                      {(!availableFields[metric.field_name] || availableFields[metric.field_name].length === 0) && (
-                        <p className="text-sm text-muted-foreground">No values found for this field</p>
-                      )}
-                    </div>
-                    <div className="mt-3 pt-2 border-t">
-                      <p className="text-xs text-muted-foreground">
-                        Currently counting: <span className="font-medium text-foreground">
-                          {metric.field_values?.length > 0 ? metric.field_values.join(', ') : 'None selected'}
-                        </span>
-                      </p>
-                    </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Current formula: <code className="bg-muted px-1 rounded">
+                            {metric.numerator_metric || '?'} / ({metric.denominator_metric || '?'}) × 100
+                          </code>
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* For calculated metrics: show info */}
+                    {metric.metric_type === 'calculated' && (
+                      <div className="p-3 bg-muted/30 rounded-lg">
+                        <p className="text-xs text-muted-foreground">
+                          This metric is automatically calculated by the system based on lead dates and cannot be customized.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
