@@ -665,8 +665,9 @@ const Leads = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Open">Open</SelectItem>
-                        <SelectItem value="Closed">Closed</SelectItem>
+                        {(dropdownOptions.enquiry_status || ['Open', 'Closed']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -677,12 +678,9 @@ const Leads = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Prospecting">Prospecting</SelectItem>
-                        <SelectItem value="Qualified">Qualified</SelectItem>
-                        <SelectItem value="Proposal">Proposal</SelectItem>
-                        <SelectItem value="Negotiation">Negotiation</SelectItem>
-                        <SelectItem value="Closed-Won">Closed-Won</SelectItem>
-                        <SelectItem value="Closed-Lost">Closed-Lost</SelectItem>
+                        {(dropdownOptions.enquiry_stage || ['Prospecting', 'Qualified', 'Proposal', 'Negotiation', 'Closed-Won', 'Closed-Lost', 'Closed-Dropped', 'Order Booked']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -693,11 +691,46 @@ const Leads = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Hot">Hot</SelectItem>
-                        <SelectItem value="Warm">Warm</SelectItem>
-                        <SelectItem value="Cold">Cold</SelectItem>
+                        {(dropdownOptions.enquiry_type || ['Hot', 'Warm', 'Cold']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Select value={formData.source || ''} onValueChange={(v) => handleInputChange('source', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.source || ['India Mart', 'Cold Call', 'Referral', 'Website', 'Exhibition', 'Other']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Customer Type</Label>
+                    <Select value={formData.customer_type || ''} onValueChange={(v) => handleInputChange('customer_type', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select customer type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.customer_type || ['New Customer', 'Existing Customer']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="followup_date">Planned Follow-up Date</Label>
+                    <Input
+                      id="followup_date"
+                      type="date"
+                      value={formData.planned_followup_date || ''}
+                      onChange={(e) => handleInputChange('planned_followup_date', e.target.value)}
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
