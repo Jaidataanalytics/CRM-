@@ -8,14 +8,20 @@ class MetricConfig(BaseModel):
     metric_id: str
     metric_name: str
     description: str
-    field_name: str
-    field_values: List[str]
+    field_name: Optional[str] = None  # For count-based metrics
+    field_values: List[str] = []
     is_active: bool = True
     is_custom: bool = False
     color: str = "primary"
     icon: str = "BarChart3"
     show_on_dashboard: bool = True
     dashboard_order: int = 99
+    # Formula-based metrics
+    metric_type: str = "count"  # count, formula, calculated
+    formula: Optional[str] = None  # e.g., "won_leads / (won_leads + lost_leads) * 100"
+    numerator_metric: Optional[str] = None  # For ratio metrics
+    denominator_metric: Optional[str] = None  # For ratio metrics
+    unit: str = ""  # e.g., "days", "%"
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
