@@ -181,6 +181,9 @@ async def get_segment_analysis(
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
+    # Open stages
+    OPEN_STAGES = ["Prospecting", "Qualified", "Proposal", "Negotiation"]
+    
     pipeline = [
         {"$match": {"enquiry_date": {"$gte": start_date, "$lte": end_date}}},
         {
@@ -188,10 +191,13 @@ async def get_segment_analysis(
                 "_id": "$segment",
                 "total_leads": {"$sum": 1},
                 "won_leads": {
-                    "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}
                 },
                 "lost_leads": {
-                    "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Lost"]}, 1, 0]}
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}
+                },
+                "open_leads": {
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", OPEN_STAGES]}, 1, 0]}
                 },
                 "hot_leads": {
                     "$sum": {"$cond": [{"$eq": ["$enquiry_type", "Hot"]}, 1, 0]}
