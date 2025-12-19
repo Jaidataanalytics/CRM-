@@ -498,12 +498,30 @@ const Leads = () => {
           />
           <Button
             variant="outline"
+            onClick={handleDownloadTemplate}
+            className="gap-2"
+            title="Download template for bulk upload"
+          >
+            <FileDown className="h-4 w-4" />
+            Template
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="gap-2"
           >
             <Upload className="h-4 w-4" />
-            {uploading ? 'Uploading...' : 'Upload Excel'}
+            {uploading ? 'Uploading...' : 'Upload'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={exporting || totalLeads === 0}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {exporting ? 'Exporting...' : 'Export'}
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
