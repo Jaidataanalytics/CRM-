@@ -241,6 +241,9 @@ const Charts = () => {
           case 'lost':
             values = res.data.performers?.map(p => p.lost_leads) || [];
             break;
+          case 'open':
+            values = res.data.performers?.map(p => p.open_leads) || [];
+            break;
           case 'conversion_rate':
             values = res.data.performers?.map(p => p.conversion_rate) || [];
             break;
