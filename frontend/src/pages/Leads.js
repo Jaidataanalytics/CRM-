@@ -242,7 +242,9 @@ const Leads = () => {
       name: lead.name || '',
       phone_number: lead.phone_number || '',
       email_address: lead.email_address || '',
+      zone: lead.zone || '',
       state: lead.state || '',
+      area: lead.area || '',
       dealer: lead.dealer || '',
       employee_name: lead.employee_name || '',
       enquiry_no: lead.enquiry_no || '',
@@ -253,6 +255,8 @@ const Leads = () => {
       enquiry_status: lead.enquiry_status || 'Open',
       enquiry_type: lead.enquiry_type || 'Warm',
       enquiry_stage: lead.enquiry_stage || 'Prospecting',
+      planned_followup_date: lead.planned_followup_date || '',
+      source: lead.source || '',
       remarks: lead.remarks || ''
     });
     setIsDialogOpen(true);
