@@ -483,25 +483,25 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* KPI Cards - Row 3: Qualification */}
+      {/* KPI Cards - Row 3: Time Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Closed Leads"
           value={kpis?.closed_leads || 0}
-          icon={CheckCircle}
+          icon={CheckCircle2}
           color="text-purple-500"
         />
         <KPICard
-          title="Qualified Leads"
-          value={kpis?.qualified_leads || 0}
-          icon={ShieldCheck}
-          color="text-emerald-500"
+          title="Avg Lead Age"
+          value={`${kpis?.avg_lead_age || 0} days`}
+          icon={Clock}
+          color="text-amber-500"
         />
         <KPICard
-          title="Faulty Leads"
-          value={kpis?.faulty_leads || 0}
-          icon={ShieldX}
-          color="text-amber-500"
+          title="Avg Closure Time"
+          value={`${kpis?.avg_closure_time || 0} days`}
+          icon={Timer}
+          color="text-violet-500"
         />
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
