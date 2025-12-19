@@ -116,6 +116,55 @@ DEFAULT_METRICS = [
         "color": "blue",
         "icon": "Snowflake",
         "show_on_dashboard": True,
-        "dashboard_order": 7
+        "dashboard_order": 7,
+        "metric_type": "count",
+        "unit": ""
+    },
+    {
+        "metric_id": "avg_lead_age",
+        "metric_name": "Avg Lead Age",
+        "description": "Average age of open leads in days",
+        "field_name": None,
+        "field_values": [],
+        "is_active": True,
+        "is_custom": False,
+        "color": "amber",
+        "icon": "Clock",
+        "show_on_dashboard": True,
+        "dashboard_order": 8,
+        "metric_type": "calculated",
+        "unit": "days"
+    },
+    {
+        "metric_id": "avg_closure_time",
+        "metric_name": "Avg Closure Time",
+        "description": "Average days to close a lead (won or lost)",
+        "field_name": None,
+        "field_values": [],
+        "is_active": True,
+        "is_custom": False,
+        "color": "violet",
+        "icon": "Timer",
+        "show_on_dashboard": True,
+        "dashboard_order": 9,
+        "metric_type": "calculated",
+        "unit": "days"
+    },
+    {
+        "metric_id": "conversion_rate",
+        "metric_name": "Conversion Rate",
+        "description": "Percentage of leads converted (Won / (Won + Lost))",
+        "field_name": None,
+        "field_values": [],
+        "is_active": True,
+        "is_custom": False,
+        "color": "emerald",
+        "icon": "TrendingUp",
+        "show_on_dashboard": True,
+        "dashboard_order": 10,
+        "metric_type": "formula",
+        "numerator_metric": "won_leads",
+        "denominator_metric": "won_leads+lost_leads",
+        "unit": "%"
     }
 ]
