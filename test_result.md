@@ -1,31 +1,29 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: New Features
+## Latest Test: KPI Metrics Enhancement
 **Date**: 2025-12-19
 **Status**: IN PROGRESS
 
 ### Features Implemented
 
-1. **Export Data** - Added export button to Manage Leads page
-2. **Download Template** - Added template download for bulk upload
-3. **Open Leads Charts** - Fixed charts to support "Open Leads" metric
-4. **Dropdown Fields** - Converted form fields to dropdowns (except name, phone, email)
-5. **Follow-up Date Edit** - Added planned_followup_date to lead form
+1. **Avg Lead Age** - Calculated metric showing average age of open leads in days
+2. **Avg Closure Time** - Calculated metric showing average days to close a lead
+3. **Conversion Rate Formula** - Admin can configure numerator/denominator for conversion rate
+4. **Metric Types** - Support for count, formula, and calculated metrics
 
 ### Testing Required
 
-1. Verify Export button downloads Excel file
-2. Verify Template button downloads template file
-3. Verify Add Lead form shows dropdowns for Zone, State, Area, Dealer, Employee, Segment, etc.
-4. Verify planned_followup_date can be edited
-5. Verify "Open Leads" metric works in Charts page
+1. Verify Dashboard shows Avg Lead Age (141.9 days)
+2. Verify Dashboard shows Avg Closure Time (1.4 days)
+3. Verify Dashboard shows Conversion Rate (88.77%)
+4. Verify Admin can change conversion rate formula
+5. Verify formula changes reflect in Dashboard
 
 ## Testing Protocol
 - Last updated: 2025-12-19
 
 ## Incorporate User Feedback
-- Export data - IMPLEMENTED
-- Charts with open leads not working - FIXED
-- Download template - IMPLEMENTED
-- Edit follow-up date - IMPLEMENTED  
-- Dropdown fields (except name, phone, email) - IMPLEMENTED
+- Add average lead age metric - IMPLEMENTED
+- Add average lead closure time metric - IMPLEMENTED
+- Allow admin to change conversion rate formula - IMPLEMENTED
+- Add other metrics with formula - IMPLEMENTED
