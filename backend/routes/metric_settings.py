@@ -135,6 +135,15 @@ async def update_metric_setting(
         update_data["show_on_dashboard"] = metric_update.show_on_dashboard
     if metric_update.dashboard_order is not None:
         update_data["dashboard_order"] = metric_update.dashboard_order
+    # Formula fields
+    if metric_update.metric_type is not None:
+        update_data["metric_type"] = metric_update.metric_type
+    if metric_update.numerator_metric is not None:
+        update_data["numerator_metric"] = metric_update.numerator_metric
+    if metric_update.denominator_metric is not None:
+        update_data["denominator_metric"] = metric_update.denominator_metric
+    if metric_update.unit is not None:
+        update_data["unit"] = metric_update.unit
     
     await db.metric_settings.update_one(
         {"metric_id": metric_id},
