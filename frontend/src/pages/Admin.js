@@ -278,6 +278,20 @@ const Admin = () => {
     }
   };
 
+  // Update formula metric (numerator/denominator)
+  const updateFormulaMetric = async (metricId, field, value) => {
+    try {
+      await axios.put(`${API}/metric-settings/${metricId}`, 
+        { [field]: value },
+        { withCredentials: true }
+      );
+      loadMetricSettings();
+      toast.success('Formula updated');
+    } catch (error) {
+      toast.error('Failed to update formula');
+    }
+  };
+
   const handleHistoricalUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
