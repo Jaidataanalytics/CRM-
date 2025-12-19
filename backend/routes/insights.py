@@ -84,8 +84,10 @@ async def get_top_performers(
         "won": "won_leads",
         "total": "total_leads",
         "conversion_rate": "conversion_rate",
-        "kva": "total_kva"
-    }[metric]
+        "kva": "total_kva",
+        "open": "open_leads",
+        "lost": "lost_leads"
+    }.get(metric, "total_leads")
     
     pipeline.append({"$sort": {sort_field: -1}})
     pipeline.append({"$limit": limit})
