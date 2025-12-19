@@ -57,6 +57,10 @@ const initialFormData = {
   enquiry_status: 'Open',
   enquiry_type: 'Warm',
   enquiry_stage: 'Prospecting',
+  planned_followup_date: '',
+  source: '',
+  zone: '',
+  area: '',
   remarks: ''
 };
 
