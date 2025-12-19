@@ -115,9 +115,87 @@ async def get_kpis(
     faulty_query = {**base_query, "is_qualified": False, "qualification_score": {"$exists": True}}
     faulty_leads = await db.leads.count_documents(faulty_query)
     
-    # Conversion rate (Won / (Won + Lost))
-    closed_for_conversion = won_leads + lost_leads
-    conversion_rate = (won_leads / closed_for_conversion * 100) if closed_for_conversion > 0 else 0
+    # Get conversion rate config (can be customized by admin)
+    conversion_config = await get_metric_config(db, "conversion_rate")
+    
+    # Calculate conversion rate using configurable formula
+    if conversion_config and conversion_config.get("numerator_metric") and conversion_config.get("denominator_metric"):
+        # Parse numerator and denominator from config
+        numerator_metrics = conversion_config.get("numerator_metric", "won_leads").split("+")
+        denominator_metrics = conversion_config.get("denominator_metric", "won_leads+lost_leads").split("+")
+        
+        metric_values = {
+            "won_leads": won_leads,
+            "lost_leads": lost_leads,
+            "open_leads": open_leads,
+            "closed_leads": closed_leads,
+            "hot_leads": hot_leads,
+            "warm_leads": warm_leads,
+            "cold_leads": cold_leads,
+            "total_leads": total_leads
+        }
+        
+        numerator = sum(metric_values.get(m.strip(), 0) for m in numerator_metrics)
+        denominator = sum(metric_values.get(m.strip(), 0) for m in denominator_metrics)
+        conversion_rate = (numerator / denominator * 100) if denominator > 0 else 0
+    else:
+        # Default formula: Won / (Won + Lost)
+        closed_for_conversion = won_leads + lost_leads
+        conversion_rate = (won_leads / closed_for_conversion * 100) if closed_for_conversion > 0 else 0
+    
+    # Calculate Average Lead Age (for open leads)
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    open_stages = open_config.get("field_values", ["Prospecting", "Qualified"]) if open_config else ["Prospecting", "Qualified"]
+    
+    avg_lead_age_pipeline = [
+        {"$match": {**base_query, "enquiry_stage": {"$in": open_stages}}},
+        {
+            "$addFields": {
+                "lead_age_days": {
+                    "$divide": [
+                        {"$subtract": [{"$dateFromString": {"dateString": today_str}}, {"$dateFromString": {"dateString": "$enquiry_date"}}]},
+                        86400000  # milliseconds in a day
+                    ]
+                }
+            }
+        },
+        {"$group": {"_id": None, "avg_age": {"$avg": "$lead_age_days"}}}
+    ]
+    
+    avg_lead_age_result = await db.leads.aggregate(avg_lead_age_pipeline).to_list(1)
+    avg_lead_age = round(avg_lead_age_result[0]["avg_age"], 1) if avg_lead_age_result and avg_lead_age_result[0].get("avg_age") else 0
+    
+    # Calculate Average Closure Time (for won + lost leads)
+    closed_stages = (won_config.get("field_values", []) if won_config else []) + (lost_config.get("field_values", []) if lost_config else [])
+    if not closed_stages:
+        closed_stages = ["Closed-Won", "Order Booked", "Closed-Lost", "Closed-Dropped"]
+    
+    # We need a "closure_date" or use updated_at - for now use enquiry_date to last_followup_date or a reasonable estimate
+    avg_closure_pipeline = [
+        {"$match": {
+            **base_query, 
+            "enquiry_stage": {"$in": closed_stages},
+            "last_followup_date": {"$exists": True, "$ne": None, "$ne": ""}
+        }},
+        {
+            "$addFields": {
+                "closure_days": {
+                    "$divide": [
+                        {"$subtract": [
+                            {"$dateFromString": {"dateString": "$last_followup_date", "onError": {"$dateFromString": {"dateString": "$enquiry_date"}}}},
+                            {"$dateFromString": {"dateString": "$enquiry_date"}}
+                        ]},
+                        86400000
+                    ]
+                }
+            }
+        },
+        {"$match": {"closure_days": {"$gte": 0}}},  # Filter out negative values
+        {"$group": {"_id": None, "avg_closure": {"$avg": "$closure_days"}}}
+    ]
+    
+    avg_closure_result = await db.leads.aggregate(avg_closure_pipeline).to_list(1)
+    avg_closure_time = round(avg_closure_result[0]["avg_closure"], 1) if avg_closure_result and avg_closure_result[0].get("avg_closure") else 0
     
     # Leads by segment
     segment_pipeline = [
