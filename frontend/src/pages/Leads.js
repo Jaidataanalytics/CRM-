@@ -572,28 +572,69 @@ const Leads = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      id="state"
-                      value={formData.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                    />
+                    <Label>Zone</Label>
+                    <Select value={formData.zone || ''} onValueChange={(v) => handleInputChange('zone', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.zone || ['East', 'West', 'North', 'South']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="dealer">Dealer</Label>
-                    <Input
-                      id="dealer"
-                      value={formData.dealer}
-                      onChange={(e) => handleInputChange('dealer', e.target.value)}
-                    />
+                    <Label>State</Label>
+                    <Select value={formData.state || ''} onValueChange={(v) => handleInputChange('state', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.state || []).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="employee">Employee Name</Label>
-                    <Input
-                      id="employee"
-                      value={formData.employee_name}
-                      onChange={(e) => handleInputChange('employee_name', e.target.value)}
-                    />
+                    <Label>Area</Label>
+                    <Select value={formData.area || ''} onValueChange={(v) => handleInputChange('area', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select area" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.area || []).slice(0, 50).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Dealer</Label>
+                    <Select value={formData.dealer || ''} onValueChange={(v) => handleInputChange('dealer', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select dealer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.dealer || []).slice(0, 100).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Employee</Label>
+                    <Select value={formData.employee_name || ''} onValueChange={(v) => handleInputChange('employee_name', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select employee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.employee_name || []).slice(0, 100).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="kva">KVA</Label>
@@ -605,12 +646,17 @@ const Leads = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="segment">Segment</Label>
-                    <Input
-                      id="segment"
-                      value={formData.segment}
-                      onChange={(e) => handleInputChange('segment', e.target.value)}
-                    />
+                    <Label>Segment</Label>
+                    <Select value={formData.segment || ''} onValueChange={(v) => handleInputChange('segment', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select segment" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.segment || ['Corporate', 'Retail', 'MSME', 'Government']).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
