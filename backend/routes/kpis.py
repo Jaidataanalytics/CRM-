@@ -232,19 +232,56 @@ async def get_kpis(
         {"_id": 0}
     ).sort("dashboard_order", 1).to_list(50)
     
+    # Pre-calculated values for formula metrics
+    calculated_values = {
+        "won_leads": won_leads,
+        "lost_leads": lost_leads,
+        "open_leads": open_leads,
+        "closed_leads": closed_leads,
+        "hot_leads": hot_leads,
+        "warm_leads": warm_leads,
+        "cold_leads": cold_leads,
+        "total_leads": total_leads,
+        "qualified_leads": qualified_leads,
+        "avg_lead_age": avg_lead_age,
+        "avg_closure_time": avg_closure_time,
+        "conversion_rate": round(conversion_rate, 2)
+    }
+    
     # Calculate counts for all metrics
     dashboard_metrics = []
     for metric in all_metrics:
-        count = await count_by_metric(db, base_query, metric)
+        metric_type = metric.get("metric_type", "count")
+        metric_id = metric["metric_id"]
+        
+        if metric_type == "calculated" and metric_id in calculated_values:
+            # Use pre-calculated value
+            value = calculated_values[metric_id]
+        elif metric_type == "formula":
+            # Calculate using formula
+            numerator_metrics = metric.get("numerator_metric", "").split("+")
+            denominator_metrics = metric.get("denominator_metric", "").split("+")
+            
+            numerator = sum(calculated_values.get(m.strip(), 0) for m in numerator_metrics if m.strip())
+            denominator = sum(calculated_values.get(m.strip(), 0) for m in denominator_metrics if m.strip())
+            value = round((numerator / denominator * 100), 2) if denominator > 0 else 0
+        else:
+            # Count-based metric
+            value = await count_by_metric(db, base_query, metric)
+        
         dashboard_metrics.append({
-            "metric_id": metric["metric_id"],
+            "metric_id": metric_id,
             "metric_name": metric["metric_name"],
-            "value": count,
+            "value": value,
             "color": metric.get("color", "primary"),
             "icon": metric.get("icon", "BarChart3"),
             "field_name": metric.get("field_name"),
             "field_values": metric.get("field_values", []),
-            "is_custom": metric.get("is_custom", False)
+            "is_custom": metric.get("is_custom", False),
+            "metric_type": metric_type,
+            "unit": metric.get("unit", ""),
+            "numerator_metric": metric.get("numerator_metric"),
+            "denominator_metric": metric.get("denominator_metric")
         })
     
     return {
