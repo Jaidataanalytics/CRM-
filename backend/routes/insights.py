@@ -99,6 +99,7 @@ async def get_top_performers(
                 "total_leads": r["total_leads"],
                 "won_leads": r["won_leads"],
                 "lost_leads": r["lost_leads"],
+                "open_leads": r.get("open_leads", 0),
                 "conversion_rate": round(r["conversion_rate"], 2),
                 "total_kva": round(r["total_kva"], 2)
             }
