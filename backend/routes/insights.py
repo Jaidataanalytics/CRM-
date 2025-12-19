@@ -234,6 +234,7 @@ async def get_segment_analysis(
                 "total_leads": r["total_leads"],
                 "won_leads": r["won_leads"],
                 "lost_leads": r["lost_leads"],
+                "open_leads": r.get("open_leads", 0),
                 "hot_leads": r["hot_leads"],
                 "conversion_rate": round(r["conversion_rate"], 2),
                 "avg_kva": round(r["avg_kva"], 2),
