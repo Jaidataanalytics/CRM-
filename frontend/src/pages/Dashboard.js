@@ -36,7 +36,10 @@ import {
   Edit,
   Clock,
   User,
-  BarChart3
+  BarChart3,
+  Timer,
+  CheckCircle2,
+  Percent
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
