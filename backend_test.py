@@ -153,6 +153,10 @@ class LeadManagementAPITester:
         
         self.run_test("Get Top Performers", "GET", "insights/top-performers", 200)
         self.run_test("Get Segment Analysis", "GET", "insights/segment-analysis", 200)
+        
+        # Test NEW FEATURE: open leads metric for charts
+        self.run_test("Get Top Performers - Open Leads", "GET", "insights/top-performers?metric=open", 200)
+        self.run_test("Get Monthly Trends", "GET", "insights/monthly-trends?months=12", 200)
 
     def test_qualification_endpoints(self):
         """Test qualification system endpoints"""
