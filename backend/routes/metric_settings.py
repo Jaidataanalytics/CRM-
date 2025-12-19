@@ -33,6 +33,11 @@ class MetricUpdate(BaseModel):
     icon: Optional[str] = None
     show_on_dashboard: Optional[bool] = None
     dashboard_order: Optional[int] = None
+    # Formula-based metric fields
+    metric_type: Optional[str] = None
+    numerator_metric: Optional[str] = None
+    denominator_metric: Optional[str] = None
+    unit: Optional[str] = None
 
 
 async def get_db(request: Request):
