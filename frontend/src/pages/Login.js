@@ -121,11 +121,6 @@ const Login = () => {
             </Button>
           </form>
 
-          {/* Demo credentials hint */}
-          <p className="text-xs text-center text-muted-foreground">
-            Demo: username <span className="font-mono bg-muted px-1 rounded">admin</span> / password <span className="font-mono bg-muted px-1 rounded">admin123</span>
-          </p>
-
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <Separator className="w-full" />
