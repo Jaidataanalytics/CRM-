@@ -27,7 +27,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { 
   TrendingUp, TrendingDown, Minus, Plus, MapPin, Building, Users, 
-  Target, BarChart3, Trash2, Save, RefreshCw 
+  Target, BarChart3, Trash2, Save, RefreshCw, Map, Globe
 } from 'lucide-react';
 import {
   BarChart,
@@ -38,8 +38,11 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  Cell
+  Cell,
+  PieChart,
+  Pie
 } from 'recharts';
+import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
