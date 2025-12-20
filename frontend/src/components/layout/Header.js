@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink } from 'lucide-react';
+import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink, MapPin, Building2, User, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -20,13 +20,27 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 export const Header = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState({ leads: [], entities: [] });
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notifCounts, setNotifCounts] = useState({ critical: 0, warning: 0, info: 0, total: 0 });
   const [notifOpen, setNotifOpen] = useState(false);
   const searchRef = useRef(null);
+
+  const entityIcons = {
+    state: MapPin,
+    dealer: Building2,
+    city: MapPin,
+    employee: User
+  };
+
+  const entityColors = {
+    state: 'bg-blue-100 text-blue-700',
+    dealer: 'bg-purple-100 text-purple-700',
+    city: 'bg-green-100 text-green-700',
+    employee: 'bg-orange-100 text-orange-700'
+  };
 
   // Fetch notification counts on mount and every 60 seconds
   useEffect(() => {
