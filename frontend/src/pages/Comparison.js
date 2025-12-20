@@ -134,6 +134,11 @@ const Comparison = () => {
     target: ''
   });
   const [selectedCategory, setSelectedCategory] = useState('states');
+  
+  // Map state
+  const [hoveredState, setHoveredState] = useState(null);
+  const [selectedState, setSelectedState] = useState(null);
+  const [mapMetric, setMapMetric] = useState('total'); // total, won, conversion
 
   useEffect(() => {
     loadData();
