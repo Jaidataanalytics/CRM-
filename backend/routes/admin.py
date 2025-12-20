@@ -57,9 +57,8 @@ async def create_user(
         if existing_username:
             raise HTTPException(status_code=400, detail="Username already taken")
     
-    # Create user
-    from passlib.context import CryptContext
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    # Create user - use bcrypt directly
+    import bcrypt
     
     user_data = {
         "user_id": f"user_{uuid.uuid4().hex[:12]}",
@@ -73,7 +72,7 @@ async def create_user(
     }
     
     if body.get("password"):
-        user_data["password_hash"] = pwd_context.hash(body.get("password"))
+        user_data["password_hash"] = bcrypt.hashpw(body.get("password").encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     if body.get("google_id"):
         user_data["google_id"] = body.get("google_id")
