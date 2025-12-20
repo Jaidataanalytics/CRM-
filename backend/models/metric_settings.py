@@ -32,6 +32,21 @@ class MetricConfig(BaseModel):
 # Default metric configurations with colors and icons
 DEFAULT_METRICS = [
     {
+        "metric_id": "total_leads",
+        "metric_name": "Total Leads",
+        "description": "Total number of leads",
+        "field_name": None,
+        "field_values": [],
+        "is_active": True,
+        "is_custom": False,
+        "color": "blue",
+        "icon": "Users",
+        "show_on_dashboard": True,
+        "dashboard_order": 0,
+        "metric_type": "count",
+        "unit": ""
+    },
+    {
         "metric_id": "won_leads",
         "metric_name": "Won Leads",
         "description": "Leads that have been successfully converted",
