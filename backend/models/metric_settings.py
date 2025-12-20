@@ -139,7 +139,7 @@ DEFAULT_METRICS = [
     {
         "metric_id": "avg_lead_age",
         "metric_name": "Avg Lead Age",
-        "description": "Average age of open leads in days",
+        "description": "Average age of open leads in days. Formula: (End Date - Start Date) for filtered leads.",
         "field_name": None,
         "field_values": [],
         "is_active": True,
@@ -149,12 +149,15 @@ DEFAULT_METRICS = [
         "show_on_dashboard": True,
         "dashboard_order": 8,
         "metric_type": "calculated",
-        "unit": "days"
+        "unit": "days",
+        "start_date_field": "enquiry_date",
+        "end_date_field": "today",
+        "filter_stages": ["Prospecting", "Qualified"]
     },
     {
         "metric_id": "avg_closure_time",
         "metric_name": "Avg Closure Time",
-        "description": "Average days to close a lead (won or lost)",
+        "description": "Average days to close a lead. Formula: (End Date - Start Date) for closed leads.",
         "field_name": None,
         "field_values": [],
         "is_active": True,
@@ -164,7 +167,10 @@ DEFAULT_METRICS = [
         "show_on_dashboard": True,
         "dashboard_order": 9,
         "metric_type": "calculated",
-        "unit": "days"
+        "unit": "days",
+        "start_date_field": "enquiry_date",
+        "end_date_field": "last_followup_date",
+        "filter_stages": ["Closed-Won", "Order Booked", "Closed-Lost", "Closed-Dropped"]
     },
     {
         "metric_id": "conversion_rate",
