@@ -229,6 +229,9 @@ async def create_custom_metric(
     
     await db.metric_settings.insert_one(metric_doc)
     
+    # Remove _id for JSON serialization
+    metric_doc.pop("_id", None)
+    
     return {"message": f"Custom metric '{metric.metric_id}' created successfully", "metric": metric_doc}
 
 
