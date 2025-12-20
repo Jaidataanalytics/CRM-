@@ -143,54 +143,97 @@ async def get_kpis(
         closed_for_conversion = won_leads + lost_leads
         conversion_rate = (won_leads / closed_for_conversion * 100) if closed_for_conversion > 0 else 0
     
-    # Calculate Average Lead Age (for open leads)
+    # Calculate Average Lead Age (configurable)
+    avg_lead_age_config = await get_metric_config(db, "avg_lead_age")
     today_str = datetime.now().strftime('%Y-%m-%d')
-    open_stages = open_config.get("field_values", ["Prospecting", "Qualified"]) if open_config else ["Prospecting", "Qualified"]
+    
+    # Default: open leads, enquiry_date to today
+    if avg_lead_age_config:
+        age_filter_stages = avg_lead_age_config.get("filter_stages") or []
+        age_start_field = avg_lead_age_config.get("start_date_field") or "enquiry_date"
+        age_end_field = avg_lead_age_config.get("end_date_field") or "today"
+    else:
+        age_filter_stages = []
+        age_start_field = "enquiry_date"
+        age_end_field = "today"
+    
+    # If no filter stages specified, use open_leads stages
+    if not age_filter_stages:
+        age_filter_stages = open_config.get("field_values", ["Prospecting", "Qualified"]) if open_config else ["Prospecting", "Qualified"]
+    
+    # Build end date expression
+    if age_end_field == "today":
+        end_date_expr = {"$dateFromString": {"dateString": today_str}}
+    else:
+        end_date_expr = {"$dateFromString": {"dateString": f"${age_end_field}", "onError": {"$dateFromString": {"dateString": today_str}}}}
     
     avg_lead_age_pipeline = [
-        {"$match": {**base_query, "enquiry_stage": {"$in": open_stages}}},
+        {"$match": {**base_query, "enquiry_stage": {"$in": age_filter_stages}}},
         {
             "$addFields": {
                 "lead_age_days": {
                     "$divide": [
-                        {"$subtract": [{"$dateFromString": {"dateString": today_str}}, {"$dateFromString": {"dateString": "$enquiry_date"}}]},
+                        {"$subtract": [
+                            end_date_expr,
+                            {"$dateFromString": {"dateString": f"${age_start_field}"}}
+                        ]},
                         86400000  # milliseconds in a day
                     ]
                 }
             }
         },
+        {"$match": {"lead_age_days": {"$gte": 0}}},
         {"$group": {"_id": None, "avg_age": {"$avg": "$lead_age_days"}}}
     ]
     
     avg_lead_age_result = await db.leads.aggregate(avg_lead_age_pipeline).to_list(1)
     avg_lead_age = round(avg_lead_age_result[0]["avg_age"], 1) if avg_lead_age_result and avg_lead_age_result[0].get("avg_age") else 0
     
-    # Calculate Average Closure Time (for won + lost leads)
-    closed_stages = (won_config.get("field_values", []) if won_config else []) + (lost_config.get("field_values", []) if lost_config else [])
-    if not closed_stages:
-        closed_stages = ["Closed-Won", "Order Booked", "Closed-Lost", "Closed-Dropped"]
+    # Calculate Average Closure Time (configurable)
+    avg_closure_config = await get_metric_config(db, "avg_closure_time")
     
-    # We need a "closure_date" or use updated_at - for now use enquiry_date to last_followup_date or a reasonable estimate
+    # Default: closed leads, enquiry_date to last_followup_date
+    if avg_closure_config:
+        closure_filter_stages = avg_closure_config.get("filter_stages") or []
+        closure_start_field = avg_closure_config.get("start_date_field") or "enquiry_date"
+        closure_end_field = avg_closure_config.get("end_date_field") or "last_followup_date"
+    else:
+        closure_filter_stages = []
+        closure_start_field = "enquiry_date"
+        closure_end_field = "last_followup_date"
+    
+    # If no filter stages specified, use closed stages
+    if not closure_filter_stages:
+        closure_filter_stages = (won_config.get("field_values", []) if won_config else []) + (lost_config.get("field_values", []) if lost_config else [])
+        if not closure_filter_stages:
+            closure_filter_stages = ["Closed-Won", "Order Booked", "Closed-Lost", "Closed-Dropped"]
+    
+    # Build end date expression for closure
+    if closure_end_field == "today":
+        closure_end_expr = {"$dateFromString": {"dateString": today_str}}
+    else:
+        closure_end_expr = {"$dateFromString": {"dateString": f"${closure_end_field}", "onError": {"$dateFromString": {"dateString": f"${closure_start_field}"}}}}
+    
     avg_closure_pipeline = [
         {"$match": {
             **base_query, 
-            "enquiry_stage": {"$in": closed_stages},
-            "last_followup_date": {"$exists": True, "$ne": None, "$ne": ""}
+            "enquiry_stage": {"$in": closure_filter_stages},
+            closure_end_field: {"$exists": True, "$ne": None, "$ne": ""}
         }},
         {
             "$addFields": {
                 "closure_days": {
                     "$divide": [
                         {"$subtract": [
-                            {"$dateFromString": {"dateString": "$last_followup_date", "onError": {"$dateFromString": {"dateString": "$enquiry_date"}}}},
-                            {"$dateFromString": {"dateString": "$enquiry_date"}}
+                            closure_end_expr,
+                            {"$dateFromString": {"dateString": f"${closure_start_field}"}}
                         ]},
                         86400000
                     ]
                 }
             }
         },
-        {"$match": {"closure_days": {"$gte": 0}}},  # Filter out negative values
+        {"$match": {"closure_days": {"$gte": 0}}},
         {"$group": {"_id": None, "avg_closure": {"$avg": "$closure_days"}}}
     ]
     
