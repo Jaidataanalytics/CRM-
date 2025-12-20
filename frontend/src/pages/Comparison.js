@@ -466,8 +466,12 @@ const Comparison = () => {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="states" className="space-y-4">
+      <Tabs defaultValue="map" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="map">
+            <Globe className="h-4 w-4 mr-2" />
+            Geographic Map
+          </TabsTrigger>
           <TabsTrigger value="states">
             <MapPin className="h-4 w-4 mr-2" />
             State Comparison
@@ -485,6 +489,213 @@ const Comparison = () => {
             Employee Comparison
           </TabsTrigger>
         </TabsList>
+
+        {/* Geographic Map Tab */}
+        <TabsContent value="map" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* India Map */}
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-primary" />
+                    India State Performance Map
+                  </CardTitle>
+                  <Select value={mapMetric} onValueChange={setMapMetric}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="total">Total Leads</SelectItem>
+                      <SelectItem value="won">Won Leads</SelectItem>
+                      <SelectItem value="conversion">Conversion %</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <CardDescription>
+                  Hover over states to see performance details. Color intensity shows {mapMetric === 'conversion' ? 'conversion rate' : mapMetric === 'won' ? 'won leads' : 'total leads'}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="relative">
+                <div className="h-[500px] w-full">
+                  <ComposableMap
+                    projection="geoMercator"
+                    projectionConfig={{
+                      scale: 1000,
+                      center: [82, 22]
+                    }}
+                    style={{ width: '100%', height: '100%' }}
+                  >
+                    <ZoomableGroup zoom={1} minZoom={0.8} maxZoom={4}>
+                      <Geographies geography={INDIA_TOPO_JSON}>
+                        {({ geographies }) =>
+                          geographies.map((geo) => {
+                            const stateName = geo.properties.NAME_1 || geo.properties.name || geo.properties.ST_NM;
+                            const value = getStateValue(stateName);
+                            const stateData = getStateData(stateName);
+                            const isHovered = hoveredState === stateName;
+                            const isSelected = selectedState === stateName;
+
+                            return (
+                              <Geography
+                                key={geo.rsmKey}
+                                geography={geo}
+                                onMouseEnter={() => setHoveredState(stateName)}
+                                onMouseLeave={() => setHoveredState(null)}
+                                onClick={() => setSelectedState(isSelected ? null : stateName)}
+                                style={{
+                                  default: {
+                                    fill: getStateColor(value, maxStateValue),
+                                    stroke: isSelected ? '#6366f1' : '#94a3b8',
+                                    strokeWidth: isSelected ? 2 : 0.5,
+                                    outline: 'none',
+                                    cursor: 'pointer'
+                                  },
+                                  hover: {
+                                    fill: '#818cf8',
+                                    stroke: '#6366f1',
+                                    strokeWidth: 1.5,
+                                    outline: 'none',
+                                    cursor: 'pointer'
+                                  },
+                                  pressed: {
+                                    fill: '#6366f1',
+                                    outline: 'none'
+                                  }
+                                }}
+                              />
+                            );
+                          })
+                        }
+                      </Geographies>
+                    </ZoomableGroup>
+                  </ComposableMap>
+                </div>
+
+                {/* Tooltip */}
+                {hoveredState && (
+                  <div className="absolute top-4 right-4 bg-background/95 backdrop-blur border rounded-lg shadow-lg p-3 min-w-[200px]">
+                    <p className="font-semibold text-sm">{hoveredState}</p>
+                    {getStateData(hoveredState) ? (
+                      <div className="mt-2 space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Total Leads:</span>
+                          <span className="font-medium">{getStateData(hoveredState).total_leads?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Won:</span>
+                          <span className="font-medium text-green-600">{getStateData(hoveredState).won_leads?.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Conversion:</span>
+                          <span className="font-medium">{getStateData(hoveredState).conversion_rate?.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">No data available</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Color Legend */}
+                <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur border rounded-lg p-2">
+                  <p className="text-xs font-medium mb-2">{mapMetric === 'conversion' ? 'Conversion Rate' : mapMetric === 'won' ? 'Won Leads' : 'Total Leads'}</p>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-3 bg-[#f1f5f9] border" title="No data"></div>
+                    <div className="w-4 h-3 bg-[#d1fae5]" title="Low"></div>
+                    <div className="w-4 h-3 bg-[#a7f3d0]"></div>
+                    <div className="w-4 h-3 bg-[#6ee7b7]"></div>
+                    <div className="w-4 h-3 bg-[#34d399]"></div>
+                    <div className="w-4 h-3 bg-[#10b981]"></div>
+                    <div className="w-4 h-3 bg-[#059669]" title="High"></div>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                    <span>Low</span>
+                    <span>High</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Sidebar Stats */}
+            <div className="space-y-4">
+              {/* Distribution Pie */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Lead Distribution by State</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={mapPieData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={40}
+                          outerRadius={70}
+                          paddingAngle={2}
+                          dataKey="value"
+                        >
+                          {mapPieData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => value.toLocaleString()} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-2 space-y-1">
+                    {mapPieData.slice(0, 5).map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS[idx] }}></div>
+                          <span className="truncate max-w-[100px]">{item.name}</span>
+                        </div>
+                        <span className="font-medium">{item.value.toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Top States List */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Top Performing States</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {performanceData.states?.slice(0, 8).map((state, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
+                          selectedState === state.name ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50 hover:bg-muted'
+                        }`}
+                        onClick={() => setSelectedState(selectedState === state.name ? null : state.name)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                            idx === 0 ? 'bg-yellow-500 text-white' : 
+                            idx === 1 ? 'bg-gray-400 text-white' : 
+                            idx === 2 ? 'bg-amber-600 text-white' : 'bg-muted text-muted-foreground'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-medium truncate max-w-[80px]">{state.name}</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs font-semibold">{state.total_leads?.toLocaleString()}</p>
+                          <p className="text-[10px] text-green-600">{state.won_leads} won</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
 
         {['states', 'dealers', 'areas', 'employees'].map(category => (
           <TabsContent key={category} value={category} className="space-y-4">
