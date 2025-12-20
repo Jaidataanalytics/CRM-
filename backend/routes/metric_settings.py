@@ -168,6 +168,13 @@ async def update_metric_setting(
         update_data["denominator_metric"] = metric_update.denominator_metric
     if metric_update.unit is not None:
         update_data["unit"] = metric_update.unit
+    # Calculated metric fields
+    if metric_update.start_date_field is not None:
+        update_data["start_date_field"] = metric_update.start_date_field
+    if metric_update.end_date_field is not None:
+        update_data["end_date_field"] = metric_update.end_date_field
+    if metric_update.filter_stages is not None:
+        update_data["filter_stages"] = metric_update.filter_stages
     
     await db.metric_settings.update_one(
         {"metric_id": metric_id},
@@ -176,6 +183,73 @@ async def update_metric_setting(
     
     updated = await db.metric_settings.find_one({"metric_id": metric_id}, {"_id": 0})
     return updated
+
+
+@router.post("/custom")
+async def create_custom_metric(
+    request: Request,
+    metric: CustomMetricCreate,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Create a new custom formula or calculated metric"""
+    db = await get_db(request)
+    
+    # Check if metric_id already exists
+    existing = await db.metric_settings.find_one({"metric_id": metric.metric_id})
+    if existing:
+        raise HTTPException(status_code=400, detail=f"Metric '{metric.metric_id}' already exists")
+    
+    # Get current max order
+    max_order_doc = await db.metric_settings.find_one(sort=[("dashboard_order", -1)])
+    next_order = (max_order_doc.get("dashboard_order", 0) + 1) if max_order_doc else 1
+    
+    metric_doc = {
+        "metric_id": metric.metric_id,
+        "metric_name": metric.metric_name,
+        "description": metric.description,
+        "metric_type": metric.metric_type,
+        "is_active": True,
+        "is_custom": True,
+        "color": metric.color,
+        "icon": metric.icon,
+        "show_on_dashboard": metric.show_on_dashboard,
+        "dashboard_order": next_order,
+        "unit": metric.unit,
+        # Formula settings
+        "numerator_metric": metric.numerator_metric,
+        "denominator_metric": metric.denominator_metric,
+        # Calculated settings
+        "start_date_field": metric.start_date_field,
+        "end_date_field": metric.end_date_field,
+        "filter_stages": metric.filter_stages,
+        "field_name": metric.filter_field,
+        "field_values": metric.filter_stages,  # For compatibility
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.metric_settings.insert_one(metric_doc)
+    
+    return {"message": f"Custom metric '{metric.metric_id}' created successfully", "metric": metric_doc}
+
+
+@router.delete("/custom/{metric_id}")
+async def delete_custom_metric(
+    request: Request,
+    metric_id: str,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Delete a custom metric (only custom metrics can be deleted)"""
+    db = await get_db(request)
+    
+    existing = await db.metric_settings.find_one({"metric_id": metric_id})
+    if not existing:
+        raise HTTPException(status_code=404, detail=f"Metric '{metric_id}' not found")
+    
+    if not existing.get("is_custom"):
+        raise HTTPException(status_code=400, detail="Cannot delete system metrics. You can only disable them.")
+    
+    await db.metric_settings.delete_one({"metric_id": metric_id})
+    return {"message": f"Custom metric '{metric_id}' deleted successfully"}
 
 
 @router.post("/reset")
