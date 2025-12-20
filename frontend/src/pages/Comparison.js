@@ -281,6 +281,61 @@ const Comparison = () => {
     return availableFilters[selectedCategory] || [];
   };
 
+  // Map helpers
+  const getStateDataMap = useMemo(() => {
+    const map = {};
+    performanceData.states?.forEach(state => {
+      const normalizedName = state.name?.toLowerCase().trim();
+      map[normalizedName] = state;
+    });
+    return map;
+  }, [performanceData.states]);
+
+  const maxStateValue = useMemo(() => {
+    if (!performanceData.states?.length) return 1;
+    if (mapMetric === 'won') {
+      return Math.max(...performanceData.states.map(s => s.won_leads || 0), 1);
+    }
+    if (mapMetric === 'conversion') {
+      return Math.max(...performanceData.states.map(s => s.conversion_rate || 0), 1);
+    }
+    return Math.max(...performanceData.states.map(s => s.total_leads || 0), 1);
+  }, [performanceData.states, mapMetric]);
+
+  const getStateValue = (stateName) => {
+    const normalizedName = stateName?.toLowerCase().trim();
+    const data = getStateDataMap[normalizedName];
+    if (!data) return 0;
+    if (mapMetric === 'won') return data.won_leads || 0;
+    if (mapMetric === 'conversion') return data.conversion_rate || 0;
+    return data.total_leads || 0;
+  };
+
+  const getStateData = (stateName) => {
+    const normalizedName = stateName?.toLowerCase().trim();
+    return getStateDataMap[normalizedName];
+  };
+
+  // Pie chart data for map sidebar
+  const mapPieData = useMemo(() => {
+    const topStates = performanceData.states?.slice(0, 5) || [];
+    const others = performanceData.states?.slice(5) || [];
+    const othersTotal = others.reduce((sum, s) => sum + (s.total_leads || 0), 0);
+    
+    const data = topStates.map(s => ({
+      name: s.name,
+      value: s.total_leads || 0
+    }));
+    
+    if (othersTotal > 0) {
+      data.push({ name: 'Others', value: othersTotal });
+    }
+    
+    return data;
+  }, [performanceData.states]);
+
+  const PIE_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#8b5cf6', '#94a3b8'];
+
   if (loading) {
     return (
       <div className="space-y-6">
