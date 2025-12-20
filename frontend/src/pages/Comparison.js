@@ -46,6 +46,62 @@ import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simp
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+// India GeoJSON URL (TopoJSON format)
+const INDIA_TOPO_JSON = "https://raw.githubusercontent.com/geohacker/india/master/state/india_state.geojson";
+
+// State name mapping for matching data
+const STATE_NAME_MAP = {
+  'andhra pradesh': 'Andhra Pradesh',
+  'arunachal pradesh': 'Arunachal Pradesh',
+  'assam': 'Assam',
+  'bihar': 'Bihar',
+  'chhattisgarh': 'Chhattisgarh',
+  'goa': 'Goa',
+  'gujarat': 'Gujarat',
+  'haryana': 'Haryana',
+  'himachal pradesh': 'Himachal Pradesh',
+  'jharkhand': 'Jharkhand',
+  'karnataka': 'Karnataka',
+  'kerala': 'Kerala',
+  'madhya pradesh': 'Madhya Pradesh',
+  'maharashtra': 'Maharashtra',
+  'manipur': 'Manipur',
+  'meghalaya': 'Meghalaya',
+  'mizoram': 'Mizoram',
+  'nagaland': 'Nagaland',
+  'odisha': 'Odisha',
+  'punjab': 'Punjab',
+  'rajasthan': 'Rajasthan',
+  'sikkim': 'Sikkim',
+  'tamil nadu': 'Tamil Nadu',
+  'telangana': 'Telangana',
+  'tripura': 'Tripura',
+  'uttar pradesh': 'Uttar Pradesh',
+  'uttarakhand': 'Uttarakhand',
+  'west bengal': 'West Bengal',
+  'delhi': 'Delhi',
+  'jammu and kashmir': 'Jammu and Kashmir',
+  'ladakh': 'Ladakh',
+  'andaman and nicobar': 'Andaman and Nicobar',
+  'chandigarh': 'Chandigarh',
+  'dadra and nagar haveli': 'Dadra and Nagar Haveli',
+  'daman and diu': 'Daman and Diu',
+  'lakshadweep': 'Lakshadweep',
+  'puducherry': 'Puducherry'
+};
+
+// Color scale for map based on lead count
+const getStateColor = (count, maxCount) => {
+  if (!count || count === 0) return '#f1f5f9'; // slate-100
+  const ratio = count / maxCount;
+  if (ratio > 0.7) return '#059669'; // emerald-600
+  if (ratio > 0.5) return '#10b981'; // emerald-500
+  if (ratio > 0.3) return '#34d399'; // emerald-400
+  if (ratio > 0.15) return '#6ee7b7'; // emerald-300
+  if (ratio > 0.05) return '#a7f3d0'; // emerald-200
+  return '#d1fae5'; // emerald-100
+};
+
 const Comparison = () => {
   const { buildQueryParams } = useFilters();
   const [loading, setLoading] = useState(true);
