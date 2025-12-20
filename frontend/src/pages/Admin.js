@@ -1104,11 +1104,75 @@ const Admin = () => {
                       </div>
                     )}
                     
-                    {/* For calculated metrics: show info */}
+                    {/* For calculated metrics: show configurable editor */}
                     {metric.metric_type === 'calculated' && (
-                      <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="space-y-3">
+                        <div className="p-3 bg-muted/30 rounded-lg space-y-3">
+                          <p className="text-xs font-medium">Formula: (End Date - Start Date) in days</p>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs">Start Date Field</Label>
+                              <Select 
+                                value={metric.start_date_field || 'enquiry_date'} 
+                                onValueChange={(v) => updateCalculatedMetric(metric.metric_id, { start_date_field: v })}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="enquiry_date">Enquiry Date</SelectItem>
+                                  <SelectItem value="planned_followup_date">Planned Follow-up Date</SelectItem>
+                                  <SelectItem value="last_followup_date">Last Follow-up Date</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs">End Date Field</Label>
+                              <Select 
+                                value={metric.end_date_field || 'today'} 
+                                onValueChange={(v) => updateCalculatedMetric(metric.metric_id, { end_date_field: v })}
+                              >
+                                <SelectTrigger className="h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="today">Today (Current Date)</SelectItem>
+                                  <SelectItem value="last_followup_date">Last Follow-up Date</SelectItem>
+                                  <SelectItem value="planned_followup_date">Planned Follow-up Date</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <Label className="text-xs">Filter by Stages (which leads to include)</Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {['Prospecting', 'Qualified', 'Proposal', 'Negotiation', 'Closed-Won', 'Order Booked', 'Closed-Lost', 'Closed-Dropped'].map(stage => {
+                                const isSelected = metric.filter_stages?.includes(stage);
+                                return (
+                                  <Badge 
+                                    key={stage}
+                                    variant={isSelected ? 'default' : 'outline'}
+                                    className="cursor-pointer text-xs"
+                                    onClick={() => {
+                                      const newStages = isSelected 
+                                        ? (metric.filter_stages || []).filter(s => s !== stage)
+                                        : [...(metric.filter_stages || []), stage];
+                                      updateCalculatedMetric(metric.metric_id, { filter_stages: newStages });
+                                    }}
+                                  >
+                                    {stage}
+                                  </Badge>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                          This metric is automatically calculated by the system based on lead dates and cannot be customized.
+                          Current: <code className="bg-muted px-1 rounded">
+                            ({metric.end_date_field || 'today'} - {metric.start_date_field || 'enquiry_date'}) for {metric.filter_stages?.join(', ') || 'all stages'}
+                          </code>
                         </p>
                       </div>
                     )}
