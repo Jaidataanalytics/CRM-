@@ -92,6 +92,7 @@ const AppRouter = () => {
         <Route path="/insights" element={<Insights />} />
         <Route path="/leads" element={<Leads />} />
         <Route path="/comparison" element={<Comparison />} />
+        <Route path="/profile/:entityType/:entityId" element={<EntityProfile />} />
         
         {/* Manager+ only */}
         <Route path="/forecast" element={
