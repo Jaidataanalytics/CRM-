@@ -98,9 +98,160 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+async def migrate_metric_settings():
+    """
+    Database migration to fix metric_settings documents missing required fields.
+    This ensures all metrics have proper metric_type and related fields.
+    """
+    logger.info("Running metric_settings migration...")
+    
+    # Define the expected schema for each metric
+    metric_schema = {
+        "total_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": None,
+            "field_values": []
+        },
+        "won_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_stage",
+            "field_values": ["Closed-Won", "Order Booked"]
+        },
+        "lost_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_stage",
+            "field_values": ["Closed-Lost", "Closed-Dropped"]
+        },
+        "open_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_stage",
+            "field_values": ["Prospecting", "Qualified"]
+        },
+        "closed_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_status",
+            "field_values": ["Closed", "Order Received"]
+        },
+        "hot_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_type",
+            "field_values": ["Hot"]
+        },
+        "warm_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_type",
+            "field_values": ["Warm"]
+        },
+        "cold_leads": {
+            "metric_type": "count",
+            "unit": "",
+            "field_name": "enquiry_type",
+            "field_values": ["Cold"]
+        },
+        "avg_lead_age": {
+            "metric_type": "calculated",
+            "unit": "days",
+            "start_date_field": "enquiry_date",
+            "end_date_field": "today",
+            "filter_stages": ["Prospecting", "Qualified"]
+        },
+        "avg_closure_time": {
+            "metric_type": "calculated",
+            "unit": "days",
+            "start_date_field": "enquiry_date",
+            "end_date_field": "last_followup_date",
+            "filter_stages": ["Closed-Won", "Order Booked", "Closed-Lost", "Closed-Dropped"]
+        },
+        "conversion_rate": {
+            "metric_type": "formula",
+            "unit": "%",
+            "numerator_metric": "won_leads",
+            "denominator_metric": "won_leads+lost_leads"
+        }
+    }
+    
+    migration_count = 0
+    
+    # Get all existing metrics
+    existing_metrics = await db.metric_settings.find({}).to_list(100)
+    
+    for metric in existing_metrics:
+        metric_id = metric.get("metric_id")
+        updates = {}
+        
+        # Check if metric_type is missing
+        if not metric.get("metric_type"):
+            # Try to get from schema, otherwise default to "count"
+            if metric_id in metric_schema:
+                updates["metric_type"] = metric_schema[metric_id]["metric_type"]
+            elif metric.get("numerator_metric") or metric.get("denominator_metric"):
+                updates["metric_type"] = "formula"
+            elif metric.get("start_date_field") or metric.get("end_date_field"):
+                updates["metric_type"] = "calculated"
+            else:
+                updates["metric_type"] = "count"
+        
+        # For known metrics, ensure all required fields exist
+        if metric_id in metric_schema:
+            schema = metric_schema[metric_id]
+            for field, value in schema.items():
+                if field not in metric or metric.get(field) is None:
+                    updates[field] = value
+        
+        # For calculated metrics, ensure date fields exist
+        if metric.get("metric_type") == "calculated" or updates.get("metric_type") == "calculated":
+            if not metric.get("start_date_field") and "start_date_field" not in updates:
+                updates["start_date_field"] = "enquiry_date"
+            if not metric.get("end_date_field") and "end_date_field" not in updates:
+                updates["end_date_field"] = "today"
+            if not metric.get("filter_stages") and "filter_stages" not in updates:
+                updates["filter_stages"] = []
+        
+        # For formula metrics, ensure numerator/denominator exist
+        if metric.get("metric_type") == "formula" or updates.get("metric_type") == "formula":
+            if not metric.get("numerator_metric") and "numerator_metric" not in updates:
+                updates["numerator_metric"] = "won_leads"
+            if not metric.get("denominator_metric") and "denominator_metric" not in updates:
+                updates["denominator_metric"] = "total_leads"
+        
+        # Ensure unit field exists
+        if "unit" not in metric and "unit" not in updates:
+            if metric.get("metric_type") == "formula" or updates.get("metric_type") == "formula":
+                updates["unit"] = "%"
+            elif metric.get("metric_type") == "calculated" or updates.get("metric_type") == "calculated":
+                updates["unit"] = "days"
+            else:
+                updates["unit"] = ""
+        
+        # Apply updates if any
+        if updates:
+            await db.metric_settings.update_one(
+                {"metric_id": metric_id},
+                {"$set": updates}
+            )
+            migration_count += 1
+            logger.info(f"Migrated metric '{metric_id}': added fields {list(updates.keys())}")
+    
+    if migration_count > 0:
+        logger.info(f"Migration complete: updated {migration_count} metric(s)")
+    else:
+        logger.info("Migration complete: no updates needed")
+
+
 @app.on_event("startup")
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
+    
+    # Run database migrations first
+    await migrate_metric_settings()
+    
     # Create indexes for better query performance
     await db.leads.create_index("lead_id", unique=True)
     await db.leads.create_index("enquiry_no")
