@@ -17,11 +17,15 @@ class MetricConfig(BaseModel):
     show_on_dashboard: bool = True
     dashboard_order: int = 99
     # Formula-based metrics
-    metric_type: str = "count"  # count, formula, calculated
+    metric_type: str = "count"  # count, formula, calculated, custom_formula
     formula: Optional[str] = None  # e.g., "won_leads / (won_leads + lost_leads) * 100"
     numerator_metric: Optional[str] = None  # For ratio metrics
     denominator_metric: Optional[str] = None  # For ratio metrics
     unit: str = ""  # e.g., "days", "%"
+    # Calculated metric settings (for avg_lead_age, avg_closure_time)
+    start_date_field: Optional[str] = None  # e.g., "enquiry_date"
+    end_date_field: Optional[str] = None  # e.g., "last_followup_date" or "today"
+    filter_stages: List[str] = []  # Which stages to include in calculation
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
