@@ -181,6 +181,29 @@ async def migrate_metric_settings():
     
     # Get all existing metrics
     existing_metrics = await db.metric_settings.find({}).to_list(100)
+    existing_metric_ids = {m.get("metric_id") for m in existing_metrics}
+    
+    logger.info(f"Found {len(existing_metrics)} existing metrics: {existing_metric_ids}")
+    
+    # First, ensure critical metrics exist - create them if missing
+    critical_metrics = ["avg_lead_age", "avg_closure_time", "conversion_rate"]
+    for metric_id in critical_metrics:
+        if metric_id not in existing_metric_ids:
+            logger.info(f"Critical metric '{metric_id}' missing - creating it")
+            # Create from DEFAULT_METRICS
+            from models.metric_settings import DEFAULT_METRICS
+            for default_metric in DEFAULT_METRICS:
+                if default_metric.get("metric_id") == metric_id:
+                    await db.metric_settings.insert_one({
+                        **default_metric,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    })
+                    migration_count += 1
+                    logger.info(f"Created missing critical metric: {metric_id}")
+                    break
+    
+    # Reload metrics after creation
+    existing_metrics = await db.metric_settings.find({}).to_list(100)
     
     for metric in existing_metrics:
         metric_id = metric.get("metric_id")
