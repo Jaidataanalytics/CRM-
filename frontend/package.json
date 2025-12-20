@@ -60,9 +60,11 @@
     "zod": "^3.24.4"
   },
   "scripts": {
-    "start": "craco start",
+    "start": "npx serve -s build -l 3000 -n",
+    "start:dev": "craco start",
     "build": "craco build",
-    "test": "craco test"
+    "test": "craco test",
+    "prebuild": "rm -rf node_modules/.cache .cache 2>/dev/null || true"
   },
   "browserslist": {
     "production": [
