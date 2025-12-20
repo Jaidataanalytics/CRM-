@@ -338,6 +338,166 @@ class LeadManagementAPITester:
         # Test activity logs endpoint
         self.run_test("Get Activity Logs", "GET", "admin/activity-logs?page=1&limit=10", 200)
 
+    def test_metric_settings_endpoints(self):
+        """Test configurable metric settings endpoints"""
+        print("\n=== METRIC SETTINGS TESTS ===")
+        
+        # Test get metric settings
+        success, response = self.run_test("Get Metric Settings", "GET", "metric-settings", 200)
+        
+        if success:
+            metrics = response.get('metrics', [])
+            available_fields = response.get('available_fields', {})
+            
+            # Check for calculated metrics (Avg Lead Age, Avg Closure Time)
+            calculated_metrics = [m for m in metrics if m.get('metric_type') == 'calculated']
+            if calculated_metrics:
+                print(f"   ✓ Found {len(calculated_metrics)} calculated metrics")
+                for metric in calculated_metrics:
+                    if metric['metric_id'] in ['avg_lead_age', 'avg_closure_time']:
+                        print(f"   ✓ {metric['metric_name']} has configurable fields")
+            
+            # Check for formula metrics
+            formula_metrics = [m for m in metrics if m.get('metric_type') == 'formula']
+            if formula_metrics:
+                print(f"   ✓ Found {len(formula_metrics)} formula metrics")
+            
+            # Check available fields
+            if available_fields:
+                print(f"   ✓ Available fields: {list(available_fields.keys())}")
+        
+        # Test updating calculated metric (Avg Lead Age)
+        update_data = {
+            "start_date_field": "planned_followup_date",
+            "end_date_field": "last_followup_date",
+            "filter_stages": ["Prospecting", "Qualified"]
+        }
+        
+        success, response = self.run_test(
+            "Update Avg Lead Age Configuration", 
+            "PUT", 
+            "metric-settings/avg_lead_age", 
+            200, 
+            update_data
+        )
+        
+        if success:
+            if (response.get('start_date_field') == 'planned_followup_date' and 
+                response.get('end_date_field') == 'last_followup_date'):
+                print("   ✓ Date fields updated correctly")
+            if response.get('filter_stages') == ["Prospecting", "Qualified"]:
+                print("   ✓ Filter stages updated correctly")
+        
+        # Test updating formula metric (Conversion Rate)
+        formula_update = {
+            "numerator_metric": "won_leads",
+            "denominator_metric": "total_leads"
+        }
+        
+        success, response = self.run_test(
+            "Update Conversion Rate Formula", 
+            "PUT", 
+            "metric-settings/conversion_rate", 
+            200, 
+            formula_update
+        )
+        
+        if success:
+            if (response.get('numerator_metric') == 'won_leads' and 
+                response.get('denominator_metric') == 'total_leads'):
+                print("   ✓ Formula updated correctly")
+        
+        # Test creating custom formula metric
+        custom_formula_metric = {
+            "metric_id": "test_win_rate",
+            "metric_name": "Test Win Rate",
+            "description": "Test metric for win rate calculation",
+            "metric_type": "formula",
+            "numerator_metric": "won_leads",
+            "denominator_metric": "won_leads+lost_leads",
+            "unit": "%",
+            "color": "green",
+            "icon": "TrendingUp"
+        }
+        
+        success, response = self.run_test(
+            "Create Custom Formula Metric", 
+            "POST", 
+            "metric-settings/custom", 
+            200, 
+            custom_formula_metric
+        )
+        
+        if success:
+            print("   ✓ Custom formula metric created")
+            self.created_metrics.append("test_win_rate")
+        
+        # Test creating custom calculated metric
+        custom_calculated_metric = {
+            "metric_id": "test_lead_duration",
+            "metric_name": "Test Lead Duration",
+            "description": "Test metric for lead duration calculation",
+            "metric_type": "calculated",
+            "start_date_field": "enquiry_date",
+            "end_date_field": "today",
+            "filter_stages": ["Prospecting", "Qualified", "Proposal"],
+            "unit": "days",
+            "color": "blue",
+            "icon": "Clock"
+        }
+        
+        success, response = self.run_test(
+            "Create Custom Calculated Metric", 
+            "POST", 
+            "metric-settings/custom", 
+            200, 
+            custom_calculated_metric
+        )
+        
+        if success:
+            print("   ✓ Custom calculated metric created")
+            self.created_metrics.append("test_lead_duration")
+        
+        # Test KPIs with configurable metrics
+        success, response = self.run_test("Get KPIs with Configurable Metrics", "GET", "kpis", 200)
+        
+        if success:
+            dashboard_metrics = response.get('dashboard_metrics', [])
+            if dashboard_metrics:
+                print(f"   ✓ Found {len(dashboard_metrics)} dashboard metrics")
+                
+                # Check for calculated metrics
+                calculated = [m for m in dashboard_metrics if m.get('metric_type') == 'calculated']
+                formula = [m for m in dashboard_metrics if m.get('metric_type') == 'formula']
+                
+                print(f"   ✓ {len(calculated)} calculated metrics")
+                print(f"   ✓ {len(formula)} formula metrics")
+                
+                # Check specific metrics
+                avg_lead_age = next((m for m in dashboard_metrics if m['metric_id'] == 'avg_lead_age'), None)
+                if avg_lead_age:
+                    print(f"   ✓ Avg Lead Age: {avg_lead_age.get('value', 0)} days")
+                
+                conversion_rate = next((m for m in dashboard_metrics if m['metric_id'] == 'conversion_rate'), None)
+                if conversion_rate:
+                    print(f"   ✓ Conversion Rate: {conversion_rate.get('value', 0)}%")
+    
+    def test_cleanup_custom_metrics(self):
+        """Clean up created test metrics"""
+        print("\n=== CLEANUP CUSTOM METRICS ===")
+        
+        for metric_id in self.created_metrics:
+            success, _ = self.run_test(
+                f"Delete Custom Metric {metric_id}", 
+                "DELETE", 
+                f"metric-settings/custom/{metric_id}", 
+                200
+            )
+            if success:
+                print(f"   ✓ Deleted {metric_id}")
+        
+        self.created_metrics.clear()
+
     def test_without_auth(self):
         """Test endpoints without authentication"""
         print("\n=== UNAUTHENTICATED TESTS ===")
