@@ -309,6 +309,64 @@ const Admin = () => {
     }
   };
 
+  // Update calculated metric (start_date_field, end_date_field, filter_stages)
+  const updateCalculatedMetric = async (metricId, updates) => {
+    try {
+      await axios.put(`${API}/metric-settings/${metricId}`, 
+        updates,
+        { withCredentials: true }
+      );
+      loadMetricSettings();
+      toast.success('Metric formula updated');
+    } catch (error) {
+      toast.error('Failed to update metric');
+    }
+  };
+
+  // Create custom formula metric
+  const createCustomFormulaMetric = async () => {
+    if (!newFormulaMetric.metric_id || !newFormulaMetric.metric_name) {
+      toast.error('Please fill in metric ID and name');
+      return;
+    }
+    
+    try {
+      await axios.post(`${API}/metric-settings/custom`, newFormulaMetric, { withCredentials: true });
+      toast.success('Custom metric created');
+      setShowCreateFormula(false);
+      setNewFormulaMetric({
+        metric_id: '',
+        metric_name: '',
+        description: '',
+        metric_type: 'formula',
+        numerator_metric: 'won_leads',
+        denominator_metric: 'total_leads',
+        start_date_field: 'enquiry_date',
+        end_date_field: 'today',
+        filter_stages: [],
+        unit: '%',
+        color: 'primary',
+        icon: 'Calculator'
+      });
+      loadMetricSettings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to create metric');
+    }
+  };
+
+  // Delete custom metric
+  const deleteCustomFormulaMetric = async (metricId) => {
+    if (!window.confirm('Are you sure you want to delete this custom metric?')) return;
+    
+    try {
+      await axios.delete(`${API}/metric-settings/custom/${metricId}`, { withCredentials: true });
+      toast.success('Custom metric deleted');
+      loadMetricSettings();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete metric');
+    }
+  };
+
   const handleHistoricalUpload = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
