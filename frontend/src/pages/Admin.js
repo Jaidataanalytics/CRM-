@@ -830,7 +830,11 @@ const Admin = () => {
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowCreateMetric(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Custom Metric
+                Create Count Metric
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowCreateFormula(true)}>
+                <Calculator className="h-4 w-4 mr-2" />
+                Create Formula Metric
               </Button>
               <Button variant="outline" size="sm" onClick={resetMetricSettings}>
                 <RefreshCw className="h-4 w-4 mr-2" />
@@ -838,6 +842,239 @@ const Admin = () => {
               </Button>
             </div>
           </div>
+
+          {/* Create Custom Formula Metric Dialog */}
+          {showCreateFormula && (
+            <Card className="border-primary">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Create Formula/Calculated Metric
+                </CardTitle>
+                <CardDescription>Create a metric based on formulas or date calculations</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Metric ID (unique)</Label>
+                    <Input
+                      placeholder="e.g., win_rate"
+                      value={newFormulaMetric.metric_id}
+                      onChange={(e) => setNewFormulaMetric(prev => ({ ...prev, metric_id: e.target.value.toLowerCase().replace(/\s/g, '_') }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Display Name</Label>
+                    <Input
+                      placeholder="e.g., Win Rate"
+                      value={newFormulaMetric.metric_name}
+                      onChange={(e) => setNewFormulaMetric(prev => ({ ...prev, metric_name: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Metric Type</Label>
+                    <Select 
+                      value={newFormulaMetric.metric_type} 
+                      onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, metric_type: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="formula">Formula (Ratio %)</SelectItem>
+                        <SelectItem value="calculated">Calculated (Date Diff)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Input
+                    placeholder="e.g., Percentage of won leads from total closed"
+                    value={newFormulaMetric.description}
+                    onChange={(e) => setNewFormulaMetric(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+
+                {/* Formula Type Configuration */}
+                {newFormulaMetric.metric_type === 'formula' && (
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                    <p className="text-sm font-medium">Formula: Numerator / Denominator × 100</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Numerator</Label>
+                        <Select 
+                          value={newFormulaMetric.numerator_metric} 
+                          onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, numerator_metric: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="won_leads">Won Leads</SelectItem>
+                            <SelectItem value="lost_leads">Lost Leads</SelectItem>
+                            <SelectItem value="open_leads">Open Leads</SelectItem>
+                            <SelectItem value="closed_leads">Closed Leads</SelectItem>
+                            <SelectItem value="hot_leads">Hot Leads</SelectItem>
+                            <SelectItem value="qualified_leads">Qualified Leads</SelectItem>
+                            <SelectItem value="total_leads">Total Leads</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Denominator</Label>
+                        <Select 
+                          value={newFormulaMetric.denominator_metric} 
+                          onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, denominator_metric: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="total_leads">Total Leads</SelectItem>
+                            <SelectItem value="won_leads+lost_leads">Won + Lost</SelectItem>
+                            <SelectItem value="closed_leads">Closed Leads</SelectItem>
+                            <SelectItem value="open_leads">Open Leads</SelectItem>
+                            <SelectItem value="hot_leads+warm_leads+cold_leads">All Typed Leads</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Preview: ({newFormulaMetric.numerator_metric} / {newFormulaMetric.denominator_metric}) × 100 = ?%
+                    </p>
+                  </div>
+                )}
+
+                {/* Calculated Type Configuration */}
+                {newFormulaMetric.metric_type === 'calculated' && (
+                  <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                    <p className="text-sm font-medium">Formula: (End Date - Start Date) in days</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Start Date Field</Label>
+                        <Select 
+                          value={newFormulaMetric.start_date_field} 
+                          onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, start_date_field: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="enquiry_date">Enquiry Date</SelectItem>
+                            <SelectItem value="planned_followup_date">Planned Follow-up Date</SelectItem>
+                            <SelectItem value="last_followup_date">Last Follow-up Date</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End Date Field</Label>
+                        <Select 
+                          value={newFormulaMetric.end_date_field} 
+                          onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, end_date_field: v }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="today">Today (Current Date)</SelectItem>
+                            <SelectItem value="last_followup_date">Last Follow-up Date</SelectItem>
+                            <SelectItem value="planned_followup_date">Planned Follow-up Date</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Filter by Stages</Label>
+                      <div className="flex flex-wrap gap-1">
+                        {['Prospecting', 'Qualified', 'Proposal', 'Negotiation', 'Closed-Won', 'Order Booked', 'Closed-Lost', 'Closed-Dropped'].map(stage => {
+                          const isSelected = newFormulaMetric.filter_stages?.includes(stage);
+                          return (
+                            <Badge 
+                              key={stage}
+                              variant={isSelected ? 'default' : 'outline'}
+                              className="cursor-pointer"
+                              onClick={() => {
+                                const newStages = isSelected 
+                                  ? newFormulaMetric.filter_stages.filter(s => s !== stage)
+                                  : [...(newFormulaMetric.filter_stages || []), stage];
+                                setNewFormulaMetric(prev => ({ ...prev, filter_stages: newStages }));
+                              }}
+                            >
+                              {stage}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Unit</Label>
+                    <Select 
+                      value={newFormulaMetric.unit} 
+                      onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, unit: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="%">Percentage (%)</SelectItem>
+                        <SelectItem value="days">Days</SelectItem>
+                        <SelectItem value="">None</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Color</Label>
+                    <Select 
+                      value={newFormulaMetric.color} 
+                      onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, color: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">Primary</SelectItem>
+                        <SelectItem value="green">Green</SelectItem>
+                        <SelectItem value="red">Red</SelectItem>
+                        <SelectItem value="amber">Amber</SelectItem>
+                        <SelectItem value="blue">Blue</SelectItem>
+                        <SelectItem value="violet">Violet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Icon</Label>
+                    <Select 
+                      value={newFormulaMetric.icon} 
+                      onValueChange={(v) => setNewFormulaMetric(prev => ({ ...prev, icon: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Calculator">Calculator</SelectItem>
+                        <SelectItem value="TrendingUp">Trending Up</SelectItem>
+                        <SelectItem value="Clock">Clock</SelectItem>
+                        <SelectItem value="Timer">Timer</SelectItem>
+                        <SelectItem value="Target">Target</SelectItem>
+                        <SelectItem value="BarChart3">Bar Chart</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={() => setShowCreateFormula(false)}>Cancel</Button>
+                  <Button onClick={createCustomFormulaMetric}>Create Metric</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Create Custom Metric Form */}
           {showCreateMetric && (
