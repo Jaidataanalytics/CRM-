@@ -554,6 +554,10 @@ def main():
     tester.test_upload_endpoints()  # Add upload tests
     tester.test_notifications_endpoints()  # Add notification tests
     tester.test_admin_endpoints()
+    tester.test_metric_settings_endpoints()  # Add metric settings tests
+    
+    # Cleanup custom metrics
+    tester.test_cleanup_custom_metrics()
     
     # Test logout last (invalidates session)
     tester.test_logout_endpoint()
