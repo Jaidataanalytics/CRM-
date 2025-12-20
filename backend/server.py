@@ -64,6 +64,11 @@ async def health_check():
 # Include the router in the main app
 app.include_router(api_router)
 
+# Root-level health check endpoint for Kubernetes probes (without /api prefix)
+@app.get("/health")
+async def kubernetes_health_check():
+    return {"status": "healthy", "database": "connected"}
+
 # Store db in app state for route access
 app.state.db = db
 
