@@ -81,7 +81,7 @@ export const Header = () => {
   const handleSearch = async (query) => {
     setSearchQuery(query);
     if (query.length < 2) {
-      setSearchResults([]);
+      setSearchResults({ leads: [], entities: [] });
       setShowResults(false);
       return;
     }
@@ -89,22 +89,34 @@ export const Header = () => {
     setIsSearching(true);
     setShowResults(true);
     try {
-      const res = await axios.get(`${API}/leads?search=${encodeURIComponent(query)}&limit=10`, {
-        withCredentials: true
+      // Search both leads and entities in parallel
+      const [leadsRes, entitiesRes] = await Promise.all([
+        axios.get(`${API}/leads?search=${encodeURIComponent(query)}&limit=5`, { withCredentials: true }),
+        axios.get(`${API}/entity/search?q=${encodeURIComponent(query)}`, { withCredentials: true })
+      ]);
+      
+      setSearchResults({
+        leads: leadsRes.data.leads || [],
+        entities: entitiesRes.data.results || []
       });
-      setSearchResults(res.data.leads || []);
     } catch (err) {
       console.error('Search failed:', err);
-      setSearchResults([]);
+      setSearchResults({ leads: [], entities: [] });
     } finally {
       setIsSearching(false);
     }
   };
 
-  const handleResultClick = (lead) => {
+  const handleLeadClick = (lead) => {
     setShowResults(false);
     setSearchQuery('');
     navigate(`/leads?search=${encodeURIComponent(lead.name || lead.enquiry_no)}`);
+  };
+
+  const handleEntityClick = (entity) => {
+    setShowResults(false);
+    setSearchQuery('');
+    navigate(`/profile/${entity.type}/${encodeURIComponent(entity.id)}`);
   };
 
   const handleNotificationClick = (notif) => {
