@@ -38,6 +38,30 @@ class MetricUpdate(BaseModel):
     numerator_metric: Optional[str] = None
     denominator_metric: Optional[str] = None
     unit: Optional[str] = None
+    # Calculated metric fields (for avg_lead_age, avg_closure_time)
+    start_date_field: Optional[str] = None
+    end_date_field: Optional[str] = None
+    filter_stages: Optional[List[str]] = None
+
+
+class CustomMetricCreate(BaseModel):
+    metric_id: str
+    metric_name: str
+    description: str = ""
+    metric_type: str = "formula"  # formula or calculated
+    # For formula metrics
+    numerator_metric: Optional[str] = None
+    denominator_metric: Optional[str] = None
+    # For calculated (date diff) metrics
+    start_date_field: Optional[str] = None
+    end_date_field: Optional[str] = None
+    filter_stages: List[str] = []
+    filter_field: Optional[str] = None  # e.g., "enquiry_stage"
+    # Display settings
+    unit: str = ""
+    color: str = "primary"
+    icon: str = "Calculator"
+    show_on_dashboard: bool = True
 
 
 async def get_db(request: Request):
