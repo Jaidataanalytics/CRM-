@@ -84,6 +84,23 @@ const Admin = () => {
     color: 'primary',
     show_on_dashboard: true
   });
+  
+  // Custom Formula Metric state
+  const [showCreateFormula, setShowCreateFormula] = useState(false);
+  const [newFormulaMetric, setNewFormulaMetric] = useState({
+    metric_id: '',
+    metric_name: '',
+    description: '',
+    metric_type: 'formula',
+    numerator_metric: 'won_leads',
+    denominator_metric: 'total_leads',
+    start_date_field: 'enquiry_date',
+    end_date_field: 'today',
+    filter_stages: [],
+    unit: '%',
+    color: 'primary',
+    icon: 'Calculator'
+  });
 
   // Add User state
   const [showAddUser, setShowAddUser] = useState(false);
