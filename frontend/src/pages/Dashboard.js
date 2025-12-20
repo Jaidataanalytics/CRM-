@@ -44,21 +44,43 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const KPICard = ({ title, value, icon: Icon, color, onClick, active }) => (
-  <Card 
-    className={`cursor-pointer transition-all hover:shadow-md ${active ? 'ring-2 ring-primary' : ''}`}
-    onClick={onClick}
-    data-testid={`kpi-${title.toLowerCase().replace(/\\s/g, '-')}`}
-  >
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
-      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      <Icon className={`h-4 w-4 ${color}`} />
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold font-heading">{value}</div>
-    </CardContent>
-  </Card>
-);
+const KPICard = ({ title, value, icon: Icon, color, onClick, active, trend, unit }) => {
+  const formatValue = (val) => {
+    if (typeof val === 'string') return val;
+    if (typeof val === 'number') {
+      if (Number.isInteger(val)) return val.toLocaleString();
+      return val.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    }
+    return val;
+  };
+
+  return (
+    <Card 
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${active ? 'ring-2 ring-primary shadow-lg' : ''}`}
+      onClick={onClick}
+      data-testid={`kpi-${title.toLowerCase().replace(/\s/g, '-')}`}
+    >
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <div className={`p-2 rounded-lg bg-muted/50`}>
+          <Icon className={`h-4 w-4 ${color}`} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold font-heading">{formatValue(value)}</span>
+          {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1 mt-1 text-xs ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            <span>{Math.abs(trend)}% vs last period</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const LeadDetailPopup = ({ lead, isOpen, onClose, onEdit }) => {
   const [activities, setActivities] = useState([]);
