@@ -1,87 +1,88 @@
 <analysis>**original_problem_statement:**
-The user wants to build a comprehensive Lead Management Dashboard named LeadForge, which has since been rebranded to Sharda.
+The user wants to build a comprehensive Lead Management Dashboard named Sharda. The initial requirements included modules for Login, KPIs, Charts, Insights, Lead Management (CRUD, bulk upload), Comparison, AI Forecasting, and an Admin panel.
 
-**PRODUCT REQUIREMENTS:**
--   **Data Model**: A lead data structure with 42 columns.
--   **Modules**:
-    -   **Login Page**: Google OAuth and username/password.
-    -   **KPIs**: Card-based view of key metrics.
-    -   **Charts**: Custom chart creation.
-    -   **Insights**: Performance analysis.
-    -   **Manage Lead**: Manual/bulk lead entry (Excel), lead updates, search, interactive data grids, and a detailed lead timeline view.
-    -   **Comparison**: Compare internal performance against user-entered market data.
-    -   **Forecast**: AI-powered (GPT-4o) module to predict future inquiries and closures.
-    -   **Admin**: User management, historical data management (with progress bar), and management of lead qualification questions and KPI logic.
--   **Filtering**: A global, hierarchical filter system.
--   **Lead Qualification**: Admin-defined question/score system.
--   **Configurable Metrics**: Admin can define KPI logic and create custom KPI cards.
--   **Notifications**: A notification system in the header to alert users about missed, due, and upcoming follow-ups for open leads.
--   **Global Search**: A search bar in the main header to find leads, dealers, or employees across the application.
+Recent user requests implemented in this session include:
+- Fixing performance issues on the Manage Leads page.
+- Fixing incorrect follow-up notifications for won leads.
+- Changing the default date filter to the current Indian financial year.
+- Adding the ability to scroll in the notifications dropdown.
+- Adding functionality to export lead data to Excel.
+- Providing a downloadable template for bulk lead uploads.
+- Converting most fields in the Add New Lead form to dropdowns.
+- Allowing the follow-up date to be editable.
+- Adding Open Leads as a metric for charts.
+- Adding Average Lead Age and Average Lead Closure Time as KPI metrics.
+- Allowing admins to configure the formulas for Conversion Rate, Average Lead Age, and Average Closure Time.
+- Allowing admins to create new custom formula-based metrics.
+- Implementing the backlogged tasks: a map visualization for the Comparison page and general UX improvements.
+- Fixing a critical deployment issue where changes were not appearing on the live version.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A comprehensive full-stack application (React + FastAPI + MongoDB) named Sharda is fully functional. It includes:
--   Authentication (Google/password).
--   A dashboard with customizable KPI cards.
--   A Manage Leads page with an interactive data grid (sorting, filtering), pagination with a page-size selector, and a detailed slide-out panel with a tabbed view of all lead data and an activity timeline.
--   Bulk lead upload and a historical data replacement feature with a real-time progress bar.
--   A detailed Comparison page with tables and charts.
--   An AI-powered Forecast page with detailed breakdowns and a statistical fallback.
--   An extensive Admin Panel for user management, lead qualification rule setting, KPI logic configuration, and historical data uploads.
--   A global header with a global search bar and an intelligent notification system that separates overdue and upcoming follow-ups.
+A full-stack application (React + FastAPI + MongoDB) with a production-ready build process. The application is fully functional and includes:
+- Authentication (Google/password).
+- A Dashboard with customizable KPI cards, including new calculated (Avg Lead Age, Avg Closure Time) and formula-based (Conversion Rate) metrics.
+- A Manage Leads page with server-side pagination for performance, export-to-Excel, and a template download feature. The add/edit lead forms now use dynamic dropdowns.
+- A Charts page that now supports creating charts for Open Leads.
+- A Comparison page featuring a new interactive geographical heat map of India for state-level performance analysis.
+- An extensive Admin Panel where admins can:
+    - Manage users and upload historical data.
+    - Configure the formulas for system metrics (Conversion Rate, Avg Lead Age, etc.).
+    - Create entirely new custom formula-based metrics from scratch.
+- A global header with search and a fixed, scrollable notification system.
+- The frontend now runs a production build () to ensure consistency between local preview and deployment.
 
 **Last working item**:
--   **Last item agent was working**: The user reported that the historical data upload was failing for large files (~18k leads) and requested a progress bar. The agent refactored the backend to use asynchronous batch processing and added a WebSocket for real-time progress streaming. The frontend was updated with a progress bar and status messages.
--   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: Manual testing. The agent needs to create a large Excel file (e.g., 18,000+ rows) and upload it via the Admin UI to verify that the progress bar works correctly and the upload completes without timeouts or errors.
--   **User Testing Done**: N
+- **Last item agent was working**: The user reported that the deployed version of the application was not reflecting the latest changes (specifically the new metric formula editors), even though they appeared in the local preview. The agent identified a multi-part issue: the frontend was running in development mode (yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.), and there was a data integrity issue where old metrics in the database were missing a  field, causing UI rendering failures.
+- **Status**: USER VERIFICATION PENDING
+- **Agent Testing Done**: Y
+- **Which testing method agent to use?**: Screenshot tool. The next agent should immediately take screenshots of the live Dashboard and Admin -> Metric Settings pages to confirm the fix is holding before interacting with the user.
+- **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1 (P0)**: Verify the historical data upload feature with a large file.
+- **Issue 1 (P0)**: Final user verification of the deployment fix.
 
 **Issues Detail**:
--   **Issue 1**: **Verify historical data upload for large files**
-    -   **Attempted fixes**: The backend endpoint  was rewritten to process records in asynchronous batches using  instead of one-by-one. A WebSocket endpoint () was created to stream progress. The frontend  page was updated to connect to this WebSocket and display a multi-stage progress bar.
-    -   **Next debug checklist**:
-        1.  Create a large Excel file with ~18,000 lead records.
-        2.  Navigate to the Admin -> Data Management page.
-        3.  Upload the file using the Upload Historical Data feature.
-        4.  Observe the progress bar and status messages (Uploading, Processing, Inserting, Finalizing).
-        5.  Check the browser console and backend supervisor logs for any errors during the process.
-        6.  After the upload finishes, confirm the success message and verify that the lead count in the database reflects the new historical data.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical feature for initializing the application with real-world, large-scale historical data. Verifying the fix will ensure the system is scalable and robust.
-    -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: Y
-    -   **Should Test frontend/backend/both after fix?**: Both
-    -   **Blocked on other issue**: None
+- **Issue 1**: **Final user verification of the deployment fix**
+    - **Attempted fixes**:
+        1.  The  collection in MongoDB was patched to ensure every metric document has a  ('count', 'formula', or 'calculated').
+        2.  The frontend deployment process was changed from yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. (development mode) to yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. +  (production mode) to eliminate caching issues and ensure the deployed version is stable.
+        3.  The frontend process was fully restarted after clearing caches to ensure the new production server was active.
+    - **Next debug checklist**:
+        1.  Use the screenshot tool on the live URL to capture the  and  pages.
+        2.  Verify that the dashboard shows the correct, new KPI cards on the first load.
+        3.  Verify that the Admin -> Metric Settings page shows the full formula and calculated metric editors for , , and  on the first load.
+        4.  Ask the user to confirm the issue is resolved on their end.
+    - **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker. Fixing it ensures that all development work is correctly reflected in the user-facing application, restoring user confidence and unblocking further development.
+    - **Status**: USER VERIFICATION PENDING
+    - **Is recurring issue?**: Y
+    - **Should Test frontend/backend/both after fix?**: Frontend (via screenshot)
+    - **Blocked on other issue**: None
 
 **In progress Task List**:
 None.
 
 **Upcoming and Future Tasks**
--   **Task 1 (P1)**: The user asked for suggestions to make the overall experience better. The agent has implemented all functional requests but has not yet provided this list of UX/UI improvement suggestions. (From user message #128)
--   **Future Task**: Re-implement the map visualization on the Comparison page, which was initially abandoned due to complexity.
+- **Future Task (P2)**: Provide a formal list of UX/UI improvement suggestions. While the agent has implemented several UX enhancements (map, skeletons, improved cards), the original request to provide a list of suggestions for making the overall experience better is still open.
 
 **Completed work in this session**
--   **Historical Upload Rework**: Refactored the backend for performance and added a real-time progress bar to the frontend.
--   **Manage Leads Rework**: Replaced the table with a full-featured DataGrid, added pagination with a page-size selector, and implemented a comprehensive tabbed detail view for individual leads.
--   **Notification System**: Built and refined a notification system for follow-ups, with separate sections for Overdue and Upcoming, a clear-overdue function, and a badge counter in the sidebar.
--   **Follow-up Logic Fix**: Corrected the core logic to ensure follow-up notifications only trigger for open-stage leads, excluding all closed/won stages.
--   **Global Search & Header**: Added a global search bar and notification bell to a new persistent header.
--   **Admin User Creation**: Implemented the ability for admins to add new users.
--   **Rebranding**: Changed the app name to Sharda and updated the logo.
--   **Date Filter & Picker Rework**: Defaulted the date filter to include more historical data and improved the calendar component with year/month dropdowns.
--   **Bug Fixes**: Resolved critical bugs on the Comparison and Forecast pages.
--   **Deployment Health Check**: Performed a comprehensive manual health check, confirming the application is stable and ready for deployment.
+- **Deployment Fix**: Switched frontend from development to a stable production build (), fixing the critical issue of changes not appearing live.
+- **Database Integrity Fix**: Patched all documents in  collection with a , resolving UI inconsistencies.
+- **Advanced KPI Configuration**: Implemented admin UI to configure formulas for , , , and to create new custom formula-based metrics.
+- **New KPI Metrics**: Added Average Lead Age and Average Lead Closure Time to the dashboard.
+- **Manage Leads Enhancements**: Added Export to Excel, Template Download, and converted forms to use dynamic dropdowns.
+- **Manage Leads Performance**: Implemented server-side pagination, drastically improving load times.
+- **Notification Logic Fix**: Corrected backend queries and frontend logic to exclude closed leads from follow-up warnings.
+- **Charting Enhancement**: Enabled charting for Open Leads.
+- **Map Visualization**: Completed the backlogged task of adding an interactive map to the Comparison page.
+- **Historical Data Upload**: Successfully verified the fix for large file uploads.
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1**: **Comparison page map view is not working.**
-    -   **Debug checklist**: The original  implementation was replaced with a  table/chart view, which the user accepted. Re-implementing this would be a new feature enhancement.
-    -   **Why to solve this issue and what will be achieved with this?**: It would provide a geographical visualization of performance as originally requested.
-    -   **Should Test frontend/backend/both after fix**: Both
-    -   **Is recurring issue?**: N
+None.
 
 **Known issue recurrence from previous fork**
 None.
@@ -90,92 +91,96 @@ None.
 
 
 **Key Technical Concepts**
--   **Backend**: FastAPI, Pydantic, Motor, WebSockets
--   **Frontend**: React, React Router, Tailwind CSS, Shadcn UI, recharts, , 
+-   **Backend**: FastAPI, Pydantic, Motor, WebSockets, MongoDB Aggregation Pipelines
+-   **Frontend**: React, Tailwind CSS, Shadcn UI, Recharts, 
 -   **Database**: MongoDB
--   **Authentication**: JWT, Emergent-managed Google Auth
--   **AI/Forecasting**: OpenAI GPT-4o
+-   **Deployment**: The frontend now uses  to run a static production build from the  directory, which is a critical change from the previous development server (yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.).
 
 **key DB schema**
 -   **leads**: Contains all 42 columns of lead data.
 -   **users**: Stores user information, including .
--   **metric_settings**: Stores the admin configuration for dashboard KPIs.
--   **qualification_questions**: Defines questions and scores for lead qualification.
+-   **metric_settings**: Stores KPI configurations. This collection was significantly changed:
+    -   : (New/Patched)  - count, formula, or calculated. **Critical for UI rendering.**
+    -   : (New)  - 
+    -   : (New)  - 
 
 **changes in tech stack**
--   **Backend**: Added usage: websockets [--version | <uri>] for real-time progress updates.
--   **Frontend**: Heavily utilized Shadcn UI components (DataGrid, Sheet, Progress, Tabs, etc.). Added  for date logic. Enhanced  with custom components.
+-   ****: Added to the frontend to serve the production build.  was updated with a  script that runs .
 
 **All files of reference**
--   : Heavily modified for historical upload (batching, WebSockets) and user creation.
--   : Created and heavily modified to implement the intelligent notification logic.
--   : Modified to increase the query limit for the DataGrid.
--   : Modified to register new API and WebSocket routers.
--   : Completely overhauled to use the new  component, handle large datasets, and display the tabbed  for lead details.
--   : Modified to add the Add User dialog and the real-time progress bar for historical uploads.
--   : Created to house the global search bar and notification dropdown.
--   : Created as a reusable interactive table component.
--   : Created for the lead detail panel.
--   : Modified to add the notification badge.
--   : Modified to add year/month selection dropdowns.
--   : Modified to set a wider default date range.
+-   : Modified to add  and a  script.
+-   : Heavily modified to add UI for configuring calculated/formula metrics and creating custom metrics.
+-   : Overhauled to use server-side pagination and add Export/Template buttons.
+-   : Heavily modified to add the  geographical visualization.
+-   : Updated to display new calculated KPI metrics.
+-   : Rewritten to calculate new metrics based on configurable formulas from the database.
+-   : Rewritten to handle updates and creation of complex formula/calculated metrics.
+-   : Updated to include the new  and  Pydantic models.
+-   : New file explaining the switch to a production frontend server.
 
 **Areas that need refactoring**:
--   The frontend pages  and  are becoming large and complex. They could be broken down into smaller, more manageable child components to improve maintainability.
+-    and  have grown significantly more complex. They manage a large amount of state and logic and should be broken down into smaller, more focused components to improve maintainability.
 
 **key api endpoints**
--   : (Overhauled) For replacing all lead data, now supports large files with batch processing.
--   : (New) Streams real-time progress for the historical upload.
--   : (New) Fetches overdue and upcoming follow-up notifications.
--   : (New) Marks all overdue notifications as seen.
--   : (New) Creates a new user.
--   : (Modified)  parameter increased to 10000 to support the DataGrid.
--   : The new global search in the header uses this endpoint.
+-   : (New) Exports filtered leads to an Excel file.
+-   : (New) Fetches distinct values for form dropdowns.
+-   : (New) Creates a new custom metric.
+-   : (Modified) Handles updates for all metric types, including  and  fields.
+-   : (Modified) Recalculates all KPIs, including new formula-based ones, on every request.
 
 **Critical Info for New Agent**
--   Your first task is to **test the historical data upload with a very large file** (18k+ rows) to confirm the new performance fix and progress bar are working correctly.
--   The Manage Leads page now fetches up to 10,000 records from the backend and handles pagination, sorting, and filtering on the client-side via the new  component.
--   The notification logic is sophisticated: it only considers leads with an open stage (, , etc.) and separates alerts into Overdue and Upcoming.
--   The user asked for UX improvement suggestions for the dashboard but has not received them yet. This is a pending non-coding task.
+-   **The most critical issue was a discrepancy between local preview and the deployed version.** This was resolved by switching the frontend to a production build () and fixing a database integrity issue ( field missing). The next agent's first priority is to verify this fix is stable.
+-   **Start by verifying, not asking.** Do not ask the user if it's fixed. Use the screenshot tool to check the live dashboard and admin pages yourself first. If they look correct, then you can confidently inform the user the fix is confirmed and ask for their verification.
+-   The user has been frustrated by this deployment issue. It is crucial to be confident and clear about the fix and its root cause. Refer to the  for details.
 
-**documents created in this job**
--   
--   
--   
--   
+**documents and test_reports created in this job**
+-   /app/DEPLOYMENT_GUIDE.md
+-   /app/test_reports/iteration_8.json
+-   /app/test_reports/iteration_9.json
+-   /app/test_reports/iteration_10.json
+-   /app/test_reports/iteration_11.json
+-   /app/test_reports/iteration_12.json
 
-**Last 10 User Messages and any pending user messages**
-1.  **Msg #465**: Reports historical data upload failing with ~18k leads and requests a progress bar. (Status: **IN PROGRESS**)
-2.  **Msg #452**: Asks to run a deployment health check. (Status: **RESOLVED** - Manual check completed).
-3.  **Msg #390**: Asks to show all filtered leads in Manage Leads (not just 20) and display all columns in the detail view. (Status: **RESOLVED**)
-4.  **Msg #358**: Reports follow-up logic is wrong (won leads showing alerts, open leads not). (Status: **RESOLVED**)
-5.  **Msg #315**: Requests more intelligent notifications (separate sections, smart clearing, overdue count). (Status: **RESOLVED**)
-6.  **Msg #275**: Requests a clear notifications button and the ability for admins to add users. (Status: **RESOLVED**)
-7.  **Msg #188**: Requests a global search, interactive data grids, a lead timeline, and a notification system. (Status: **RESOLVED**)
-8.  **Msg #128**: Reports forecast is not showing, requests rebranding to Sharda, a better date picker, and asks for UX improvement suggestions. (Status: **PARTIALLY RESOLVED** - UX suggestions still pending).
-9.  **Msg #67**: Reports Forecast and Comparison pages are broken and asks to fix the default date filter. (Status: **RESOLVED**)
-10. **Msg #5**: Confirms the initial plan to verify the upload fix from the previous session. (Status: **RESOLVED**)
+**Last 10 User Messages and any pending HUMAN messages**
+1.  
+2.  
+3.  
+4.  
+5.  
+6.  
+7.  
+8.  
+9.  
+10. 
 
 **Project Health Check:**
--   **Broken**: The performance and reliability of the historical data upload for large files is implemented but unverified.
+-   **Broken**: None. The critical deployment issue has been addressed, pending final user verification.
 -   **Mocked**: None.
 
 **3rd Party Integrations**
 -   **OpenAI GPT-4o**: Uses Emergent LLM Key for the Forecast module.
 -   **Emergent-managed Google Auth**: Implemented for user login.
 -   **recharts**: Frontend library for charts.
+-   **react-simple-maps**: (New) Used for the map visualization on the Comparison page.
 -   **react-day-picker**: Used for the date range filter calendar.
 -   **date-fns**: Used for date calculations in the frontend.
+-   **serve**: (New) Node.js package used to serve the static production build of the React app.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES
+-   **Testing agent used after significant changes**: YES (used 5 times)
 -   **Troubleshoot agent used after agent stuck in loop**: NO
--   **Test files created**: , 
--   **Known regressions**: None.
+-   **Test files created**:
+    -   
+    -   
+    -   
+    -   
+    -   
+-   **Known regressions**: The deployment inconsistency was a major regression that is now believed to be fixed.
 
 **Credentials to test flow:**
 -   **Username**: 
 -   **Password**: 
 
 **What agent forgot to execute**
--   In user message #128, the user asked the agent to ...go over the entire dashboard again and suggest changes to make the overall experience better. The agent did not provide these suggestions and instead moved on to other functional requests. This is a pending, non-coding task.</analysis>
+-   The agent never formally presented the user with a list of suggestions for further UX improvements, which was a pending item from a previous session (user message #128). The agent did, however, implement several UX enhancements as part of other tasks.</analysis>
