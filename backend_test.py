@@ -322,6 +322,82 @@ class LeadManagementAPITester:
         # Test notifications with limit
         self.run_test("Get Notifications with Limit", "GET", "notifications?limit=5", 200)
 
+    def test_entity_profile_endpoints(self):
+        """Test Entity Profile endpoints for states, dealers, cities, employees"""
+        print("\n=== ENTITY PROFILE TESTS ===")
+        
+        # Test entity search endpoint
+        success, response = self.run_test("Search Entities - Jharkhand", "GET", "entity/search?q=jharkhand", 200)
+        if success and response.get("results"):
+            print(f"   ✓ Found {len(response['results'])} entities for 'jharkhand'")
+            
+            # Test with first entity found
+            first_entity = response["results"][0]
+            entity_type = first_entity["type"]
+            entity_id = first_entity["id"]
+            
+            print(f"   Testing profile for {entity_type}: {entity_id}")
+            
+            # Test entity profile endpoint
+            profile_success, profile_response = self.run_test(
+                f"Get {entity_type.capitalize()} Profile", 
+                "GET", 
+                f"entity/profile/{entity_type}/{entity_id}", 
+                200
+            )
+            
+            if profile_success:
+                # Verify profile structure
+                required_keys = ["entity_type", "entity_id", "kpis", "stage_breakdown"]
+                missing_keys = [key for key in required_keys if key not in profile_response]
+                if not missing_keys:
+                    print(f"   ✓ Profile structure complete")
+                    
+                    # Check KPIs
+                    kpis = profile_response.get("kpis", {})
+                    kpi_keys = ["total_leads", "open_leads", "won_leads", "conversion_rate"]
+                    if all(key in kpis for key in kpi_keys):
+                        print(f"   ✓ KPIs: Total={kpis['total_leads']}, Won={kpis['won_leads']}, Conv={kpis['conversion_rate']}%")
+                    
+                    # Check charts data
+                    if profile_response.get("stage_breakdown"):
+                        print(f"   ✓ Stage breakdown data available")
+                    if profile_response.get("trend"):
+                        print(f"   ✓ Trend data available")
+                else:
+                    print(f"   ⚠️  Missing profile keys: {missing_keys}")
+            
+            # Test recent leads endpoint
+            self.run_test(
+                f"Get Recent Leads for {entity_type.capitalize()}", 
+                "GET", 
+                f"entity/recent-leads/{entity_type}/{entity_id}?page=1&limit=5", 
+                200
+            )
+            
+            # Test export endpoint
+            self.run_test(
+                f"Export {entity_type.capitalize()} Data", 
+                "GET", 
+                f"entity/export/{entity_type}/{entity_id}", 
+                200
+            )
+        else:
+            print("   ⚠️  No entities found for search test")
+        
+        # Test search with different queries
+        test_queries = ["maharashtra", "delhi", "employee"]
+        for query in test_queries:
+            success, response = self.run_test(
+                f"Search Entities - {query.capitalize()}", 
+                "GET", 
+                f"entity/search?q={query}", 
+                200
+            )
+            if success:
+                result_count = len(response.get("results", []))
+                print(f"   ✓ '{query}' search returned {result_count} results")
+
     def test_admin_endpoints(self):
         """Test admin endpoints (Admin role required)"""
         print("\n=== ADMIN TESTS ===")
