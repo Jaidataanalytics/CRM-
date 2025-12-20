@@ -629,6 +629,7 @@ def main():
     tester.test_lead_activity_endpoints()
     tester.test_upload_endpoints()  # Add upload tests
     tester.test_notifications_endpoints()  # Add notification tests
+    tester.test_entity_profile_endpoints()  # Add entity profile tests
     tester.test_admin_endpoints()
     tester.test_metric_settings_endpoints()  # Add metric settings tests
     
