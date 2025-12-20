@@ -1024,7 +1024,7 @@ const Admin = () => {
                       <SelectContent>
                         <SelectItem value="%">Percentage (%)</SelectItem>
                         <SelectItem value="days">Days</SelectItem>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
