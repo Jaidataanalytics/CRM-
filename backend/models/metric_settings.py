@@ -42,7 +42,9 @@ DEFAULT_METRICS = [
         "color": "green",
         "icon": "CheckCircle",
         "show_on_dashboard": True,
-        "dashboard_order": 1
+        "dashboard_order": 1,
+        "metric_type": "count",
+        "unit": ""
     },
     {
         "metric_id": "lost_leads",
@@ -55,7 +57,9 @@ DEFAULT_METRICS = [
         "color": "red",
         "icon": "XCircle",
         "show_on_dashboard": True,
-        "dashboard_order": 2
+        "dashboard_order": 2,
+        "metric_type": "count",
+        "unit": ""
     },
     {
         "metric_id": "open_leads",
@@ -68,7 +72,9 @@ DEFAULT_METRICS = [
         "color": "yellow",
         "icon": "Target",
         "show_on_dashboard": True,
-        "dashboard_order": 3
+        "dashboard_order": 3,
+        "metric_type": "count",
+        "unit": ""
     },
     {
         "metric_id": "closed_leads",
@@ -81,7 +87,9 @@ DEFAULT_METRICS = [
         "color": "purple",
         "icon": "CheckCircle2",
         "show_on_dashboard": True,
-        "dashboard_order": 4
+        "dashboard_order": 4,
+        "metric_type": "count",
+        "unit": ""
     },
     {
         "metric_id": "hot_leads",
@@ -94,7 +102,9 @@ DEFAULT_METRICS = [
         "color": "red",
         "icon": "Flame",
         "show_on_dashboard": True,
-        "dashboard_order": 5
+        "dashboard_order": 5,
+        "metric_type": "count",
+        "unit": ""
     },
     {
         "metric_id": "warm_leads",
@@ -107,7 +117,9 @@ DEFAULT_METRICS = [
         "color": "orange",
         "icon": "ThermometerSun",
         "show_on_dashboard": True,
-        "dashboard_order": 6
+        "dashboard_order": 6,
+        "metric_type": "count",
+        "unit": ""
     },
     {
         "metric_id": "cold_leads",
