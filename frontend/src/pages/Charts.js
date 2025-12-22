@@ -74,6 +74,9 @@ const metricOptions = [
   { value: 'warm', label: 'Warm Leads' },
   { value: 'cold', label: 'Cold Leads' },
   { value: 'conversion_rate', label: 'Conversion Rate (%)' },
+  { value: 'calls_placed', label: 'Calls Placed' },
+  { value: 'quotations_sent', label: 'Quotations Sent' },
+  { value: 'call_to_quotation_rate', label: 'Call to Quotation Rate (%)' },
 ];
 
 // Group by options (how to group)
