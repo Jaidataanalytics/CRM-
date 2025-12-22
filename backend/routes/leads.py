@@ -125,6 +125,9 @@ async def get_dropdown_options(
         # Filter out None, empty strings, and 'nan'
         options[field] = sorted([v for v in values if v and str(v).lower() not in ['none', 'nan', '']])
     
+    # Add static options for new fields
+    options['call_status'] = ['Not Called', 'Called Once', 'Called Multiple Times']
+    
     return options
 
 
