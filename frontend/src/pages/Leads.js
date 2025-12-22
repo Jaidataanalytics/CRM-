@@ -361,6 +361,59 @@ const Leads = () => {
     }
   };
 
+  // Call remarks functions
+  const openRemarkDialog = async (lead) => {
+    setRemarkLead(lead);
+    setNewRemark('');
+    setIsRemarkDialogOpen(true);
+    setLoadingRemarks(true);
+    try {
+      const res = await axios.get(`${API}/leads/${lead.lead_id}/call-remarks`, { withCredentials: true });
+      setCallRemarks(res.data.remarks || []);
+    } catch (error) {
+      console.error('Error loading call remarks:', error);
+      setCallRemarks([]);
+    } finally {
+      setLoadingRemarks(false);
+    }
+  };
+
+  const handleAddRemark = async () => {
+    if (!newRemark.trim()) {
+      toast.error('Please enter a remark');
+      return;
+    }
+    
+    try {
+      await axios.post(`${API}/leads/${remarkLead.lead_id}/call-remark`, 
+        { remark: newRemark.trim() },
+        { withCredentials: true }
+      );
+      toast.success('Call remark added successfully');
+      setNewRemark('');
+      // Reload remarks
+      const res = await axios.get(`${API}/leads/${remarkLead.lead_id}/call-remarks`, { withCredentials: true });
+      setCallRemarks(res.data.remarks || []);
+      loadLeads(); // Refresh leads list
+    } catch (error) {
+      console.error('Error adding call remark:', error);
+      toast.error('Failed to add call remark');
+    }
+  };
+
+  const getCallStatusBadge = (status) => {
+    if (!status || status === 'Not Called') return <Badge variant="outline" className="gap-1"><Phone className="h-3 w-3" /> Not Called</Badge>;
+    
+    const variants = {
+      'Called - No Response': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      'Called - Interested': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      'Called - Not Interested': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      'Called - Follow Up Required': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      'Called - Converted': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    };
+    return <Badge className={`gap-1 ${variants[status] || 'bg-gray-100 text-gray-800'}`}><Phone className="h-3 w-3" /> {status}</Badge>;
+  };
+
   const getStatusBadge = (status) => {
     const variants = {
       'Closed-Won': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
