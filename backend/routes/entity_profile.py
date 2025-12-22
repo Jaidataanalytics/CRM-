@@ -197,9 +197,6 @@ async def get_entity_profile(
         profile["dealer"] = sample_lead.get("dealer")
         profile["state"] = sample_lead.get("state")
     
-    # Get entity profile config (admin-configurable)
-    entity_config = await db.entity_profile_config.find_one({"config_id": "global"}, {"_id": 0})
-    
     # Get KPIs using admin-configurable metrics (same as dashboard)
     won_config = await get_metric_config(db, "won_leads")
     lost_config = await get_metric_config(db, "lost_leads")
