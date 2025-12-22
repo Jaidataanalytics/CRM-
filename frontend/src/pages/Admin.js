@@ -298,10 +298,12 @@ const Admin = () => {
   const recoverLeads = async (leadIds = null, recoverAll = false) => {
     setRecoveringLeads(true);
     try {
-      const res = await axios.post(`${API}/admin/trash/recover-leads`, 
-        { lead_ids: leadIds, recover_all: recoverAll },
-        { withCredentials: true }
-      );
+      const params = new URLSearchParams();
+      if (recoverAll) params.append('recover_all', 'true');
+      if (leadIds && leadIds.length > 0) {
+        leadIds.forEach(id => params.append('lead_ids', id));
+      }
+      const res = await axios.post(`${API}/admin/trash/recover-leads?${params}`, {}, { withCredentials: true });
       toast.success(res.data.message);
       setSelectedTrashLeads([]);
       loadTrashStats();
@@ -317,10 +319,12 @@ const Admin = () => {
   const permanentDeleteLeads = async (leadIds = null, deleteAllTrash = false) => {
     setPermanentDeleting(true);
     try {
-      const res = await axios.post(`${API}/admin/trash/permanent-delete`,
-        { lead_ids: leadIds, delete_all_trash: deleteAllTrash },
-        { withCredentials: true }
-      );
+      const params = new URLSearchParams();
+      if (deleteAllTrash) params.append('delete_all_trash', 'true');
+      if (leadIds && leadIds.length > 0) {
+        leadIds.forEach(id => params.append('lead_ids', id));
+      }
+      const res = await axios.post(`${API}/admin/trash/permanent-delete?${params}`, {}, { withCredentials: true });
       toast.success(res.data.message);
       setSelectedTrashLeads([]);
       loadTrashStats();
