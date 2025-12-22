@@ -391,3 +391,69 @@ async def delete_lead(
     await db.activity_logs.insert_one(activity_doc)
     
     return {"message": "Lead deleted successfully"}
+
+
+class CallRemarkRequest(BaseModel):
+    remark: str
+
+
+@router.post("/{lead_id}/call-remark")
+async def add_call_remark(
+    request: Request,
+    lead_id: str,
+    remark_data: CallRemarkRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Add a call remark to a lead"""
+    db = await get_db(request)
+    
+    # Check if lead exists
+    lead = await db.leads.find_one({"lead_id": lead_id})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Create remark object with timestamp
+    new_remark = {
+        "remark": remark_data.remark,
+        "added_by": current_user.name,
+        "added_by_id": current_user.user_id,
+        "added_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Add to call_remarks array
+    await db.leads.update_one(
+        {"lead_id": lead_id},
+        {
+            "$push": {"call_remarks": new_remark},
+            "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}
+        }
+    )
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="add_call_remark",
+        resource_type="lead",
+        resource_id=lead_id
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {"message": "Call remark added successfully", "remark": new_remark}
+
+
+@router.get("/{lead_id}/call-remarks")
+async def get_call_remarks(
+    request: Request,
+    lead_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all call remarks for a lead"""
+    db = await get_db(request)
+    
+    lead = await db.leads.find_one({"lead_id": lead_id}, {"call_remarks": 1})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    return {"remarks": lead.get("call_remarks", [])}
