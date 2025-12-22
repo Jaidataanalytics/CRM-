@@ -1672,6 +1672,156 @@ const Admin = () => {
           </Card>
         </TabsContent>
 
+        {/* Entity Profile Configuration Tab */}
+        <TabsContent value="entity-profile" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Entity Profile Page Settings
+              </CardTitle>
+              <CardDescription>
+                Configure which KPIs and charts appear on entity profile pages (States, Dealers, Employees, Cities)
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* KPI Selection */}
+              <div>
+                <h4 className="font-medium mb-3">KPI Cards to Display</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {availableKpis.built_in_metrics?.map(metric => (
+                    <div
+                      key={metric.metric_id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        entityProfileConfig?.kpis?.enabled_kpis?.includes(metric.metric_id)
+                          ? 'bg-primary/10 border-primary'
+                          : 'hover:bg-muted'
+                      }`}
+                      onClick={() => toggleKpiEnabled(metric.metric_id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{metric.display_name}</span>
+                        {entityProfileConfig?.kpis?.enabled_kpis?.includes(metric.metric_id) && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      {metric.unit && (
+                        <span className="text-xs text-muted-foreground">Unit: {metric.unit}</span>
+                      )}
+                    </div>
+                  ))}
+                  {availableKpis.configurable_metrics?.map(metric => (
+                    <div
+                      key={metric.metric_id}
+                      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                        entityProfileConfig?.kpis?.enabled_kpis?.includes(metric.metric_id)
+                          ? 'bg-primary/10 border-primary'
+                          : 'hover:bg-muted'
+                      }`}
+                      onClick={() => toggleKpiEnabled(metric.metric_id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{metric.display_name}</span>
+                        {entityProfileConfig?.kpis?.enabled_kpis?.includes(metric.metric_id) && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      {metric.unit && (
+                        <span className="text-xs text-muted-foreground">Unit: {metric.unit}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Chart Selection */}
+              <div>
+                <h4 className="font-medium mb-3">Charts to Display</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {[
+                    { key: 'stage_breakdown', label: 'Lead Stage Breakdown', desc: 'Pie chart of lead stages' },
+                    { key: 'source_breakdown', label: 'Lead Source Distribution', desc: 'Bar chart of lead sources' },
+                    { key: 'segment_performance', label: 'Segment Performance', desc: 'Table of segment metrics' },
+                    { key: 'trend', label: 'Lead Trend Over Time', desc: 'Line chart of leads over months' },
+                    { key: 'followup_status', label: 'Follow-up Status', desc: 'Overdue vs On-track counts' },
+                  ].map(chart => (
+                    <div
+                      key={chart.key}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        entityProfileConfig?.charts?.[chart.key]?.enabled
+                          ? 'bg-primary/10 border-primary'
+                          : 'hover:bg-muted'
+                      }`}
+                      onClick={() => toggleChartEnabled(chart.key)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium">{chart.label}</span>
+                        {entityProfileConfig?.charts?.[chart.key]?.enabled && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{chart.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sub-entity Display Options */}
+              <div>
+                <h4 className="font-medium mb-3">Sub-entity Display Options</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { key: 'show_top_performers', label: 'Top Performers' },
+                    { key: 'show_employees', label: 'Employees List' },
+                    { key: 'show_dealers', label: 'Dealers List' },
+                    { key: 'show_cities', label: 'Cities List' },
+                  ].map(option => (
+                    <div
+                      key={option.key}
+                      className="flex items-center gap-2"
+                    >
+                      <Checkbox
+                        id={option.key}
+                        checked={entityProfileConfig?.sub_entities?.[option.key] ?? true}
+                        onCheckedChange={(checked) => {
+                          setEntityProfileConfig(prev => ({
+                            ...prev,
+                            sub_entities: {
+                              ...prev?.sub_entities,
+                              [option.key]: checked
+                            }
+                          }));
+                        }}
+                      />
+                      <Label htmlFor={option.key}>{option.label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Save Button */}
+              <div className="flex justify-end">
+                <Button onClick={saveEntityProfileConfig} disabled={savingEntityConfig}>
+                  <Save className="h-4 w-4 mr-2" />
+                  {savingEntityConfig ? 'Saving...' : 'Save Configuration'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-4">
+              <h4 className="font-medium mb-2">How it works:</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Select which KPIs to show on Entity Profile pages (States, Dealers, Employees, Cities)</li>
+                <li>• Toggle charts on/off to customize the profile page layout</li>
+                <li>• Entity profiles use the same date filter as the Dashboard</li>
+                <li>• All data calculations use the same formulas as the main Dashboard metrics</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Qualification Questions Tab */}
         <TabsContent value="qualification" className="space-y-4">
           {/* Threshold Setting */}
