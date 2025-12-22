@@ -131,7 +131,25 @@ class LeadManagementAPITester:
         self.run_test("Get Leads with State Filter", "GET", "leads?state=Maharashtra&page=1&limit=5", 200)
         
         # Test NEW FEATURE: dropdown options endpoint
-        self.run_test("Get Dropdown Options", "GET", "leads/dropdown-options", 200)
+        success, response = self.run_test("Get Dropdown Options", "GET", "leads/dropdown-options", 200)
+        if success:
+            # Check if call_status options are present
+            if "call_status" in response:
+                call_statuses = response["call_status"]
+                expected_statuses = [
+                    'Not Called',
+                    'Called - No Response', 
+                    'Called - Interested',
+                    'Called - Not Interested',
+                    'Called - Follow Up Required',
+                    'Called - Converted'
+                ]
+                if all(status in call_statuses for status in expected_statuses):
+                    print(f"   ✓ Call status options complete: {len(call_statuses)} options")
+                else:
+                    print(f"   ⚠️  Missing call status options")
+            else:
+                print(f"   ⚠️  Call status options not found in dropdown response")
         
         # Test NEW FEATURE: export leads to Excel
         self.run_test("Export Leads to Excel", "GET", "leads/export?format=xlsx", 200)
