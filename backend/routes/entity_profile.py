@@ -775,7 +775,7 @@ async def update_entity_profile_config(
         "sub_entities": data.get("sub_entities", DEFAULT_ENTITY_PROFILE_CONFIG["sub_entities"]),
         "display_options": data.get("display_options", DEFAULT_ENTITY_PROFILE_CONFIG["display_options"]),
         "updated_at": datetime.now(timezone.utc).isoformat(),
-        "updated_by": current_user.username
+        "updated_by": current_user.name or current_user.email
     }
     
     if existing:
