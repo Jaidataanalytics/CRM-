@@ -51,7 +51,15 @@ async def count_by_metric(db, base_query: dict, metric_config: dict) -> int:
     if not field_name or not field_values:
         return 0
     
-    query = {**base_query, field_name: {"$in": field_values}}
+    # Handle boolean fields (like quotation_sent)
+    if len(field_values) == 1 and isinstance(field_values[0], bool):
+        query = {**base_query, field_name: field_values[0]}
+    else:
+        query = {**base_query, field_name: {"$in": field_values}}
+    
+    # Exclude soft-deleted leads
+    query["deleted_at"] = {"$exists": False}
+    
     return await db.leads.count_documents(query)
 
 
