@@ -103,6 +103,13 @@ const Leads = () => {
   // Dropdown options for form fields
   const [dropdownOptions, setDropdownOptions] = useState({});
   const [exporting, setExporting] = useState(false);
+  
+  // Call remarks modal state
+  const [isRemarkDialogOpen, setIsRemarkDialogOpen] = useState(false);
+  const [remarkLead, setRemarkLead] = useState(null);
+  const [newRemark, setNewRemark] = useState('');
+  const [callRemarks, setCallRemarks] = useState([]);
+  const [loadingRemarks, setLoadingRemarks] = useState(false);
 
   useEffect(() => {
     loadLeads();
