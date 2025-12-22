@@ -241,6 +241,12 @@ const EntityProfile = () => {
               {profile.state && entityType !== 'state' && `${profile.state}`}
               {profile.dealer && entityType === 'employee' && ` • ${profile.dealer}`}
             </p>
+            {profile.date_range && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <Calendar className="inline h-3 w-3 mr-1" />
+                {profile.date_range.start_date} to {profile.date_range.end_date}
+              </p>
+            )}
           </div>
         </div>
         <Button onClick={handleExport} disabled={exporting}>
@@ -257,7 +263,7 @@ const EntityProfile = () => {
               <Users className="h-4 w-4" />
               Total Leads
             </div>
-            <p className="text-2xl font-bold mt-1">{kpis.total_leads.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1">{(kpis?.total_leads ?? 0).toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -266,7 +272,7 @@ const EntityProfile = () => {
               <Target className="h-4 w-4 text-blue-500" />
               Open
             </div>
-            <p className="text-2xl font-bold mt-1 text-blue-600">{kpis.open_leads.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1 text-blue-600">{(kpis?.open_leads ?? 0).toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -275,7 +281,7 @@ const EntityProfile = () => {
               <CheckCircle className="h-4 w-4 text-green-500" />
               Won
             </div>
-            <p className="text-2xl font-bold mt-1 text-green-600">{kpis.won_leads.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1 text-green-600">{(kpis?.won_leads ?? 0).toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
