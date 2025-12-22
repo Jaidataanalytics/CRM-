@@ -255,7 +255,7 @@ async def get_kpis(
         {"$match": {
             **base_query, 
             "enquiry_stage": {"$in": closure_filter_stages},
-            closure_end_field: {"$exists": True, "$ne": None, "$ne": ""}
+            closure_end_field: {"$exists": True, "$nin": [None, ""]}
         }},
         {
             "$addFields": {
