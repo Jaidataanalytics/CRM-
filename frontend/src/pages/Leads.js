@@ -805,6 +805,60 @@ const Leads = () => {
                     />
                   </div>
                 </div>
+                
+                {/* Call & Quotation Tracking Section */}
+                <Separator className="my-4" />
+                <h4 className="font-medium text-sm text-muted-foreground mb-3">Call & Quotation Tracking</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Call Status</Label>
+                    <Select value={formData.call_status || 'Not Called'} onValueChange={(v) => handleInputChange('call_status', v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select call status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(dropdownOptions.call_status || [
+                          'Not Called',
+                          'Called - No Response',
+                          'Called - Interested',
+                          'Called - Not Interested',
+                          'Called - Follow Up Required',
+                          'Called - Converted'
+                        ]).map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="quotation_date">Quotation Date</Label>
+                    <Input
+                      id="quotation_date"
+                      type="date"
+                      value={formData.quotation_date || ''}
+                      onChange={(e) => handleInputChange('quotation_date', e.target.value)}
+                      disabled={!formData.quotation_sent}
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="quotation_sent">Quotation Sent</Label>
+                      <Switch
+                        id="quotation_sent"
+                        checked={formData.quotation_sent || false}
+                        onCheckedChange={(checked) => {
+                          handleInputChange('quotation_sent', checked);
+                          if (checked && !formData.quotation_date) {
+                            handleInputChange('quotation_date', new Date().toISOString().split('T')[0]);
+                          }
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Toggle on if quotation has been sent to the customer</p>
+                  </div>
+                </div>
+                
+                <Separator className="my-4" />
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks</Label>
                   <Textarea
