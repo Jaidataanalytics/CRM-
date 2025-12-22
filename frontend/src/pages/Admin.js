@@ -1867,14 +1867,6 @@ const Admin = () => {
 
         {/* Data Management Tab */}
         <TabsContent value="data" className="space-y-4">
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Warning: Destructive Operation</AlertTitle>
-            <AlertDescription>
-              Uploading historical data will <strong>delete all existing leads</strong> with dates up to the maximum date in your uploaded file, then insert the new data. This action cannot be undone.
-            </AlertDescription>
-          </Alert>
-
           {/* Current Data Stats */}
           <Card>
             <CardHeader>
@@ -1885,7 +1877,7 @@ const Admin = () => {
             </CardHeader>
             <CardContent>
               {dataStats ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground">Total Leads</p>
                     <p className="text-2xl font-bold">{dataStats.total_leads?.toLocaleString() || 0}</p>
@@ -1897,6 +1889,10 @@ const Admin = () => {
                   <div className="p-4 bg-muted/50 rounded-lg">
                     <p className="text-sm text-muted-foreground">Latest Date</p>
                     <p className="text-2xl font-bold">{dataStats.date_range?.max || '-'}</p>
+                  </div>
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <p className="text-sm text-red-600">In Trash</p>
+                    <p className="text-2xl font-bold text-red-600">{trashStats?.total_in_trash || 0}</p>
                   </div>
                 </div>
               ) : (
@@ -1917,6 +1913,302 @@ const Admin = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Delete Leads Card */}
+          <Card className="border-red-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600">
+                <Trash2 className="h-5 w-5" />
+                Delete Leads
+              </CardTitle>
+              <CardDescription>
+                Soft delete leads by applying filters. Deleted leads can be recovered within 14 days.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Delete All Option */}
+              <div className="flex items-center space-x-2 p-4 bg-red-50 rounded-lg border border-red-200">
+                <Checkbox
+                  id="deleteAll"
+                  checked={deleteFilters.deleteAll}
+                  onCheckedChange={(checked) => {
+                    setDeleteFilters({ 
+                      ...deleteFilters, 
+                      deleteAll: checked,
+                      startDate: '', endDate: '', state: '', dealer: '',
+                      employee: '', stage: '', segment: '', source: ''
+                    });
+                    setDeletePreview(null);
+                  }}
+                />
+                <Label htmlFor="deleteAll" className="text-red-600 font-medium cursor-pointer">
+                  Delete ALL leads (use with extreme caution)
+                </Label>
+              </div>
+
+              {/* Filter Options */}
+              {!deleteFilters.deleteAll && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-2">
+                    <Label>Date Range</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="date"
+                        value={deleteFilters.startDate}
+                        onChange={(e) => setDeleteFilters({ ...deleteFilters, startDate: e.target.value })}
+                        placeholder="Start"
+                      />
+                      <Input
+                        type="date"
+                        value={deleteFilters.endDate}
+                        onChange={(e) => setDeleteFilters({ ...deleteFilters, endDate: e.target.value })}
+                        placeholder="End"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Select
+                      value={deleteFilters.state}
+                      onValueChange={(v) => setDeleteFilters({ ...deleteFilters, state: v === 'all' ? '' : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All States" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All States</SelectItem>
+                        {deleteFilterOptions.states.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Dealer</Label>
+                    <Select
+                      value={deleteFilters.dealer}
+                      onValueChange={(v) => setDeleteFilters({ ...deleteFilters, dealer: v === 'all' ? '' : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Dealers" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Dealers</SelectItem>
+                        {deleteFilterOptions.dealers.map(d => (
+                          <SelectItem key={d} value={d}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Employee</Label>
+                    <Select
+                      value={deleteFilters.employee}
+                      onValueChange={(v) => setDeleteFilters({ ...deleteFilters, employee: v === 'all' ? '' : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Employees" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Employees</SelectItem>
+                        {deleteFilterOptions.employees.map(e => (
+                          <SelectItem key={e} value={e}>{e}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Enquiry Stage</Label>
+                    <Select
+                      value={deleteFilters.stage}
+                      onValueChange={(v) => setDeleteFilters({ ...deleteFilters, stage: v === 'all' ? '' : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Stages" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Stages</SelectItem>
+                        {deleteFilterOptions.stages.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Segment</Label>
+                    <Select
+                      value={deleteFilters.segment}
+                      onValueChange={(v) => setDeleteFilters({ ...deleteFilters, segment: v === 'all' ? '' : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Segments" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Segments</SelectItem>
+                        {deleteFilterOptions.segments.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>Source</Label>
+                    <Select
+                      value={deleteFilters.source}
+                      onValueChange={(v) => setDeleteFilters({ ...deleteFilters, source: v === 'all' ? '' : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Sources" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Sources</SelectItem>
+                        {deleteFilterOptions.sources.map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
+              {/* Preview Button */}
+              <div className="flex gap-2">
+                <Button onClick={previewDelete} disabled={loadingPreview} variant="outline">
+                  {loadingPreview ? 'Loading...' : 'Preview Deletion'}
+                </Button>
+                {deletePreview && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={deletePreview.count === 0}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete {deletePreview.count.toLocaleString()} Leads
+                  </Button>
+                )}
+              </div>
+
+              {/* Preview Results */}
+              {deletePreview && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-lg">
+                        {deletePreview.count.toLocaleString()} leads will be moved to trash
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Can be recovered within 14 days
+                      </p>
+                    </div>
+                    {deletePreview.count > 0 && (
+                      <Badge variant="destructive" className="text-lg px-4 py-1">
+                        {deletePreview.count.toLocaleString()}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {Object.keys(deletePreview.filters_applied).length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-sm text-muted-foreground">Filters:</span>
+                      {Object.entries(deletePreview.filters_applied).map(([key, value]) => (
+                        <Badge key={key} variant="outline">{key}: {value}</Badge>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {deletePreview.sample_leads?.length > 0 && (
+                    <div>
+                      <h5 className="text-sm font-medium mb-2">Sample leads (showing {deletePreview.sample_leads.length}):</h5>
+                      <div className="text-xs bg-muted rounded p-2 max-h-40 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="text-xs">Enquiry No</TableHead>
+                              <TableHead className="text-xs">Name</TableHead>
+                              <TableHead className="text-xs">Date</TableHead>
+                              <TableHead className="text-xs">State</TableHead>
+                              <TableHead className="text-xs">Dealer</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {deletePreview.sample_leads.map((lead, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell className="text-xs">{lead.enquiry_no}</TableCell>
+                                <TableCell className="text-xs">{lead.name || '-'}</TableCell>
+                                <TableCell className="text-xs">{lead.enquiry_date}</TableCell>
+                                <TableCell className="text-xs">{lead.state}</TableCell>
+                                <TableCell className="text-xs">{lead.dealer}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Delete Confirmation Dialog */}
+          <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle className="text-red-600 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Confirm Deletion
+                </DialogTitle>
+                <DialogDescription>
+                  You are about to move <strong>{deletePreview?.count?.toLocaleString() || 0} leads</strong> to trash.
+                  They can be recovered within 14 days.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Type DELETE to confirm</AlertTitle>
+                  <AlertDescription>
+                    This action will move the selected leads to trash.
+                  </AlertDescription>
+                </Alert>
+                <Input
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder="Type DELETE here"
+                  className="text-center font-mono text-lg"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeleteConfirmText('');
+                }}>
+                  Cancel
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={executeDelete}
+                  disabled={deleteConfirmText !== 'DELETE' || deleting}
+                >
+                  {deleting ? 'Deleting...' : 'Confirm Delete'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Warning: Historical Upload</AlertTitle>
+            <AlertDescription>
+              Uploading historical data will <strong>delete all existing leads</strong> with dates up to the maximum date in your uploaded file, then insert the new data. This action cannot be undone.
+            </AlertDescription>
+          </Alert>
 
           {/* Historical Data Upload */}
           <Card>
