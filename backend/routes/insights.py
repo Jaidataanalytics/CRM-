@@ -63,7 +63,7 @@ async def get_top_performers(
                 },
                 "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
                 "calls_placed": {
-                    "$sum": {"$cond": [{"$in": ["$call_status", ["Called Once", "Called Multiple Times"]]}, 1, 0]}
+                    "$sum": {"$cond": [{"$in": ["$call_status", ["Called - No Response", "Called - Interested", "Called - Not Interested", "Called - Follow Up Required", "Called - Converted"]]}, 1, 0]}
                 },
                 "quotations_sent": {
                     "$sum": {"$cond": [{"$eq": ["$quotation_sent", True]}, 1, 0]}
