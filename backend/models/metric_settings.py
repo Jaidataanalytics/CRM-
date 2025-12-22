@@ -203,5 +203,52 @@ DEFAULT_METRICS = [
         "numerator_metric": "won_leads",
         "denominator_metric": "won_leads+lost_leads",
         "unit": "%"
+    },
+    {
+        "metric_id": "calls_placed",
+        "metric_name": "Calls Placed",
+        "description": "Leads with at least one call made",
+        "field_name": "call_status",
+        "field_values": ["Called Once", "Called Multiple Times"],
+        "is_active": True,
+        "is_custom": False,
+        "color": "cyan",
+        "icon": "Phone",
+        "show_on_dashboard": False,
+        "dashboard_order": 11,
+        "metric_type": "count",
+        "unit": ""
+    },
+    {
+        "metric_id": "quotations_sent",
+        "metric_name": "Quotations Sent",
+        "description": "Leads with quotation sent",
+        "field_name": "quotation_sent",
+        "field_values": [True],
+        "is_active": True,
+        "is_custom": False,
+        "color": "indigo",
+        "icon": "FileText",
+        "show_on_dashboard": False,
+        "dashboard_order": 12,
+        "metric_type": "count",
+        "unit": ""
+    },
+    {
+        "metric_id": "call_to_quotation_rate",
+        "metric_name": "Call to Quotation Rate",
+        "description": "Percentage of called leads that received quotation",
+        "field_name": None,
+        "field_values": [],
+        "is_active": True,
+        "is_custom": False,
+        "color": "fuchsia",
+        "icon": "Percent",
+        "show_on_dashboard": False,
+        "dashboard_order": 13,
+        "metric_type": "formula",
+        "numerator_metric": "quotations_sent",
+        "denominator_metric": "calls_placed",
+        "unit": "%"
     }
 ]
