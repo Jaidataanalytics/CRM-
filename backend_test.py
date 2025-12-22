@@ -825,6 +825,7 @@ def main():
     tester.test_kpi_endpoints()
     tester.test_kpi_qualification_metrics()
     tester.test_leads_endpoints()
+    tester.test_call_remarks_endpoints()  # Add call remarks tests
     tester.test_filter_endpoints()
     tester.test_insights_endpoints()
     tester.test_qualification_endpoints()
