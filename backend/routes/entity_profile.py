@@ -474,12 +474,12 @@ async def get_entity_profile(
         
         # Cities covered by this dealer
         city_pipeline = [
-            {"$match": {"dealer": entity_id}},
+            {"$match": base_filter},
             {"$group": {
                 "_id": "$area",
                 "total": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
-                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
+                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
             {"$sort": {"total": -1}},
             {"$limit": 20}
@@ -496,12 +496,12 @@ async def get_entity_profile(
     elif entity_type == "city":
         # Dealers in this city
         dealer_pipeline = [
-            {"$match": {"area": entity_id}},
+            {"$match": base_filter},
             {"$group": {
                 "_id": "$dealer",
                 "total": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
-                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
+                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
             {"$sort": {"total": -1}},
             {"$limit": 20}
@@ -529,8 +529,8 @@ async def get_entity_profile(
             {"$group": {
                 "_id": f"${perf_field}",
                 "total": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
-                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
+                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
             {"$match": {"$expr": {"$gt": [{"$add": ["$won", "$lost"]}, 5]}}},  # Min 5 closed leads
             {"$addFields": {
