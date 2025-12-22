@@ -155,6 +155,7 @@ const Admin = () => {
     loadMetricSettings();
     loadDeleteFilterOptions();
     loadTrashStats();
+    loadEntityProfileConfig();
   }, []);
 
   useEffect(() => {
