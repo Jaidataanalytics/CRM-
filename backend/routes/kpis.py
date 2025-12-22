@@ -259,6 +259,7 @@ async def get_kpis(
         {"$match": {
             **base_query, 
             "enquiry_stage": {"$in": closure_filter_stages},
+            closure_start_field: {"$exists": True, "$nin": [None, ""]},
             closure_end_field: {"$exists": True, "$nin": [None, ""]}
         }},
         {
@@ -267,14 +268,14 @@ async def get_kpis(
                     "$divide": [
                         {"$subtract": [
                             closure_end_expr,
-                            {"$dateFromString": {"dateString": f"${closure_start_field}"}}
+                            {"$dateFromString": {"dateString": f"${closure_start_field}", "onError": None}}
                         ]},
                         86400000
                     ]
                 }
             }
         },
-        {"$match": {"closure_days": {"$gte": 0}}},
+        {"$match": {"closure_days": {"$gte": 0, "$ne": None}}},
         {"$group": {"_id": None, "avg_closure": {"$avg": "$closure_days"}}}
     ]
     
