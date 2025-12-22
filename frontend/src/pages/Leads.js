@@ -1247,6 +1247,78 @@ const Leads = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Call Remarks Dialog */}
+      <Dialog open={isRemarkDialogOpen} onOpenChange={(open) => {
+        setIsRemarkDialogOpen(open);
+        if (!open) {
+          setRemarkLead(null);
+          setNewRemark('');
+          setCallRemarks([]);
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" />
+              Call Remarks
+            </DialogTitle>
+            <DialogDescription>
+              {remarkLead?.name || remarkLead?.enquiry_no} - Add and view call remarks history
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Add New Remark */}
+            <div className="space-y-2">
+              <Label htmlFor="new-remark">Add New Remark</Label>
+              <Textarea
+                id="new-remark"
+                placeholder="Enter call notes, conversation summary, next steps..."
+                value={newRemark}
+                onChange={(e) => setNewRemark(e.target.value)}
+                rows={3}
+              />
+              <Button onClick={handleAddRemark} className="w-full gap-2">
+                <MessageSquarePlus className="h-4 w-4" />
+                Add Remark
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Remarks History */}
+            <div className="space-y-2">
+              <Label>Remarks History</Label>
+              {loadingRemarks ? (
+                <Skeleton className="h-24 w-full" />
+              ) : callRemarks.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No call remarks recorded yet</p>
+              ) : (
+                <ScrollArea className="h-[250px]">
+                  <div className="space-y-3 pr-4">
+                    {callRemarks.slice().reverse().map((remark, idx) => (
+                      <div key={idx} className="p-3 border rounded-lg bg-muted/30">
+                        <p className="text-sm">{remark.remark}</p>
+                        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                          <span>By: {remark.added_by || 'Unknown'}</span>
+                          <span>{remark.added_at ? new Date(remark.added_at).toLocaleString() : '-'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRemarkDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
