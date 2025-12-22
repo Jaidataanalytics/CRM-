@@ -39,7 +39,10 @@ import {
   BarChart3,
   Timer,
   CheckCircle2,
-  Percent
+  Percent,
+  Phone,
+  FileText,
+  PhoneCall
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
