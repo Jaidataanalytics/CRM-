@@ -831,6 +831,12 @@ const Admin = () => {
           <TabsTrigger value="qualification">Qualification Questions</TabsTrigger>
           <TabsTrigger value="closure">Closure Questions</TabsTrigger>
           <TabsTrigger value="data">Data Management</TabsTrigger>
+          <TabsTrigger value="trash" className="flex items-center gap-1">
+            Trash
+            {trashStats?.total_in_trash > 0 && (
+              <Badge variant="destructive" className="ml-1 text-xs">{trashStats.total_in_trash}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="logs">Activity Logs</TabsTrigger>
         </TabsList>
 
