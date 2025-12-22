@@ -115,6 +115,33 @@ async def get_kpis(
     warm_leads = await count_by_metric(db, base_query, warm_config)
     cold_leads = await count_by_metric(db, base_query, cold_config)
     
+    # Call & Quotation tracking metrics
+    # Calls placed - leads that have been called (any status except 'Not Called')
+    calls_placed_statuses = [
+        'Called - No Response',
+        'Called - Interested', 
+        'Called - Not Interested',
+        'Called - Follow Up Required',
+        'Called - Converted'
+    ]
+    calls_placed_query = {**base_query, "call_status": {"$in": calls_placed_statuses}}
+    calls_placed = await db.leads.count_documents(calls_placed_query)
+    
+    # Not called
+    not_called_query = {**base_query, "$or": [
+        {"call_status": {"$exists": False}},
+        {"call_status": None},
+        {"call_status": "Not Called"}
+    ]}
+    not_called = await db.leads.count_documents(not_called_query)
+    
+    # Quotations sent
+    quotations_sent_query = {**base_query, "quotation_sent": True}
+    quotations_sent = await db.leads.count_documents(quotations_sent_query)
+    
+    # Call to Quotation rate
+    call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
+    
     # Qualified leads (system-based, not configurable)
     qualified_query = {**base_query, "is_qualified": True}
     qualified_leads = await db.leads.count_documents(qualified_query)
@@ -140,7 +167,9 @@ async def get_kpis(
             "hot_leads": hot_leads,
             "warm_leads": warm_leads,
             "cold_leads": cold_leads,
-            "total_leads": total_leads
+            "total_leads": total_leads,
+            "calls_placed": calls_placed,
+            "quotations_sent": quotations_sent
         }
         
         numerator = sum(metric_values.get(m.strip(), 0) for m in numerator_metrics)
