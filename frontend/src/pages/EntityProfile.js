@@ -290,7 +290,7 @@ const EntityProfile = () => {
               <XCircle className="h-4 w-4 text-red-500" />
               Lost
             </div>
-            <p className="text-2xl font-bold mt-1 text-red-600">{kpis.lost_leads.toLocaleString()}</p>
+            <p className="text-2xl font-bold mt-1 text-red-600">{(kpis?.lost_leads ?? 0).toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -299,7 +299,7 @@ const EntityProfile = () => {
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               Conversion
             </div>
-            <p className="text-2xl font-bold mt-1 text-emerald-600">{kpis.conversion_rate}%</p>
+            <p className="text-2xl font-bold mt-1 text-emerald-600">{kpis?.conversion_rate ?? 0}%</p>
           </CardContent>
         </Card>
         <Card>
@@ -308,7 +308,7 @@ const EntityProfile = () => {
               <Clock className="h-4 w-4 text-amber-500" />
               Avg Age
             </div>
-            <p className="text-2xl font-bold mt-1 text-amber-600">{kpis.avg_lead_age}d</p>
+            <p className="text-2xl font-bold mt-1 text-amber-600">{kpis?.avg_lead_age ?? 0}d</p>
           </CardContent>
         </Card>
         <Card>
@@ -317,7 +317,7 @@ const EntityProfile = () => {
               <Clock className="h-4 w-4 text-violet-500" />
               Avg Close
             </div>
-            <p className="text-2xl font-bold mt-1 text-violet-600">{kpis.avg_closure_time}d</p>
+            <p className="text-2xl font-bold mt-1 text-violet-600">{kpis?.avg_closure_time ?? 0}d</p>
           </CardContent>
         </Card>
       </div>
