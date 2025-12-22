@@ -98,6 +98,11 @@ const Admin = () => {
   const [trashTotal, setTrashTotal] = useState(0);
   const [selectedTrashLeads, setSelectedTrashLeads] = useState([]);
   const [recoveringLeads, setRecoveringLeads] = useState(false);
+  
+  // Entity Profile Config state
+  const [entityProfileConfig, setEntityProfileConfig] = useState(null);
+  const [availableKpis, setAvailableKpis] = useState({ built_in_metrics: [], configurable_metrics: [] });
+  const [savingEntityConfig, setSavingEntityConfig] = useState(false);
   const [permanentDeleting, setPermanentDeleting] = useState(false);
   
   // Metric Settings state
