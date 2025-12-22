@@ -39,6 +39,7 @@ from routes.lead_activity import router as lead_activity_router
 from routes.metric_settings import router as metric_settings_router
 from routes.notifications import router as notifications_router
 from routes.entity_profile import router as entity_profile_router
+from routes.trash import router as trash_router
 
 # Include all routers
 api_router.include_router(auth_router)
@@ -54,6 +55,7 @@ api_router.include_router(lead_activity_router)
 api_router.include_router(notifications_router)
 api_router.include_router(metric_settings_router)
 api_router.include_router(entity_profile_router)
+api_router.include_router(trash_router)
 
 # Health check endpoint
 @api_router.get("/")
