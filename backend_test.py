@@ -414,6 +414,108 @@ class LeadManagementAPITester:
         # Test activity logs endpoint
         self.run_test("Get Activity Logs", "GET", "admin/activity-logs?page=1&limit=10", 200)
 
+    def test_trash_management_endpoints(self):
+        """Test trash management endpoints for delete leads feature"""
+        print("\n=== TRASH MANAGEMENT TESTS ===")
+        
+        # Test get filter options for deletion
+        success, response = self.run_test("Get Trash Filter Options", "GET", "admin/trash/filter-options", 200)
+        if success:
+            required_keys = ["states", "dealers", "employees", "stages", "segments", "sources"]
+            missing_keys = [key for key in required_keys if key not in response]
+            if not missing_keys:
+                print(f"   ✓ All filter options available")
+                print(f"   ✓ States: {len(response.get('states', []))}, Dealers: {len(response.get('dealers', []))}")
+            else:
+                print(f"   ⚠️  Missing filter keys: {missing_keys}")
+        
+        # Test preview delete with state filter
+        success, response = self.run_test("Preview Delete - Jharkhand", "GET", "admin/trash/preview-delete?state=Jharkhand", 200)
+        if success:
+            count = response.get("count", 0)
+            sample_leads = response.get("sample_leads", [])
+            filters_applied = response.get("filters_applied", {})
+            print(f"   ✓ Preview: {count} leads would be deleted")
+            print(f"   ✓ Sample leads: {len(sample_leads)}")
+            print(f"   ✓ Filters applied: {filters_applied}")
+        
+        # Test preview delete with multiple filters
+        success, response = self.run_test(
+            "Preview Delete - Multiple Filters", 
+            "GET", 
+            "admin/trash/preview-delete?state=Maharashtra&stage=Prospecting", 
+            200
+        )
+        if success:
+            count = response.get("count", 0)
+            print(f"   ✓ Multi-filter preview: {count} leads")
+        
+        # Test soft delete with limit (small number for testing)
+        success, response = self.run_test(
+            "Soft Delete Leads - Limited", 
+            "POST", 
+            "admin/trash/delete-leads?state=Jharkhand&limit=5", 
+            200
+        )
+        if success:
+            deleted_count = response.get("deleted_count", 0)
+            auto_purge_at = response.get("auto_purge_at")
+            print(f"   ✓ Soft deleted: {deleted_count} leads")
+            print(f"   ✓ Auto-purge date: {auto_purge_at}")
+        
+        # Test get deleted leads (trash)
+        success, response = self.run_test("Get Deleted Leads", "GET", "admin/trash/deleted-leads?page=1&limit=10", 200)
+        if success:
+            leads = response.get("leads", [])
+            total = response.get("total", 0)
+            print(f"   ✓ Trash contains: {total} leads")
+            print(f"   ✓ Retrieved: {len(leads)} leads")
+            
+            # Store some lead IDs for recovery/permanent delete tests
+            self.test_lead_ids = [lead["lead_id"] for lead in leads[:2]] if leads else []
+        
+        # Test trash stats
+        success, response = self.run_test("Get Trash Stats", "GET", "admin/trash/trash-stats", 200)
+        if success:
+            total_in_trash = response.get("total_in_trash", 0)
+            expiring_soon = response.get("expiring_soon", 0)
+            recovery_days = response.get("recovery_days", 0)
+            print(f"   ✓ Trash stats - Total: {total_in_trash}, Expiring: {expiring_soon}, Recovery days: {recovery_days}")
+        
+        # Test recover leads (if we have test leads)
+        if hasattr(self, 'test_lead_ids') and self.test_lead_ids:
+            recover_data = {"lead_ids": self.test_lead_ids[:1], "recover_all": False}
+            success, response = self.run_test("Recover Leads", "POST", "admin/trash/recover-leads", 200, recover_data)
+            if success:
+                recovered_count = response.get("recovered_count", 0)
+                print(f"   ✓ Recovered: {recovered_count} leads")
+        
+        # Test permanent delete (if we still have test leads)
+        if hasattr(self, 'test_lead_ids') and len(self.test_lead_ids) > 1:
+            delete_data = {"lead_ids": self.test_lead_ids[1:], "delete_all_trash": False}
+            success, response = self.run_test("Permanent Delete Leads", "POST", "admin/trash/permanent-delete", 200, delete_data)
+            if success:
+                deleted_count = response.get("deleted_count", 0)
+                print(f"   ✓ Permanently deleted: {deleted_count} leads")
+        
+        # Test purge expired leads
+        success, response = self.run_test("Purge Expired Leads", "POST", "admin/trash/purge-expired", 200)
+        if success:
+            purged_count = response.get("purged_count", 0)
+            print(f"   ✓ Purged expired: {purged_count} leads")
+        
+        # Test error cases
+        # Test delete without filters (should fail)
+        success, response = self.run_test("Delete Without Filters (Should Fail)", "POST", "admin/trash/delete-leads", 400)
+        if success:
+            print(f"   ✓ Correctly rejected delete without filters")
+        
+        # Test recover without lead IDs (should fail)
+        recover_data = {"lead_ids": [], "recover_all": False}
+        success, response = self.run_test("Recover Without IDs (Should Fail)", "POST", "admin/trash/recover-leads", 400, recover_data)
+        if success:
+            print(f"   ✓ Correctly rejected recover without lead IDs")
+
     def test_metric_settings_endpoints(self):
         """Test configurable metric settings endpoints"""
         print("\n=== METRIC SETTINGS TESTS ===")
