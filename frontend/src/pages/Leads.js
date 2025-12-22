@@ -1071,6 +1071,39 @@ const Leads = () => {
                 </div>
               )}
 
+              {/* Call & Quotation Status Banner */}
+              <div className="p-3 bg-muted/50 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Call Status</Label>
+                      <div className="mt-1">{getCallStatusBadge(selectedLead.call_status)}</div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Quotation</Label>
+                      <div className="mt-1">
+                        {selectedLead.quotation_sent ? (
+                          <Badge className="bg-green-100 text-green-800 gap-1">
+                            <FileText className="h-3 w-3" /> Sent {selectedLead.quotation_date ? `on ${selectedLead.quotation_date}` : ''}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="gap-1"><FileText className="h-3 w-3" /> Not Sent</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => { openRemarkDialog(selectedLead); setShowLeadDetail(false); }}
+                    className="gap-1"
+                  >
+                    <MessageSquarePlus className="h-4 w-4" />
+                    Add Call Remark
+                  </Button>
+                </div>
+              </div>
+
               {/* Key Info Banner */}
               <div className="p-4 bg-primary/5 border rounded-lg">
                 <div className="grid grid-cols-2 gap-3">
