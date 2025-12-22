@@ -154,28 +154,38 @@ async def get_entity_profile(
     }
     
     filter_field = field_map[entity_type]
-    base_filter = {filter_field: entity_id}
     
-    # Add date filter if provided
-    if start_date and end_date:
-        base_filter["enquiry_date"] = {
+    # Use Indian FY dates as default if no dates provided
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Base filter with entity + date range (same as dashboard)
+    base_filter = {
+        filter_field: entity_id,
+        "is_deleted": {"$ne": True},
+        "enquiry_date": {
             "$gte": start_date,
             "$lte": end_date
         }
+    }
     
-    # Check if entity exists
-    exists = await db.leads.find_one({filter_field: entity_id})
+    # Check if entity exists (without date filter)
+    exists = await db.leads.find_one({filter_field: entity_id, "is_deleted": {"$ne": True}})
     if not exists:
         raise HTTPException(status_code=404, detail=f"{entity_type.capitalize()} not found")
     
-    # Get basic info
-    sample_lead = await db.leads.find_one({filter_field: entity_id})
+    # Get basic info from sample lead
+    sample_lead = await db.leads.find_one({filter_field: entity_id, "is_deleted": {"$ne": True}})
     
     # Build profile data
     profile = {
         "entity_type": entity_type,
         "entity_id": entity_id,
         "entity_name": entity_id,
+        "date_range": {
+            "start_date": start_date,
+            "end_date": end_date
+        }
     }
     
     # Add parent info based on entity type
@@ -187,19 +197,41 @@ async def get_entity_profile(
         profile["dealer"] = sample_lead.get("dealer")
         profile["state"] = sample_lead.get("state")
     
-    # KPIs
+    # Get entity profile config (admin-configurable)
+    entity_config = await db.entity_profile_config.find_one({"config_id": "global"}, {"_id": 0})
+    
+    # Get KPIs using admin-configurable metrics (same as dashboard)
+    won_config = await get_metric_config(db, "won_leads")
+    lost_config = await get_metric_config(db, "lost_leads")
+    open_config = await get_metric_config(db, "open_leads")
+    closed_config = await get_metric_config(db, "closed_leads")
+    hot_config = await get_metric_config(db, "hot_leads")
+    warm_config = await get_metric_config(db, "warm_leads")
+    cold_config = await get_metric_config(db, "cold_leads")
+    
     total_leads = await db.leads.count_documents(base_filter)
+    won_leads = await count_by_metric(db, base_filter, won_config)
+    lost_leads = await count_by_metric(db, base_filter, lost_config)
+    open_leads = await count_by_metric(db, base_filter, open_config)
+    closed_leads = await count_by_metric(db, base_filter, closed_config)
+    hot_leads = await count_by_metric(db, base_filter, hot_config)
+    warm_leads = await count_by_metric(db, base_filter, warm_config)
+    cold_leads = await count_by_metric(db, base_filter, cold_config)
     
-    won_filter = {**base_filter, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}
-    lost_filter = {**base_filter, "enquiry_stage": {"$in": ["Closed-Lost", "Closed-Dropped"]}}
-    open_filter = {**base_filter, "enquiry_stage": {"$in": ["Prospecting", "Qualified", "Proposal", "Negotiation"]}}
-    
-    won_leads = await db.leads.count_documents(won_filter)
-    lost_leads = await db.leads.count_documents(lost_filter)
-    open_leads = await db.leads.count_documents(open_filter)
-    closed_leads = won_leads + lost_leads
+    # Call & Quotation metrics
+    calls_placed_statuses = [
+        'Called - No Response', 'Called - Interested', 
+        'Called - Not Interested', 'Called - Follow Up Required', 'Called - Converted'
+    ]
+    calls_placed = await db.leads.count_documents({**base_filter, "call_status": {"$in": calls_placed_statuses}})
+    not_called = await db.leads.count_documents({
+        **base_filter, 
+        "$or": [{"call_status": {"$exists": False}}, {"call_status": None}, {"call_status": "Not Called"}]
+    })
+    quotations_sent = await db.leads.count_documents({**base_filter, "quotation_sent": True})
     
     conversion_rate = (won_leads / (won_leads + lost_leads) * 100) if (won_leads + lost_leads) > 0 else 0
+    call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
     
     profile["kpis"] = {
         "total_leads": total_leads,
@@ -207,7 +239,14 @@ async def get_entity_profile(
         "won_leads": won_leads,
         "lost_leads": lost_leads,
         "closed_leads": closed_leads,
-        "conversion_rate": round(conversion_rate, 2)
+        "hot_leads": hot_leads,
+        "warm_leads": warm_leads,
+        "cold_leads": cold_leads,
+        "conversion_rate": round(conversion_rate, 2),
+        "calls_placed": calls_placed,
+        "not_called": not_called,
+        "quotations_sent": quotations_sent,
+        "call_to_quotation_rate": round(call_to_quotation_rate, 2)
     }
     
     # Avg Lead Age (for open leads)
