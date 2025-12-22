@@ -72,6 +72,14 @@ class Lead(BaseModel):
     finance_company: Optional[str] = None
     referred_by: Optional[str] = None
     
+    # Call tracking fields
+    call_status: Optional[str] = None  # Not Called, Called Once, Called Multiple Times
+    call_remarks: Optional[List[dict]] = None  # List of {remark, added_by, added_at}
+    
+    # Quotation tracking fields
+    quotation_sent: Optional[bool] = None  # Yes/No
+    quotation_date: Optional[str] = None  # Date when quotation was sent
+    
     # System fields
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
