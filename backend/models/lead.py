@@ -129,6 +129,11 @@ class LeadCreate(BaseModel):
     finance_required: Optional[str] = None
     finance_company: Optional[str] = None
     referred_by: Optional[str] = None
+    # Call tracking
+    call_status: Optional[str] = None
+    # Quotation tracking
+    quotation_sent: Optional[bool] = None
+    quotation_date: Optional[str] = None
 
 
 class LeadUpdate(BaseModel):
