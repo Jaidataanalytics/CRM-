@@ -61,7 +61,10 @@ const initialFormData = {
   source: '',
   zone: '',
   area: '',
-  remarks: ''
+  remarks: '',
+  call_status: 'Not Called',
+  quotation_sent: false,
+  quotation_date: ''
 };
 
 const Leads = () => {
