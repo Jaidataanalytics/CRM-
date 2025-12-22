@@ -15,6 +15,48 @@ async def get_db(request: Request):
     return request.app.state.db
 
 
+def get_indian_fy_dates():
+    """Get current Indian Financial Year dates (April 1 - March 31)"""
+    today = datetime.now()
+    if today.month >= 4:
+        start_year = today.year
+    else:
+        start_year = today.year - 1
+    
+    start_date = f"{start_year}-04-01"
+    end_date = f"{start_year + 1}-03-31"
+    return start_date, end_date
+
+
+async def get_metric_config(db, metric_id: str) -> dict:
+    """Get metric configuration from database"""
+    metric = await db.metric_settings.find_one({"metric_id": metric_id}, {"_id": 0})
+    return metric
+
+
+async def count_by_metric(db, base_query: dict, metric_config: dict) -> int:
+    """Count leads matching a metric configuration"""
+    if not metric_config or not metric_config.get("is_active", True):
+        return 0
+    
+    field_name = metric_config.get("field_name")
+    field_values = metric_config.get("field_values", [])
+    
+    if not field_name or not field_values:
+        return 0
+    
+    # Handle boolean fields
+    if len(field_values) == 1 and isinstance(field_values[0], bool):
+        query = {**base_query, field_name: field_values[0]}
+    else:
+        query = {**base_query, field_name: {"$in": field_values}}
+    
+    # Exclude soft-deleted leads
+    query["is_deleted"] = {"$ne": True}
+    
+    return await db.leads.count_documents(query)
+
+
 @router.get("/search")
 async def search_entities(
     request: Request,
