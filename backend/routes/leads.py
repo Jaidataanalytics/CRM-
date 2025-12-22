@@ -41,8 +41,8 @@ async def get_leads(
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
     
-    # Build filter query
-    query = {}
+    # Build filter query - exclude soft-deleted leads
+    query = {"deleted_at": {"$exists": False}}
     
     # Search functionality
     if search and search.strip():
