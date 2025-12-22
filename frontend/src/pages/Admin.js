@@ -832,6 +832,7 @@ const Admin = () => {
         <TabsList className="flex-wrap">
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="metrics">Metric Settings</TabsTrigger>
+          <TabsTrigger value="entity-profile">Entity Profiles</TabsTrigger>
           <TabsTrigger value="qualification">Qualification Questions</TabsTrigger>
           <TabsTrigger value="closure">Closure Questions</TabsTrigger>
           <TabsTrigger value="data">Data Management</TabsTrigger>
