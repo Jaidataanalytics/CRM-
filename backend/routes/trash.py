@@ -301,8 +301,8 @@ async def recover_leads(
 @router.post("/permanent-delete")
 async def permanent_delete_leads(
     request: Request,
-    lead_ids: List[str] = None,
-    delete_all_trash: bool = False,
+    lead_ids: Optional[List[str]] = Query(None),
+    delete_all_trash: bool = Query(False),
     current_user: User = Depends(require_roles(UserRole.ADMIN))
 ):
     """Permanently delete leads from trash"""
