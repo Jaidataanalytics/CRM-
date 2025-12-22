@@ -227,6 +227,57 @@ const Admin = () => {
     }
   };
 
+  const loadEntityProfileConfig = async () => {
+    try {
+      const [configRes, kpisRes] = await Promise.all([
+        axios.get(`${API}/entity/config`, { withCredentials: true }),
+        axios.get(`${API}/entity/available-kpis`, { withCredentials: true })
+      ]);
+      setEntityProfileConfig(configRes.data);
+      setAvailableKpis(kpisRes.data);
+    } catch (error) {
+      console.error('Error loading entity profile config:', error);
+    }
+  };
+
+  const saveEntityProfileConfig = async () => {
+    setSavingEntityConfig(true);
+    try {
+      await axios.put(`${API}/entity/config`, entityProfileConfig, { withCredentials: true });
+      toast.success('Entity profile configuration saved');
+    } catch (error) {
+      toast.error('Failed to save configuration');
+    } finally {
+      setSavingEntityConfig(false);
+    }
+  };
+
+  const toggleKpiEnabled = (metricId) => {
+    setEntityProfileConfig(prev => {
+      const enabledKpis = prev?.kpis?.enabled_kpis || [];
+      const newEnabled = enabledKpis.includes(metricId)
+        ? enabledKpis.filter(id => id !== metricId)
+        : [...enabledKpis, metricId];
+      return {
+        ...prev,
+        kpis: { ...prev.kpis, enabled_kpis: newEnabled }
+      };
+    });
+  };
+
+  const toggleChartEnabled = (chartKey) => {
+    setEntityProfileConfig(prev => ({
+      ...prev,
+      charts: {
+        ...prev.charts,
+        [chartKey]: {
+          ...prev.charts[chartKey],
+          enabled: !prev.charts?.[chartKey]?.enabled
+        }
+      }
+    }));
+  };
+
   const loadTrashLeads = async () => {
     try {
       const res = await axios.get(`${API}/admin/trash/deleted-leads?page=${trashPage}&limit=20`, { withCredentials: true });
