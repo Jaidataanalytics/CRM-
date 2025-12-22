@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -34,8 +35,9 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, ShieldCheck, ShieldX, Search, X, Eye, Clock, AlertTriangle, Download, FileDown } from 'lucide-react';
+import { Plus, Upload, Edit, Trash2, ChevronLeft, ChevronRight, ShieldCheck, ShieldX, Search, X, Eye, Clock, AlertTriangle, Download, FileDown, Phone, FileText, MessageSquarePlus } from 'lucide-react';
 import { DataGrid } from '@/components/ui/data-grid';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
