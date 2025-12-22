@@ -232,8 +232,8 @@ async def get_deleted_leads(
 @router.post("/recover-leads")
 async def recover_leads(
     request: Request,
-    lead_ids: List[str] = None,
-    recover_all: bool = False,
+    lead_ids: Optional[List[str]] = Query(None),
+    recover_all: bool = Query(False),
     current_user: User = Depends(require_roles(UserRole.ADMIN))
 ):
     """Recover soft-deleted leads"""
