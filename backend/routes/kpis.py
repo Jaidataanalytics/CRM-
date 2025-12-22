@@ -205,21 +205,25 @@ async def get_kpis(
         end_date_expr = {"$dateFromString": {"dateString": f"${age_end_field}", "onError": {"$dateFromString": {"dateString": today_str}}}}
     
     avg_lead_age_pipeline = [
-        {"$match": {**base_query, "enquiry_stage": {"$in": age_filter_stages}}},
+        {"$match": {
+            **base_query, 
+            "enquiry_stage": {"$in": age_filter_stages},
+            age_start_field: {"$exists": True, "$nin": [None, ""]}
+        }},
         {
             "$addFields": {
                 "lead_age_days": {
                     "$divide": [
                         {"$subtract": [
                             end_date_expr,
-                            {"$dateFromString": {"dateString": f"${age_start_field}"}}
+                            {"$dateFromString": {"dateString": f"${age_start_field}", "onError": None}}
                         ]},
                         86400000  # milliseconds in a day
                     ]
                 }
             }
         },
-        {"$match": {"lead_age_days": {"$gte": 0}}},
+        {"$match": {"lead_age_days": {"$gte": 0, "$ne": None}}},
         {"$group": {"_id": None, "avg_age": {"$avg": "$lead_age_days"}}}
     ]
     
