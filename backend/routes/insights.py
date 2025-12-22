@@ -19,7 +19,7 @@ async def get_top_performers(
     request: Request,
     current_user: User = Depends(get_current_user),
     by: str = Query("employee", enum=["employee", "dealer", "state", "area"]),
-    metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva", "open", "lost"]),
+    metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva", "open", "lost", "calls_placed", "quotations_sent", "call_to_quotation_rate"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     limit: int = Query(10, ge=1, le=50)
@@ -30,7 +30,11 @@ async def get_top_performers(
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
-    base_match = {"enquiry_date": {"$gte": start_date, "$lte": end_date}}
+    # Exclude soft-deleted leads
+    base_match = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    }
     
     group_field = {
         "employee": "$employee_name",
@@ -57,7 +61,13 @@ async def get_top_performers(
                 "open_leads": {
                     "$sum": {"$cond": [{"$in": ["$enquiry_stage", OPEN_STAGES]}, 1, 0]}
                 },
-                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "calls_placed": {
+                    "$sum": {"$cond": [{"$in": ["$call_status", ["Called Once", "Called Multiple Times"]]}, 1, 0]}
+                },
+                "quotations_sent": {
+                    "$sum": {"$cond": [{"$eq": ["$quotation_sent", True]}, 1, 0]}
+                }
             }
         },
         {
@@ -70,6 +80,18 @@ async def get_top_performers(
                         {
                             "$multiply": [
                                 {"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]},
+                                100
+                            ]
+                        }
+                    ]
+                },
+                "call_to_quotation_rate": {
+                    "$cond": [
+                        {"$eq": ["$calls_placed", 0]},
+                        0,
+                        {
+                            "$multiply": [
+                                {"$divide": ["$quotations_sent", "$calls_placed"]},
                                 100
                             ]
                         }
