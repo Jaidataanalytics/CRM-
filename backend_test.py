@@ -260,28 +260,79 @@ class LeadManagementAPITester:
         if question_id:
             self.run_test("Delete Test Question", "DELETE", f"qualification/questions/{question_id}", 200)
 
-    def test_lead_activity_endpoints(self):
-        """Test lead activity endpoints"""
-        print("\n=== LEAD ACTIVITY TESTS ===")
+    def test_call_remarks_endpoints(self):
+        """Test Call Remarks functionality"""
+        print("\n=== CALL REMARKS TESTS ===")
         
         # Get a lead first
-        success, leads_response = self.run_test("Get Leads for Activity", "GET", "leads?limit=1", 200)
+        success, leads_response = self.run_test("Get Leads for Call Remarks", "GET", "leads?limit=1", 200)
         if success and leads_response.get("leads"):
             lead_id = leads_response["leads"][0]["lead_id"]
+            lead_name = leads_response["leads"][0].get("name", "Unknown")
             
-            # Test get lead activities
-            self.run_test("Get Lead Activities", "GET", f"lead-activities/{lead_id}", 200)
+            print(f"   Testing with lead: {lead_name} ({lead_id})")
             
-            # Test get lead followups
-            self.run_test("Get Lead Followups", "GET", f"lead-activities/{lead_id}/followups", 200)
+            # Test get call remarks (should be empty initially or return existing)
+            success, remarks_response = self.run_test("Get Call Remarks", "GET", f"leads/{lead_id}/call-remarks", 200)
+            if success:
+                existing_remarks = remarks_response.get("remarks", [])
+                print(f"   ✓ Found {len(existing_remarks)} existing call remarks")
             
-            # Test add followup
-            followup_data = {
-                "followup_date": "2025-01-20",
-                "notes": "Test followup note",
-                "outcome": "Interested"
+            # Test add call remark
+            remark_data = {
+                "remark": f"Test call remark added at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             }
-            self.run_test("Add Lead Followup", "POST", f"lead-activities/{lead_id}/followups", 200, followup_data)
+            success, add_response = self.run_test("Add Call Remark", "POST", f"leads/{lead_id}/call-remark", 200, remark_data)
+            if success:
+                new_remark = add_response.get("remark", {})
+                if new_remark.get("remark") == remark_data["remark"]:
+                    print(f"   ✓ Call remark added successfully")
+                    print(f"   ✓ Added by: {new_remark.get('added_by', 'Unknown')}")
+                    print(f"   ✓ Added at: {new_remark.get('added_at', 'Unknown')}")
+                else:
+                    print(f"   ⚠️  Call remark content mismatch")
+            
+            # Test get call remarks again (should have one more)
+            success, updated_remarks_response = self.run_test("Get Updated Call Remarks", "GET", f"leads/{lead_id}/call-remarks", 200)
+            if success:
+                updated_remarks = updated_remarks_response.get("remarks", [])
+                if len(updated_remarks) == len(existing_remarks) + 1:
+                    print(f"   ✓ Call remarks count increased correctly: {len(updated_remarks)}")
+                    
+                    # Check the latest remark
+                    latest_remark = updated_remarks[-1] if updated_remarks else None
+                    if latest_remark and latest_remark.get("remark") == remark_data["remark"]:
+                        print(f"   ✓ Latest remark matches added remark")
+                    else:
+                        print(f"   ⚠️  Latest remark doesn't match")
+                else:
+                    print(f"   ⚠️  Call remarks count not updated correctly")
+            
+            # Test update lead with call status and quotation fields
+            update_data = {
+                "call_status": "Called - Interested",
+                "quotation_sent": True,
+                "quotation_date": "2025-01-15"
+            }
+            success, update_response = self.run_test("Update Lead Call Status & Quotation", "PUT", f"leads/{lead_id}", 200, update_data)
+            if success:
+                print(f"   ✓ Lead updated with call status and quotation info")
+            
+            # Verify the update by getting the lead
+            success, lead_response = self.run_test("Get Updated Lead", "GET", f"leads/{lead_id}", 200)
+            if success:
+                lead = lead_response
+                if (lead.get("call_status") == "Called - Interested" and 
+                    lead.get("quotation_sent") == True and 
+                    lead.get("quotation_date") == "2025-01-15"):
+                    print(f"   ✓ Lead call status and quotation fields updated correctly")
+                else:
+                    print(f"   ⚠️  Lead update verification failed")
+                    print(f"       Call Status: {lead.get('call_status')}")
+                    print(f"       Quotation Sent: {lead.get('quotation_sent')}")
+                    print(f"       Quotation Date: {lead.get('quotation_date')}")
+        else:
+            print("   ⚠️  No leads found for call remarks testing")
 
     def test_kpi_qualification_metrics(self):
         """Test KPI endpoints for qualification metrics"""
