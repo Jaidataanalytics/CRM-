@@ -69,6 +69,37 @@ const Admin = () => {
   const [historicalUploadResult, setHistoricalUploadResult] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({ progress: 0, message: '', status: '' });
   
+  // Delete Leads state
+  const [deleteFilters, setDeleteFilters] = useState({
+    deleteAll: false,
+    startDate: '',
+    endDate: '',
+    state: '',
+    dealer: '',
+    employee: '',
+    stage: '',
+    segment: '',
+    source: ''
+  });
+  const [deleteFilterOptions, setDeleteFilterOptions] = useState({
+    states: [], dealers: [], employees: [], stages: [], segments: [], sources: []
+  });
+  const [deletePreview, setDeletePreview] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  
+  // Trash state
+  const [trashStats, setTrashStats] = useState(null);
+  const [trashLeads, setTrashLeads] = useState([]);
+  const [trashPage, setTrashPage] = useState(1);
+  const [trashTotalPages, setTrashTotalPages] = useState(1);
+  const [trashTotal, setTrashTotal] = useState(0);
+  const [selectedTrashLeads, setSelectedTrashLeads] = useState([]);
+  const [recoveringLeads, setRecoveringLeads] = useState(false);
+  const [permanentDeleting, setPermanentDeleting] = useState(false);
+  
   // Metric Settings state
   const [metricSettings, setMetricSettings] = useState(null);
   const [availableFields, setAvailableFields] = useState({});
