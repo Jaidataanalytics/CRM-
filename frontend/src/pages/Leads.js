@@ -260,7 +260,10 @@ const Leads = () => {
       enquiry_stage: lead.enquiry_stage || 'Prospecting',
       planned_followup_date: lead.planned_followup_date || '',
       source: lead.source || '',
-      remarks: lead.remarks || ''
+      remarks: lead.remarks || '',
+      call_status: lead.call_status || 'Not Called',
+      quotation_sent: lead.quotation_sent || false,
+      quotation_date: lead.quotation_date || ''
     });
     setIsDialogOpen(true);
   };
