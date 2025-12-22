@@ -145,8 +145,8 @@ async def export_leads(
     
     db = await get_db(request)
     
-    # Build filter query
-    query = {}
+    # Build filter query - exclude soft-deleted leads
+    query = {"deleted_at": {"$exists": False}}
     if state:
         query["state"] = state
     if dealer:
