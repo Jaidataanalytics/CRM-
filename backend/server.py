@@ -83,7 +83,7 @@ if cors_origins == '*':
     # When credentials are allowed, we need specific origins
     cors_origins = [
         "http://localhost:3000",
-        "https://lead-tracker-66.preview.emergentagent.com"
+        "https://sharda-insights.preview.emergentagent.com"
     ]
 else:
     cors_origins = cors_origins.split(',')
