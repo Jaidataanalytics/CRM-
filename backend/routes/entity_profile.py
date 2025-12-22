@@ -382,8 +382,8 @@ async def get_entity_profile(
     current_month = datetime.now(timezone.utc).strftime("%Y-%m")
     prev_month = (datetime.now(timezone.utc).replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
     
-    current_month_filter = {filter_field: entity_id, "enquiry_date": {"$regex": f"^{current_month}"}}
-    prev_month_filter = {filter_field: entity_id, "enquiry_date": {"$regex": f"^{prev_month}"}}
+    current_month_filter = {filter_field: entity_id, "is_deleted": {"$ne": True}, "enquiry_date": {"$regex": f"^{current_month}"}}
+    prev_month_filter = {filter_field: entity_id, "is_deleted": {"$ne": True}, "enquiry_date": {"$regex": f"^{prev_month}"}}
     
     current_count = await db.leads.count_documents(current_month_filter)
     prev_count = await db.leads.count_documents(prev_month_filter)
@@ -398,16 +398,20 @@ async def get_entity_profile(
         "change_percent": round(mom_change, 1)
     }
     
-    # Sub-entities based on entity type
+    # Get won/lost field values from metric configs for sub-entity calculations
+    won_stages = won_config.get("field_values", ["Closed-Won", "Order Booked"]) if won_config else ["Closed-Won", "Order Booked"]
+    lost_stages = lost_config.get("field_values", ["Closed-Lost", "Closed-Dropped"]) if lost_config else ["Closed-Lost", "Closed-Dropped"]
+    
+    # Sub-entities based on entity type (WITH date filter)
     if entity_type == "state":
         # Dealers in this state
         dealer_pipeline = [
-            {"$match": {"state": entity_id}},
+            {"$match": base_filter},
             {"$group": {
                 "_id": "$dealer",
                 "total": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
-                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
+                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
             {"$sort": {"total": -1}},
             {"$limit": 20}
@@ -425,12 +429,12 @@ async def get_entity_profile(
         
         # Cities in this state
         city_pipeline = [
-            {"$match": {"state": entity_id}},
+            {"$match": base_filter},
             {"$group": {
                 "_id": "$area",
                 "total": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
-                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
+                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
             {"$sort": {"total": -1}},
             {"$limit": 20}
@@ -447,12 +451,12 @@ async def get_entity_profile(
     elif entity_type == "dealer":
         # Employees under this dealer
         emp_pipeline = [
-            {"$match": {"dealer": entity_id}},
+            {"$match": base_filter},
             {"$group": {
                 "_id": "$employee_name",
                 "total": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
-                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
+                "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
             {"$sort": {"total": -1}},
             {"$limit": 20}
