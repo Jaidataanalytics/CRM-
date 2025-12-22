@@ -108,7 +108,10 @@ async def get_top_performers(
         "conversion_rate": "conversion_rate",
         "kva": "total_kva",
         "open": "open_leads",
-        "lost": "lost_leads"
+        "lost": "lost_leads",
+        "calls_placed": "calls_placed",
+        "quotations_sent": "quotations_sent",
+        "call_to_quotation_rate": "call_to_quotation_rate"
     }.get(metric, "total_leads")
     
     pipeline.append({"$sort": {sort_field: -1}})
@@ -125,7 +128,10 @@ async def get_top_performers(
                 "lost_leads": r["lost_leads"],
                 "open_leads": r.get("open_leads", 0),
                 "conversion_rate": round(r["conversion_rate"], 2),
-                "total_kva": round(r["total_kva"], 2)
+                "total_kva": round(r["total_kva"], 2),
+                "calls_placed": r.get("calls_placed", 0),
+                "quotations_sent": r.get("quotations_sent", 0),
+                "call_to_quotation_rate": round(r.get("call_to_quotation_rate", 0), 2)
             }
             for r in results if r["_id"]
         ],
