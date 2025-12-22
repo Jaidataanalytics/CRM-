@@ -2314,6 +2314,285 @@ const Admin = () => {
           </Card>
         </TabsContent>
 
+        {/* Trash Tab */}
+        <TabsContent value="trash" className="space-y-4">
+          {/* Trash Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                  Total in Trash
+                </div>
+                <p className="text-2xl font-bold text-red-600">{trashStats?.total_in_trash || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Expiring Soon (3 days)
+                </div>
+                <p className="text-2xl font-bold text-amber-600">{trashStats?.expiring_soon || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Clock className="h-4 w-4" />
+                  Recovery Period
+                </div>
+                <p className="text-2xl font-bold">{trashStats?.recovery_days || 14} days</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 flex items-center justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => { loadTrashStats(); loadTrashLeads(); }}
+                  className="w-full"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bulk Actions */}
+          {trashTotal > 0 && (
+            <Card>
+              <CardContent className="pt-4 flex flex-wrap gap-2 items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedTrashLeads.length === trashLeads.length && trashLeads.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedTrashLeads(trashLeads.map(l => l.lead_id));
+                      } else {
+                        setSelectedTrashLeads([]);
+                      }
+                    }}
+                  />
+                  <span className="text-sm">
+                    {selectedTrashLeads.length > 0 
+                      ? `${selectedTrashLeads.length} selected` 
+                      : 'Select all on this page'}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => recoverLeads(selectedTrashLeads)}
+                    disabled={selectedTrashLeads.length === 0 || recoveringLeads}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Recover Selected
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => recoverLeads(null, true)}
+                    disabled={recoveringLeads}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Recover All ({trashTotal})
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (window.confirm(`Permanently delete ${selectedTrashLeads.length} leads? This cannot be undone.`)) {
+                        permanentDeleteLeads(selectedTrashLeads);
+                      }
+                    }}
+                    disabled={selectedTrashLeads.length === 0 || permanentDeleting}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Delete Selected Forever
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      if (window.confirm(`Permanently delete ALL ${trashTotal} leads in trash? This cannot be undone.`)) {
+                        permanentDeleteLeads(null, true);
+                      }
+                    }}
+                    disabled={permanentDeleting}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Empty Trash
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Trash Leads Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Deleted Leads</CardTitle>
+              <CardDescription>
+                {trashTotal > 0 
+                  ? `Showing ${trashLeads.length} of ${trashTotal} deleted leads`
+                  : 'No leads in trash'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {trashTotal === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Trash2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Trash is empty</p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead>Enquiry No</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>State</TableHead>
+                        <TableHead>Dealer</TableHead>
+                        <TableHead>Deleted By</TableHead>
+                        <TableHead>Deleted At</TableHead>
+                        <TableHead>Auto Purge</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {trashLeads.map((lead) => (
+                        <TableRow key={lead.lead_id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedTrashLeads.includes(lead.lead_id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedTrashLeads([...selectedTrashLeads, lead.lead_id]);
+                                } else {
+                                  setSelectedTrashLeads(selectedTrashLeads.filter(id => id !== lead.lead_id));
+                                }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{lead.enquiry_no}</TableCell>
+                          <TableCell>{lead.name || '-'}</TableCell>
+                          <TableCell>{lead.enquiry_date}</TableCell>
+                          <TableCell>{lead.state}</TableCell>
+                          <TableCell>{lead.dealer}</TableCell>
+                          <TableCell>{lead.deleted_by_name || '-'}</TableCell>
+                          <TableCell className="text-xs">
+                            {lead.deleted_at ? new Date(lead.deleted_at).toLocaleString() : '-'}
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            {lead.auto_purge_at ? (
+                              <Badge variant={new Date(lead.auto_purge_at) < new Date(Date.now() + 3*24*60*60*1000) ? 'destructive' : 'secondary'}>
+                                {new Date(lead.auto_purge_at).toLocaleDateString()}
+                              </Badge>
+                            ) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => recoverLeads([lead.lead_id])}
+                                disabled={recoveringLeads}
+                              >
+                                <Check className="h-4 w-4 text-green-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  if (window.confirm('Permanently delete this lead? This cannot be undone.')) {
+                                    permanentDeleteLeads([lead.lead_id]);
+                                  }
+                                }}
+                                disabled={permanentDeleting}
+                              >
+                                <X className="h-4 w-4 text-red-600" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination */}
+                  {trashTotalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTrashPage(p => Math.max(1, p - 1))}
+                        disabled={trashPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm">
+                        Page {trashPage} of {trashTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTrashPage(p => Math.min(trashTotalPages, p + 1))}
+                        disabled={trashPage === trashTotalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Deletion History */}
+          {trashStats?.recent_deletions?.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Deletion History</CardTitle>
+                <CardDescription>Last 10 bulk delete operations</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Deleted Count</TableHead>
+                      <TableHead>Filters</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {trashStats.recent_deletions.map((deletion, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>{deletion.user_name}</TableCell>
+                        <TableCell>
+                          <Badge variant="destructive">{deletion.details?.deleted_count || 0}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {deletion.details?.filters && Object.entries(deletion.details.filters).map(([k, v]) => (
+                              <Badge key={k} variant="outline" className="text-xs">{k}: {v}</Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">{new Date(deletion.created_at).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         {/* Activity Logs Tab */}
         <TabsContent value="logs">
           <Card>
