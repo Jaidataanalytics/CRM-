@@ -118,7 +118,38 @@ class LeadManagementAPITester:
         """Test KPI endpoints"""
         print("\n=== KPI TESTS ===")
         
-        self.run_test("Get KPIs", "GET", "kpis", 200)
+        success, response = self.run_test("Get KPIs", "GET", "kpis", 200)
+        if success:
+            # Test NEW FEATURE: Call & Quotation Tracking KPIs
+            call_quotation_metrics = [
+                'calls_placed', 'quotations_sent', 'call_to_quotation_rate', 'not_called'
+            ]
+            
+            missing_metrics = [metric for metric in call_quotation_metrics if metric not in response]
+            if not missing_metrics:
+                print(f"   ✓ All Call & Quotation metrics present")
+                print(f"   ✓ Calls Placed: {response.get('calls_placed', 0)}")
+                print(f"   ✓ Quotations Sent: {response.get('quotations_sent', 0)}")
+                print(f"   ✓ Call to Quotation Rate: {response.get('call_to_quotation_rate', 0)}%")
+                print(f"   ✓ Not Called: {response.get('not_called', 0)}")
+            else:
+                print(f"   ⚠️  Missing Call & Quotation metrics: {missing_metrics}")
+                
+            # Verify calculation logic
+            calls_placed = response.get('calls_placed', 0)
+            quotations_sent = response.get('quotations_sent', 0)
+            call_to_quotation_rate = response.get('call_to_quotation_rate', 0)
+            
+            if calls_placed > 0:
+                expected_rate = round((quotations_sent / calls_placed * 100), 2)
+                if abs(call_to_quotation_rate - expected_rate) < 0.1:
+                    print(f"   ✓ Call to Quotation Rate calculation correct")
+                else:
+                    print(f"   ⚠️  Call to Quotation Rate calculation may be incorrect: {call_to_quotation_rate}% vs expected {expected_rate}%")
+            elif call_to_quotation_rate == 0:
+                print(f"   ✓ Call to Quotation Rate correctly 0 when no calls placed")
+            else:
+                print(f"   ⚠️  Call to Quotation Rate should be 0 when no calls placed")
 
     def test_leads_endpoints(self):
         """Test leads endpoints"""
