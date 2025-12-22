@@ -706,3 +706,119 @@ async def export_entity_leads(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+
+# Entity Profile Configuration Endpoints
+DEFAULT_ENTITY_PROFILE_CONFIG = {
+    "config_id": "global",
+    "kpis": {
+        "enabled_kpis": [
+            "total_leads", "open_leads", "won_leads", "lost_leads", 
+            "conversion_rate", "avg_lead_age", "avg_closure_time"
+        ],
+        "show_call_quotation_kpis": True
+    },
+    "charts": {
+        "stage_breakdown": {"enabled": True, "title": "Lead Stage Breakdown"},
+        "source_breakdown": {"enabled": True, "title": "Lead Source Distribution"},
+        "segment_performance": {"enabled": True, "title": "Segment Performance"},
+        "trend": {"enabled": True, "title": "Lead Trend Over Time"},
+        "followup_status": {"enabled": True, "title": "Follow-up Status"}
+    },
+    "sub_entities": {
+        "show_top_performers": True,
+        "show_employees": True,
+        "show_dealers": True,
+        "show_cities": True
+    },
+    "display_options": {
+        "use_dashboard_date_filter": True,
+        "default_trend_months": 6
+    }
+}
+
+
+@router.get("/config")
+async def get_entity_profile_config(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get entity profile page configuration"""
+    db = await get_db(request)
+    
+    config = await db.entity_profile_config.find_one({"config_id": "global"}, {"_id": 0})
+    
+    if not config:
+        # Return default config
+        return DEFAULT_ENTITY_PROFILE_CONFIG
+    
+    return config
+
+
+@router.put("/config")
+async def update_entity_profile_config(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Update entity profile page configuration (Admin only)"""
+    if current_user.role not in ["Admin", "Manager"]:
+        raise HTTPException(status_code=403, detail="Only Admin/Manager can update configuration")
+    
+    db = await get_db(request)
+    data = await request.json()
+    
+    # Merge with existing config
+    existing = await db.entity_profile_config.find_one({"config_id": "global"})
+    
+    config = {
+        "config_id": "global",
+        "kpis": data.get("kpis", DEFAULT_ENTITY_PROFILE_CONFIG["kpis"]),
+        "charts": data.get("charts", DEFAULT_ENTITY_PROFILE_CONFIG["charts"]),
+        "sub_entities": data.get("sub_entities", DEFAULT_ENTITY_PROFILE_CONFIG["sub_entities"]),
+        "display_options": data.get("display_options", DEFAULT_ENTITY_PROFILE_CONFIG["display_options"]),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user.username
+    }
+    
+    if existing:
+        await db.entity_profile_config.update_one(
+            {"config_id": "global"},
+            {"$set": config}
+        )
+    else:
+        await db.entity_profile_config.insert_one(config)
+    
+    return {"message": "Entity profile configuration updated", "config": config}
+
+
+@router.get("/available-kpis")
+async def get_available_kpis(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of available KPIs that can be shown on entity profile pages"""
+    db = await get_db(request)
+    
+    # Get all active metrics from metric_settings
+    metrics = await db.metric_settings.find(
+        {"is_active": True},
+        {"_id": 0, "metric_id": 1, "display_name": 1, "description": 1, "unit": 1, "color": 1, "icon": 1}
+    ).to_list(50)
+    
+    # Add built-in metrics that are always available
+    built_in_metrics = [
+        {"metric_id": "total_leads", "display_name": "Total Leads", "unit": "", "is_built_in": True},
+        {"metric_id": "conversion_rate", "display_name": "Conversion Rate", "unit": "%", "is_built_in": True},
+        {"metric_id": "avg_lead_age", "display_name": "Avg Lead Age", "unit": "days", "is_built_in": True},
+        {"metric_id": "avg_closure_time", "display_name": "Avg Closure Time", "unit": "days", "is_built_in": True},
+        {"metric_id": "calls_placed", "display_name": "Calls Placed", "unit": "", "is_built_in": True},
+        {"metric_id": "not_called", "display_name": "Not Called", "unit": "", "is_built_in": True},
+        {"metric_id": "quotations_sent", "display_name": "Quotations Sent", "unit": "", "is_built_in": True},
+        {"metric_id": "call_to_quotation_rate", "display_name": "Call to Quotation Rate", "unit": "%", "is_built_in": True},
+    ]
+    
+    return {
+        "built_in_metrics": built_in_metrics,
+        "configurable_metrics": metrics
+    }
