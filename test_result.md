@@ -1,45 +1,43 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: Call & Quotation Tracking Feature
+## Latest Test: Entity Profile Data Fix + Admin Configuration
 **Date**: 2025-12-22
 **Status**: IN PROGRESS
 
-### Features Implemented
+### Issues Fixed
 
-1. **Call Status Tracking**
-   - Call status dropdown with options: Not Called, Called - No Response, Called - Interested, Called - Not Interested, Called - Follow Up Required, Called - Converted
-   - Call status shown in Lead Details panel
-   - Call status field in Edit Lead modal
+1. **Entity Profile Data Issue** - FIXED
+   - Problem: Entity profile pages showing wrong data (400+ won leads instead of ~40)
+   - Root Cause: Data was not filtered by date range (showing all-time data)
+   - Fix: Added Indian FY date filter to all queries (Apr 2025 - Mar 2026)
+   - Now uses same metric calculations as Dashboard
 
-2. **Call Remarks**
-   - Add call remarks with timestamp and user info via API
-   - Call remarks modal in UI to add and view history
-   - API endpoints: POST /api/leads/{lead_id}/call-remark, GET /api/leads/{lead_id}/call-remarks
+2. **Empty KPI Cards** - FIXED
+   - Problem: KPI cards on entity profile were empty
+   - Root Cause: Null values not handled in frontend
+   - Fix: Added null checks with ?? 0 fallback
 
-3. **Quotation Tracking**
-   - Quotation sent toggle (Yes/No) in Edit Lead modal
-   - Quotation date field in Edit Lead modal
-   - Quotation status shown in Lead Details panel
+### Features Added
 
-4. **Dashboard KPI Cards**
-   - Calls Placed KPI
-   - Quotations Sent KPI
-   - Call to Quotation Rate KPI
-   - Not Called KPI
+1. **Entity Profile Admin Configuration**
+   - New "Entity Profiles" tab in Admin panel
+   - Select which KPIs to display
+   - Toggle charts on/off
+   - Configure sub-entity display options
+   - API: GET/PUT /api/entity/config
 
 ### Testing Required
 
-1. Verify call status dropdown options in Edit Lead modal
-2. Verify quotation sent toggle and date in Edit Lead modal
-3. Test adding call remarks and viewing history
-4. Verify KPI cards show correct counts on Dashboard
-5. Test updating a lead with call/quotation status
+1. Verify J.B ENTERPRISES shows ~41 won leads (not 400+)
+2. Verify date range is displayed on profile page
+3. Verify KPI cards are not empty
+4. Verify Admin Entity Profiles tab works
+5. Test saving entity profile configuration
 
 ## Testing Protocol
 - Last updated: 2025-12-22
 
 ## Incorporate User Feedback
-- Call status tracking - IMPLEMENTED
-- Call remarks with timestamps - IMPLEMENTED
-- Quotation tracking - IMPLEMENTED
-- Dashboard KPIs for calls/quotations - IMPLEMENTED
+- Entity profile data now filtered by dashboard date range - FIXED
+- KPI cards now showing data - FIXED
+- Admin can configure entity profile pages - IMPLEMENTED
