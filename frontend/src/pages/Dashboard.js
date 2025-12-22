@@ -508,7 +508,35 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* KPI Cards - Row 3: Time Metrics */}
+      {/* KPI Cards - Row 3: Call & Quotation Tracking */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard
+          title="Calls Placed"
+          value={kpis?.calls_placed || 0}
+          icon={PhoneCall}
+          color="text-cyan-500"
+        />
+        <KPICard
+          title="Quotations Sent"
+          value={kpis?.quotations_sent || 0}
+          icon={FileText}
+          color="text-emerald-500"
+        />
+        <KPICard
+          title="Call to Quotation Rate"
+          value={`${kpis?.call_to_quotation_rate || 0}%`}
+          icon={Percent}
+          color="text-indigo-500"
+        />
+        <KPICard
+          title="Not Called"
+          value={kpis?.not_called || 0}
+          icon={Phone}
+          color="text-gray-500"
+        />
+      </div>
+
+      {/* KPI Cards - Row 4: Time Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Closed Leads"
