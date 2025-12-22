@@ -260,7 +260,28 @@ class LeadManagementAPITester:
         if question_id:
             self.run_test("Delete Test Question", "DELETE", f"qualification/questions/{question_id}", 200)
 
-    def test_call_remarks_endpoints(self):
+    def test_lead_activity_endpoints(self):
+        """Test lead activity endpoints"""
+        print("\n=== LEAD ACTIVITY TESTS ===")
+        
+        # Get a lead first
+        success, leads_response = self.run_test("Get Leads for Activity", "GET", "leads?limit=1", 200)
+        if success and leads_response.get("leads"):
+            lead_id = leads_response["leads"][0]["lead_id"]
+            
+            # Test get lead activities
+            self.run_test("Get Lead Activities", "GET", f"lead-activities/{lead_id}", 200)
+            
+            # Test get lead followups
+            self.run_test("Get Lead Followups", "GET", f"lead-activities/{lead_id}/followups", 200)
+            
+            # Test add followup
+            followup_data = {
+                "followup_date": "2025-01-20",
+                "notes": "Test followup note",
+                "outcome": "Interested"
+            }
+            self.run_test("Add Lead Followup", "POST", f"lead-activities/{lead_id}/followups", 200, followup_data)
         """Test Call Remarks functionality"""
         print("\n=== CALL REMARKS TESTS ===")
         
