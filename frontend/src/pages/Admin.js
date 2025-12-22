@@ -148,11 +148,17 @@ const Admin = () => {
     loadData();
     loadDataStats();
     loadMetricSettings();
+    loadDeleteFilterOptions();
+    loadTrashStats();
   }, []);
 
   useEffect(() => {
     loadLogs();
   }, [logsPage]);
+
+  useEffect(() => {
+    loadTrashLeads();
+  }, [trashPage]);
 
   const loadData = async () => {
     setLoading(true);
@@ -195,6 +201,134 @@ const Admin = () => {
       setDataStats(res.data);
     } catch (error) {
       console.error('Error loading data stats:', error);
+    }
+  };
+
+  const loadDeleteFilterOptions = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/trash/filter-options`, { withCredentials: true });
+      setDeleteFilterOptions(res.data);
+    } catch (error) {
+      console.error('Error loading filter options:', error);
+    }
+  };
+
+  const loadTrashStats = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/trash/trash-stats`, { withCredentials: true });
+      setTrashStats(res.data);
+    } catch (error) {
+      console.error('Error loading trash stats:', error);
+    }
+  };
+
+  const loadTrashLeads = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/trash/deleted-leads?page=${trashPage}&limit=20`, { withCredentials: true });
+      setTrashLeads(res.data.leads || []);
+      setTrashTotalPages(res.data.pages || 1);
+      setTrashTotal(res.data.total || 0);
+    } catch (error) {
+      console.error('Error loading trash leads:', error);
+    }
+  };
+
+  const previewDelete = async () => {
+    setLoadingPreview(true);
+    setDeletePreview(null);
+    try {
+      const params = new URLSearchParams();
+      if (deleteFilters.deleteAll) params.append('delete_all', 'true');
+      if (deleteFilters.startDate) params.append('start_date', deleteFilters.startDate);
+      if (deleteFilters.endDate) params.append('end_date', deleteFilters.endDate);
+      if (deleteFilters.state) params.append('state', deleteFilters.state);
+      if (deleteFilters.dealer) params.append('dealer', deleteFilters.dealer);
+      if (deleteFilters.employee) params.append('employee', deleteFilters.employee);
+      if (deleteFilters.stage) params.append('stage', deleteFilters.stage);
+      if (deleteFilters.segment) params.append('segment', deleteFilters.segment);
+      if (deleteFilters.source) params.append('source', deleteFilters.source);
+      
+      const res = await axios.get(`${API}/admin/trash/preview-delete?${params}`, { withCredentials: true });
+      setDeletePreview(res.data);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to preview deletion');
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const executeDelete = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      toast.error('Please type DELETE to confirm');
+      return;
+    }
+    
+    setDeleting(true);
+    try {
+      const params = new URLSearchParams();
+      if (deleteFilters.deleteAll) params.append('delete_all', 'true');
+      if (deleteFilters.startDate) params.append('start_date', deleteFilters.startDate);
+      if (deleteFilters.endDate) params.append('end_date', deleteFilters.endDate);
+      if (deleteFilters.state) params.append('state', deleteFilters.state);
+      if (deleteFilters.dealer) params.append('dealer', deleteFilters.dealer);
+      if (deleteFilters.employee) params.append('employee', deleteFilters.employee);
+      if (deleteFilters.stage) params.append('stage', deleteFilters.stage);
+      if (deleteFilters.segment) params.append('segment', deleteFilters.segment);
+      if (deleteFilters.source) params.append('source', deleteFilters.source);
+      
+      const res = await axios.post(`${API}/admin/trash/delete-leads?${params}`, {}, { withCredentials: true });
+      toast.success(res.data.message);
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+      setDeletePreview(null);
+      setDeleteFilters({
+        deleteAll: false, startDate: '', endDate: '', state: '', dealer: '',
+        employee: '', stage: '', segment: '', source: ''
+      });
+      loadDataStats();
+      loadTrashStats();
+      loadTrashLeads();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete leads');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const recoverLeads = async (leadIds = null, recoverAll = false) => {
+    setRecoveringLeads(true);
+    try {
+      const res = await axios.post(`${API}/admin/trash/recover-leads`, 
+        { lead_ids: leadIds, recover_all: recoverAll },
+        { withCredentials: true }
+      );
+      toast.success(res.data.message);
+      setSelectedTrashLeads([]);
+      loadTrashStats();
+      loadTrashLeads();
+      loadDataStats();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to recover leads');
+    } finally {
+      setRecoveringLeads(false);
+    }
+  };
+
+  const permanentDeleteLeads = async (leadIds = null, deleteAllTrash = false) => {
+    setPermanentDeleting(true);
+    try {
+      const res = await axios.post(`${API}/admin/trash/permanent-delete`,
+        { lead_ids: leadIds, delete_all_trash: deleteAllTrash },
+        { withCredentials: true }
+      );
+      toast.success(res.data.message);
+      setSelectedTrashLeads([]);
+      loadTrashStats();
+      loadTrashLeads();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to permanently delete leads');
+    } finally {
+      setPermanentDeleting(false);
     }
   };
 
