@@ -42,8 +42,15 @@ async def get_leads(
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
     
-    # Build filter query - exclude soft-deleted leads
-    query = {"deleted_at": {"$exists": False}}
+    # Build filter query - exclude soft-deleted leads AND transferred leads
+    query = {
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+    }
     
     # Search functionality
     if search and search.strip():
@@ -52,8 +59,8 @@ async def get_leads(
             # Search in specific field
             query[search_field] = {"$regex": search_term, "$options": "i"}
         else:
-            # Search in multiple fields
-            query["$or"] = [
+            # Search in multiple fields - need to use $and to combine with existing $or
+            search_or = [
                 {"name": {"$regex": search_term, "$options": "i"}},
                 {"phone_number": {"$regex": search_term, "$options": "i"}},
                 {"email_address": {"$regex": search_term, "$options": "i"}},
@@ -62,6 +69,14 @@ async def get_leads(
                 {"state": {"$regex": search_term, "$options": "i"}},
                 {"employee_name": {"$regex": search_term, "$options": "i"}}
             ]
+            # Combine with existing query using $and
+            query = {
+                "$and": [
+                    {"deleted_at": {"$exists": False}},
+                    {"$or": [{"is_transferred": {"$exists": False}}, {"is_transferred": False}, {"is_transferred": None}]},
+                    {"$or": search_or}
+                ]
+            }
     
     if state:
         query["state"] = state
