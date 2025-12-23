@@ -94,6 +94,7 @@ const AppRouter = () => {
         <Route path="/leads" element={<Leads />} />
         <Route path="/comparison" element={<Comparison />} />
         <Route path="/profile/:entityType/:entityId" element={<EntityProfile />} />
+        <Route path="/transferred-leads" element={<TransferredLeads />} />
         
         {/* Manager+ only */}
         <Route path="/forecast" element={
