@@ -342,7 +342,8 @@ async def get_kpis(
         "calls_placed": calls_placed,
         "not_called": not_called,
         "quotations_sent": quotations_sent,
-        "call_to_quotation_rate": round(call_to_quotation_rate, 2)
+        "call_to_quotation_rate": round(call_to_quotation_rate, 2),
+        "transferred_leads": transferred_leads
     }
     
     # Calculate counts for all metrics
