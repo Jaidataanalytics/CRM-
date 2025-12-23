@@ -80,6 +80,11 @@ class Lead(BaseModel):
     quotation_sent: Optional[bool] = None  # Yes/No
     quotation_date: Optional[str] = None  # Date when quotation was sent
     
+    # BDM Transfer fields
+    is_transferred: Optional[bool] = None  # True if transferred to dealer
+    transferred_at: Optional[datetime] = None  # When it was transferred
+    transferred_by: Optional[str] = None  # Who transferred it
+    
     # System fields
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
