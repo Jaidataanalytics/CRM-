@@ -282,7 +282,8 @@ class LeadManagementAPITester:
                 "outcome": "Interested"
             }
             self.run_test("Add Lead Followup", "POST", f"lead-activities/{lead_id}/followups", 200, followup_data)
-        """Test Call Remarks functionality"""
+
+    def test_call_remarks_endpoints(self):
         print("\n=== CALL REMARKS TESTS ===")
         
         # Get a lead first
