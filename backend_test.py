@@ -355,6 +355,166 @@ class LeadManagementAPITester:
         else:
             print("   ⚠️  No leads found for call remarks testing")
 
+    def test_bdm_transfer_endpoints(self):
+        """Test BDM Lead Transfer functionality"""
+        print("\n=== BDM LEAD TRANSFER TESTS ===")
+        
+        # First, check if there are any BDM leads
+        success, leads_response = self.run_test("Get BDM Leads", "GET", "leads?dealer=BDM&limit=10", 200)
+        bdm_leads = []
+        if success and leads_response.get("leads"):
+            bdm_leads = [lead for lead in leads_response["leads"] if lead.get("dealer", "").upper() == "BDM"]
+            print(f"   ✓ Found {len(bdm_leads)} BDM leads")
+        
+        if not bdm_leads:
+            print("   ⚠️  No BDM leads found, creating a test BDM lead...")
+            # Create a test BDM lead
+            test_lead_data = {
+                "name": "Test BDM Customer",
+                "phone_number": "9999999999",
+                "email_address": "test@bdm.com",
+                "dealer": "BDM",
+                "employee_name": "Test Employee",
+                "enquiry_no": f"BDM{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                "enquiry_date": "2025-01-15",
+                "segment": "Corporate",
+                "enquiry_status": "Open",
+                "enquiry_stage": "Prospecting",
+                "enquiry_type": "Warm"
+            }
+            
+            success, create_response = self.run_test("Create Test BDM Lead", "POST", "leads", 200, test_lead_data)
+            if success and create_response.get("lead_id"):
+                # Get the created lead
+                lead_id = create_response["lead_id"]
+                success, lead_response = self.run_test("Get Created BDM Lead", "GET", f"leads/{lead_id}", 200)
+                if success:
+                    bdm_leads = [lead_response]
+                    print(f"   ✓ Created test BDM lead: {lead_id}")
+        
+        if bdm_leads:
+            test_lead = bdm_leads[0]
+            lead_id = test_lead["lead_id"]
+            lead_name = test_lead.get("name", "Unknown")
+            
+            print(f"   Testing with BDM lead: {lead_name} ({lead_id})")
+            
+            # Test transfer BDM lead to dealer
+            success, transfer_response = self.run_test("Transfer BDM Lead", "POST", f"leads/{lead_id}/transfer", 200)
+            if success:
+                print(f"   ✅ BDM lead transferred successfully")
+                print(f"   ✓ Response: {transfer_response.get('message', 'No message')}")
+                
+                # Verify the lead is marked as transferred
+                success, lead_response = self.run_test("Get Transferred Lead", "GET", f"leads/{lead_id}", 200)
+                if success:
+                    if lead_response.get("is_transferred") == True:
+                        print(f"   ✓ Lead correctly marked as transferred")
+                        print(f"   ✓ Transferred at: {lead_response.get('transferred_at', 'Unknown')}")
+                        print(f"   ✓ Transferred by: {lead_response.get('transferred_by', 'Unknown')}")
+                    else:
+                        print(f"   ⚠️  Lead not marked as transferred")
+                
+                # Test that transferred lead is excluded from regular leads list
+                success, regular_leads_response = self.run_test("Get Regular Leads (Should Exclude Transferred)", "GET", "leads?limit=100", 200)
+                if success:
+                    regular_leads = regular_leads_response.get("leads", [])
+                    transferred_in_regular = any(lead.get("lead_id") == lead_id for lead in regular_leads)
+                    if not transferred_in_regular:
+                        print(f"   ✓ Transferred lead correctly excluded from regular leads list")
+                    else:
+                        print(f"   ⚠️  Transferred lead still appears in regular leads list")
+                
+                # Test get transferred leads list
+                success, transferred_response = self.run_test("Get Transferred Leads List", "GET", "leads/transferred/list", 200)
+                if success:
+                    transferred_leads = transferred_response.get("leads", [])
+                    our_transferred_lead = next((lead for lead in transferred_leads if lead.get("lead_id") == lead_id), None)
+                    if our_transferred_lead:
+                        print(f"   ✓ Transferred lead appears in transferred leads list")
+                        print(f"   ✓ Total transferred leads: {transferred_response.get('total', 0)}")
+                    else:
+                        print(f"   ⚠️  Transferred lead not found in transferred leads list")
+                
+                # Test get transferred leads stats
+                success, stats_response = self.run_test("Get Transferred Leads Stats", "GET", "leads/transferred/stats", 200)
+                if success:
+                    total_transferred = stats_response.get("total_transferred", 0)
+                    by_employee = stats_response.get("by_employee", [])
+                    print(f"   ✓ Transferred leads stats - Total: {total_transferred}")
+                    print(f"   ✓ By employee breakdown: {len(by_employee)} employees")
+                
+                # Test KPIs to ensure transferred leads are excluded
+                success, kpis_response = self.run_test("Get KPIs (Should Exclude Transferred)", "GET", "kpis", 200)
+                if success:
+                    transferred_count = kpis_response.get("transferred_leads", 0)
+                    print(f"   ✓ KPIs show transferred leads count: {transferred_count}")
+                    
+                    # Verify transferred leads are excluded from main counts
+                    total_leads = kpis_response.get("total_leads", 0)
+                    print(f"   ✓ Total leads (excluding transferred): {total_leads}")
+                
+                # Test reverse transfer (untransfer)
+                success, untransfer_response = self.run_test("Reverse Transfer (Untransfer)", "POST", f"leads/{lead_id}/untransfer", 200)
+                if success:
+                    print(f"   ✅ Lead transfer reversed successfully")
+                    print(f"   ✓ Response: {untransfer_response.get('message', 'No message')}")
+                    
+                    # Verify the lead is no longer marked as transferred
+                    success, lead_response = self.run_test("Get Untransferred Lead", "GET", f"leads/{lead_id}", 200)
+                    if success:
+                        if lead_response.get("is_transferred") == False or not lead_response.get("is_transferred"):
+                            print(f"   ✓ Lead correctly unmarked as transferred")
+                        else:
+                            print(f"   ⚠️  Lead still marked as transferred after untransfer")
+                    
+                    # Test that untransferred lead appears back in regular leads list
+                    success, regular_leads_response = self.run_test("Get Regular Leads (Should Include Untransferred)", "GET", "leads?limit=100", 200)
+                    if success:
+                        regular_leads = regular_leads_response.get("leads", [])
+                        untransferred_in_regular = any(lead.get("lead_id") == lead_id for lead in regular_leads)
+                        if untransferred_in_regular:
+                            print(f"   ✓ Untransferred lead correctly appears back in regular leads list")
+                        else:
+                            print(f"   ⚠️  Untransferred lead not found in regular leads list")
+            
+            # Test error cases
+            print(f"\n   Testing error cases...")
+            
+            # Test transfer already transferred lead (should fail)
+            # First transfer again
+            success, _ = self.run_test("Transfer Lead Again", "POST", f"leads/{lead_id}/transfer", 200)
+            if success:
+                # Now try to transfer again (should fail)
+                success, error_response = self.run_test("Transfer Already Transferred Lead (Should Fail)", "POST", f"leads/{lead_id}/transfer", 400)
+                if success:
+                    print(f"   ✓ Correctly rejected transfer of already transferred lead")
+                
+                # Test untransfer non-transferred lead after untransferring
+                success, _ = self.run_test("Untransfer Lead", "POST", f"leads/{lead_id}/untransfer", 200)
+                if success:
+                    success, error_response = self.run_test("Untransfer Non-Transferred Lead (Should Fail)", "POST", f"leads/{lead_id}/untransfer", 400)
+                    if success:
+                        print(f"   ✓ Correctly rejected untransfer of non-transferred lead")
+        
+        # Test transfer non-BDM lead (should fail)
+        success, non_bdm_leads_response = self.run_test("Get Non-BDM Leads", "GET", "leads?limit=10", 200)
+        if success and non_bdm_leads_response.get("leads"):
+            non_bdm_leads = [lead for lead in non_bdm_leads_response["leads"] if lead.get("dealer", "").upper() != "BDM"]
+            if non_bdm_leads:
+                non_bdm_lead = non_bdm_leads[0]
+                non_bdm_lead_id = non_bdm_lead["lead_id"]
+                
+                success, error_response = self.run_test("Transfer Non-BDM Lead (Should Fail)", "POST", f"leads/{non_bdm_lead_id}/transfer", 400)
+                if success:
+                    print(f"   ✓ Correctly rejected transfer of non-BDM lead")
+                    print(f"   ✓ Error message: {error_response.get('detail', 'No error message')}")
+        
+        # Test transfer non-existent lead (should fail)
+        success, error_response = self.run_test("Transfer Non-Existent Lead (Should Fail)", "POST", "leads/non_existent_lead/transfer", 404)
+        if success:
+            print(f"   ✓ Correctly returned 404 for non-existent lead transfer")
+
     def test_kpi_qualification_metrics(self):
         """Test KPI endpoints for qualification metrics"""
         print("\n=== KPI QUALIFICATION METRICS TESTS ===")
