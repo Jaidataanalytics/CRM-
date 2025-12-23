@@ -897,13 +897,32 @@ const Leads = () => {
                     rows={3}
                   />
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    {editingLead ? 'Update' : 'Create'} Lead
-                  </Button>
+                <div className="flex justify-between gap-2">
+                  <div>
+                    {editingLead && isBDMLead(editingLead) && (
+                      <Button 
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          setIsDialogOpen(false);
+                          handleTransferLead(editingLead);
+                        }}
+                        disabled={transferring}
+                        className="bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900 dark:hover:bg-blue-800 dark:text-blue-200"
+                      >
+                        <ArrowLeftRight className="h-4 w-4 mr-2" />
+                        {transferring ? 'Transferring...' : 'Transfer to Dealer'}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit">
+                      {editingLead ? 'Update' : 'Create'} Lead
+                    </Button>
+                  </div>
                 </div>
               </form>
             </DialogContent>
