@@ -142,6 +142,14 @@ async def get_kpis(
     # Call to Quotation rate
     call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
     
+    # Transferred leads (BDM leads transferred to dealers)
+    transferred_query = {
+        "is_deleted": {"$ne": True},
+        "is_transferred": True,
+        "enquiry_date": {"$gte": start_date, "$lte": end_date}
+    }
+    transferred_leads = await db.leads.count_documents(transferred_query)
+    
     # Qualified leads (system-based, not configurable)
     qualified_query = {**base_query, "is_qualified": True}
     qualified_leads = await db.leads.count_documents(qualified_query)
