@@ -404,6 +404,32 @@ const Leads = () => {
     }
   };
 
+  // Transfer lead to dealer (BDM only)
+  const handleTransferLead = async (lead) => {
+    if (lead.dealer?.toUpperCase() !== 'BDM') {
+      toast.error('Only BDM leads can be transferred');
+      return;
+    }
+    
+    setTransferring(true);
+    try {
+      await axios.post(`${API}/leads/${lead.lead_id}/transfer`, {}, { withCredentials: true });
+      toast.success('Lead transferred to dealer successfully');
+      setShowLeadDetail(false);
+      setSelectedLead(null);
+      loadLeads();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to transfer lead');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  // Check if lead is BDM lead (can be transferred)
+  const isBDMLead = (lead) => {
+    return lead?.dealer?.toUpperCase() === 'BDM';
+  };
+
   const getCallStatusBadge = (status) => {
     if (!status || status === 'Not Called') return <Badge variant="outline" className="gap-1"><Phone className="h-3 w-3" /> Not Called</Badge>;
     
