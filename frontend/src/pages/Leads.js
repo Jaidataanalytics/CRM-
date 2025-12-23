@@ -110,6 +110,9 @@ const Leads = () => {
   const [newRemark, setNewRemark] = useState('');
   const [callRemarks, setCallRemarks] = useState([]);
   const [loadingRemarks, setLoadingRemarks] = useState(false);
+  
+  // Transfer state
+  const [transferring, setTransferring] = useState(false);
 
   useEffect(() => {
     loadLeads();
