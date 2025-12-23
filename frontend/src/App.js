@@ -17,6 +17,7 @@ import Forecast from '@/pages/Forecast';
 import Comparison from '@/pages/Comparison';
 import Admin from '@/pages/Admin';
 import EntityProfile from '@/pages/EntityProfile';
+import TransferredLeads from '@/pages/TransferredLeads';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
