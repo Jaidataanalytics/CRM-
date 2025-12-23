@@ -483,3 +483,187 @@ async def get_call_remarks(
         raise HTTPException(status_code=404, detail="Lead not found")
     
     return {"remarks": lead.get("call_remarks", [])}
+
+
+
+# BDM Transfer Endpoints
+@router.post("/{lead_id}/transfer")
+async def transfer_lead_to_dealer(
+    request: Request,
+    lead_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Transfer a BDM lead to dealer (mark as transferred)"""
+    db = await get_db(request)
+    
+    # Find the lead
+    lead = await db.leads.find_one({"lead_id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Check if lead belongs to BDM dealer
+    if lead.get("dealer", "").upper() != "BDM":
+        raise HTTPException(status_code=400, detail="Only BDM leads can be transferred")
+    
+    # Check if already transferred
+    if lead.get("is_transferred"):
+        raise HTTPException(status_code=400, detail="Lead is already transferred")
+    
+    # Mark as transferred
+    await db.leads.update_one(
+        {"lead_id": lead_id},
+        {
+            "$set": {
+                "is_transferred": True,
+                "transferred_at": datetime.now(timezone.utc),
+                "transferred_by": current_user.name or current_user.email,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Log the activity
+    activity = {
+        "activity_id": f"activity_{datetime.now(timezone.utc).timestamp()}",
+        "resource": "lead",
+        "resource_id": lead_id,
+        "action": "transferred",
+        "user_id": current_user.user_id,
+        "user_name": current_user.name,
+        "details": {"message": "Lead transferred to dealer"},
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.activity_logs.insert_one(activity)
+    
+    return {"message": "Lead transferred successfully", "lead_id": lead_id}
+
+
+@router.post("/{lead_id}/untransfer")
+async def untransfer_lead(
+    request: Request,
+    lead_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Reverse transfer - bring lead back from transferred status"""
+    db = await get_db(request)
+    
+    # Find the lead
+    lead = await db.leads.find_one({"lead_id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Check if lead is transferred
+    if not lead.get("is_transferred"):
+        raise HTTPException(status_code=400, detail="Lead is not transferred")
+    
+    # Remove transfer status
+    await db.leads.update_one(
+        {"lead_id": lead_id},
+        {
+            "$set": {
+                "is_transferred": False,
+                "updated_at": datetime.now(timezone.utc)
+            },
+            "$unset": {
+                "transferred_at": "",
+                "transferred_by": ""
+            }
+        }
+    )
+    
+    # Log the activity
+    activity = {
+        "activity_id": f"activity_{datetime.now(timezone.utc).timestamp()}",
+        "resource": "lead",
+        "resource_id": lead_id,
+        "action": "untransferred",
+        "user_id": current_user.user_id,
+        "user_name": current_user.name,
+        "details": {"message": "Lead transfer reversed"},
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.activity_logs.insert_one(activity)
+    
+    return {"message": "Lead transfer reversed", "lead_id": lead_id}
+
+
+@router.get("/transferred/list")
+async def get_transferred_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500)
+):
+    """Get all transferred leads"""
+    db = await get_db(request)
+    
+    query = {
+        "is_transferred": True,
+        "deleted_at": {"$exists": False}
+    }
+    
+    # Date filter on enquiry_date
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    # Search
+    if search and search.strip():
+        search_term = search.strip()
+        query["$or"] = [
+            {"name": {"$regex": search_term, "$options": "i"}},
+            {"phone_number": {"$regex": search_term, "$options": "i"}},
+            {"enquiry_no": {"$regex": search_term, "$options": "i"}},
+            {"employee_name": {"$regex": search_term, "$options": "i"}}
+        ]
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("transferred_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit
+    }
+
+
+@router.get("/transferred/stats")
+async def get_transferred_stats(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """Get transferred leads statistics"""
+    db = await get_db(request)
+    
+    query = {
+        "is_transferred": True,
+        "deleted_at": {"$exists": False}
+    }
+    
+    # Date filter on enquiry_date
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    total_transferred = await db.leads.count_documents(query)
+    
+    # Get by employee breakdown
+    pipeline = [
+        {"$match": query},
+        {"$group": {"_id": "$employee_name", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ]
+    by_employee = await db.leads.aggregate(pipeline).to_list(10)
+    
+    return {
+        "total_transferred": total_transferred,
+        "by_employee": [{"employee": e["_id"] or "Unknown", "count": e["count"]} for e in by_employee]
+    }
