@@ -534,6 +534,12 @@ const Dashboard = () => {
           icon={Phone}
           color="text-gray-500"
         />
+        <KPICard
+          title="Transferred to Dealer"
+          value={kpis?.transferred_leads || 0}
+          icon={ArrowLeftRight}
+          color="text-indigo-500"
+        />
       </div>
 
       {/* KPI Cards - Row 4: Time Metrics */}
