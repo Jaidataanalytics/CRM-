@@ -1259,7 +1259,7 @@ const Leads = () => {
               <Separator />
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button onClick={() => { handleEdit(selectedLead); setShowLeadDetail(false); }} className="flex-1">
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Lead
@@ -1268,6 +1268,17 @@ const Leads = () => {
                   <ShieldCheck className="h-4 w-4 mr-2" />
                   Qualify
                 </Button>
+                {isBDMLead(selectedLead) && (
+                  <Button 
+                    variant="secondary" 
+                    onClick={() => handleTransferLead(selectedLead)}
+                    disabled={transferring}
+                    className="bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900 dark:hover:bg-blue-800 dark:text-blue-200"
+                  >
+                    <ArrowLeftRight className="h-4 w-4 mr-2" />
+                    {transferring ? 'Transferring...' : 'Transfer to Dealer'}
+                  </Button>
+                )}
               </div>
 
               {/* Activity Timeline */}
