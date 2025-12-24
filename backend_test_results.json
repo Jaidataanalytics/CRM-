@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-12-24T08:27:07.389949",
-  "total_tests": 15,
-  "passed_tests": 12,
-  "success_rate": "80.0%",
+  "timestamp": "2025-12-24T08:28:02.785517",
+  "total_tests": 20,
+  "passed_tests": 18,
+  "success_rate": "90.0%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -11,13 +11,28 @@
     },
     {
       "test": "Employee Login",
-      "success": false,
-      "details": "Status: 401, Expected: 200, Error: Invalid username or password"
+      "success": true,
+      "details": "Status: 200"
     },
     {
-      "test": "Employee Notifications Test",
-      "success": false,
-      "details": "Employee login required"
+      "test": "Employee Notifications API",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Employee Notification Filtering",
+      "success": true,
+      "details": "Employee sees 20 notifications (correctly filtered)"
+    },
+    {
+      "test": "Admin Notifications API",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Admin Notification Access",
+      "success": true,
+      "details": "Admin sees 20 notifications (all leads)"
     },
     {
       "test": "Create Lead with Auto Added By",
@@ -78,6 +93,16 @@
       "test": "Create System Import Lead",
       "success": true,
       "details": "Status: 200"
+    },
+    {
+      "test": "Employee Sees System Import Notification",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "System Import Visible to Employee",
+      "success": false,
+      "details": "Employee cannot see System Import lead notifications"
     }
   ]
 }
