@@ -117,7 +117,7 @@ async def get_notifications(
         try:
             followup_date = datetime.strptime(lead.get("planned_followup_date", tomorrow), "%Y-%m-%d").replace(tzinfo=timezone.utc)
             days_until = (followup_date - datetime.now(timezone.utc)).days + 1
-        except:
+        except Exception:
             days_until = 1
         
         notifications.append({
