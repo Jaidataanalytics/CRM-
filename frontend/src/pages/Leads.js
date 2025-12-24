@@ -531,17 +531,23 @@ const Leads = () => {
   // Closed stages that should NOT show follow-up warnings
   const CLOSED_STAGES = ['Closed-Won', 'Closed-Lost', 'Closed-Dropped', 'Order Booked', 'Won', 'Lost'];
 
-  // Check if follow-up is overdue (only for open leads)
-  const isFollowupOverdue = (date, stage) => {
+  // Check if follow-up is overdue (only for OPEN leads - enquiry_status = "Open")
+  const isFollowupOverdue = (date, lead) => {
     if (!date) return false;
-    if (stage && CLOSED_STAGES.includes(stage)) return false; // Don't show warning for closed leads
+    // Only show overdue for leads with enquiry_status = "Open"
+    if (lead?.enquiry_status !== 'Open') return false;
+    // Also skip if closed stage (belt and suspenders)
+    if (lead?.enquiry_stage && CLOSED_STAGES.includes(lead.enquiry_stage)) return false;
     const today = new Date().toISOString().split('T')[0];
     return date < today;
   };
 
-  const isFollowupToday = (date, stage) => {
+  const isFollowupToday = (date, lead) => {
     if (!date) return false;
-    if (stage && CLOSED_STAGES.includes(stage)) return false; // Don't show warning for closed leads
+    // Only show today indicator for leads with enquiry_status = "Open"
+    if (lead?.enquiry_status !== 'Open') return false;
+    // Also skip if closed stage
+    if (lead?.enquiry_stage && CLOSED_STAGES.includes(lead.enquiry_stage)) return false;
     const today = new Date().toISOString().split('T')[0];
     return date === today;
   };
