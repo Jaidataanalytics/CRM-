@@ -123,6 +123,9 @@ const Leads = () => {
   const [customFollowupStart, setCustomFollowupStart] = useState('');
   const [customFollowupEnd, setCustomFollowupEnd] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Users list for Added By dropdown
+  const [usersList, setUsersList] = useState([]);
 
   useEffect(() => {
     loadLeads();
