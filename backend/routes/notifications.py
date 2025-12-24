@@ -30,9 +30,30 @@ async def get_notifications(
     notifications = []
     
     # Build query based on user role
-    base_query = {}
+    # For employees: show leads they added (added_by) OR system imports (shown to everyone)
+    base_query = {
+        "is_deleted": {"$ne": True},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+    }
+    
     if current_user.role == UserRole.EMPLOYEE:
-        base_query["employee_name"] = current_user.name
+        # Employees see:
+        # 1. Leads they added (added_by = their name)
+        # 2. System Import leads (shown to everyone)
+        user_name = current_user.name or current_user.email
+        base_query = {
+            **base_query,
+            "$or": [
+                {"added_by": user_name},
+                {"added_by": "System Import"},
+                {"added_by": {"$exists": False}},  # Legacy leads without added_by
+                {"added_by": None}
+            ]
+        }
     
     # Closed/Won stages that should NOT have follow-up reminders
     CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
@@ -55,6 +76,7 @@ async def get_notifications(
             "lead_id": lead.get("lead_id"),
             "lead_name": lead.get("name"),
             "dealer": lead.get("dealer"),
+            "added_by": lead.get("added_by"),
             "followup_date": lead.get("planned_followup_date"),
             "days_overdue": days_overdue,
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -77,6 +99,7 @@ async def get_notifications(
             "lead_id": lead.get("lead_id"),
             "lead_name": lead.get("name"),
             "dealer": lead.get("dealer"),
+            "added_by": lead.get("added_by"),
             "followup_date": lead.get("planned_followup_date"),
             "days_overdue": 0,
             "created_at": datetime.now(timezone.utc).isoformat()
@@ -105,6 +128,7 @@ async def get_notifications(
             "lead_id": lead.get("lead_id"),
             "lead_name": lead.get("name"),
             "dealer": lead.get("dealer"),
+            "added_by": lead.get("added_by"),
             "followup_date": lead.get("planned_followup_date"),
             "days_until": days_until,
             "created_at": datetime.now(timezone.utc).isoformat()
