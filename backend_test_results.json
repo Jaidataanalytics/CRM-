@@ -1,8 +1,8 @@
 {
-  "timestamp": "2025-12-24T08:28:02.785517",
-  "total_tests": 20,
-  "passed_tests": 18,
-  "success_rate": "90.0%",
+  "timestamp": "2025-12-24T10:58:44.675063",
+  "total_tests": 29,
+  "passed_tests": 26,
+  "success_rate": "89.7%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -11,28 +11,13 @@
     },
     {
       "test": "Employee Login",
-      "success": true,
-      "details": "Status: 200"
+      "success": false,
+      "details": "Status: 401, Expected: 200, Error: Invalid username or password"
     },
     {
-      "test": "Employee Notifications API",
-      "success": true,
-      "details": "Status: 200"
-    },
-    {
-      "test": "Employee Notification Filtering",
-      "success": true,
-      "details": "Employee sees 20 notifications (correctly filtered)"
-    },
-    {
-      "test": "Admin Notifications API",
-      "success": true,
-      "details": "Status: 200"
-    },
-    {
-      "test": "Admin Notification Access",
-      "success": true,
-      "details": "Admin sees 20 notifications (all leads)"
+      "test": "Employee Notifications Test",
+      "success": false,
+      "details": "Employee login required"
     },
     {
       "test": "Create Lead with Auto Added By",
@@ -95,14 +80,74 @@
       "details": "Status: 200"
     },
     {
-      "test": "Employee Sees System Import Notification",
+      "test": "KPI Hot/Warm/Cold Counts",
       "success": true,
       "details": "Status: 200"
     },
     {
-      "test": "System Import Visible to Employee",
-      "success": false,
-      "details": "Employee cannot see System Import lead notifications"
+      "test": "KPI Hot/Warm/Cold Counts",
+      "success": true,
+      "details": "Hot/Warm/Cold counts (2401) are within Open leads (2659)"
+    },
+    {
+      "test": "Leads Filter - Single Type (Hot)",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Single Type Filter (Hot)",
+      "success": true,
+      "details": "All 10 leads are Hot type"
+    },
+    {
+      "test": "Leads Filter - Multi-select (Hot,Warm)",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Multi-select Type Filter (Hot,Warm)",
+      "success": true,
+      "details": "All 10 leads are Hot or Warm type"
+    },
+    {
+      "test": "Leads Filter - Follow-up Today",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Follow-up Today Filter",
+      "success": true,
+      "details": "Found 3 leads"
+    },
+    {
+      "test": "Leads Filter - Follow-up Date Range",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Follow-up Date Range Filter",
+      "success": true,
+      "details": "Found 5 leads"
+    },
+    {
+      "test": "Leads Filter - Overdue Follow-ups",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Overdue Follow-up Filter",
+      "success": true,
+      "details": "Found 5 overdue leads"
+    },
+    {
+      "test": "Combined Filter - Hot leads with follow-up this week",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Combined Filters",
+      "success": true,
+      "details": "All 10 leads match combined criteria"
     }
   ]
 }
