@@ -1261,6 +1261,7 @@ const Leads = () => {
                 {/* Other Tab */}
                 <TabsContent value="other" className="mt-4">
                   <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Added By</Label><p className="text-sm font-medium text-primary">{selectedLead.added_by || '-'}</p></div>
                     <div><Label className="text-xs text-muted-foreground">Employee Code</Label><p className="text-sm">{selectedLead.employee_code || '-'}</p></div>
                     <div><Label className="text-xs text-muted-foreground">Employee Status</Label><p className="text-sm">{selectedLead.employee_status || '-'}</p></div>
                     <div><Label className="text-xs text-muted-foreground">Enquiry Type</Label><p className="text-sm">{selectedLead.enquiry_type || '-'}</p></div>
