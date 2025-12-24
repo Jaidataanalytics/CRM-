@@ -126,7 +126,7 @@ const Leads = () => {
 
   useEffect(() => {
     loadLeads();
-  }, [buildQueryParams, searchQuery, searchField, page, pageSize]);
+  }, [buildQueryParams, searchQuery, searchField, page, pageSize, selectedLeadTypes, followupFilter, customFollowupStart, customFollowupEnd]);
 
   // Load dropdown options on mount
   useEffect(() => {
