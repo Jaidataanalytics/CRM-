@@ -200,6 +200,41 @@ const Leads = () => {
     setPage(1);
   };
 
+  // Toggle lead type in multi-select
+  const toggleLeadType = (type) => {
+    setSelectedLeadTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type) 
+        : [...prev, type]
+    );
+    setPage(1);
+  };
+
+  // Clear all advanced filters
+  const clearAdvancedFilters = () => {
+    setSelectedLeadTypes([]);
+    setFollowupFilter('all');
+    setCustomFollowupStart('');
+    setCustomFollowupEnd('');
+    setPage(1);
+  };
+
+  // Check if any advanced filter is active
+  const hasActiveFilters = selectedLeadTypes.length > 0 || followupFilter !== 'all';
+
+  // Get follow-up filter label
+  const getFollowupFilterLabel = () => {
+    const labels = {
+      'all': 'All Follow-ups',
+      'today': 'Today',
+      'tomorrow': 'Tomorrow',
+      'next7days': 'Next 7 Days',
+      'overdue': 'Overdue',
+      'custom': 'Custom Range'
+    };
+    return labels[followupFilter] || 'All Follow-ups';
+  };
+
   // Export leads to Excel
   const handleExport = async () => {
     setExporting(true);
