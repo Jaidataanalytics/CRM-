@@ -198,9 +198,19 @@ async def dismiss_all_notifications(
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     
     CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
-    base_query = {"enquiry_stage": {"$nin": CLOSED_STAGES}}
+    base_query = {
+        "enquiry_stage": {"$nin": CLOSED_STAGES},
+        "is_deleted": {"$ne": True}
+    }
+    
     if current_user.role == UserRole.EMPLOYEE:
-        base_query["employee_name"] = current_user.name
+        user_name = current_user.name or current_user.email
+        base_query["$or"] = [
+            {"added_by": user_name},
+            {"added_by": "System Import"},
+            {"added_by": {"$exists": False}},
+            {"added_by": None}
+        ]
     
     if notification_type == "overdue":
         # Clear only overdue follow-ups (past dates) - DEFAULT behavior
