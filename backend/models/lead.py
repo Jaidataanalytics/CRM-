@@ -139,6 +139,9 @@ class LeadCreate(BaseModel):
     # Quotation tracking
     quotation_sent: Optional[bool] = None
     quotation_date: Optional[str] = None
+    
+    # Lead ownership tracking
+    added_by: Optional[str] = None  # User who added this lead (or "System Import" for bulk uploads)
 
 
 class LeadUpdate(BaseModel):
