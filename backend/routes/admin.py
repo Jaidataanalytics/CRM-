@@ -567,7 +567,7 @@ def parse_date(val):
     if hasattr(val, 'strftime'):
         try:
             return val.strftime("%Y-%m-%d")
-        except:
+        except Exception:
             return None
     
     # Handle string dates
@@ -603,7 +603,7 @@ def parse_date(val):
             parsed = pd.to_datetime(val, dayfirst=True)
             if pd.notna(parsed):
                 return parsed.strftime("%Y-%m-%d")
-        except:
+        except Exception:
             pass
         
         return None
