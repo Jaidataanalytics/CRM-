@@ -1060,6 +1060,18 @@ const Admin = () => {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setPasswordChangeUser(user);
+                              setNewPassword('');
+                              setIsPasswordDialogOpen(true);
+                            }}
+                            title="Change Password"
+                          >
+                            <Key className="h-4 w-4 text-blue-500" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => toggleUserStatus(user.user_id, user.is_active)}
                             title={user.is_active ? 'Deactivate' : 'Activate'}
                           >
