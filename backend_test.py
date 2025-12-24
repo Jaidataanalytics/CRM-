@@ -348,7 +348,7 @@ class LeadManagementTester:
                     "GET",
                     "notifications",
                     200,
-                    headers={"Authorization": f"Bearer {self.employee_token}"}
+                    token=self.employee_token
                 )
                 
                 if success:
