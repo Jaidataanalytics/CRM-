@@ -240,20 +240,45 @@ const Leads = () => {
     setExporting(true);
     try {
       const queryParams = buildQueryParams();
-      const response = await axios.get(`${API}/leads/export?${queryParams}&format=xlsx`, {
+      let url = `${API}/leads/export?${queryParams}&format=xlsx`;
+      
+      // Add lead type filter (Hot/Warm/Cold)
+      if (selectedLeadTypes.length > 0) {
+        url += `&enquiry_type=${encodeURIComponent(selectedLeadTypes.join(','))}`;
+      }
+      
+      // Add follow-up date filter
+      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const next7days = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+      
+      if (followupFilter === 'today') {
+        url += `&followup_start_date=${today}&followup_end_date=${today}`;
+      } else if (followupFilter === 'tomorrow') {
+        url += `&followup_start_date=${tomorrow}&followup_end_date=${tomorrow}`;
+      } else if (followupFilter === 'next7days') {
+        url += `&followup_start_date=${today}&followup_end_date=${next7days}`;
+      } else if (followupFilter === 'overdue') {
+        url += `&followup_start_date=2000-01-01&followup_end_date=${new Date(Date.now() - 86400000).toISOString().split('T')[0]}`;
+      } else if (followupFilter === 'custom' && (customFollowupStart || customFollowupEnd)) {
+        if (customFollowupStart) url += `&followup_start_date=${customFollowupStart}`;
+        if (customFollowupEnd) url += `&followup_end_date=${customFollowupEnd}`;
+      }
+      
+      const response = await axios.get(url, {
         withCredentials: true,
         responseType: 'blob'
       });
       
       // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.setAttribute('download', `leads_export_${new Date().toISOString().slice(0,10)}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
       
       toast.success('Export downloaded successfully');
     } catch (error) {
