@@ -566,8 +566,8 @@ const Leads = () => {
       sortable: true,
       render: (val, row) => {
         if (!val) return '-';
-        const overdue = isFollowupOverdue(val, row.enquiry_stage);
-        const today = isFollowupToday(val, row.enquiry_stage);
+        const overdue = isFollowupOverdue(val, row);
+        const today = isFollowupToday(val, row);
         return (
           <div className="flex items-center gap-1">
             {overdue && <AlertTriangle className="h-4 w-4 text-red-500" />}
