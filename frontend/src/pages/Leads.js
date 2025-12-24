@@ -890,6 +890,20 @@ const Leads = () => {
                   </div>
                 </div>
                 
+                {/* Added By Section */}
+                <Separator className="my-4" />
+                <h4 className="font-medium text-sm text-muted-foreground mb-3">Lead Ownership</h4>
+                <div className="space-y-2">
+                  <Label htmlFor="added_by">Added By (Responsible User)</Label>
+                  <Input
+                    id="added_by"
+                    value={formData.added_by || ''}
+                    onChange={(e) => handleInputChange('added_by', e.target.value)}
+                    placeholder="Enter user name who added this lead"
+                  />
+                  <p className="text-xs text-muted-foreground">Follow-up notifications will be shown to this user</p>
+                </div>
+                
                 <Separator className="my-4" />
                 <div className="space-y-2">
                   <Label htmlFor="remarks">Remarks</Label>
