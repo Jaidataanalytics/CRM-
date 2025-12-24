@@ -201,7 +201,7 @@ class LeadManagementTester:
                         f"leads/{lead_id}",
                         200,
                         data=update_data,
-                        headers={"Authorization": f"Bearer {self.admin_token}"}
+                        token=self.admin_token
                     )
                     
                     if success:
