@@ -30,10 +30,13 @@ async def get_leads(
     segment: Optional[str] = None,
     enquiry_status: Optional[str] = None,
     enquiry_stage: Optional[str] = None,
+    enquiry_type: Optional[str] = None,
     kva_min: Optional[float] = None,
     kva_max: Optional[float] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    followup_start_date: Optional[str] = None,
+    followup_end_date: Optional[str] = None,
     search: Optional[str] = None,
     search_field: Optional[str] = None,
     page: int = Query(1, ge=1),
@@ -91,6 +94,14 @@ async def get_leads(
     if enquiry_stage:
         query["enquiry_stage"] = enquiry_stage
     
+    # Filter by enquiry_type (Hot/Warm/Cold) - supports multiple values comma-separated
+    if enquiry_type:
+        types = [t.strip() for t in enquiry_type.split(',') if t.strip()]
+        if len(types) == 1:
+            query["enquiry_type"] = types[0]
+        elif len(types) > 1:
+            query["enquiry_type"] = {"$in": types}
+    
     if kva_min is not None or kva_max is not None:
         query["kva"] = {}
         if kva_min is not None:
@@ -104,6 +115,14 @@ async def get_leads(
             query["enquiry_date"]["$gte"] = start_date
         if end_date:
             query["enquiry_date"]["$lte"] = end_date
+    
+    # Filter by follow-up date range
+    if followup_start_date or followup_end_date:
+        query["planned_followup_date"] = {}
+        if followup_start_date:
+            query["planned_followup_date"]["$gte"] = followup_start_date
+        if followup_end_date:
+            query["planned_followup_date"]["$lte"] = followup_end_date
     
     # Calculate skip
     skip = (page - 1) * limit
