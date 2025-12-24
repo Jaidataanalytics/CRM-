@@ -181,8 +181,11 @@ async def export_leads(
     segment: Optional[str] = None,
     enquiry_status: Optional[str] = None,
     enquiry_stage: Optional[str] = None,
+    enquiry_type: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    followup_start_date: Optional[str] = None,
+    followup_end_date: Optional[str] = None,
     format: str = Query("xlsx", regex="^(xlsx|csv)$")
 ):
     """Export leads to Excel or CSV"""
