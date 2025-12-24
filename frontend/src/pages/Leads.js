@@ -1017,6 +1017,145 @@ const Leads = () => {
 
       <Card>
         <CardContent className="p-0">
+          {/* Advanced Filters Bar */}
+          <div className="p-4 border-b bg-muted/30">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Lead Type Multi-Select */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={`gap-2 ${selectedLeadTypes.length > 0 ? 'border-primary bg-primary/5' : ''}`}>
+                    <Flame className="h-4 w-4" />
+                    Lead Type
+                    {selectedLeadTypes.length > 0 && (
+                      <Badge variant="secondary" className="ml-1 h-5 px-1.5">{selectedLeadTypes.length}</Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-3" align="start">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Filter by Lead Type</h4>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer hover:bg-muted p-1.5 rounded">
+                        <Checkbox 
+                          checked={selectedLeadTypes.includes('Hot')} 
+                          onCheckedChange={() => toggleLeadType('Hot')}
+                        />
+                        <Flame className="h-4 w-4 text-red-500" />
+                        <span className="text-sm">Hot</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer hover:bg-muted p-1.5 rounded">
+                        <Checkbox 
+                          checked={selectedLeadTypes.includes('Warm')} 
+                          onCheckedChange={() => toggleLeadType('Warm')}
+                        />
+                        <Thermometer className="h-4 w-4 text-orange-500" />
+                        <span className="text-sm">Warm</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer hover:bg-muted p-1.5 rounded">
+                        <Checkbox 
+                          checked={selectedLeadTypes.includes('Cold')} 
+                          onCheckedChange={() => toggleLeadType('Cold')}
+                        />
+                        <Snowflake className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm">Cold</span>
+                      </label>
+                    </div>
+                    {selectedLeadTypes.length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedLeadTypes([])} className="w-full text-xs">
+                        Clear Selection
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Follow-up Date Filter */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className={`gap-2 ${followupFilter !== 'all' ? 'border-primary bg-primary/5' : ''}`}>
+                    <Calendar className="h-4 w-4" />
+                    {getFollowupFilterLabel()}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3" align="start">
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Filter by Follow-up Date</h4>
+                    <div className="space-y-1">
+                      {[
+                        { value: 'all', label: 'All Follow-ups', icon: null },
+                        { value: 'today', label: 'Today', icon: <Clock className="h-4 w-4 text-green-500" /> },
+                        { value: 'tomorrow', label: 'Tomorrow', icon: <Clock className="h-4 w-4 text-blue-500" /> },
+                        { value: 'next7days', label: 'Next 7 Days', icon: <Calendar className="h-4 w-4 text-purple-500" /> },
+                        { value: 'overdue', label: 'Overdue', icon: <AlertTriangle className="h-4 w-4 text-red-500" /> },
+                      ].map(option => (
+                        <button 
+                          key={option.value}
+                          onClick={() => { setFollowupFilter(option.value); setPage(1); }}
+                          className={`w-full flex items-center gap-2 p-2 rounded text-sm text-left hover:bg-muted ${followupFilter === option.value ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                        >
+                          {option.icon}
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <button 
+                        onClick={() => setFollowupFilter('custom')}
+                        className={`w-full flex items-center gap-2 p-2 rounded text-sm text-left hover:bg-muted ${followupFilter === 'custom' ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                      >
+                        <Filter className="h-4 w-4" />
+                        Custom Date Range
+                      </button>
+                      {followupFilter === 'custom' && (
+                        <div className="space-y-2 pt-2">
+                          <div>
+                            <Label className="text-xs">From</Label>
+                            <Input 
+                              type="date" 
+                              value={customFollowupStart}
+                              onChange={(e) => { setCustomFollowupStart(e.target.value); setPage(1); }}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs">To</Label>
+                            <Input 
+                              type="date" 
+                              value={customFollowupEnd}
+                              onChange={(e) => { setCustomFollowupEnd(e.target.value); setPage(1); }}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {/* Clear Filters Button */}
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearAdvancedFilters} className="gap-1 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                  Clear Filters
+                </Button>
+              )}
+
+              {/* Active Filter Summary */}
+              {hasActiveFilters && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground ml-auto">
+                  <Filter className="h-4 w-4" />
+                  <span>
+                    {selectedLeadTypes.length > 0 && `${selectedLeadTypes.join(', ')} leads`}
+                    {selectedLeadTypes.length > 0 && followupFilter !== 'all' && ' • '}
+                    {followupFilter !== 'all' && `Follow-up: ${getFollowupFilterLabel()}`}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          
           {loading ? (
             <div className="p-6">
               <Skeleton className="h-64 w-full" />
