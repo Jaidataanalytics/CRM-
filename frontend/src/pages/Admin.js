@@ -711,6 +711,32 @@ const Admin = () => {
     }
   };
 
+  // Change user password (Admin only)
+  const handleChangePassword = async () => {
+    if (!passwordChangeUser || !newPassword) return;
+    
+    if (newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    setChangingPassword(true);
+    try {
+      await axios.put(`${API}/admin/users/${passwordChangeUser.user_id}/password`, 
+        { password: newPassword },
+        { withCredentials: true }
+      );
+      toast.success(`Password changed for ${passwordChangeUser.name || passwordChangeUser.email}`);
+      setIsPasswordDialogOpen(false);
+      setPasswordChangeUser(null);
+      setNewPassword('');
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   // Closure Questions
   const createClosureQuestion = async () => {
     try {
