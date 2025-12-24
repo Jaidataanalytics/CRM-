@@ -63,6 +63,12 @@ const Admin = () => {
     is_required: true
   });
   
+  // Password change dialog
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [passwordChangeUser, setPasswordChangeUser] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  
   // Data Management state
   const [dataStats, setDataStats] = useState(null);
   const [uploadingHistorical, setUploadingHistorical] = useState(false);
