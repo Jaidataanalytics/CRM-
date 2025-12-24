@@ -141,7 +141,18 @@ const Leads = () => {
         console.error('Error loading dropdown options:', error);
       }
     };
+    
+    const loadUsers = async () => {
+      try {
+        const res = await axios.get(`${API}/admin/users`, { withCredentials: true });
+        setUsersList(res.data || []);
+      } catch (error) {
+        console.error('Error loading users:', error);
+      }
+    };
+    
     loadDropdownOptions();
+    loadUsers();
   }, []);
 
   const loadLeads = async () => {
