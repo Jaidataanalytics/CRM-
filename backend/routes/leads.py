@@ -205,12 +205,29 @@ async def export_leads(
         query["enquiry_status"] = enquiry_status
     if enquiry_stage:
         query["enquiry_stage"] = enquiry_stage
+    
+    # Filter by enquiry_type (Hot/Warm/Cold) - supports multiple values comma-separated
+    if enquiry_type:
+        types = [t.strip() for t in enquiry_type.split(',') if t.strip()]
+        if len(types) == 1:
+            query["enquiry_type"] = types[0]
+        elif len(types) > 1:
+            query["enquiry_type"] = {"$in": types}
+    
     if start_date or end_date:
         query["enquiry_date"] = {}
         if start_date:
             query["enquiry_date"]["$gte"] = start_date
         if end_date:
             query["enquiry_date"]["$lte"] = end_date
+    
+    # Filter by follow-up date range
+    if followup_start_date or followup_end_date:
+        query["planned_followup_date"] = {}
+        if followup_start_date:
+            query["planned_followup_date"]["$gte"] = followup_start_date
+        if followup_end_date:
+            query["planned_followup_date"]["$lte"] = followup_end_date
     
     # Get leads (max 50000 for export)
     leads = await db.leads.find(query, {"_id": 0}).to_list(50000)
