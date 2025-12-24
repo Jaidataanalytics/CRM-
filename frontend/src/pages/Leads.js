@@ -116,6 +116,13 @@ const Leads = () => {
   
   // Transfer state
   const [transferring, setTransferring] = useState(false);
+  
+  // New filter states for Lead Type and Follow-up Date
+  const [selectedLeadTypes, setSelectedLeadTypes] = useState([]);
+  const [followupFilter, setFollowupFilter] = useState('all'); // 'all', 'today', 'tomorrow', 'next7days', 'overdue', 'custom'
+  const [customFollowupStart, setCustomFollowupStart] = useState('');
+  const [customFollowupEnd, setCustomFollowupEnd] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadLeads();
