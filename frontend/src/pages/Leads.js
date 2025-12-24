@@ -1008,12 +1008,19 @@ const Leads = () => {
                 <h4 className="font-medium text-sm text-muted-foreground mb-3">Lead Ownership</h4>
                 <div className="space-y-2">
                   <Label htmlFor="added_by">Added By (Responsible User)</Label>
-                  <Input
-                    id="added_by"
-                    value={formData.added_by || ''}
-                    onChange={(e) => handleInputChange('added_by', e.target.value)}
-                    placeholder="Enter user name who added this lead"
-                  />
+                  <Select value={formData.added_by || ''} onValueChange={(v) => handleInputChange('added_by', v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="System Import">System Import</SelectItem>
+                      {usersList.map(user => (
+                        <SelectItem key={user.user_id} value={user.name || user.email}>
+                          {user.name || user.email} {user.role ? `(${user.role})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">Follow-up notifications will be shown to this user</p>
                 </div>
                 
