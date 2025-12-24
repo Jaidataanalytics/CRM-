@@ -203,6 +203,49 @@ async def update_user_status(
     return {"message": f"User {'activated' if is_active else 'deactivated'} successfully"}
 
 
+@router.put("/users/{user_id}/password")
+async def change_user_password(
+    user_id: str,
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Change user password (Admin only)"""
+    db = await get_db(request)
+    body = await request.json()
+    new_password = body.get("password")
+    
+    if not new_password:
+        raise HTTPException(status_code=400, detail="Password is required")
+    
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Hash the new password
+    password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    result = await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"password_hash": password_hash, "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Log the activity
+    activity = {
+        "activity_id": f"activity_{datetime.now(timezone.utc).timestamp()}",
+        "user_id": current_user.user_id,
+        "action": "password_change",
+        "resource_type": "user",
+        "resource_id": user_id,
+        "details": {"changed_by": current_user.name or current_user.email},
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.activity_logs.insert_one(activity)
+    
+    return {"message": "Password changed successfully"}
+
+
 # Activity Logs
 @router.get("/activity-logs")
 async def get_activity_logs(
