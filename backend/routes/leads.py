@@ -324,6 +324,10 @@ async def create_lead(
     lead_doc["updated_at"] = lead_doc["updated_at"].isoformat()
     lead_doc["created_by"] = current_user.user_id
     
+    # Auto-set added_by to current user's name if not provided
+    if not lead_doc.get("added_by"):
+        lead_doc["added_by"] = current_user.name or current_user.email
+    
     await db.leads.insert_one(lead_doc)
     
     # Log activity
