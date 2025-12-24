@@ -153,6 +153,30 @@ const Leads = () => {
         url += `&search=${encodeURIComponent(searchQuery.trim())}&search_field=${searchField}`;
       }
       
+      // Add lead type filter (Hot/Warm/Cold)
+      if (selectedLeadTypes.length > 0) {
+        url += `&enquiry_type=${encodeURIComponent(selectedLeadTypes.join(','))}`;
+      }
+      
+      // Add follow-up date filter
+      const today = new Date().toISOString().split('T')[0];
+      const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      const next7days = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+      
+      if (followupFilter === 'today') {
+        url += `&followup_start_date=${today}&followup_end_date=${today}`;
+      } else if (followupFilter === 'tomorrow') {
+        url += `&followup_start_date=${tomorrow}&followup_end_date=${tomorrow}`;
+      } else if (followupFilter === 'next7days') {
+        url += `&followup_start_date=${today}&followup_end_date=${next7days}`;
+      } else if (followupFilter === 'overdue') {
+        // For overdue, we need follow-up date < today (use a far past date as start)
+        url += `&followup_start_date=2000-01-01&followup_end_date=${new Date(Date.now() - 86400000).toISOString().split('T')[0]}`;
+      } else if (followupFilter === 'custom' && (customFollowupStart || customFollowupEnd)) {
+        if (customFollowupStart) url += `&followup_start_date=${customFollowupStart}`;
+        if (customFollowupEnd) url += `&followup_end_date=${customFollowupEnd}`;
+      }
+      
       const res = await axios.get(url, { withCredentials: true });
       setLeads(res.data.leads || []);
       setTotalLeads(res.data.total || 0);
