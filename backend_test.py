@@ -337,7 +337,7 @@ class LeadManagementTester:
             "leads",
             200,
             data=system_import_lead,
-            headers={"Authorization": f"Bearer {self.admin_token}"}
+            token=self.admin_token
         )
         
         if success:
