@@ -1330,8 +1330,8 @@ const Leads = () => {
           
           {selectedLead && (
             <div className="mt-4 space-y-4">
-              {/* Follow-up Alerts */}
-              {selectedLead.planned_followup_date && isFollowupOverdue(selectedLead.planned_followup_date) && (
+              {/* Follow-up Alerts - Only show for OPEN leads */}
+              {selectedLead.planned_followup_date && isFollowupOverdue(selectedLead.planned_followup_date, selectedLead) && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-800">
                   <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
                     <AlertTriangle className="h-4 w-4" />
@@ -1340,7 +1340,7 @@ const Leads = () => {
                 </div>
               )}
               
-              {selectedLead.planned_followup_date && isFollowupToday(selectedLead.planned_followup_date) && (
+              {selectedLead.planned_followup_date && isFollowupToday(selectedLead.planned_followup_date, selectedLead) && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950/20 dark:border-amber-800">
                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
                     <Clock className="h-4 w-4" />
