@@ -237,9 +237,31 @@ async def get_notification_summary(
     # Closed/Won stages that should NOT have follow-up reminders
     CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
     
-    base_query = {}
+    # Build query based on user role
+    base_query = {
+        "is_deleted": {"$ne": True},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+    }
+    
     if current_user.role == UserRole.EMPLOYEE:
-        base_query["employee_name"] = current_user.name
+        # Employees see leads they added OR system imports
+        user_name = current_user.name or current_user.email
+        base_query = {
+            "is_deleted": {"$ne": True},
+            "$and": [
+                {"$or": [{"is_transferred": {"$exists": False}}, {"is_transferred": False}, {"is_transferred": None}]},
+                {"$or": [
+                    {"added_by": user_name},
+                    {"added_by": "System Import"},
+                    {"added_by": {"$exists": False}},
+                    {"added_by": None}
+                ]}
+            ]
+        }
     
     # Count missed
     missed_count = await db.leads.count_documents({
