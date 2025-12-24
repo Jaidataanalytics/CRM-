@@ -87,8 +87,8 @@ class LeadManagementTester:
             200,
             data={"username": "employee@test.com", "password": "testpassword"}
         )
-        if success and 'access_token' in response:
-            self.employee_token = response['access_token']
+        if success and 'token' in response:
+            self.employee_token = response['token']
             return True
         return False
 
