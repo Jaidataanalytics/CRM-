@@ -366,6 +366,189 @@ class LeadManagementTester:
                         self.log_test("System Import Visible to Employee", False,
                                     "Employee cannot see System Import lead notifications")
 
+    def test_kpis_hot_warm_cold_counts(self):
+        """Test that KPI API returns Hot/Warm/Cold counts only for Open leads"""
+        print("\n🔍 Testing KPI Hot/Warm/Cold Counts (Open leads only)...")
+        
+        if not self.admin_token:
+            self.log_test("KPI Hot/Warm/Cold Counts Test", False, "Admin login required")
+            return
+
+        success, response = self.run_test(
+            "KPI Hot/Warm/Cold Counts",
+            "GET",
+            "kpis",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            hot_leads = response.get('hot_leads', 0)
+            warm_leads = response.get('warm_leads', 0)
+            cold_leads = response.get('cold_leads', 0)
+            open_leads = response.get('open_leads', 0)
+            
+            print(f"   Hot leads: {hot_leads}")
+            print(f"   Warm leads: {warm_leads}")
+            print(f"   Cold leads: {cold_leads}")
+            print(f"   Open leads: {open_leads}")
+            
+            # Verify that hot+warm+cold <= open_leads (since they should only count open leads)
+            total_typed_leads = hot_leads + warm_leads + cold_leads
+            if total_typed_leads <= open_leads:
+                self.log_test("KPI Hot/Warm/Cold Counts", True,
+                            f"Hot/Warm/Cold counts ({total_typed_leads}) are within Open leads ({open_leads})")
+            else:
+                self.log_test("KPI Hot/Warm/Cold Counts", False,
+                            f"Hot/Warm/Cold counts ({total_typed_leads}) exceed Open leads ({open_leads})")
+
+    def test_leads_enquiry_type_filter(self):
+        """Test leads endpoint with enquiry_type filter (Hot/Warm/Cold)"""
+        print("\n🔍 Testing Leads Enquiry Type Filter...")
+        
+        if not self.admin_token:
+            self.log_test("Leads Enquiry Type Filter Test", False, "Admin login required")
+            return
+
+        # Test single type filter
+        success, response = self.run_test(
+            "Leads Filter - Single Type (Hot)",
+            "GET",
+            "leads?enquiry_type=Hot&limit=10",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            print(f"   Found {len(leads)} Hot leads")
+            
+            # Verify all returned leads are Hot type
+            all_hot = all(lead.get('enquiry_type') == 'Hot' for lead in leads)
+            if all_hot:
+                self.log_test("Single Type Filter (Hot)", True, f"All {len(leads)} leads are Hot type")
+            else:
+                self.log_test("Single Type Filter (Hot)", False, "Some leads are not Hot type")
+        
+        # Test multi-select filter
+        success2, response2 = self.run_test(
+            "Leads Filter - Multi-select (Hot,Warm)",
+            "GET",
+            "leads?enquiry_type=Hot,Warm&limit=10",
+            200,
+            token=self.admin_token
+        )
+        
+        if success2:
+            leads2 = response2.get('leads', [])
+            print(f"   Found {len(leads2)} Hot/Warm leads")
+            
+            # Verify all returned leads are Hot or Warm
+            all_hot_warm = all(lead.get('enquiry_type') in ['Hot', 'Warm'] for lead in leads2)
+            if all_hot_warm:
+                self.log_test("Multi-select Type Filter (Hot,Warm)", True, 
+                            f"All {len(leads2)} leads are Hot or Warm type")
+            else:
+                self.log_test("Multi-select Type Filter (Hot,Warm)", False,
+                            "Some leads are not Hot or Warm type")
+
+    def test_leads_followup_date_filter(self):
+        """Test leads endpoint with followup date filters"""
+        print("\n🔍 Testing Leads Follow-up Date Filter...")
+        
+        if not self.admin_token:
+            self.log_test("Leads Follow-up Date Filter Test", False, "Admin login required")
+            return
+
+        today = datetime.now().strftime('%Y-%m-%d')
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
+        next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+        
+        # Test today filter
+        success1, response1 = self.run_test(
+            "Leads Filter - Follow-up Today",
+            "GET",
+            f"leads?followup_start_date={today}&followup_end_date={today}&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success1:
+            leads1 = response1.get('leads', [])
+            print(f"   Found {len(leads1)} leads with follow-up today")
+            self.log_test("Follow-up Today Filter", True, f"Found {len(leads1)} leads")
+        
+        # Test date range filter
+        success2, response2 = self.run_test(
+            "Leads Filter - Follow-up Date Range",
+            "GET",
+            f"leads?followup_start_date={today}&followup_end_date={next_week}&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success2:
+            leads2 = response2.get('leads', [])
+            print(f"   Found {len(leads2)} leads with follow-up in next 7 days")
+            self.log_test("Follow-up Date Range Filter", True, f"Found {len(leads2)} leads")
+        
+        # Test overdue filter (follow-up before today)
+        success3, response3 = self.run_test(
+            "Leads Filter - Overdue Follow-ups",
+            "GET",
+            f"leads?followup_start_date=2000-01-01&followup_end_date={yesterday}&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success3:
+            leads3 = response3.get('leads', [])
+            print(f"   Found {len(leads3)} leads with overdue follow-ups")
+            self.log_test("Overdue Follow-up Filter", True, f"Found {len(leads3)} overdue leads")
+
+    def test_leads_combined_filters(self):
+        """Test leads endpoint with combined enquiry_type and followup filters"""
+        print("\n🔍 Testing Combined Filters...")
+        
+        if not self.admin_token:
+            self.log_test("Combined Filters Test", False, "Admin login required")
+            return
+
+        today = datetime.now().strftime('%Y-%m-%d')
+        next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+        
+        success, response = self.run_test(
+            "Combined Filter - Hot leads with follow-up this week",
+            "GET",
+            f"leads?enquiry_type=Hot&followup_start_date={today}&followup_end_date={next_week}&limit=10",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            print(f"   Found {len(leads)} Hot leads with follow-up this week")
+            
+            # Verify filters are working together
+            filter_valid = True
+            for lead in leads:
+                if lead.get('enquiry_type') != 'Hot':
+                    print(f"❌ Lead {lead.get('enquiry_no')} is not Hot type")
+                    filter_valid = False
+                    break
+                
+                followup_date = lead.get('planned_followup_date')
+                if followup_date and (followup_date < today or followup_date > next_week):
+                    print(f"❌ Lead {lead.get('enquiry_no')} follow-up date {followup_date} is outside range")
+                    filter_valid = False
+                    break
+            
+            if filter_valid:
+                self.log_test("Combined Filters", True, f"All {len(leads)} leads match combined criteria")
+            else:
+                self.log_test("Combined Filters", False, "Some leads don't match filter criteria")
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Lead Management Feature Tests...")
@@ -385,6 +568,12 @@ class LeadManagementTester:
         self.test_leads_table_added_by_column()
         self.test_admin_password_change()
         self.test_system_import_notifications()
+        
+        # Run new filtering tests
+        self.test_kpis_hot_warm_cold_counts()
+        self.test_leads_enquiry_type_filter()
+        self.test_leads_followup_date_filter()
+        self.test_leads_combined_filters()
         
         # Print summary
         print("\n" + "=" * 60)
