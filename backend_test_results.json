@@ -1,11 +1,81 @@
 {
-  "timestamp": "2025-12-24T08:25:12.871967",
-  "total_tests": 1,
-  "passed_tests": 1,
-  "success_rate": "100.0%",
+  "timestamp": "2025-12-24T08:27:07.389949",
+  "total_tests": 15,
+  "passed_tests": 12,
+  "success_rate": "80.0%",
   "test_details": [
     {
       "test": "Admin Login",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Employee Login",
+      "success": false,
+      "details": "Status: 401, Expected: 200, Error: Invalid username or password"
+    },
+    {
+      "test": "Employee Notifications Test",
+      "success": false,
+      "details": "Employee login required"
+    },
+    {
+      "test": "Create Lead with Auto Added By",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Get Lead to Check Added By",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Auto-set Added By Field",
+      "success": true,
+      "details": "Added by field set to: Demo Admin"
+    },
+    {
+      "test": "Update Added By Field",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Verify Added By Update",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Added By Field Editable",
+      "success": true,
+      "details": "Successfully updated added_by field"
+    },
+    {
+      "test": "Get Leads List with Added By",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Added By Column in Leads Table",
+      "success": false,
+      "details": "Added by field missing from leads response"
+    },
+    {
+      "test": "Get Users List",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Admin Change User Password API",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Admin Password Change Functionality",
+      "success": true,
+      "details": "Successfully changed password for user: Test Employee"
+    },
+    {
+      "test": "Create System Import Lead",
       "success": true,
       "details": "Status: 200"
     }
