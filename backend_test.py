@@ -29,22 +29,24 @@ class LeadManagementTester:
             "details": details
         })
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
+    def run_test(self, name, method, endpoint, expected_status, data=None, token=None):
         """Run a single API test"""
         url = f"{self.base_url}/{endpoint}"
         test_headers = {'Content-Type': 'application/json'}
-        if headers:
-            test_headers.update(headers)
+        cookies = {}
+        
+        if token:
+            cookies['session_token'] = token
 
         try:
             if method == 'GET':
-                response = requests.get(url, headers=test_headers)
+                response = requests.get(url, headers=test_headers, cookies=cookies)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=test_headers)
+                response = requests.post(url, json=data, headers=test_headers, cookies=cookies)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=test_headers)
+                response = requests.put(url, json=data, headers=test_headers, cookies=cookies)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=test_headers)
+                response = requests.delete(url, headers=test_headers, cookies=cookies)
 
             success = response.status_code == expected_status
             details = f"Status: {response.status_code}"
