@@ -325,6 +325,7 @@ async def upload_leads(
                         lead_doc = {
                             "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                             **lead_data,
+                            "added_by": "System Import",  # Mark as system import for bulk uploads
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             "updated_at": datetime.now(timezone.utc).isoformat()
                         }
@@ -335,6 +336,7 @@ async def upload_leads(
                     lead_doc = {
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                         **lead_data,
+                        "added_by": "System Import",  # Mark as system import for bulk uploads
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
