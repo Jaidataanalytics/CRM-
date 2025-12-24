@@ -29,34 +29,39 @@ async def get_notifications(
     
     notifications = []
     
+    # Closed/Won stages that should NOT have follow-up reminders
+    CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
+    
     # Build query based on user role
     # For employees: show leads they added (added_by) OR system imports (shown to everyone)
-    base_query = {
-        "is_deleted": {"$ne": True},
-        "$or": [
-            {"is_transferred": {"$exists": False}},
-            {"is_transferred": False},
-            {"is_transferred": None}
-        ]
-    }
-    
     if current_user.role == UserRole.EMPLOYEE:
         # Employees see:
         # 1. Leads they added (added_by = their name)
         # 2. System Import leads (shown to everyone)
+        # 3. Legacy leads without added_by
         user_name = current_user.name or current_user.email
         base_query = {
-            **base_query,
-            "$or": [
-                {"added_by": user_name},
-                {"added_by": "System Import"},
-                {"added_by": {"$exists": False}},  # Legacy leads without added_by
-                {"added_by": None}
+            "is_deleted": {"$ne": True},
+            "$and": [
+                {"$or": [{"is_transferred": {"$exists": False}}, {"is_transferred": False}, {"is_transferred": None}]},
+                {"$or": [
+                    {"added_by": user_name},
+                    {"added_by": "System Import"},
+                    {"added_by": {"$exists": False}},
+                    {"added_by": None}
+                ]}
             ]
         }
-    
-    # Closed/Won stages that should NOT have follow-up reminders
-    CLOSED_STAGES = ["Closed-Won", "Closed-Lost", "Closed-Dropped", "Order Booked", "Won", "Lost"]
+    else:
+        # Admin/Manager see all
+        base_query = {
+            "is_deleted": {"$ne": True},
+            "$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]
+        }
     
     # 1. CRITICAL: Missed follow-ups (past dates, not closed)
     missed_query = {
