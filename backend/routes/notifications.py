@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Depends, Query
+from fastapi import APIRouter, Request, Depends, Query, HTTPException
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 import logging
