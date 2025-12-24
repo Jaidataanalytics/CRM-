@@ -289,7 +289,7 @@ class LeadManagementTester:
                         f"admin/users/{user_id}/password",
                         200,
                         data={"password": "newpassword123"},
-                        headers={"Authorization": f"Bearer {self.admin_token}"}
+                        token=self.admin_token
                     )
                     
                     if success:
