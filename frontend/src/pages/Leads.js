@@ -483,6 +483,7 @@ const Leads = () => {
     { key: 'state', label: 'State', sortable: true },
     { key: 'dealer', label: 'Dealer', sortable: true },
     { key: 'segment', label: 'Segment', sortable: true },
+    { key: 'added_by', label: 'Added By', sortable: true, render: (val) => val || '-' },
     { 
       key: 'planned_followup_date', 
       label: 'Follow-up', 
