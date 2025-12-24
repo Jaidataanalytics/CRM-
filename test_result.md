@@ -1,46 +1,41 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: BDM Lead Transfer Feature
+## Latest Test: Notifications, Added By, Admin Password Change
 **Date**: 2025-12-23
 **Status**: IMPLEMENTED
 
 ### Features Implemented
 
-1. **BDM Lead Transfer**
-   - Transfer button in Lead Details panel (for BDM dealer leads only)
-   - Transfer button in Edit Lead modal (for BDM leads)
-   - Leads marked as "Transferred to Dealer" with timestamp and user info
-   - Transferred leads excluded from regular lead counts
+1. **Notifications Fix for Employees**
+   - Employees now see notifications for leads they added (added_by field)
+   - System Import leads show notifications to everyone
+   - Legacy leads (no added_by) also visible to everyone
 
-2. **Transferred Leads Page**
-   - New sidebar link "Transferred Leads"
-   - Stats cards showing total transferred and by employee breakdown
-   - Table with transferred leads list
-   - View, Edit, Reverse actions
-   - Date range filter support
+2. **Added By Field**
+   - Auto-set to current user on new lead creation
+   - Set to "System Import" for bulk/historical uploads
+   - Editable in Edit Lead modal
+   - Visible in Leads table and Lead Details panel
+   - Follow-up notifications based on this field
 
-3. **Dashboard KPI Card**
-   - "Transferred to Dealer" KPI card showing count within date range
-
-4. **API Endpoints**
-   - POST /api/leads/{lead_id}/transfer - Transfer a BDM lead
-   - POST /api/leads/{lead_id}/untransfer - Reverse transfer
-   - GET /api/leads/transferred/list - Get transferred leads
-   - GET /api/leads/transferred/stats - Get transfer statistics
+3. **Admin Password Change**
+   - Admin can change any user's password
+   - Key icon in User Management table
+   - Dialog with password input (min 6 chars)
+   - API: PUT /api/admin/users/{user_id}/password
 
 ### Testing Required
 
-1. Verify transfer button only shows for BDM dealer leads
-2. Test transferring a lead and verifying it's removed from regular leads
-3. Test un-transferring (reversing) a lead
-4. Verify transferred count in Dashboard KPI
-5. Verify Transferred Leads page shows correct data
+1. Create new lead - verify added_by is auto-set
+2. Edit lead - verify added_by is editable
+3. Bulk upload - verify added_by is "System Import"
+4. Notifications - verify employees only see their leads
+5. Admin password change - verify dialog and API work
 
 ## Testing Protocol
 - Last updated: 2025-12-23
 
 ## Incorporate User Feedback
-- BDM lead transfer to dealer feature - IMPLEMENTED
-- Separate Transferred Leads page - IMPLEMENTED
-- Dashboard KPI for transferred count - IMPLEMENTED
-- Reverse transfer capability - IMPLEMENTED
+- Notifications for employees - FIXED
+- Added By field tracking - IMPLEMENTED
+- Admin password change - IMPLEMENTED
