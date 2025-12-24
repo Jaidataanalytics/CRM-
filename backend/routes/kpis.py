@@ -107,20 +107,26 @@ async def get_kpis(
     # Get configurable metrics
     won_config = await get_metric_config(db, "won_leads")
     lost_config = await get_metric_config(db, "lost_leads")
-    open_config = await get_metric_config(db, "open_leads")
     closed_config = await get_metric_config(db, "closed_leads")
-    hot_config = await get_metric_config(db, "hot_leads")
-    warm_config = await get_metric_config(db, "warm_leads")
-    cold_config = await get_metric_config(db, "cold_leads")
     
     # Count using configurable metrics
     won_leads = await count_by_metric(db, base_query, won_config)
     lost_leads = await count_by_metric(db, base_query, lost_config)
-    open_leads = await count_by_metric(db, base_query, open_config)
     closed_leads = await count_by_metric(db, base_query, closed_config)
-    hot_leads = await count_by_metric(db, base_query, hot_config)
-    warm_leads = await count_by_metric(db, base_query, warm_config)
-    cold_leads = await count_by_metric(db, base_query, cold_config)
+    
+    # Open leads = enquiry_status = "Open"
+    open_query = {**base_query, "enquiry_status": "Open"}
+    open_leads = await db.leads.count_documents(open_query)
+    
+    # Hot/Warm/Cold leads - ONLY count for OPEN leads (enquiry_status = "Open")
+    # These are based on enquiry_type field
+    hot_query = {**base_query, "enquiry_status": "Open", "enquiry_type": "Hot"}
+    warm_query = {**base_query, "enquiry_status": "Open", "enquiry_type": "Warm"}
+    cold_query = {**base_query, "enquiry_status": "Open", "enquiry_type": "Cold"}
+    
+    hot_leads = await db.leads.count_documents(hot_query)
+    warm_leads = await db.leads.count_documents(warm_query)
+    cold_leads = await db.leads.count_documents(cold_query)
     
     # Call & Quotation tracking metrics
     # Calls placed - leads that have been called (any status except 'Not Called')
