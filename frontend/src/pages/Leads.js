@@ -276,7 +276,8 @@ const Leads = () => {
       remarks: lead.remarks || '',
       call_status: lead.call_status || 'Not Called',
       quotation_sent: lead.quotation_sent || false,
-      quotation_date: lead.quotation_date || ''
+      quotation_date: lead.quotation_date || '',
+      added_by: lead.added_by || ''
     });
     setIsDialogOpen(true);
   };
