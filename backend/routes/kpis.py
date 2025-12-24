@@ -108,6 +108,10 @@ async def get_kpis(
     won_config = await get_metric_config(db, "won_leads")
     lost_config = await get_metric_config(db, "lost_leads")
     closed_config = await get_metric_config(db, "closed_leads")
+    open_config = await get_metric_config(db, "open_leads")
+    hot_config = await get_metric_config(db, "hot_leads")
+    warm_config = await get_metric_config(db, "warm_leads")
+    cold_config = await get_metric_config(db, "cold_leads")
     
     # Count using configurable metrics
     won_leads = await count_by_metric(db, base_query, won_config)
