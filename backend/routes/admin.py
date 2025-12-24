@@ -714,6 +714,7 @@ async def upload_historical_data(
                 lead_doc = {
                     "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                     **lead_data,
+                    "added_by": "System Import",  # Mark as system import for historical data
                     "created_at": datetime.now(timezone.utc).isoformat(),
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
