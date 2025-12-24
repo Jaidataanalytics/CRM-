@@ -1411,7 +1411,7 @@ const Leads = () => {
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Follow-up Date</Label>
-                    <p className={isFollowupOverdue(selectedLead.planned_followup_date) ? 'text-red-600 font-semibold' : ''}>
+                    <p className={isFollowupOverdue(selectedLead.planned_followup_date, selectedLead) ? 'text-red-600 font-semibold' : ''}>
                       {selectedLead.planned_followup_date || '-'}
                     </p>
                   </div>
