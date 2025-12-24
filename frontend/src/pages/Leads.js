@@ -66,7 +66,8 @@ const initialFormData = {
   remarks: '',
   call_status: 'Not Called',
   quotation_sent: false,
-  quotation_date: ''
+  quotation_date: '',
+  added_by: ''
 };
 
 const Leads = () => {
