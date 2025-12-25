@@ -368,6 +368,27 @@ const Leads = () => {
       const data = { ...formData };
       if (data.kva) data.kva = parseFloat(data.kva);
       
+      // Add follow-up tracking data if the form is shown and has content
+      if (editingLead && showFollowupForm && followupRemark.trim()) {
+        const followupEntry = {
+          remark: followupRemark.trim(),
+          followed_up_on: new Date().toISOString().split('T')[0],
+          followed_up_by: user?.name || user?.email || 'Unknown',
+          next_followup_date: nextFollowupDate || null
+        };
+        
+        // Add to followup_history array
+        data.followup_history = [...(editingLead.followup_history || []), followupEntry];
+        
+        // Update last_followup_date to today
+        data.last_followup_date = new Date().toISOString().split('T')[0];
+        
+        // Update planned_followup_date if next date is provided
+        if (nextFollowupDate) {
+          data.planned_followup_date = nextFollowupDate;
+        }
+      }
+      
       if (editingLead) {
         await axios.put(`${API}/leads/${editingLead.lead_id}`, data, {
           withCredentials: true
@@ -383,6 +404,10 @@ const Leads = () => {
       setIsDialogOpen(false);
       setEditingLead(null);
       setFormData(initialFormData);
+      // Reset follow-up form state
+      setShowFollowupForm(false);
+      setFollowupRemark('');
+      setNextFollowupDate('');
       loadLeads();
     } catch (error) {
       console.error('Error saving lead:', error);
