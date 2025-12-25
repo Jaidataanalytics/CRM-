@@ -125,6 +125,10 @@ async def get_leads(
         if followup_end_date:
             query["planned_followup_date"]["$lte"] = followup_end_date
     
+    # Only show open leads when filtering by follow-up (can't follow up on closed leads)
+    if only_open_followups:
+        query["enquiry_status"] = "Open"
+    
     # Calculate skip
     skip = (page - 1) * limit
     
