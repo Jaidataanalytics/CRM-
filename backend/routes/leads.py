@@ -37,6 +37,7 @@ async def get_leads(
     end_date: Optional[str] = None,
     followup_start_date: Optional[str] = None,
     followup_end_date: Optional[str] = None,
+    only_open_followups: Optional[bool] = None,
     search: Optional[str] = None,
     search_field: Optional[str] = None,
     page: int = Query(1, ge=1),
