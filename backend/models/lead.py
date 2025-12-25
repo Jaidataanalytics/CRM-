@@ -54,6 +54,9 @@ class Lead(BaseModel):
     last_followup_date: Optional[str] = None
     enquiry_closure_date: Optional[str] = None
     
+    # Follow-up history (list of follow-up entries)
+    followup_history: Optional[List[dict]] = None
+    
     # Source fields
     source: Optional[str] = None
     source_from: Optional[str] = None
