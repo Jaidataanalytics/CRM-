@@ -384,6 +384,9 @@ const Dashboard = () => {
       if (filter === 'won') endpoint += '&enquiry_stage=Closed-Won';
       else if (filter === 'lost') endpoint += '&enquiry_stage=Closed-Lost';
       else if (filter === 'open') endpoint += '&enquiry_status=Open';
+      else if (filter === 'hot') endpoint += '&enquiry_type=Hot&enquiry_status=Open';
+      else if (filter === 'warm') endpoint += '&enquiry_type=Warm&enquiry_status=Open';
+      else if (filter === 'cold') endpoint += '&enquiry_type=Cold&enquiry_status=Open';
       
       const res = await axios.get(endpoint, { withCredentials: true });
       setLeads(res.data.leads || []);
