@@ -429,6 +429,138 @@ export const Header = () => {
           </div>
         </PopoverContent>
       </Popover>
+
+      {/* Lead Detail Modal */}
+      <Dialog open={isLeadModalOpen} onOpenChange={setIsLeadModalOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Lead Details
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedLead && (
+            <div className="space-y-4">
+              {/* Lead Name & Status */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold">{selectedLead.name || 'Unknown'}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedLead.enquiry_no}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Badge variant={selectedLead.enquiry_status === 'Open' ? 'default' : 'secondary'}>
+                    {selectedLead.enquiry_status || 'N/A'}
+                  </Badge>
+                  <Badge variant="outline">{selectedLead.enquiry_type || 'N/A'}</Badge>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Contact Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Phone className="h-3 w-3" /> Phone
+                  </Label>
+                  <p className="font-medium">{selectedLead.phone_number || '-'}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Mail className="h-3 w-3" /> Email
+                  </Label>
+                  <p className="font-medium text-sm">{selectedLead.email_address || '-'}</p>
+                </div>
+              </div>
+
+              {/* Location & Dealer */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> Location
+                  </Label>
+                  <p className="font-medium">{selectedLead.state || '-'}{selectedLead.area ? `, ${selectedLead.area}` : ''}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Building2 className="h-3 w-3" /> Dealer
+                  </Label>
+                  <p className="font-medium">{selectedLead.dealer || '-'}</p>
+                </div>
+              </div>
+
+              {/* Enquiry Details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Enquiry Date</Label>
+                  <p className="font-medium">{selectedLead.enquiry_date || '-'}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Stage</Label>
+                  <p className="font-medium">{selectedLead.enquiry_stage || '-'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Segment</Label>
+                  <p className="font-medium">{selectedLead.segment || '-'}</p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">KVA</Label>
+                  <p className="font-medium">{selectedLead.kva || '-'}</p>
+                </div>
+              </div>
+
+              {/* Follow-up */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="h-3 w-3" /> Planned Follow-up
+                  </Label>
+                  <p className={cn(
+                    "font-medium",
+                    selectedLead.planned_followup_date && new Date(selectedLead.planned_followup_date) < new Date() && selectedLead.enquiry_status === 'Open' && "text-red-600"
+                  )}>
+                    {selectedLead.planned_followup_date || '-'}
+                    {selectedLead.planned_followup_date && new Date(selectedLead.planned_followup_date) < new Date() && selectedLead.enquiry_status === 'Open' && (
+                      <span className="ml-2 text-xs text-red-500">(Overdue)</span>
+                    )}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Employee</Label>
+                  <p className="font-medium">{selectedLead.employee_name || '-'}</p>
+                </div>
+              </div>
+
+              {/* Remarks */}
+              {selectedLead.remarks && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <FileText className="h-3 w-3" /> Remarks
+                  </Label>
+                  <p className="text-sm bg-muted/50 p-2 rounded">{selectedLead.remarks}</p>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Actions */}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={handleViewInManageLeads}>
+                  View in Manage Leads
+                </Button>
+                <Button onClick={handleEditLead} className="gap-2">
+                  <Edit className="h-4 w-4" />
+                  Edit Lead
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
