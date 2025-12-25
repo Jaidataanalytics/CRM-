@@ -181,6 +181,8 @@ class LeadUpdate(BaseModel):
     planned_followup_date: Optional[str] = None
     last_followup_date: Optional[str] = None
     enquiry_closure_date: Optional[str] = None
+    # Follow-up history
+    followup_history: Optional[List[dict]] = None
     source: Optional[str] = None
     source_from: Optional[str] = None
     events: Optional[str] = None
