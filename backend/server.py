@@ -78,17 +78,22 @@ async def kubernetes_health_check():
 app.state.db = db
 
 # Configure CORS
-cors_origins_env = os.environ.get('CORS_ORIGINS', '*')
-if cors_origins_env == '*':
-    # Allow all origins dynamically - include common patterns
-    cors_origins = ["*"]
+cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+if not cors_origins_env or cors_origins_env == '*':
+    # For development/preview, allow common origins with credentials
+    cors_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+    # Add the preview URL dynamically from request origin
 else:
     cors_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True if cors_origins_env != '*' else False,
+    allow_credentials=True,
     allow_origins=cors_origins,
+    allow_origin_regex=r"https://.*\.emergentagent\.com",  # Allow all Emergent subdomains
     allow_methods=["*"],
     allow_headers=["*"],
 )
