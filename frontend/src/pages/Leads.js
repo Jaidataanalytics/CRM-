@@ -279,17 +279,30 @@ const Leads = () => {
       const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       const next7days = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
       
+      // Flag to only export open leads when filtering by follow-up
+      let addOnlyOpenFilter = false;
+      
       if (followupFilter === 'today') {
         url += `&followup_start_date=${today}&followup_end_date=${today}`;
+        addOnlyOpenFilter = true;
       } else if (followupFilter === 'tomorrow') {
         url += `&followup_start_date=${tomorrow}&followup_end_date=${tomorrow}`;
+        addOnlyOpenFilter = true;
       } else if (followupFilter === 'next7days') {
         url += `&followup_start_date=${today}&followup_end_date=${next7days}`;
+        addOnlyOpenFilter = true;
       } else if (followupFilter === 'overdue') {
         url += `&followup_start_date=2000-01-01&followup_end_date=${new Date(Date.now() - 86400000).toISOString().split('T')[0]}`;
+        addOnlyOpenFilter = true;
       } else if (followupFilter === 'custom' && (customFollowupStart || customFollowupEnd)) {
         if (customFollowupStart) url += `&followup_start_date=${customFollowupStart}`;
         if (customFollowupEnd) url += `&followup_end_date=${customFollowupEnd}`;
+        addOnlyOpenFilter = true;
+      }
+      
+      // Only export open leads when filtering by follow-up dates
+      if (addOnlyOpenFilter) {
+        url += `&only_open_followups=true`;
       }
       
       const response = await axios.get(url, {
