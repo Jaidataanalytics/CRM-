@@ -1034,6 +1034,80 @@ const Leads = () => {
                   </div>
                 </div>
                 
+                {/* Follow-up Tracking Section - Only show when editing an existing lead */}
+                {editingLead && (
+                  <>
+                    <Separator className="my-4" />
+                    <h4 className="font-medium text-sm text-muted-foreground mb-3">Follow-up Tracking</h4>
+                    
+                    {/* Show follow-up history if exists */}
+                    {editingLead.followup_history && editingLead.followup_history.length > 0 && (
+                      <div className="mb-4 max-h-40 overflow-y-auto">
+                        <Label className="text-xs text-muted-foreground mb-2 block">Previous Follow-ups</Label>
+                        <div className="space-y-2">
+                          {editingLead.followup_history.slice().reverse().map((entry, idx) => (
+                            <div key={idx} className="p-2 bg-muted/50 rounded-md text-sm">
+                              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                                <span>{entry.followed_up_on}</span>
+                                <span>by {entry.followed_up_by || 'Unknown'}</span>
+                              </div>
+                              <p className="text-foreground">{entry.remark}</p>
+                              {entry.next_followup_date && (
+                                <p className="text-xs text-muted-foreground mt-1">Next follow-up set: {entry.next_followup_date}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Log a Follow-up
+                        </Label>
+                        <Switch
+                          checked={showFollowupForm}
+                          onCheckedChange={(checked) => {
+                            setShowFollowupForm(checked);
+                            if (!checked) {
+                              setFollowupRemark('');
+                              setNextFollowupDate('');
+                            }
+                          }}
+                        />
+                      </div>
+                      
+                      {showFollowupForm && (
+                        <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
+                          <div className="space-y-2">
+                            <Label htmlFor="followup_remark">Follow-up Remark *</Label>
+                            <Textarea
+                              id="followup_remark"
+                              value={followupRemark}
+                              onChange={(e) => setFollowupRemark(e.target.value)}
+                              placeholder="Describe what was discussed or the outcome of the follow-up..."
+                              rows={3}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="next_followup_date">Next Follow-up Date</Label>
+                            <Input
+                              id="next_followup_date"
+                              type="date"
+                              value={nextFollowupDate}
+                              onChange={(e) => setNextFollowupDate(e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
+                            />
+                            <p className="text-xs text-muted-foreground">This will update the planned follow-up date</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                
                 {/* Added By Section */}
                 <Separator className="my-4" />
                 <h4 className="font-medium text-sm text-muted-foreground mb-3">Lead Ownership</h4>
