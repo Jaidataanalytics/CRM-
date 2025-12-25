@@ -491,18 +491,24 @@ const Dashboard = () => {
           value={kpis?.hot_leads || 0}
           icon={Flame}
           color="text-red-500"
+          onClick={() => handleKPIClick('hot')}
+          active={selectedKPI === 'hot'}
         />
         <KPICard
           title="Warm Leads"
           value={kpis?.warm_leads || 0}
           icon={ThermometerSun}
           color="text-orange-500"
+          onClick={() => handleKPIClick('warm')}
+          active={selectedKPI === 'warm'}
         />
         <KPICard
           title="Cold Leads"
           value={kpis?.cold_leads || 0}
           icon={Snowflake}
           color="text-blue-500"
+          onClick={() => handleKPIClick('cold')}
+          active={selectedKPI === 'cold'}
         />
         <KPICard
           title="Conversion Rate"
