@@ -121,7 +121,18 @@ export const Header = () => {
   const handleLeadClick = (lead) => {
     setShowResults(false);
     setSearchQuery('');
-    navigate(`/leads?search=${encodeURIComponent(lead.name || lead.enquiry_no)}`);
+    setSelectedLead(lead);
+    setIsLeadModalOpen(true);
+  };
+
+  const handleEditLead = () => {
+    setIsLeadModalOpen(false);
+    navigate(`/leads?edit=${selectedLead?.lead_id}`);
+  };
+
+  const handleViewInManageLeads = () => {
+    setIsLeadModalOpen(false);
+    navigate(`/leads?search=${encodeURIComponent(selectedLead?.name || selectedLead?.enquiry_no)}`);
   };
 
   const handleEntityClick = (entity) => {
