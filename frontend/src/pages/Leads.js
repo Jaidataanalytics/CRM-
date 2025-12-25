@@ -126,6 +126,11 @@ const Leads = () => {
   
   // Users list for Added By dropdown
   const [usersList, setUsersList] = useState([]);
+  
+  // Follow-up tracking state in Edit dialog
+  const [showFollowupForm, setShowFollowupForm] = useState(false);
+  const [followupRemark, setFollowupRemark] = useState('');
+  const [nextFollowupDate, setNextFollowupDate] = useState('');
 
   useEffect(() => {
     loadLeads();
