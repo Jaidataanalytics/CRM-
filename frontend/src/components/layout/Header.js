@@ -4,14 +4,21 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink, MapPin, Building2, User, Users } from 'lucide-react';
+import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink, MapPin, Building2, User, Users, Phone, Mail, FileText, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -27,6 +34,10 @@ export const Header = () => {
   const [notifCounts, setNotifCounts] = useState({ critical: 0, warning: 0, info: 0, total: 0 });
   const [notifOpen, setNotifOpen] = useState(false);
   const searchRef = useRef(null);
+  
+  // Lead detail modal state
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
 
   const entityIcons = {
     state: MapPin,
