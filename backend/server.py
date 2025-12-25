@@ -78,19 +78,16 @@ async def kubernetes_health_check():
 app.state.db = db
 
 # Configure CORS
-cors_origins = os.environ.get('CORS_ORIGINS', '*')
-if cors_origins == '*':
-    # When credentials are allowed, we need specific origins
-    cors_origins = [
-        "http://localhost:3000",
-        "https://crm-dashboard-129.preview.emergentagent.com"
-    ]
+cors_origins_env = os.environ.get('CORS_ORIGINS', '*')
+if cors_origins_env == '*':
+    # Allow all origins dynamically - include common patterns
+    cors_origins = ["*"]
 else:
-    cors_origins = cors_origins.split(',')
+    cors_origins = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
+    allow_credentials=True if cors_origins_env != '*' else False,
     allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
