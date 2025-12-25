@@ -442,6 +442,10 @@ const Leads = () => {
       quotation_date: lead.quotation_date || '',
       added_by: lead.added_by || ''
     });
+    // Reset follow-up form state
+    setShowFollowupForm(false);
+    setFollowupRemark('');
+    setNextFollowupDate('');
     setIsDialogOpen(true);
   };
 
