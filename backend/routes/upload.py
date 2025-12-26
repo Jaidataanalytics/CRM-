@@ -322,10 +322,12 @@ async def upload_leads(
                         updated_count += 1
                     else:
                         # Create new lead - directly without Pydantic
+                        # Use current user's name for added_by (not System Import for regular uploads)
+                        uploader_name = current_user.name or current_user.email or "Unknown User"
                         lead_doc = {
                             "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                             **lead_data,
-                            "added_by": "System Import",  # Mark as system import for bulk uploads
+                            "added_by": uploader_name,
                             "created_at": datetime.now(timezone.utc).isoformat(),
                             "updated_at": datetime.now(timezone.utc).isoformat()
                         }
@@ -333,10 +335,11 @@ async def upload_leads(
                         created_count += 1
                 else:
                     # Create new lead without enquiry_no - directly without Pydantic
+                    uploader_name = current_user.name or current_user.email or "Unknown User"
                     lead_doc = {
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                         **lead_data,
-                        "added_by": "System Import",  # Mark as system import for bulk uploads
+                        "added_by": uploader_name,
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
