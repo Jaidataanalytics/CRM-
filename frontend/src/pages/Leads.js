@@ -149,7 +149,8 @@ const Leads = () => {
     
     const loadUsers = async () => {
       try {
-        const res = await axios.get(`${API}/admin/users`, { withCredentials: true });
+        // Use the new endpoint accessible by all users (not admin-only)
+        const res = await axios.get(`${API}/leads/users-list`, { withCredentials: true });
         setUsersList(res.data || []);
       } catch (error) {
         console.error('Error loading users:', error);
