@@ -177,6 +177,23 @@ async def get_dropdown_options(
     return options
 
 
+@router.get("/users-list")
+async def get_users_for_dropdown(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of users for dropdown (accessible by all authenticated users)"""
+    db = await get_db(request)
+    
+    # Get all active users
+    users = await db.users.find(
+        {"is_active": {"$ne": False}},
+        {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
+    ).to_list(1000)
+    
+    return users
+
+
 @router.get("/export")
 async def export_leads(
     request: Request,
