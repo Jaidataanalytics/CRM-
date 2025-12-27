@@ -75,6 +75,7 @@ const initialFormData = {
 
 const Leads = () => {
   const { buildQueryParams } = useFilters();
+  const { user } = useAuth();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
