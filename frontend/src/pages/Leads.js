@@ -893,6 +893,14 @@ const Leads = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label>Location</Label>
+                    <Input
+                      value={formData.location || ''}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
+                      placeholder="Enter location (city/district)"
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label>Dealer</Label>
                     <Select value={formData.dealer || ''} onValueChange={(v) => handleInputChange('dealer', v)}>
                       <SelectTrigger>
