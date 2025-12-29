@@ -428,6 +428,7 @@ const Leads = () => {
       zone: lead.zone || '',
       state: lead.state || '',
       area: lead.area || '',
+      location: lead.location || '',
       dealer: lead.dealer || '',
       employee_name: lead.employee_name || '',
       enquiry_no: lead.enquiry_no || '',
