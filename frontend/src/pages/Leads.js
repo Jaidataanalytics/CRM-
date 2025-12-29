@@ -55,7 +55,7 @@ const initialFormData = {
   dealer: '',
   employee_name: '',
   enquiry_no: '',
-  enquiry_date: '',
+  enquiry_date: new Date().toISOString().split('T')[0], // Default to today
   customer_type: 'New Customer',
   kva: '',
   segment: '',
@@ -66,6 +66,7 @@ const initialFormData = {
   source: '',
   zone: '',
   area: '',
+  location: '',
   remarks: '',
   call_status: 'Not Called',
   quotation_sent: false,
