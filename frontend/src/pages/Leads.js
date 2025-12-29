@@ -659,6 +659,7 @@ const Leads = () => {
     { key: 'enquiry_no', label: 'Enquiry No', sortable: true },
     { key: 'name', label: 'Name', sortable: true, render: (val, row) => val || row.corporate_name || '-' },
     { key: 'state', label: 'State', sortable: true },
+    { key: 'location', label: 'Location', sortable: true, render: (val, row) => val || row.area || '-' },
     { key: 'dealer', label: 'Dealer', sortable: true },
     { key: 'segment', label: 'Segment', sortable: true },
     { key: 'added_by', label: 'Added By', sortable: true, render: (val) => val || '-' },
