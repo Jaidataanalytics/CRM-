@@ -538,7 +538,7 @@ async def generate_forecast(
     request: Request,
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
 ):
-    """Generate forecast with KVA breakdown"""
+    """Generate forecast with KVA breakdown and business context adjustments"""
     db = await get_db(request)
     body = await request.json()
     
@@ -546,6 +546,50 @@ async def generate_forecast(
     state = body.get("state")
     dealer = body.get("dealer")
     location = body.get("location")
+    
+    # Business context inputs
+    business_context = body.get("business_context", {})
+    marketing_effort = business_context.get("marketing_effort", "same")  # same, increasing, decreasing
+    marketing_intensity = business_context.get("marketing_intensity", 0)  # 0-100 scale
+    campaign_active = business_context.get("campaign_active", False)
+    campaign_type = business_context.get("campaign_type", "none")  # none, minor, major
+    market_conditions = business_context.get("market_conditions", "stable")  # stable, growing, challenging
+    seasonal_factor = business_context.get("seasonal_factor", "normal")  # normal, high_demand, low_demand
+    
+    # Calculate adjustment multiplier based on business context
+    adjustment_multiplier = 1.0
+    adjustment_details = []
+    
+    # Marketing effort adjustment
+    if marketing_effort == "increasing":
+        intensity_factor = 1 + (marketing_intensity / 100) * 0.3  # Max 30% boost
+        adjustment_multiplier *= intensity_factor
+        adjustment_details.append(f"Marketing increasing: +{round((intensity_factor-1)*100)}%")
+    elif marketing_effort == "decreasing":
+        intensity_factor = 1 - (marketing_intensity / 100) * 0.2  # Max 20% reduction
+        adjustment_multiplier *= intensity_factor
+        adjustment_details.append(f"Marketing decreasing: {round((intensity_factor-1)*100)}%")
+    
+    # Campaign adjustment
+    campaign_multipliers = {"none": 1.0, "minor": 1.10, "major": 1.25}
+    if campaign_type != "none":
+        adjustment_multiplier *= campaign_multipliers.get(campaign_type, 1.0)
+        boost = round((campaign_multipliers.get(campaign_type, 1.0) - 1) * 100)
+        adjustment_details.append(f"{campaign_type.title()} campaign: +{boost}%")
+    
+    # Market conditions adjustment
+    market_multipliers = {"stable": 1.0, "growing": 1.15, "challenging": 0.90}
+    if market_conditions != "stable":
+        adjustment_multiplier *= market_multipliers.get(market_conditions, 1.0)
+        change = round((market_multipliers.get(market_conditions, 1.0) - 1) * 100)
+        adjustment_details.append(f"Market {market_conditions}: {change:+}%")
+    
+    # Seasonal factor adjustment
+    seasonal_multipliers = {"normal": 1.0, "high_demand": 1.20, "low_demand": 0.85}
+    if seasonal_factor != "normal":
+        adjustment_multiplier *= seasonal_multipliers.get(seasonal_factor, 1.0)
+        change = round((seasonal_multipliers.get(seasonal_factor, 1.0) - 1) * 100)
+        adjustment_details.append(f"Seasonal {seasonal_factor.replace('_', ' ')}: {change:+}%")
     
     if horizon not in [3, 6, 12]:
         raise HTTPException(status_code=400, detail="Horizon must be 3, 6, or 12 months")
@@ -610,7 +654,8 @@ async def generate_forecast(
             chat = LlmChat(api_key=api_key, session_id=f"fc_{datetime.now().timestamp()}", 
                           system_message="Brief sales forecast analyst.").with_model("openai", "gpt-4o")
             data_str = "\n".join([f"{d['_id']}: {d['total_enquiries']} leads, {d['won']} won" for d in complete_data[-12:]])
-            prompt = f"Analyze: {data_str}\n\nJSON: {{\"trend_analysis\": {{\"volume_trend\": \"..\", \"conversion_trend\": \"..\", \"seasonal_patterns\": \"..\"}}, \"summary\": \"..\", \"recommendations\": [..]}}"
+            context_str = f"Business adjustments: {', '.join(adjustment_details)}" if adjustment_details else "No special adjustments"
+            prompt = f"Analyze: {data_str}\n\n{context_str}\n\nJSON: {{\"trend_analysis\": {{\"volume_trend\": \"..\", \"conversion_trend\": \"..\", \"seasonal_patterns\": \"..\"}}, \"summary\": \"..\", \"recommendations\": [..]}}"
             resp = await chat.send_message(UserMessage(text=prompt))
             clean = re.sub(r'```.*?\n?', '', resp).strip()
             j_start, j_end = clean.find("{"), clean.rfind("}") + 1
@@ -619,25 +664,37 @@ async def generate_forecast(
     except:
         pass
     
-    # Build response
+    # Build response with adjusted predictions
     predictions = []
     from dateutil.relativedelta import relativedelta
     base = datetime.now(timezone.utc)
     
+    total_adjustment_pct = round((adjustment_multiplier - 1) * 100)
+    
     for i, sp in enumerate(stat_preds):
         month_date = base + relativedelta(months=i+1)
-        kva_breakdown = [{"kva": k["_id"], "predicted_leads": int(sp['predicted_enquiries'] * k["count"]/total_kva_leads), 
-                         "predicted_kva_value": int(sp['predicted_enquiries'] * k["count"]/total_kva_leads * k["_id"]),
+        
+        # Apply business context adjustment
+        adjusted_enquiries = int(sp['predicted_enquiries'] * adjustment_multiplier)
+        adjusted_closures = int(sp['predicted_closures'] * adjustment_multiplier)
+        adjusted_kva = int(sp['predicted_kva'] * adjustment_multiplier)
+        
+        kva_breakdown = [{"kva": k["_id"], "predicted_leads": int(adjusted_enquiries * k["count"]/total_kva_leads), 
+                         "predicted_kva_value": int(adjusted_enquiries * k["count"]/total_kva_leads * k["_id"]),
                          "percentage": round(k["count"]/total_kva_leads*100, 2)} for k in kva_dist]
         
         predictions.append({
             "month": month_date.strftime("%Y-%m"),
-            "predicted_enquiries": sp['predicted_enquiries'],
-            "predicted_closures": sp['predicted_closures'],
-            "predicted_total_kva": sp['predicted_kva'],
-            "confidence": "high" if len(complete_data) >= 24 else "medium",
-            "method": sp.get('method', 'adaptive'),
-            "historical_range": sp.get('historical_range', {}),
+            "predicted_enquiries": adjusted_enquiries,
+            "predicted_closures": adjusted_closures,
+            "predicted_total_kva": adjusted_kva,
+            "base_prediction": {
+                "enquiries": sp['predicted_enquiries'],
+                "closures": sp['predicted_closures'],
+                "kva": sp['predicted_kva']
+            },
+            "adjustment_applied": f"{total_adjustment_pct:+}%" if total_adjustment_pct != 0 else "None",
+            "confidence": "high" if len(complete_data) >= 24 and adjustment_multiplier == 1.0 else "medium" if adjustment_multiplier == 1.0 else "adjusted",
             "breakdown": {"by_kva": kva_breakdown}
         })
     
@@ -647,14 +704,20 @@ async def generate_forecast(
             "predictions": predictions,
             "summary": ai_analysis.get("summary", f"Forecast based on {len(complete_data)} months.") if ai_analysis else f"Based on {len(complete_data)} months.",
             "trend_analysis": ai_analysis.get("trend_analysis", {}) if ai_analysis else {},
-            "factors_considered": ["Same-month historical patterns", "Variability-adaptive weighting", "Recent trends"],
+            "factors_considered": ["Same-month historical patterns", "Recency-weighted blending"] + adjustment_details,
             "recommendations": ai_analysis.get("recommendations", []) if ai_analysis else [],
-            "risks": ["Month-to-month variability (20-30% CV)", "External factors not captured"]
+            "risks": ["Adjustments are estimates based on typical campaign impacts", "Actual results may vary"]
+        },
+        "business_adjustments": {
+            "applied": len(adjustment_details) > 0,
+            "total_adjustment": f"{total_adjustment_pct:+}%",
+            "details": adjustment_details,
+            "multiplier": round(adjustment_multiplier, 3)
         },
         "historical_data": complete_data,
         "kva_distribution": [{"kva": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_kva_leads*100, 2)} for d in kva_dist],
         "horizon_months": horizon,
-        "model_info": {"type": "Adaptive Seasonal", "training_months": len(complete_data), "excluded": len(historical_data) - len(complete_data)},
+        "model_info": {"type": "Adaptive Seasonal with Business Context", "training_months": len(complete_data)},
         "filters": {"state": state, "dealer": dealer, "location": location},
         "generated_at": datetime.now(timezone.utc).isoformat()
     }
