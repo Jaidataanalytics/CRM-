@@ -38,6 +38,8 @@ async def get_dispatch_summary(
     current_user: User = Depends(get_current_user),
     state: Optional[str] = None,
     dealer: Optional[str] = None,
+    employee_name: Optional[str] = None,
+    segment: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ):
@@ -54,6 +56,10 @@ async def get_dispatch_summary(
         base_query["state"] = state
     if dealer:
         base_query["dealer"] = dealer
+    if employee_name:
+        base_query["employee_name"] = employee_name
+    if segment:
+        base_query["segment"] = segment
     if start_date and end_date:
         base_query["eo_po_date"] = {"$gte": start_date, "$lte": end_date}
     
