@@ -248,9 +248,9 @@ async def migrate_dispatch_status(
     
     db = await get_db(request)
     
-    # Find won orders without dispatch status
+    # Find won orders (Closed-Won or Order Booked) without dispatch status
     query = {
-        "enquiry_stage": "Closed-Won",
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
         "dispatch_status": {"$exists": False}
     }
     
