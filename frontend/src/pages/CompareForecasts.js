@@ -575,7 +575,7 @@ const CompareForecasts = () => {
             <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
               <li>First, generate and save a forecast from the Forecast page</li>
               <li>Select a saved forecast from the dropdown above</li>
-              <li>Click "Compare" to see how predictions matched actual results</li>
+              <li>Click &quot;Compare&quot; to see how predictions matched actual results</li>
               <li>Review monthly, KVA, State, and Dealer breakdowns</li>
               <li>Use accuracy metrics to evaluate forecast quality</li>
             </ol>
