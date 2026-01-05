@@ -196,8 +196,8 @@ class AdaptiveSeasonalForecaster:
     
     def _predict_for_month(self, target_month: int, metric: str = 'enquiries') -> Tuple[float, str]:
         """
-        Predict value for a target calendar month.
-        Uses MOST RECENT SAME MONTH * GROWTH FACTOR as primary predictor.
+        Predict using weighted average of all same-month historical values.
+        Most recent years get higher weight.
         Returns (prediction, method_used)
         """
         historical = self.by_month.get(target_month, [])
@@ -207,37 +207,24 @@ class AdaptiveSeasonalForecaster:
             return base, "overall_median"
         
         values = [h[metric] for h in historical]
-        years = [h['year'] for h in historical]
-        
-        # Get the most recent value for this month
-        most_recent = values[-1]
-        most_recent_year = years[-1]
         
         if len(values) == 1:
-            # Apply overall YoY growth
-            return most_recent * self.yoy_growth.get(metric, 1.0), "single_year_growth"
+            return values[0], "single_year"
         
-        # Calculate this month's specific growth trend
-        # Compare each year to previous year for this month
-        month_growth_rates = []
-        for i in range(1, len(values)):
-            if values[i-1] > 0:
-                growth = values[i] / values[i-1]
-                month_growth_rates.append(growth)
+        if len(values) == 2:
+            # Two years: 70% recent, 30% older
+            return 0.7 * values[-1] + 0.3 * values[-2], "weighted_2yr"
         
-        if month_growth_rates:
-            # Use median of growth rates (more robust than mean)
-            median_growth = median(month_growth_rates)
-            # Blend month-specific growth with overall YoY growth
-            blended_growth = 0.6 * median_growth + 0.4 * self.yoy_growth.get(metric, 1.0)
-            # Cap the growth factor
-            blended_growth = max(0.85, min(1.25, blended_growth))
-            
-            prediction = most_recent * blended_growth
-            return prediction, "growth_adjusted"
+        if len(values) == 3:
+            # Three years: 50% most recent, 30% previous, 20% oldest
+            return 0.50 * values[-1] + 0.30 * values[-2] + 0.20 * values[-3], "weighted_3yr"
         
-        # Fallback: apply YoY growth
-        return most_recent * self.yoy_growth.get(metric, 1.0), "yoy_growth"
+        # 4+ years: Exponential decay weighting
+        weights = [1.8 ** i for i in range(len(values))]  # More aggressive recency
+        weighted_sum = sum(v * w for v, w in zip(values, weights))
+        prediction = weighted_sum / sum(weights)
+        
+        return prediction, "weighted_exp"
     
     def _apply_trend_adjustment(self, base_value: float, metric: str, decay: float = 0.95) -> float:
         """Apply recent momentum adjustment"""
