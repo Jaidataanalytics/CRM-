@@ -261,36 +261,13 @@ class ARIMAForecaster(BaseForecaster):
 
 
 class ProphetForecaster(BaseForecaster):
-    """Facebook Prophet for time series with seasonality"""
+    """Facebook Prophet for time series with seasonality - DISABLED due to performance"""
     name = "Prophet"
     
     def predict(self, periods: int) -> List[float]:
-        if not HAS_PROPHET or len(self.values) < 12:
-            return ExponentialSmoothing(self.data).predict(periods)
-        
-        try:
-            # Prepare data for Prophet
-            df = pd.DataFrame({
-                'ds': pd.to_datetime([m + '-01' for m in self.months]),
-                'y': self.values
-            })
-            
-            model = Prophet(
-                yearly_seasonality=True,
-                weekly_seasonality=False,
-                daily_seasonality=False,
-                seasonality_mode='additive'
-            )
-            model.fit(df)
-            
-            # Create future dataframe
-            future = model.make_future_dataframe(periods=periods, freq='MS')
-            forecast = model.predict(future)
-            
-            predictions = forecast.tail(periods)['yhat'].tolist()
-            return [max(0, p) for p in predictions]
-        except:
-            return ExponentialSmoothing(self.data).predict(periods)
+        # Prophet is too slow for real-time forecasting
+        # Fall back to faster model
+        return ExponentialSmoothing(self.data).predict(periods)
 
 
 class SeasonalNaive(BaseForecaster):
