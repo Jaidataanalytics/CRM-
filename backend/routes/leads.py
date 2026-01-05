@@ -135,8 +135,8 @@ async def get_leads(
     # Get total count
     total = await db.leads.count_documents(query)
     
-    # Get leads
-    leads = await db.leads.find(query, {"_id": 0}).skip(skip).limit(limit).to_list(limit)
+    # Get leads - sorted by created_at descending (newest first)
+    leads = await db.leads.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     
     return {
         "leads": leads,
