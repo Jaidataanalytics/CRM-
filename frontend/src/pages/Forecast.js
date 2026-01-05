@@ -36,7 +36,8 @@ import { toast } from 'sonner';
 import { 
   Sparkles, TrendingUp, AlertCircle, Lightbulb, Calendar, 
   ChevronDown, ChevronRight, Zap, BarChart3, Target,
-  CheckCircle2, XCircle, Info, FlaskConical, FileText
+  CheckCircle2, XCircle, Info, FlaskConical, FileText,
+  MapPin, Building2, Users, Layers
 } from 'lucide-react';
 import {
   Chart as ChartJS,
