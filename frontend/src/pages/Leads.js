@@ -859,6 +859,25 @@ const Leads = () => {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="enquiry_no">Enquiry No</Label>
+                    <Input
+                      id="enquiry_no"
+                      value={formData.enquiry_no}
+                      onChange={(e) => handleInputChange('enquiry_no', e.target.value)}
+                      placeholder="Auto-generated if empty"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="enquiry_date">Enquiry Date <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="enquiry_date"
+                      type="date"
+                      value={formData.enquiry_date}
+                      onChange={(e) => handleInputChange('enquiry_date', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label>Zone</Label>
                     <Select value={formData.zone || ''} onValueChange={(v) => handleInputChange('zone', v)}>
                       <SelectTrigger>
