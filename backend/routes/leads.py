@@ -394,6 +394,10 @@ async def create_lead(
     if not lead_doc.get("added_by"):
         lead_doc["added_by"] = current_user.name or current_user.email
     
+    # Auto-set enquiry_date to today if not provided
+    if not lead_doc.get("enquiry_date"):
+        lead_doc["enquiry_date"] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
     await db.leads.insert_one(lead_doc)
     
     # Log activity
