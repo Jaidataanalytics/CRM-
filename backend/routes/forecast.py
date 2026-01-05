@@ -1355,13 +1355,15 @@ async def compare_forecast_with_actuals(
             state_comparison[state_val]["actual_leads"] += sa["count"]
             state_comparison[state_val]["actual_closures"] += sa["won"]
         
-        # Dealer breakdown
-        for dealer_pred in pred.get("dealer_breakdown", []):
-            dealer_val = dealer_pred.get("dealer")
-            if dealer_val not in dealer_comparison:
+        # Dealer breakdown (check both old and new formats)
+        dealer_data = pred.get("dealer_breakdown", []) or breakdown.get("by_dealer", [])
+        for dealer_pred in dealer_data:
+            dealer_val = dealer_pred.get("dealer") or dealer_pred.get("name")
+            if dealer_val and dealer_val not in dealer_comparison:
                 dealer_comparison[dealer_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
-            dealer_comparison[dealer_val]["predicted_leads"] += dealer_pred.get("predicted_leads", 0)
-            dealer_comparison[dealer_val]["predicted_closures"] += dealer_pred.get("predicted_closures_category", 0)
+            if dealer_val:
+                dealer_comparison[dealer_val]["predicted_leads"] += dealer_pred.get("predicted_leads", 0)
+                dealer_comparison[dealer_val]["predicted_closures"] += dealer_pred.get("predicted_closures_category", dealer_pred.get("predicted_closures", 0))
         
         # Get actual Dealer breakdown
         dealer_actual_pipeline = [
