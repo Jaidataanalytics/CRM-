@@ -15,7 +15,8 @@ import {
   ChevronRight,
   AlertTriangle,
   ArrowLeftRight,
-  Truck
+  Truck,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,6 +35,7 @@ const menuItems = [
   { path: '/dispatch', icon: Truck, label: 'Dispatch', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/comparison', icon: GitCompare, label: 'Comparison', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/forecast', icon: LineChart, label: 'Forecast', roles: ['Admin', 'Manager'] },
+  { path: '/compare-forecasts', icon: Target, label: 'Compare Forecasts', roles: ['Admin', 'Manager'] },
   { path: '/admin', icon: Settings, label: 'Admin', roles: ['Admin'] },
 ];
 
