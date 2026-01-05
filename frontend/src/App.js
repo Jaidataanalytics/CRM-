@@ -92,7 +92,11 @@ const AppRouter = () => {
       }>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/charts" element={<Charts />} />
-        <Route path="/insights" element={<Insights />} />
+        <Route path="/insights" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <Insights />
+          </ProtectedRoute>
+        } />
         <Route path="/leads" element={<Leads />} />
         <Route path="/comparison" element={<Comparison />} />
         <Route path="/compare-forecasts" element={
