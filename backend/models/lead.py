@@ -216,6 +216,10 @@ class LeadUpdate(BaseModel):
     
     # Lead ownership tracking
     added_by: Optional[str] = None  # User who added this lead (or "System Import" for bulk uploads)
+    
+    # Closure questions fields (for lost leads)
+    needs_closure_questions: Optional[bool] = None  # Flag to show closure questions modal
+    closure_type: Optional[str] = None  # "won" or "lost"
 
 
 class LeadResponse(BaseModel):
