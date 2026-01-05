@@ -974,6 +974,13 @@ async def generate_forecast(
             "recommendations": ai_analysis.get("recommendations", []) if ai_analysis else [],
             "risks": ["Adjustments are estimates based on typical campaign impacts", "Actual results may vary"]
         },
+        "source_of_truth": {
+            "dimension": winning_dimension.get("dimension", "Overall"),
+            "accuracy": winning_dimension.get("accuracy", 0),
+            "conversion_rate": round(winning_conv_rate * 100, 1),
+            "explanation": f"Predictions based on: {winning_dimension.get('dimension', 'Overall')} Breakdown ({winning_dimension.get('accuracy', 0)}% accuracy)"
+        },
+        "dimension_accuracies": dimension_accuracies,
         "business_adjustments": {
             "applied": len(adjustment_details) > 0,
             "total_adjustment": f"{total_adjustment_pct:+}%",
