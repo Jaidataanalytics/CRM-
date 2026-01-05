@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'sonner';
+import { useFilters } from '@/context/FilterContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -20,6 +21,7 @@ import {
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Dispatch = () => {
+  const { filters, buildQueryParams } = useFilters();
   const [summary, setSummary] = useState({ total_won: 0, pending_dispatch: 0, dispatched: 0, needs_migration: 0 });
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -44,18 +46,20 @@ const Dispatch = () => {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/dispatch/summary`, { withCredentials: true });
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/dispatch/summary?${queryParams}`, { withCredentials: true });
       setSummary(res.data);
     } catch (err) {
       console.error('Failed to fetch dispatch summary');
     }
-  }, []);
+  }, [buildQueryParams]);
 
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
       const status = activeTab === 'all' ? '' : activeTab;
-      const res = await axios.get(`${API}/dispatch/list`, {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/dispatch/list?${queryParams}`, {
         params: { dispatch_status: status, search, page, limit: 20 },
         withCredentials: true
       });
@@ -66,7 +70,7 @@ const Dispatch = () => {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, search, page]);
+  }, [activeTab, search, page, buildQueryParams]);
 
   useEffect(() => {
     fetchSummary();
@@ -75,6 +79,11 @@ const Dispatch = () => {
   useEffect(() => {
     fetchLeads();
   }, [fetchLeads]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filters]);
 
   const handleMigrate = async () => {
     try {
