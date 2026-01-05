@@ -196,48 +196,52 @@ class AdaptiveSeasonalForecaster:
     
     def _predict_for_month(self, target_month: int, metric: str = 'enquiries') -> Tuple[float, str]:
         """
-        Predict value for a target calendar month using adaptive weighting.
+        Predict value for a target calendar month.
+        PRIMARY: Use most recent same-month value with growth adjustment.
         Returns (prediction, method_used)
         """
         historical = self.by_month.get(target_month, [])
         
         if not historical:
-            # No data for this month - use overall median
-            return self.stats[metric]['median'], "overall_median"
+            # No data for this month - use overall median with growth
+            base = self.stats[metric]['median']
+            return base * self.yoy_growth.get(metric, 1.0), "overall_median"
         
         values = [h[metric] for h in historical]
         years = [h['year'] for h in historical]
         
         if len(values) == 1:
-            # Only one year of data - use it directly
-            return values[0], "single_year"
+            # Only one year of data - apply growth factor
+            prediction = values[0] * self.yoy_growth.get(metric, 1.0)
+            return prediction, "single_year_growth"
         
-        # Calculate coefficient of variation for this month
-        if len(values) > 1:
-            month_mean = mean(values)
-            month_std = stdev(values)
-            cv = month_std / month_mean if month_mean > 0 else 0
+        # PRIMARY METHOD: Most recent same-month value
+        # This is the strongest predictor for seasonal business
+        most_recent = values[-1]
+        
+        # Calculate the growth from the most recent to previous same month
+        if len(values) >= 2:
+            prev_value = values[-2]
+            if prev_value > 0:
+                recent_growth = most_recent / prev_value
+                # Dampen extreme recent growth
+                recent_growth = max(0.7, min(1.4, recent_growth))
+            else:
+                recent_growth = 1.0
         else:
-            cv = 0
+            recent_growth = self.yoy_growth.get(metric, 1.0)
         
-        if cv < 0.15:
-            # Low variability - use weighted average (favor recent)
-            weights = [1.5 ** i for i in range(len(values))]
-            prediction = sum(v * w for v, w in zip(values, weights)) / sum(weights)
-            return prediction, "weighted_avg"
+        # Apply growth factor (blended from YoY and recent)
+        growth_factor = 0.6 * recent_growth + 0.4 * self.yoy_growth.get(metric, 1.0)
         
-        elif cv < 0.25:
-            # Medium variability - blend most recent with average
-            most_recent = values[-1]
-            weighted_avg = sum(v * w for v, w in zip(values, [1.5 ** i for i in range(len(values))])) / sum([1.5 ** i for i in range(len(values))])
-            prediction = 0.6 * most_recent + 0.4 * weighted_avg
-            return prediction, "recent_blend"
+        # Prediction = most recent same month * growth factor
+        prediction = most_recent * growth_factor
         
-        else:
-            # High variability - use median (more robust)
-            recent_values = values[-min(3, len(values)):]  # Last 3 years max
-            prediction = median(recent_values)
-            return prediction, "recent_median"
+        # Sanity check: if prediction is within 15% of most recent, just use most recent
+        if abs(prediction - most_recent) / most_recent < 0.15:
+            return most_recent, "recent_stable"
+        
+        return prediction, "recent_growth"
     
     def _apply_trend_adjustment(self, base_value: float, metric: str, decay: float = 0.95) -> float:
         """Apply gentle trend adjustment based on recent performance"""
