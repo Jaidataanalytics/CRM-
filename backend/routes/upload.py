@@ -325,9 +325,21 @@ async def upload_leads(
                     existing = await db.leads.find_one({"phone_number": str(phone_number)})
                 
                 # Check if this is a lost/closure update that needs questions
+                # Won stages: Closed-Won, Order Booked
+                # Faulty stage: Closed-Faulty (no closure questions)
+                # Lost = any "closed" stage that is NOT won or faulty
                 is_lost_closure = False
                 enquiry_stage = lead_data.get('enquiry_stage', '')
-                if enquiry_stage and 'lost' in enquiry_stage.lower():
+                stage_lower = enquiry_stage.lower() if enquiry_stage else ''
+                
+                won_stages = ['closed-won', 'order booked']
+                faulty_stages = ['closed-faulty']
+                
+                is_closed = stage_lower.startswith('closed') or stage_lower == 'lost'
+                is_won = stage_lower in won_stages
+                is_faulty = stage_lower in faulty_stages
+                
+                if is_closed and not is_won and not is_faulty:
                     is_lost_closure = True
                     # Mark that this lead needs closure questions answered
                     lead_data['needs_closure_questions'] = True
