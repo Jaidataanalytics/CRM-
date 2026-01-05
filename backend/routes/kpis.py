@@ -167,6 +167,28 @@ async def get_kpis(
     }
     transferred_leads = await db.leads.count_documents(transferred_query)
     
+    # Dispatch tracking metrics (for won orders)
+    won_base_query = {
+        "enquiry_stage": "Closed-Won",
+        "deleted_at": {"$exists": False}
+    }
+    if state:
+        won_base_query["state"] = state
+    if dealer:
+        won_base_query["dealer"] = dealer
+    
+    # Pending dispatch count
+    pending_dispatch_query = {**won_base_query, "dispatch_status": "pending"}
+    pending_dispatch = await db.leads.count_documents(pending_dispatch_query)
+    
+    # Dispatched count
+    dispatched_query = {**won_base_query, "dispatch_status": "dispatched"}
+    dispatched_count = await db.leads.count_documents(dispatched_query)
+    
+    # Orders without dispatch status (need migration)
+    no_dispatch_status_query = {**won_base_query, "dispatch_status": {"$exists": False}}
+    no_dispatch_status = await db.leads.count_documents(no_dispatch_status_query)
+    
     # Qualified leads (system-based, not configurable)
     qualified_query = {**base_query, "is_qualified": True}
     qualified_leads = await db.leads.count_documents(qualified_query)
