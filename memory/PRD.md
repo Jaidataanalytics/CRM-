@@ -1,7 +1,7 @@
 # Sharda Lead Management Dashboard - PRD
 
 ## Original Problem Statement
-A full-stack Lead Management application for Sharda, a generator/genset company. The application helps manage sales leads with features for tracking, forecasting, and analytics.
+A full-stack Lead Management application for Sharda, a generator/genset company. The application helps manage sales leads with features for tracking, forecasting, analytics, and dispatch management.
 
 ## Core Features Implemented
 
@@ -14,10 +14,24 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ### 2. Dashboard & KPIs
 - Real-time KPI cards (Hot/Warm/Cold/Won/Lost)
+- **Dispatch KPIs**: Pending Dispatch, Dispatched counts (NEW)
 - Clickable KPI cards for filtering
 - Recent leads table with status indicators
 
-### 3. AI-Powered Forecasting (Enhanced - Jan 5, 2026)
+### 3. Dispatch Management (NEW - Jan 5, 2026)
+- **Dedicated Dispatch Page**: Track and manage order dispatches
+- **Status Tracking**: Pending Dispatch → Dispatched
+- **Historical Data Handling**: 
+  - Orders won before Jan 5, 2026 = "Dispatched" by default (no date)
+  - Orders won on/after Jan 5, 2026 = "Pending Dispatch" by default
+- **Dispatch Fields**: Dispatch date, delivery address, transporter details
+- **Validation**: Dispatch date cannot be before won date
+- **Status Change Rules**:
+  - Historical orders: Can change without reason
+  - New orders: Reason required when changing dispatched → pending
+- **Dispatch History**: Full audit trail of status changes
+
+### 4. AI-Powered Forecasting (Enhanced)
 - **Auto Model Optimization** (NEW):
   - Tests multiple models: SMA, WMA, Exponential Smoothing, Random Forest, XGBoost, Ensemble
   - Automatically selects best model (currently: Weighted Moving Average - 91.2% accuracy)
