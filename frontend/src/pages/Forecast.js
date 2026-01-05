@@ -176,6 +176,79 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
   );
 };
 
+// Generic Breakdown Section for State, Dealer, Employee, Segment
+const GenericBreakdownSection = ({ data, title, icon: Icon, iconColor, bgGradient, fieldName, expanded, onToggle }) => {
+  if (!data || data.length === 0) return null;
+  
+  const totalLeads = data.reduce((sum, d) => sum + (d.predicted_leads || 0), 0);
+  
+  const chartData = {
+    labels: data.slice(0, 8).map(d => d[fieldName] || 'Unknown'),
+    datasets: [{
+      data: data.slice(0, 8).map(d => d.predicted_leads || 0),
+      backgroundColor: COLORS.slice(0, 8),
+      borderWidth: 0
+    }]
+  };
+
+  return (
+    <Collapsible open={expanded} onOpenChange={onToggle}>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost" className={`w-full justify-between p-4 h-auto ${bgGradient}`}>
+          <div className="flex items-center gap-2">
+            <Icon className={`h-5 w-5 ${iconColor}`} />
+            <span className="font-medium">{title}</span>
+            <Badge variant="secondary" className="ml-2">{data.length} items</Badge>
+          </div>
+          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-4 pb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+          {/* Table */}
+          <div className="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+            <Table>
+              <TableHeader className="sticky top-0 bg-white">
+                <TableRow>
+                  <TableHead>{title.replace(' Breakdown', '')}</TableHead>
+                  <TableHead className="text-right">Predicted Leads</TableHead>
+                  <TableHead className="text-right">%</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.map((item, idx) => (
+                  <TableRow key={idx} className="hover:bg-muted/50">
+                    <TableCell className="font-medium truncate max-w-[200px]">{item[fieldName] || 'Unknown'}</TableCell>
+                    <TableCell className="text-right">{(item.predicted_leads || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{(item.percentage || 0).toFixed(1)}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          
+          {/* Chart */}
+          <div className="h-56 flex items-center justify-center">
+            <Doughnut 
+              data={chartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'right',
+                    labels: { boxWidth: 10, font: { size: 10 } }
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
+
 const AccuracyMetricCard = ({ title, metrics, icon: Icon, color }) => {
   if (!metrics) return null;
   
