@@ -829,20 +829,23 @@ const Leads = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Customer Name</Label>
+                    <Label htmlFor="name">Customer Name <span className="text-red-500">*</span></Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="Enter customer name"
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">Phone Number <span className="text-red-500">*</span></Label>
                     <Input
                       id="phone"
                       value={formData.phone_number}
                       onChange={(e) => handleInputChange('phone_number', e.target.value)}
+                      placeholder="Enter phone number"
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -852,6 +855,7 @@ const Leads = () => {
                       type="email"
                       value={formData.email_address}
                       onChange={(e) => handleInputChange('email_address', e.target.value)}
+                      placeholder="Enter email address"
                     />
                   </div>
                   <div className="space-y-2">
@@ -868,7 +872,7 @@ const Leads = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>State</Label>
+                    <Label>State <span className="text-red-500">*</span></Label>
                     <Select value={formData.state || ''} onValueChange={(v) => handleInputChange('state', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select state" />
