@@ -317,13 +317,17 @@ const Forecast = () => {
   const [loading, setLoading] = useState(false);
   const [loadingBacktest, setLoadingBacktest] = useState(false);
   const [loadingFactors, setLoadingFactors] = useState(false);
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingSaved, setLoadingSaved] = useState(false);
   const [forecast, setForecast] = useState(null);
   const [backtest, setBacktest] = useState(null);
   const [factors, setFactors] = useState(null);
+  const [savedForecasts, setSavedForecasts] = useState(null);
   const [error, setError] = useState(null);
   const [expandedMonth, setExpandedMonth] = useState(null);
   const [expandedBreakdown, setExpandedBreakdown] = useState({});
   const [activeTab, setActiveTab] = useState('forecast');
+  const [expandedSaved, setExpandedSaved] = useState(null);
   
   // Toggle function for breakdown sections
   const toggleBreakdown = (monthIdx, breakdownType) => {
