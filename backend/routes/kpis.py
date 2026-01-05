@@ -167,9 +167,9 @@ async def get_kpis(
     }
     transferred_leads = await db.leads.count_documents(transferred_query)
     
-    # Dispatch tracking metrics (for won orders)
+    # Dispatch tracking metrics (for won orders - Closed-Won or Order Booked)
     won_base_query = {
-        "enquiry_stage": "Closed-Won",
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
         "deleted_at": {"$exists": False}
     }
     if state:
