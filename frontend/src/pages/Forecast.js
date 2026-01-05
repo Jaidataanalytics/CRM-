@@ -314,8 +314,14 @@ const Forecast = () => {
   const [factors, setFactors] = useState(null);
   const [error, setError] = useState(null);
   const [expandedMonth, setExpandedMonth] = useState(null);
-  const [expandedKva, setExpandedKva] = useState({});
+  const [expandedBreakdown, setExpandedBreakdown] = useState({});
   const [activeTab, setActiveTab] = useState('forecast');
+  
+  // Toggle function for breakdown sections
+  const toggleBreakdown = (monthIdx, breakdownType) => {
+    const key = `${monthIdx}-${breakdownType}`;
+    setExpandedBreakdown(prev => ({ ...prev, [key]: !prev[key] }));
+  };
   
   // Business context state
   const [showBusinessContext, setShowBusinessContext] = useState(false);
