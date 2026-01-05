@@ -358,7 +358,6 @@ async def get_closure_analysis(
         ],
         "date_range": {"start_date": start_date, "end_date": end_date}
     }
-    }
 
 
 @router.get("/segment-analysis")
