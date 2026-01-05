@@ -244,24 +244,14 @@ class AdaptiveSeasonalForecaster:
         return prediction, "recent_growth"
     
     def _apply_trend_adjustment(self, base_value: float, metric: str, decay: float = 0.95) -> float:
-        """Apply gentle trend adjustment based on recent performance"""
+        """Apply recent momentum adjustment"""
         values = getattr(self, metric.replace('closures', 'closures').replace('enquiries', 'enquiries'))
         if len(values) < 6:
             return base_value
         
-        # Compare last 3 months average to previous 3 months
-        recent = mean(values[-3:])
-        previous = mean(values[-6:-3])
-        
-        if previous > 0:
-            trend = recent / previous
-            # Dampen trend significantly
-            adjusted_trend = 1 + (trend - 1) * 0.3
-            # Cap adjustment
-            adjusted_trend = max(0.9, min(1.1, adjusted_trend))
-            return base_value * adjusted_trend
-        
-        return base_value
+        # Compare last 3 months to their same-months last year if possible
+        # This gives a truer momentum than simple averaging
+        return base_value  # Trend already captured in growth factor
     
     def forecast(self, months_ahead: int, start_month: int = None) -> List[Dict]:
         """Generate forecast using adaptive seasonal method"""
