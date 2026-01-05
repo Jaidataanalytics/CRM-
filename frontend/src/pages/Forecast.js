@@ -836,6 +836,56 @@ const Forecast = () => {
                   </Card>
                 )}
 
+                {/* Source of Truth - Winning Dimension */}
+                {forecast.source_of_truth && (
+                  <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Target className="h-5 w-5 text-indigo-600" />
+                        Prediction Source of Truth
+                        <Badge className="bg-indigo-600">{forecast.source_of_truth.accuracy}% Accuracy</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="font-medium text-indigo-700 mb-3">
+                        {forecast.source_of_truth.explanation}
+                      </p>
+                      
+                      {/* Dimension Accuracy Comparison */}
+                      {forecast.dimension_accuracies && (
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                          {forecast.dimension_accuracies.map((dim, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`p-2 rounded-lg border text-center ${
+                                dim.dimension === forecast.source_of_truth.dimension 
+                                  ? 'bg-indigo-100 border-indigo-400' 
+                                  : 'bg-white border-gray-200'
+                              }`}
+                            >
+                              <p className="text-xs text-muted-foreground">{dim.dimension}</p>
+                              <p className={`font-bold ${
+                                dim.dimension === forecast.source_of_truth.dimension 
+                                  ? 'text-indigo-700' 
+                                  : 'text-gray-600'
+                              }`}>
+                                {dim.accuracy || 0}%
+                              </p>
+                              {dim.dimension === forecast.source_of_truth.dimension && (
+                                <CheckCircle2 className="h-3 w-3 text-indigo-600 mx-auto mt-1" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground mt-3">
+                        All breakdown totals are normalized to match the {forecast.source_of_truth.dimension} dimension's predictions for consistency.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Summary */}
                 <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
                   <CardHeader>
