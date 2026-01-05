@@ -134,6 +134,13 @@ const Leads = () => {
   const [showFollowupForm, setShowFollowupForm] = useState(false);
   const [followupRemark, setFollowupRemark] = useState('');
   const [nextFollowupDate, setNextFollowupDate] = useState('');
+  
+  // Closure questions state
+  const [isClosureQuestionsOpen, setIsClosureQuestionsOpen] = useState(false);
+  const [closureQuestionsLead, setClosureQuestionsLead] = useState(null);
+  const [closureQuestions, setClosureQuestions] = useState([]);
+  const [closureAnswers, setClosureAnswers] = useState({});
+  const [pendingClosureCount, setPendingClosureCount] = useState(0);
 
   useEffect(() => {
     loadLeads();
