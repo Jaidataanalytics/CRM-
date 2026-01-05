@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class KPIMetricsEnhancementTester:
-    def __init__(self, base_url="https://predictive-leads-2.preview.emergentagent.com"):
+    def __init__(self, base_url="https://leadtrack-10.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = None
         self.tests_run = 0
