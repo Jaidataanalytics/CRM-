@@ -906,7 +906,7 @@ const Leads = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Dealer</Label>
+                    <Label>Dealer <span className="text-red-500">*</span></Label>
                     <Select value={formData.dealer || ''} onValueChange={(v) => handleInputChange('dealer', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select dealer" />
@@ -938,10 +938,11 @@ const Leads = () => {
                       type="number"
                       value={formData.kva}
                       onChange={(e) => handleInputChange('kva', e.target.value)}
+                      placeholder="Enter KVA"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Segment</Label>
+                    <Label>Segment <span className="text-red-500">*</span></Label>
                     <Select value={formData.segment || ''} onValueChange={(v) => handleInputChange('segment', v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select segment" />
