@@ -29,7 +29,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'KPIs', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/charts', icon: BarChart3, label: 'Charts', roles: ['Admin', 'Manager', 'Employee'] },
-  { path: '/insights', icon: TrendingUp, label: 'Insights', roles: ['Admin', 'Manager', 'Employee'] },
+  { path: '/insights', icon: TrendingUp, label: 'Insights', roles: ['Admin', 'Manager'] },
   { path: '/leads', icon: FileSpreadsheet, label: 'Manage Leads', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/transferred-leads', icon: ArrowLeftRight, label: 'Transferred Leads', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/dispatch', icon: Truck, label: 'Dispatch', roles: ['Admin', 'Manager', 'Employee'] },
