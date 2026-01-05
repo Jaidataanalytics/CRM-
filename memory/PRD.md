@@ -87,10 +87,10 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Save/View projections
 
 ## Upcoming Tasks
-- **Compare Projections (P1)**: Compare two saved forecasts side by side
+- **Compare Projections (P1)**: Compare forecasted vs actual values
 
 ## Future/Backlog Tasks
-- Detailed audit logs (P2 - postponed by user)
+- Detailed audit logs (P2)
 - Refactor Forecast.js into smaller components
 
 ## Credentials
