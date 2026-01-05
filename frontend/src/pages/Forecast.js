@@ -242,16 +242,34 @@ const Forecast = () => {
   const [expandedMonth, setExpandedMonth] = useState(null);
   const [expandedKva, setExpandedKva] = useState({});
   const [activeTab, setActiveTab] = useState('forecast');
+  
+  // Business context state
+  const [showBusinessContext, setShowBusinessContext] = useState(false);
+  const [marketingEffort, setMarketingEffort] = useState('same');
+  const [marketingIntensity, setMarketingIntensity] = useState(50);
+  const [campaignType, setCampaignType] = useState('none');
+  const [marketConditions, setMarketConditions] = useState('stable');
+  const [seasonalFactor, setSeasonalFactor] = useState('normal');
 
   const generateForecast = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.post(`${API}/forecast`, {
+      const payload = {
         horizon: parseInt(horizon),
         state: state || undefined,
-        dealer: dealer || undefined
-      }, { withCredentials: true });
+        dealer: dealer || undefined,
+        business_context: {
+          marketing_effort: marketingEffort,
+          marketing_intensity: parseInt(marketingIntensity),
+          campaign_active: campaignType !== 'none',
+          campaign_type: campaignType,
+          market_conditions: marketConditions,
+          seasonal_factor: seasonalFactor
+        }
+      };
+      
+      const res = await axios.post(`${API}/forecast`, payload, { withCredentials: true });
       
       if (res.data.success) {
         setForecast(res.data);
