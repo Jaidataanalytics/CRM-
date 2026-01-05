@@ -106,7 +106,15 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 3. ✅ **Upload Composite Key Logic**:
    - Uses enquiry_no + phone_number to identify existing leads
    - Updates existing leads, creates new ones if not found
-4. ✅ All tests passed (12/12 backend, frontend verified)
+4. ✅ **Closure Analysis in Insights** (NEW):
+   - New "Closure Analysis" tab in Insights page
+   - Summary cards: Total Lost, With Closure Data, Pending, Completion Rate
+   - Question-by-question breakdown with answer distribution charts
+   - Lost leads by State and Dealer tables
+5. ✅ **Restricted Insights Access**:
+   - Insights page now only accessible to Admin and Manager roles
+   - Employees no longer see Insights in sidebar
+6. ✅ All tests passed (12/12 backend, frontend verified)
 
 ### Session 4 - COMPLETED
 1. ✅ **Dispatch Management Feature**
