@@ -774,7 +774,13 @@ async def generate_forecast(
             "multiplier": round(adjustment_multiplier, 3)
         },
         "historical_data": complete_data,
-        "kva_distribution": [{"kva": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_kva_leads*100, 2)} for d in kva_dist],
+        "distributions": {
+            "kva": [{"kva": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_kva_leads*100, 2)} for d in kva_dist],
+            "state": [{"state": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_state_leads*100, 2)} for d in state_dist[:20]],
+            "dealer": [{"dealer": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_dealer_leads*100, 2)} for d in dealer_dist[:20]],
+            "employee": [{"employee": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_employee_leads*100, 2)} for d in employee_dist[:20]],
+            "segment": [{"segment": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_segment_leads*100, 2)} for d in segment_dist]
+        },
         "horizon_months": horizon,
         "model_info": {"type": "Adaptive Seasonal with Business Context", "training_months": len(complete_data)},
         "filters": {"state": state, "dealer": dealer, "location": location},
