@@ -19,11 +19,11 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ### 3. AI-Powered Forecasting (Enhanced - Jan 5, 2026)
 - **Multi-Dimensional Breakdowns**:
-  - KVA-wise (34 products)
-  - State-wise (18 states)
-  - Dealer-wise (20 dealers)
-  - Employee-wise
-  - Segment-wise (22 segments)
+  - KVA-wise (34 products) with predicted closures & conversion rates
+  - State-wise (18 states) with predicted closures & conversion rates
+  - Dealer-wise (20 dealers) with predicted closures & conversion rates
+  - Employee-wise with predicted closures & conversion rates
+  - Segment-wise (22 segments) with predicted closures & conversion rates
 - **Business Context Adjustments**:
   - Marketing Effort (same/increasing/decreasing with intensity slider)
   - Promotional Campaigns (none/minor +10%/major +25%)
@@ -31,6 +31,7 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
   - Expected Demand (low -15%/normal/high +20%)
 - **Split Testing/Backtesting**: Rolling window validation
 - **Accuracy Metrics**: MAPE, WMAPE, MAE, RMSE, R², Direction Accuracy
+- **Save & View Projections**: Save forecasts for future reference (NEW Jan 5, 2026)
 
 ### 4. User Management
 - Role-based access (Admin, Manager, Employee)
@@ -42,87 +43,49 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - **Backend**: FastAPI + MongoDB
 - **AI**: GPT-4o via Emergent LLM Key
 
-## Forecast Breakdown Details
-
-### KVA Distribution (34 products)
-| Category | KVA Values | Lead Share |
-|----------|------------|------------|
-| Small | 5, 7.5, 10, 12.5, 15 | 23.6% |
-| Medium | 18.5-50 | 44.5% |
-| Large | 55-125 | 25.6% |
-| Industrial | 140-750 | 6.3% |
-
-### State Distribution (Top 5)
-| State | Lead Share |
-|-------|------------|
-| Bihar | 46.1% |
-| Jharkhand | 31.5% |
-| Chhattisgarh | 19.8% |
-| Punjab | 0.6% |
-| Others | 1.0% |
-
-### Segment Distribution (Top 5)
-| Segment | Lead Share |
-|---------|------------|
-| Rental | 26.2% |
-| Real Estate-Residential | 10.6% |
-| Real Estate-Commercial | 10.6% |
-| Government And Tenders | 6.8% |
-| Health Care | 6.5% |
-
-## Business Adjustment Multipliers
-| Factor | Options | Impact |
-|--------|---------|--------|
-| Marketing Effort | Increasing | +0% to +30% (based on intensity) |
-| Marketing Effort | Decreasing | -0% to -20% (based on intensity) |
-| Campaign | Minor | +10% |
-| Campaign | Major | +25% |
-| Market | Challenging | -10% |
-| Market | Growing | +15% |
-| Demand | Low | -15% |
-| Demand | High | +20% |
-
 ## Key API Endpoints
 
 ### Forecast Module
-- `POST /api/forecast` - Generate forecast with all breakdowns
+- `POST /api/forecast` - Generate forecast with all breakdowns including closures
 - `POST /api/forecast/backtest` - Run rolling window accuracy test
 - `GET /api/forecast/factors` - Get all forecast factors and data quality
+- `POST /api/forecast/save` - Save a generated forecast (NEW)
+- `GET /api/forecast/saved` - Get list of saved forecasts (NEW)
+- `DELETE /api/forecast/saved/{index}` - Delete a saved forecast (NEW)
 
-### Request Body for Forecast
-```json
-{
-  "horizon": 3,
-  "business_context": {
-    "marketing_effort": "increasing",
-    "marketing_intensity": 50,
-    "campaign_type": "major",
-    "market_conditions": "growing",
-    "seasonal_factor": "normal"
-  }
-}
-```
-
-### Response Includes
-- Monthly predictions with all breakdowns (KVA, State, Dealer, Employee, Segment)
-- Historical distributions for reference
-- Business adjustment details
-- AI-generated trend analysis
+### Forecast Response Structure
+Each breakdown item now includes:
+- `predicted_leads` - Number of predicted leads
+- `predicted_closures_category` - Category-specific predicted closures
+- `conversion_rate` - Historical conversion rate for that category (%)
 
 ## Completed Work (Jan 5, 2026)
 
-### This Session
+### This Session - COMPLETED
+1. ✅ Predicted closures added to all breakdown tables (KVA, State, Dealer, Employee, Segment)
+2. ✅ Conversion rates displayed in all breakdown tables
+3. ✅ "Save Projection" button added (green, appears after forecast generation)
+4. ✅ "Saved Projections" tab added to view saved forecasts
+5. ✅ Backend endpoints for saving/listing/deleting forecasts
+6. ✅ All tests passed (15/15 backend tests)
+
+### Previously Completed
 1. ✅ KVA-wise breakdown for forecasting
-2. ✅ **State-wise breakdown** - NEW
-3. ✅ **Dealer-wise breakdown** - NEW
-4. ✅ **Employee-wise breakdown** - NEW
-5. ✅ **Segment-wise breakdown** - NEW
+2. ✅ State-wise breakdown
+3. ✅ Dealer-wise breakdown
+4. ✅ Employee-wise breakdown
+5. ✅ Segment-wise breakdown
 6. ✅ Business Context Adjustments
 7. ✅ Split test/backtest with accuracy metrics
 
 ## Upcoming Tasks
-- User verification of deployment fix (P0)
+- **View Saved Projections Detail** (P1): Expand saved projection to show detailed breakdowns
+- **Compare Projections** (P2): Compare two saved forecasts side by side
+
+## Future/Backlog Tasks
 - Detailed audit logs (P2 - postponed by user)
+- UX/UI Improvement suggestions (P2)
+- Refactor Forecast.js into smaller components
 
 ## Credentials
 - **Admin**: admin / admin123
