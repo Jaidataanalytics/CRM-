@@ -418,6 +418,61 @@ const Forecast = () => {
     }
   };
 
+  const saveProjection = async () => {
+    if (!forecast) {
+      toast.error('No forecast to save');
+      return;
+    }
+    setLoadingSave(true);
+    try {
+      const res = await axios.post(`${API}/forecast/save`, {
+        forecast_data: forecast
+      }, { withCredentials: true });
+      
+      if (res.data.success) {
+        toast.success('Projection saved successfully!');
+        // Refresh saved forecasts list if viewing
+        if (savedForecasts) {
+          loadSavedForecasts();
+        }
+      } else {
+        toast.error(res.data.message || 'Failed to save projection');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save projection');
+    } finally {
+      setLoadingSave(false);
+    }
+  };
+
+  const loadSavedForecasts = async () => {
+    setLoadingSaved(true);
+    try {
+      const res = await axios.get(`${API}/forecast/saved`, { withCredentials: true });
+      if (res.data.success) {
+        setSavedForecasts(res.data);
+        setActiveTab('saved');
+        toast.success(`${res.data.total} saved projections loaded`);
+      }
+    } catch (err) {
+      toast.error('Failed to load saved projections');
+    } finally {
+      setLoadingSaved(false);
+    }
+  };
+
+  const deleteSavedForecast = async (index) => {
+    try {
+      const res = await axios.delete(`${API}/forecast/saved/${index}`, { withCredentials: true });
+      if (res.data.success) {
+        toast.success('Projection deleted');
+        loadSavedForecasts();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete projection');
+    }
+  };
+
   // Chart data for predictions
   const predictionChartData = forecast?.forecast?.predictions ? {
     labels: forecast.forecast.predictions.map(p => p.month),
