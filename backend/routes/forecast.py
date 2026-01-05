@@ -1201,13 +1201,22 @@ async def compare_forecast_with_actuals(
     segment_comparison = {}
     
     for pred in predictions:
-        month_str = pred.get("month", "")  # e.g., "February 2026"
+        month_str = pred.get("month", "")  # e.g., "2026-02" or "February 2026"
         
         # Parse the month to get date range
         try:
-            from dateutil.parser import parse
-            month_date = parse(f"1 {month_str}")
-            year = month_date.year
+            # Handle both formats: "2026-02" and "February 2026"
+            if '-' in month_str and len(month_str) == 7:
+                # Format: "2026-02"
+                year, month_num = month_str.split('-')
+                year = int(year)
+                month_num = int(month_num)
+            else:
+                # Format: "February 2026"
+                from dateutil.parser import parse
+                month_date = parse(f"1 {month_str}")
+                year = month_date.year
+                month_num = month_date.month
             month_num = month_date.month
             month_key = f"{year}-{month_num:02d}"
             
