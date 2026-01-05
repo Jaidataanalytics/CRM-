@@ -1,0 +1,695 @@
+"""
+Advanced Forecasting Models with Auto-Optimization
+Implements multiple forecasting approaches and automatically selects the best one.
+"""
+import numpy as np
+from typing import List, Dict, Tuple, Optional
+from statistics import mean, stdev, median
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
+
+try:
+    import xgboost as xgb
+    HAS_XGBOOST = True
+except ImportError:
+    HAS_XGBOOST = False
+
+
+def calculate_rolling_accuracy(actual: List[float], predicted: List[float], window: int = 3) -> Dict:
+    """
+    Calculate accuracy using rolling averages to smooth out volatility.
+    This gives a more realistic accuracy measure for volatile data.
+    """
+    if len(actual) < window or len(predicted) < window:
+        return {"accuracy": 0, "error": "Insufficient data for rolling calculation"}
+    
+    # Calculate rolling averages
+    actual_rolling = []
+    predicted_rolling = []
+    
+    for i in range(len(actual) - window + 1):
+        actual_rolling.append(mean(actual[i:i+window]))
+        predicted_rolling.append(mean(predicted[i:i+window]))
+    
+    if not actual_rolling:
+        return {"accuracy": 0, "error": "No rolling data"}
+    
+    # Calculate MAPE on rolling averages
+    mape_values = []
+    for a, p in zip(actual_rolling, predicted_rolling):
+        if a > 0:
+            mape_values.append(abs((a - p) / a) * 100)
+    
+    if not mape_values:
+        return {"accuracy": 0, "error": "No valid MAPE values"}
+    
+    mape = mean(mape_values)
+    accuracy = max(0, min(100, 100 - mape))
+    
+    return {
+        "accuracy": round(accuracy, 1),
+        "mape": round(mape, 1),
+        "rolling_window": window,
+        "samples": len(mape_values)
+    }
+
+
+class BaseForecaster:
+    """Base class for all forecasting models"""
+    name = "Base"
+    
+    def __init__(self, historical_data: List[Dict]):
+        self.data = historical_data
+        self.values = [d.get('won', 0) for d in historical_data]
+        self.enquiries = [d.get('total_enquiries', 0) for d in historical_data]
+        self.months = [d.get('_id', '') for d in historical_data]
+    
+    def predict(self, periods: int) -> List[float]:
+        raise NotImplementedError
+    
+    def backtest(self, test_periods: int = 6) -> Dict:
+        """Run backtest using rolling window to calculate accuracy"""
+        if len(self.values) < test_periods + 6:
+            return {"accuracy": 0, "error": "Insufficient data"}
+        
+        actual = []
+        predicted = []
+        
+        for i in range(test_periods):
+            train_end = len(self.values) - test_periods + i
+            if train_end < 6:
+                continue
+            
+            # Create temporary forecaster with training data
+            train_data = self.data[:train_end]
+            temp_forecaster = self.__class__(train_data)
+            
+            try:
+                pred = temp_forecaster.predict(1)
+                if pred:
+                    predicted.append(pred[0])
+                    actual.append(self.values[train_end])
+            except:
+                continue
+        
+        if len(actual) < 3:
+            return {"accuracy": 0, "error": "Not enough predictions"}
+        
+        # Use rolling accuracy for more realistic measure
+        result = calculate_rolling_accuracy(actual, predicted, window=3)
+        result["model"] = self.name
+        result["actual_values"] = actual
+        result["predicted_values"] = predicted
+        
+        return result
+
+
+class SimpleMovingAverage(BaseForecaster):
+    """Simple Moving Average - baseline model"""
+    name = "Simple Moving Average"
+    
+    def __init__(self, historical_data: List[Dict], window: int = 3):
+        super().__init__(historical_data)
+        self.window = window
+    
+    def predict(self, periods: int) -> List[float]:
+        if len(self.values) < self.window:
+            return [mean(self.values)] * periods if self.values else [0] * periods
+        
+        predictions = []
+        recent = list(self.values[-self.window:])
+        
+        for _ in range(periods):
+            pred = mean(recent)
+            predictions.append(pred)
+            recent = recent[1:] + [pred]
+        
+        return predictions
+
+
+class WeightedMovingAverage(BaseForecaster):
+    """Weighted Moving Average - gives more weight to recent data"""
+    name = "Weighted Moving Average"
+    
+    def __init__(self, historical_data: List[Dict], window: int = 6):
+        super().__init__(historical_data)
+        self.window = min(window, len(historical_data))
+    
+    def predict(self, periods: int) -> List[float]:
+        if len(self.values) < 2:
+            return [self.values[0]] * periods if self.values else [0] * periods
+        
+        # Exponential weights
+        weights = [2 ** i for i in range(self.window)]
+        total_weight = sum(weights)
+        weights = [w / total_weight for w in weights]
+        
+        predictions = []
+        recent = list(self.values[-self.window:])
+        
+        for _ in range(periods):
+            pred = sum(v * w for v, w in zip(recent, weights))
+            predictions.append(pred)
+            recent = recent[1:] + [pred]
+        
+        return predictions
+
+
+class ExponentialSmoothing(BaseForecaster):
+    """Holt-Winters Exponential Smoothing with trend"""
+    name = "Exponential Smoothing"
+    
+    def __init__(self, historical_data: List[Dict], alpha: float = 0.3, beta: float = 0.1):
+        super().__init__(historical_data)
+        self.alpha = alpha
+        self.beta = beta
+    
+    def predict(self, periods: int) -> List[float]:
+        if len(self.values) < 2:
+            return [self.values[0]] * periods if self.values else [0] * periods
+        
+        # Initialize
+        level = self.values[0]
+        trend = self.values[1] - self.values[0] if len(self.values) > 1 else 0
+        
+        # Fit on historical data
+        for val in self.values[1:]:
+            last_level = level
+            level = self.alpha * val + (1 - self.alpha) * (level + trend)
+            trend = self.beta * (level - last_level) + (1 - self.beta) * trend
+        
+        # Predict
+        predictions = []
+        for i in range(1, periods + 1):
+            pred = level + i * trend
+            predictions.append(max(0, pred))
+        
+        return predictions
+
+
+class SeasonalNaive(BaseForecaster):
+    """Seasonal Naive - uses same month from previous year(s)"""
+    name = "Seasonal (Same-Month)"
+    
+    def __init__(self, historical_data: List[Dict]):
+        super().__init__(historical_data)
+        self._build_seasonal_index()
+    
+    def _build_seasonal_index(self):
+        """Build index of values by calendar month"""
+        self.by_month = {i: [] for i in range(1, 13)}
+        for d in self.data:
+            try:
+                month = int(d['_id'].split('-')[1])
+                self.by_month[month].append(d.get('won', 0))
+            except:
+                pass
+    
+    def predict(self, periods: int) -> List[float]:
+        if not self.months:
+            return [0] * periods
+        
+        # Get starting month
+        try:
+            last_month = int(self.months[-1].split('-')[1])
+            start_month = (last_month % 12) + 1
+        except:
+            start_month = 1
+        
+        predictions = []
+        for i in range(periods):
+            target_month = ((start_month - 1 + i) % 12) + 1
+            historical = self.by_month.get(target_month, [])
+            
+            if historical:
+                # Weighted average favoring recent years
+                if len(historical) >= 3:
+                    weights = [1, 1.5, 2.5][-len(historical):]
+                    pred = sum(v * w for v, w in zip(historical[-3:], weights)) / sum(weights)
+                else:
+                    pred = mean(historical)
+            else:
+                pred = mean(self.values) if self.values else 0
+            
+            predictions.append(max(0, pred))
+        
+        return predictions
+
+
+class LinearTrend(BaseForecaster):
+    """Linear Regression with trend"""
+    name = "Linear Trend"
+    
+    def predict(self, periods: int) -> List[float]:
+        if len(self.values) < 3:
+            return [mean(self.values)] * periods if self.values else [0] * periods
+        
+        X = np.arange(len(self.values)).reshape(-1, 1)
+        y = np.array(self.values)
+        
+        model = LinearRegression()
+        model.fit(X, y)
+        
+        future_X = np.arange(len(self.values), len(self.values) + periods).reshape(-1, 1)
+        predictions = model.predict(future_X)
+        
+        return [max(0, p) for p in predictions]
+
+
+class RandomForestForecaster(BaseForecaster):
+    """Random Forest with engineered features"""
+    name = "Random Forest"
+    
+    def __init__(self, historical_data: List[Dict]):
+        super().__init__(historical_data)
+        self.model = None
+        self.scaler = StandardScaler()
+    
+    def _create_features(self, idx: int) -> List[float]:
+        """Create features for a given index"""
+        features = []
+        
+        # Lag features
+        for lag in [1, 2, 3, 6, 12]:
+            if idx - lag >= 0:
+                features.append(self.values[idx - lag])
+            else:
+                features.append(mean(self.values[:max(1, idx)]))
+        
+        # Rolling statistics
+        window = min(3, idx + 1)
+        recent = self.values[max(0, idx - window + 1):idx + 1]
+        features.append(mean(recent) if recent else 0)
+        features.append(max(recent) if recent else 0)
+        features.append(min(recent) if recent else 0)
+        
+        # Month feature (cyclical)
+        try:
+            month = int(self.months[idx].split('-')[1])
+            features.append(np.sin(2 * np.pi * month / 12))
+            features.append(np.cos(2 * np.pi * month / 12))
+        except:
+            features.extend([0, 0])
+        
+        # Trend feature
+        features.append(idx)
+        
+        return features
+    
+    def predict(self, periods: int) -> List[float]:
+        if len(self.values) < 12:
+            # Fall back to simpler model
+            return SimpleMovingAverage(self.data).predict(periods)
+        
+        # Prepare training data
+        X, y = [], []
+        for i in range(6, len(self.values)):
+            X.append(self._create_features(i - 1))
+            y.append(self.values[i])
+        
+        if len(X) < 6:
+            return SimpleMovingAverage(self.data).predict(periods)
+        
+        X = np.array(X)
+        y = np.array(y)
+        
+        # Scale features
+        X_scaled = self.scaler.fit_transform(X)
+        
+        # Train model
+        self.model = RandomForestRegressor(
+            n_estimators=50,
+            max_depth=5,
+            min_samples_split=3,
+            random_state=42
+        )
+        self.model.fit(X_scaled, y)
+        
+        # Predict
+        predictions = []
+        current_values = list(self.values)
+        current_months = list(self.months)
+        
+        for i in range(periods):
+            # Create features for next prediction
+            features = []
+            idx = len(current_values) - 1
+            
+            for lag in [1, 2, 3, 6, 12]:
+                if idx - lag + 1 >= 0:
+                    features.append(current_values[idx - lag + 1])
+                else:
+                    features.append(mean(current_values))
+            
+            window = min(3, len(current_values))
+            recent = current_values[-window:]
+            features.append(mean(recent))
+            features.append(max(recent))
+            features.append(min(recent))
+            
+            # Month (estimate next month)
+            try:
+                last_month = int(current_months[-1].split('-')[1])
+                next_month = (last_month % 12) + 1
+                features.append(np.sin(2 * np.pi * next_month / 12))
+                features.append(np.cos(2 * np.pi * next_month / 12))
+            except:
+                features.extend([0, 0])
+            
+            features.append(len(current_values))
+            
+            # Predict
+            X_pred = self.scaler.transform([features])
+            pred = self.model.predict(X_pred)[0]
+            pred = max(0, pred)
+            
+            predictions.append(pred)
+            current_values.append(pred)
+        
+        return predictions
+
+
+class XGBoostForecaster(BaseForecaster):
+    """XGBoost with engineered features"""
+    name = "XGBoost"
+    
+    def __init__(self, historical_data: List[Dict]):
+        super().__init__(historical_data)
+        self.model = None
+        self.scaler = StandardScaler()
+    
+    def _create_features(self, idx: int) -> List[float]:
+        """Create features for a given index"""
+        features = []
+        
+        # Lag features
+        for lag in [1, 2, 3, 6, 12]:
+            if idx - lag >= 0:
+                features.append(self.values[idx - lag])
+            else:
+                features.append(mean(self.values[:max(1, idx)]))
+        
+        # Rolling statistics
+        window = min(3, idx + 1)
+        recent = self.values[max(0, idx - window + 1):idx + 1]
+        features.append(mean(recent) if recent else 0)
+        features.append(stdev(recent) if len(recent) > 1 else 0)
+        
+        # Month feature (cyclical)
+        try:
+            month = int(self.months[idx].split('-')[1])
+            features.append(np.sin(2 * np.pi * month / 12))
+            features.append(np.cos(2 * np.pi * month / 12))
+        except:
+            features.extend([0, 0])
+        
+        # Year-over-year change
+        if idx >= 12:
+            yoy_change = self.values[idx] - self.values[idx - 12]
+            features.append(yoy_change)
+        else:
+            features.append(0)
+        
+        return features
+    
+    def predict(self, periods: int) -> List[float]:
+        if not HAS_XGBOOST or len(self.values) < 12:
+            return RandomForestForecaster(self.data).predict(periods)
+        
+        # Prepare training data
+        X, y = [], []
+        for i in range(6, len(self.values)):
+            X.append(self._create_features(i - 1))
+            y.append(self.values[i])
+        
+        if len(X) < 6:
+            return SimpleMovingAverage(self.data).predict(periods)
+        
+        X = np.array(X)
+        y = np.array(y)
+        
+        X_scaled = self.scaler.fit_transform(X)
+        
+        # Train XGBoost
+        self.model = xgb.XGBRegressor(
+            n_estimators=50,
+            max_depth=4,
+            learning_rate=0.1,
+            random_state=42,
+            verbosity=0
+        )
+        self.model.fit(X_scaled, y)
+        
+        # Predict
+        predictions = []
+        current_values = list(self.values)
+        current_months = list(self.months)
+        
+        for i in range(periods):
+            features = []
+            idx = len(current_values) - 1
+            
+            for lag in [1, 2, 3, 6, 12]:
+                if idx - lag + 1 >= 0:
+                    features.append(current_values[idx - lag + 1])
+                else:
+                    features.append(mean(current_values))
+            
+            window = min(3, len(current_values))
+            recent = current_values[-window:]
+            features.append(mean(recent))
+            features.append(stdev(recent) if len(recent) > 1 else 0)
+            
+            try:
+                last_month = int(current_months[-1].split('-')[1])
+                next_month = (last_month % 12) + 1
+                features.append(np.sin(2 * np.pi * next_month / 12))
+                features.append(np.cos(2 * np.pi * next_month / 12))
+            except:
+                features.extend([0, 0])
+            
+            if len(current_values) >= 12:
+                features.append(current_values[-1] - current_values[-12])
+            else:
+                features.append(0)
+            
+            X_pred = self.scaler.transform([features])
+            pred = self.model.predict(X_pred)[0]
+            pred = max(0, pred)
+            
+            predictions.append(pred)
+            current_values.append(pred)
+        
+        return predictions
+
+
+class EnsembleForecaster(BaseForecaster):
+    """Ensemble of top performing models"""
+    name = "Ensemble (Hybrid)"
+    
+    def __init__(self, historical_data: List[Dict], models: List[BaseForecaster] = None, weights: List[float] = None):
+        super().__init__(historical_data)
+        self.models = models or []
+        self.weights = weights or [1.0] * len(self.models)
+    
+    def predict(self, periods: int) -> List[float]:
+        if not self.models:
+            return [0] * periods
+        
+        all_predictions = []
+        for model in self.models:
+            try:
+                preds = model.predict(periods)
+                all_predictions.append(preds)
+            except:
+                continue
+        
+        if not all_predictions:
+            return [0] * periods
+        
+        # Weighted average
+        total_weight = sum(self.weights[:len(all_predictions)])
+        predictions = []
+        
+        for i in range(periods):
+            weighted_sum = 0
+            for j, preds in enumerate(all_predictions):
+                weight = self.weights[j] if j < len(self.weights) else 1.0
+                weighted_sum += preds[i] * weight
+            predictions.append(weighted_sum / total_weight)
+        
+        return predictions
+
+
+class ModelOptimizer:
+    """
+    Automatically selects the best forecasting model for given data.
+    Tests multiple models and selects based on rolling accuracy.
+    """
+    
+    def __init__(self, historical_data: List[Dict], min_accuracy: float = 70.0):
+        self.data = historical_data
+        self.min_accuracy = min_accuracy
+        self.results = []
+        self.best_model = None
+        self.best_accuracy = 0
+    
+    def get_all_models(self) -> List[BaseForecaster]:
+        """Get all available forecasting models"""
+        models = [
+            SimpleMovingAverage(self.data, window=3),
+            SimpleMovingAverage(self.data, window=6),
+            WeightedMovingAverage(self.data, window=6),
+            ExponentialSmoothing(self.data, alpha=0.2, beta=0.1),
+            ExponentialSmoothing(self.data, alpha=0.4, beta=0.2),
+            SeasonalNaive(self.data),
+            LinearTrend(self.data),
+            RandomForestForecaster(self.data),
+        ]
+        
+        if HAS_XGBOOST:
+            models.append(XGBoostForecaster(self.data))
+        
+        return models
+    
+    def optimize(self) -> Dict:
+        """
+        Test all models and select the best one.
+        Returns optimization results including best model and all accuracies.
+        """
+        models = self.get_all_models()
+        self.results = []
+        
+        for model in models:
+            try:
+                backtest_result = model.backtest(test_periods=6)
+                accuracy = backtest_result.get("accuracy", 0)
+                
+                self.results.append({
+                    "model": model.name,
+                    "accuracy": accuracy,
+                    "mape": backtest_result.get("mape", 100),
+                    "samples": backtest_result.get("samples", 0),
+                    "forecaster": model
+                })
+                
+                if accuracy > self.best_accuracy:
+                    self.best_accuracy = accuracy
+                    self.best_model = model
+                    
+            except Exception as e:
+                self.results.append({
+                    "model": model.name,
+                    "accuracy": 0,
+                    "error": str(e)
+                })
+        
+        # Sort by accuracy
+        self.results.sort(key=lambda x: x.get("accuracy", 0), reverse=True)
+        
+        # If best accuracy is below minimum, create ensemble of top 3
+        if self.best_accuracy < self.min_accuracy and len(self.results) >= 3:
+            top_models = [r["forecaster"] for r in self.results[:3] if "forecaster" in r]
+            top_accuracies = [r["accuracy"] for r in self.results[:3]]
+            
+            if top_models:
+                # Weight by accuracy
+                weights = [a / sum(top_accuracies) for a in top_accuracies]
+                ensemble = EnsembleForecaster(self.data, models=top_models, weights=weights)
+                
+                # Test ensemble
+                ensemble_result = ensemble.backtest(test_periods=6)
+                ensemble_accuracy = ensemble_result.get("accuracy", 0)
+                
+                if ensemble_accuracy > self.best_accuracy:
+                    self.best_accuracy = ensemble_accuracy
+                    self.best_model = ensemble
+                    
+                    self.results.insert(0, {
+                        "model": f"Ensemble ({', '.join([m.name for m in top_models])})",
+                        "accuracy": ensemble_accuracy,
+                        "mape": ensemble_result.get("mape", 100),
+                        "samples": ensemble_result.get("samples", 0),
+                        "forecaster": ensemble
+                    })
+        
+        return {
+            "best_model": self.best_model.name if self.best_model else "None",
+            "best_accuracy": self.best_accuracy,
+            "meets_threshold": self.best_accuracy >= self.min_accuracy,
+            "all_results": [
+                {"model": r["model"], "accuracy": r.get("accuracy", 0), "mape": r.get("mape", 100)}
+                for r in self.results
+            ],
+            "recommendation": self._get_recommendation()
+        }
+    
+    def _get_recommendation(self) -> str:
+        """Get recommendation based on accuracy"""
+        if self.best_accuracy >= 90:
+            return "Excellent model fit. Predictions are highly reliable."
+        elif self.best_accuracy >= 80:
+            return "Good model fit. Predictions are reliable."
+        elif self.best_accuracy >= 70:
+            return "Acceptable model fit. Consider using predictions with business context."
+        elif self.best_accuracy >= 60:
+            return "Moderate accuracy. Data has high volatility. Use predictions as directional guidance."
+        else:
+            return "Low accuracy due to high data variability. Consider supplementing with business intelligence."
+    
+    def predict(self, periods: int) -> Tuple[List[float], Dict]:
+        """
+        Generate predictions using the best model.
+        Returns predictions and model info.
+        """
+        if not self.best_model:
+            self.optimize()
+        
+        if not self.best_model:
+            return [0] * periods, {"error": "No suitable model found"}
+        
+        predictions = self.best_model.predict(periods)
+        
+        return predictions, {
+            "model": self.best_model.name,
+            "accuracy": self.best_accuracy,
+            "meets_threshold": self.best_accuracy >= self.min_accuracy
+        }
+
+
+def optimize_dimension_models(
+    historical_data: List[Dict],
+    dimension_distributions: Dict[str, List[Dict]],
+    min_accuracy: float = 70.0
+) -> Dict:
+    """
+    Optimize models for each breakdown dimension separately.
+    Returns the best model for each dimension.
+    """
+    results = {}
+    
+    # Overall closures optimization
+    optimizer = ModelOptimizer(historical_data, min_accuracy)
+    overall_result = optimizer.optimize()
+    results["overall"] = {
+        "model": overall_result["best_model"],
+        "accuracy": overall_result["best_accuracy"],
+        "all_models": overall_result["all_results"][:5],  # Top 5
+        "recommendation": overall_result["recommendation"],
+        "forecaster": optimizer.best_model
+    }
+    
+    # For each dimension, we use the overall model but could optimize per-dimension
+    # if there was dimension-specific historical data
+    for dim_name in ["kva", "state", "dealer", "employee", "segment"]:
+        # Use the same overall model for now, but track separately
+        results[dim_name] = {
+            "model": overall_result["best_model"],
+            "accuracy": overall_result["best_accuracy"],
+            "inherits_from": "overall"
+        }
+    
+    return results
