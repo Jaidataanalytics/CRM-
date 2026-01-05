@@ -1422,6 +1422,138 @@ const Forecast = () => {
               </>
             )}
           </TabsContent>
+
+          {/* Saved Projections Tab */}
+          <TabsContent value="saved" className="space-y-6 mt-6">
+            {savedForecasts && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Archive className="h-5 w-5" />
+                      Saved Projections
+                    </CardTitle>
+                    <CardDescription>
+                      {savedForecasts.total} projection{savedForecasts.total !== 1 ? 's' : ''} saved
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {savedForecasts.forecasts?.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Archive className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No saved projections yet</p>
+                        <p className="text-sm">Generate a forecast and click "Save Projection" to save it here</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {savedForecasts.forecasts?.map((saved, idx) => (
+                          <Collapsible
+                            key={idx}
+                            open={expandedSaved === idx}
+                            onOpenChange={() => setExpandedSaved(expandedSaved === idx ? null : idx)}
+                          >
+                            <div className="border rounded-lg overflow-hidden">
+                              <CollapsibleTrigger asChild>
+                                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 cursor-pointer hover:from-gray-100 hover:to-slate-100">
+                                  <div className="flex items-center gap-4">
+                                    <div>
+                                      <p className="font-medium">Projection #{saved.index}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        Saved {new Date(saved.saved_at).toLocaleString()} by {saved.saved_by}
+                                      </p>
+                                    </div>
+                                    <Badge variant="secondary">{saved.horizon_months} months</Badge>
+                                    {saved.business_adjustments?.applied && (
+                                      <Badge className="bg-green-600">{saved.business_adjustments.total_adjustment}</Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-4">
+                                    <div className="text-right">
+                                      <p className="font-bold text-primary">
+                                        {saved.predictions?.[0]?.predicted_enquiries?.toLocaleString() || 0}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">First month leads</p>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm('Are you sure you want to delete this projection?')) {
+                                          deleteSavedForecast(saved.index);
+                                        }
+                                      }}
+                                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                      data-testid={`delete-projection-${saved.index}`}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                    {expandedSaved === idx ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                                  </div>
+                                </div>
+                              </CollapsibleTrigger>
+                              
+                              <CollapsibleContent>
+                                <div className="p-4 border-t bg-white space-y-4">
+                                  {/* Summary */}
+                                  <div className="p-3 bg-muted/50 rounded-lg">
+                                    <p className="text-sm">{saved.summary}</p>
+                                  </div>
+                                  
+                                  {/* Business Adjustments */}
+                                  {saved.business_adjustments?.applied && (
+                                    <div className="flex flex-wrap gap-2">
+                                      <span className="text-sm text-muted-foreground">Adjustments:</span>
+                                      {saved.business_adjustments.details?.map((detail, didx) => (
+                                        <Badge key={didx} variant="outline">{detail}</Badge>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Monthly Predictions Table */}
+                                  <div className="border rounded-lg overflow-hidden">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow>
+                                          <TableHead>Month</TableHead>
+                                          <TableHead className="text-right">Predicted Leads</TableHead>
+                                          <TableHead className="text-right">Predicted Closures</TableHead>
+                                          <TableHead className="text-right">Total KVA</TableHead>
+                                          <TableHead className="text-right">Conv. Rate</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {saved.predictions?.map((pred, pidx) => (
+                                          <TableRow key={pidx}>
+                                            <TableCell className="font-medium">{pred.month}</TableCell>
+                                            <TableCell className="text-right">{pred.predicted_enquiries?.toLocaleString()}</TableCell>
+                                            <TableCell className="text-right text-green-600 font-medium">{pred.predicted_closures?.toLocaleString()}</TableCell>
+                                            <TableCell className="text-right">{pred.predicted_total_kva?.toLocaleString()}</TableCell>
+                                            <TableCell className="text-right">{pred.overall_conversion_rate}%</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                  
+                                  {/* Metadata */}
+                                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2 border-t">
+                                    <span>Model: {saved.model_info?.type}</span>
+                                    <span>Training: {saved.model_info?.training_months} months</span>
+                                    <span>Generated: {new Date(saved.generated_at).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </CollapsibleContent>
+                            </div>
+                          </Collapsible>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
         </Tabs>
       )}
     </div>
