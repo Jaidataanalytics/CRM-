@@ -1254,7 +1254,7 @@ async def compare_forecast_with_actuals(
         
         predicted_leads = pred.get("predicted_enquiries", 0)
         predicted_closures = pred.get("master_closures", pred.get("predicted_closures", 0))
-        predicted_kva = pred.get("predicted_kva", 0)
+        predicted_kva = pred.get("predicted_total_kva", pred.get("predicted_kva", 0))
         
         actual_leads = actual_data.get("total_leads", 0)
         actual_closures = actual_data.get("won", 0)
