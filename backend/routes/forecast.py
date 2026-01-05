@@ -98,6 +98,64 @@ def calculate_accuracy_metrics(actual: List[float], predicted: List[float]) -> D
     }
 
 
+async def calculate_dimension_accuracy(db, dimension_name: str, dimension_dist: List[Dict], 
+                                        total_dim_leads: int, historical_data: List[Dict]) -> Dict:
+    """
+    Calculate historical accuracy for a breakdown dimension.
+    Uses the last 6-12 months to compare predicted vs actual closures.
+    """
+    if not dimension_dist or total_dim_leads == 0:
+        return {"dimension": dimension_name, "accuracy": 0, "error": "No data"}
+    
+    # Calculate the weighted average conversion rate for this dimension
+    total_weighted_conv = sum(d.get("won", 0) for d in dimension_dist)
+    total_leads_dim = sum(d.get("count", 0) for d in dimension_dist)
+    dim_conversion_rate = total_weighted_conv / total_leads_dim if total_leads_dim > 0 else 0
+    
+    # Use historical monthly data to calculate accuracy
+    # For each historical month, predict closures using dimension's conversion rate
+    # Compare with actual closures
+    
+    actual_closures = []
+    predicted_closures = []
+    
+    for month_data in historical_data[-12:]:  # Use last 12 months
+        actual_won = month_data.get("won", 0)
+        actual_enquiries = month_data.get("total_enquiries", 0)
+        
+        # Predict closures using this dimension's conversion rate
+        predicted_won = int(actual_enquiries * dim_conversion_rate)
+        
+        if actual_won > 0:  # Only include months with actual closures
+            actual_closures.append(actual_won)
+            predicted_closures.append(predicted_won)
+    
+    if not actual_closures:
+        return {"dimension": dimension_name, "accuracy": 0, "error": "No closure data"}
+    
+    # Calculate MAPE (Mean Absolute Percentage Error)
+    mape_values = []
+    for actual, predicted in zip(actual_closures, predicted_closures):
+        if actual > 0:
+            mape_values.append(abs(actual - predicted) / actual * 100)
+    
+    if not mape_values:
+        return {"dimension": dimension_name, "accuracy": 0, "error": "Cannot calculate error"}
+    
+    mape = sum(mape_values) / len(mape_values)
+    accuracy = max(0, min(100, 100 - mape))
+    
+    return {
+        "dimension": dimension_name,
+        "accuracy": round(accuracy, 1),
+        "mape": round(mape, 1),
+        "conversion_rate": round(dim_conversion_rate * 100, 2),
+        "sample_months": len(actual_closures),
+        "total_historical_closures": sum(actual_closures),
+        "total_predicted_closures": sum(predicted_closures)
+    }
+
+
 class AdaptiveSeasonalForecaster:
     """Adaptive forecasting optimized for high-variability, growth-oriented data"""
     
