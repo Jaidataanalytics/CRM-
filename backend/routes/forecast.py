@@ -897,7 +897,7 @@ async def save_forecast(
     # Create projection document
     projection = {
         "saved_at": datetime.now(timezone.utc).isoformat(),
-        "saved_by": current_user.username,
+        "saved_by": current_user.name or current_user.email,
         "horizon_months": forecast_data.get("horizon_months", 3),
         "filters": forecast_data.get("filters", {}),
         "business_adjustments": forecast_data.get("business_adjustments", {}),
