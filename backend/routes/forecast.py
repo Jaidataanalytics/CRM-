@@ -1217,8 +1217,11 @@ async def compare_forecast_with_actuals(
                 month_date = parse(f"1 {month_str}")
                 year = month_date.year
                 month_num = month_date.month
-            month_num = month_date.month
             month_key = f"{year}-{month_num:02d}"
+            
+            # Create display month string for UI
+            import calendar
+            display_month = f"{calendar.month_name[month_num]} {year}"
             
             # Calculate start and end dates
             start_date = f"{year}-{month_num:02d}-01"
