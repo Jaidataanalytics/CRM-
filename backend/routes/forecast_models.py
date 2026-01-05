@@ -846,11 +846,11 @@ class ModelOptimizer:
         
         predictions = self.best_model.predict(periods)
         
-        return predictions, {
+        return convert_numpy_types(predictions), convert_numpy_types({
             "model": self.best_model.name,
             "accuracy": self.best_accuracy,
             "meets_threshold": self.best_accuracy >= self.min_accuracy
-        }
+        })
 
 
 class DimensionModelOptimizer:
