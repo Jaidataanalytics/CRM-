@@ -95,6 +95,13 @@ class Lead(BaseModel):
     transporter_details: Optional[str] = None  # Transporter info
     dispatch_status_history: Optional[List[dict]] = None  # Track status changes with reasons
     
+    # Closure questions fields (for lost leads)
+    needs_closure_questions: Optional[bool] = None  # Flag to show closure questions modal
+    closure_type: Optional[str] = None  # "won" or "lost"
+    closure_answers: Optional[List[dict]] = None  # [{question_id, question, answer}]
+    closure_answers_submitted_at: Optional[str] = None  # When answers were submitted
+    closure_answers_submitted_by: Optional[str] = None  # Who submitted
+    
     # System fields
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
