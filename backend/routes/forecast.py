@@ -196,8 +196,7 @@ class AdaptiveSeasonalForecaster:
     
     def _predict_for_month(self, target_month: int, metric: str = 'enquiries') -> Tuple[float, str]:
         """
-        Predict using weighted average of all same-month historical values.
-        Most recent years get higher weight.
+        Predict using heavily weighted recent same-month values.
         Returns (prediction, method_used)
         """
         historical = self.by_month.get(target_month, [])
@@ -212,19 +211,20 @@ class AdaptiveSeasonalForecaster:
             return values[0], "single_year"
         
         if len(values) == 2:
-            # Two years: 70% recent, 30% older
-            return 0.7 * values[-1] + 0.3 * values[-2], "weighted_2yr"
+            # Two years: blend with heavy recency bias
+            return 0.65 * values[-1] + 0.35 * values[-2], "blend_2yr"
         
         if len(values) == 3:
-            # Three years: 50% most recent, 30% previous, 20% oldest
-            return 0.50 * values[-1] + 0.30 * values[-2] + 0.20 * values[-3], "weighted_3yr"
+            # Three years: Focus on recent two
+            return 0.55 * values[-1] + 0.30 * values[-2] + 0.15 * values[-3], "blend_3yr"
         
-        # 4+ years: Exponential decay weighting
-        weights = [1.8 ** i for i in range(len(values))]  # More aggressive recency
-        weighted_sum = sum(v * w for v, w in zip(values, weights))
+        # 4+ years: Use most recent 3 years only with decay weighting
+        recent_3 = values[-3:]
+        weights = [1.0, 1.5, 2.2]  # Oldest to newest
+        weighted_sum = sum(v * w for v, w in zip(recent_3, weights))
         prediction = weighted_sum / sum(weights)
         
-        return prediction, "weighted_exp"
+        return prediction, "blend_recent3"
     
     def _apply_trend_adjustment(self, base_value: float, metric: str, decay: float = 0.95) -> float:
         """Apply recent momentum adjustment"""
