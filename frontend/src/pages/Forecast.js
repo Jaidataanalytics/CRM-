@@ -89,13 +89,13 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
   const categoryTotals = Object.entries(categories).map(([name, items]) => ({
     name,
     leads: items.reduce((sum, i) => sum + (i.predicted_leads || 0), 0),
-    kva: items.reduce((sum, i) => sum + (i.predicted_kva_value || 0), 0)
+    closures: items.reduce((sum, i) => sum + (i.predicted_closures_category || 0), 0)
   }));
 
   const chartData = {
     labels: categoryTotals.map(c => c.name),
     datasets: [{
-      data: categoryTotals.map(c => c.leads),
+      data: categoryTotals.map(c => c.closures),
       backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'],
       borderWidth: 0
     }]
@@ -119,8 +119,8 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
           {categoryTotals.map((cat, idx) => (
             <div key={cat.name} className="p-3 rounded-lg border" style={{ borderLeftColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'][idx], borderLeftWidth: 4 }}>
               <p className="text-xs text-muted-foreground">{cat.name}</p>
-              <p className="text-lg font-bold">{cat.leads.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">{cat.kva.toLocaleString()} KVA</p>
+              <p className="text-lg font-bold text-green-600">{cat.closures.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{cat.leads.toLocaleString()} leads</p>
             </div>
           ))}
         </div>
@@ -133,8 +133,8 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
                 <TableRow>
                   <TableHead>KVA</TableHead>
                   <TableHead className="text-right">Leads</TableHead>
-                  <TableHead className="text-right">Total KVA</TableHead>
-                  <TableHead className="text-right">%</TableHead>
+                  <TableHead className="text-right">Closures</TableHead>
+                  <TableHead className="text-right">Conv. %</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -142,8 +142,8 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
                   <TableRow key={idx} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{item.kva} KVA</TableCell>
                     <TableCell className="text-right">{item.predicted_leads?.toLocaleString() || 0}</TableCell>
-                    <TableCell className="text-right">{item.predicted_kva_value?.toLocaleString() || 0}</TableCell>
-                    <TableCell className="text-right">{item.percentage?.toFixed(1) || 0}%</TableCell>
+                    <TableCell className="text-right text-green-600 font-medium">{item.predicted_closures_category?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="text-right">{item.conversion_rate?.toFixed(1) || 0}%</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -164,7 +164,7 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
                   },
                   tooltip: {
                     callbacks: {
-                      label: (context) => `${context.label}: ${context.raw.toLocaleString()} leads`
+                      label: (context) => `${context.label}: ${context.raw.toLocaleString()} closures`
                     }
                   }
                 }
@@ -181,12 +181,12 @@ const KVABreakdownSection = ({ data, expanded, onToggle }) => {
 const GenericBreakdownSection = ({ data, title, icon: Icon, iconColor, bgGradient, fieldName, expanded, onToggle }) => {
   if (!data || data.length === 0) return null;
   
-  const totalLeads = data.reduce((sum, d) => sum + (d.predicted_leads || 0), 0);
+  const totalClosures = data.reduce((sum, d) => sum + (d.predicted_closures_category || 0), 0);
   
   const chartData = {
     labels: data.slice(0, 8).map(d => d[fieldName] || 'Unknown'),
     datasets: [{
-      data: data.slice(0, 8).map(d => d.predicted_leads || 0),
+      data: data.slice(0, 8).map(d => d.predicted_closures_category || 0),
       backgroundColor: COLORS.slice(0, 8),
       borderWidth: 0
     }]
@@ -200,6 +200,7 @@ const GenericBreakdownSection = ({ data, title, icon: Icon, iconColor, bgGradien
             <Icon className={`h-5 w-5 ${iconColor}`} />
             <span className="font-medium">{title}</span>
             <Badge variant="secondary" className="ml-2">{data.length} items</Badge>
+            <Badge className="ml-1 bg-green-600">{totalClosures.toLocaleString()} closures</Badge>
           </div>
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Button>
@@ -212,16 +213,18 @@ const GenericBreakdownSection = ({ data, title, icon: Icon, iconColor, bgGradien
               <TableHeader className="sticky top-0 bg-white">
                 <TableRow>
                   <TableHead>{title.replace(' Breakdown', '')}</TableHead>
-                  <TableHead className="text-right">Predicted Leads</TableHead>
-                  <TableHead className="text-right">%</TableHead>
+                  <TableHead className="text-right">Leads</TableHead>
+                  <TableHead className="text-right">Closures</TableHead>
+                  <TableHead className="text-right">Conv. %</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.map((item, idx) => (
                   <TableRow key={idx} className="hover:bg-muted/50">
-                    <TableCell className="font-medium truncate max-w-[200px]">{item[fieldName] || 'Unknown'}</TableCell>
+                    <TableCell className="font-medium truncate max-w-[150px]">{item[fieldName] || 'Unknown'}</TableCell>
                     <TableCell className="text-right">{(item.predicted_leads || 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-right">{(item.percentage || 0).toFixed(1)}%</TableCell>
+                    <TableCell className="text-right text-green-600 font-medium">{(item.predicted_closures_category || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-right">{(item.conversion_rate || 0).toFixed(1)}%</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -239,6 +242,11 @@ const GenericBreakdownSection = ({ data, title, icon: Icon, iconColor, bgGradien
                   legend: {
                     position: 'right',
                     labels: { boxWidth: 10, font: { size: 10 } }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => `${context.label}: ${context.raw.toLocaleString()} closures`
+                    }
                   }
                 }
               }}
