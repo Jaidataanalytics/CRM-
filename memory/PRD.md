@@ -24,6 +24,8 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
   - Dealer-wise (20 dealers) with predicted closures & conversion rates
   - Employee-wise with predicted closures & conversion rates
   - Segment-wise (22 segments) with predicted closures & conversion rates
+- **Consistent Closure Totals** (NEW): All breakdowns now show the SAME total closures
+- **Source of Truth Selection** (NEW): System automatically selects the most accurate dimension
 - **Business Context Adjustments**:
   - Marketing Effort (same/increasing/decreasing with intensity slider)
   - Promotional Campaigns (none/minor +10%/major +25%)
@@ -31,7 +33,7 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
   - Expected Demand (low -15%/normal/high +20%)
 - **Split Testing/Backtesting**: Rolling window validation
 - **Accuracy Metrics**: MAPE, WMAPE, MAE, RMSE, R², Direction Accuracy
-- **Save & View Projections**: Save forecasts for future reference (NEW Jan 5, 2026)
+- **Save & View Projections**: Save forecasts for future reference
 
 ### 4. User Management
 - Role-based access (Admin, Manager, Employee)
@@ -49,38 +51,64 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - `POST /api/forecast` - Generate forecast with all breakdowns including closures
 - `POST /api/forecast/backtest` - Run rolling window accuracy test
 - `GET /api/forecast/factors` - Get all forecast factors and data quality
-- `POST /api/forecast/save` - Save a generated forecast (NEW)
-- `GET /api/forecast/saved` - Get list of saved forecasts (NEW)
-- `DELETE /api/forecast/saved/{index}` - Delete a saved forecast (NEW)
+- `POST /api/forecast/save` - Save a generated forecast
+- `GET /api/forecast/saved` - Get list of saved forecasts
+- `DELETE /api/forecast/saved/{index}` - Delete a saved forecast
 
-### Forecast Response Structure
-Each breakdown item now includes:
-- `predicted_leads` - Number of predicted leads
-- `predicted_closures_category` - Category-specific predicted closures
-- `conversion_rate` - Historical conversion rate for that category (%)
+### Forecast Response Structure (Updated)
+```json
+{
+  "success": true,
+  "source_of_truth": {
+    "dimension": "State",
+    "accuracy": 53.4,
+    "conversion_rate": 24.8,
+    "explanation": "Predictions based on: State Breakdown (53.4% accuracy)"
+  },
+  "dimension_accuracies": [
+    {"dimension": "KVA", "accuracy": 50.8},
+    {"dimension": "State", "accuracy": 53.4},
+    {"dimension": "Dealer", "accuracy": 53.4},
+    {"dimension": "Employee", "accuracy": 0},
+    {"dimension": "Segment", "accuracy": 53.4}
+  ],
+  "forecast": {
+    "predictions": [
+      {
+        "month": "2026-02",
+        "predicted_enquiries": 360,
+        "predicted_closures": 89,
+        "breakdown": {
+          "by_kva": [...],  // Sum of closures = 89
+          "by_state": [...],  // Sum of closures = 89
+          "by_dealer": [...],  // Sum of closures = 89
+          "by_employee": [...],  // Sum of closures = 89
+          "by_segment": [...]  // Sum of closures = 89
+        }
+      }
+    ]
+  }
+}
+```
 
 ## Completed Work (Jan 5, 2026)
 
-### This Session - COMPLETED
-1. ✅ Predicted closures added to all breakdown tables (KVA, State, Dealer, Employee, Segment)
-2. ✅ Conversion rates displayed in all breakdown tables
-3. ✅ "Save Projection" button added (green, appears after forecast generation)
-4. ✅ "Saved Projections" tab added to view saved forecasts
-5. ✅ Backend endpoints for saving/listing/deleting forecasts
-6. ✅ All tests passed (15/15 backend tests)
+### Session 2 - COMPLETED
+1. ✅ **Closure Consistency Fix**: All breakdown totals (KVA, State, Dealer, Employee, Segment) now equal monthly total
+2. ✅ **Dimension Accuracy Calculation**: System calculates historical accuracy for each dimension
+3. ✅ **Source of Truth Selection**: Automatically selects dimension with highest accuracy
+4. ✅ **Master Closure Distribution**: Uses winning dimension's conversion rate for consistent predictions
+5. ✅ **UI: Source of Truth Card**: Shows winning dimension, accuracy, and comparison of all dimensions
+6. ✅ All tests passed (14/14 backend, frontend verified)
 
-### Previously Completed
-1. ✅ KVA-wise breakdown for forecasting
-2. ✅ State-wise breakdown
-3. ✅ Dealer-wise breakdown
-4. ✅ Employee-wise breakdown
-5. ✅ Segment-wise breakdown
-6. ✅ Business Context Adjustments
-7. ✅ Split test/backtest with accuracy metrics
+### Session 1 - COMPLETED
+1. ✅ Predicted closures added to all breakdown tables
+2. ✅ Conversion rates displayed in all breakdown tables
+3. ✅ "Save Projection" button added
+4. ✅ "Saved Projections" tab added
 
 ## Upcoming Tasks
-- **View Saved Projections Detail** (P1): Expand saved projection to show detailed breakdowns
-- **Compare Projections** (P2): Compare two saved forecasts side by side
+- **Compare Projections (P1)**: Compare two saved forecasts side by side
 
 ## Future/Backlog Tasks
 - Detailed audit logs (P2 - postponed by user)
