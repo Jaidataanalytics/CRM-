@@ -12,7 +12,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import {
   Table,
@@ -27,11 +26,17 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { 
   Sparkles, TrendingUp, AlertCircle, Lightbulb, Calendar, 
-  ChevronDown, ChevronRight, MapPin, Building, Users, PieChart,
-  BarChart3
+  ChevronDown, ChevronRight, Zap, BarChart3, Target,
+  CheckCircle2, XCircle, Info, FlaskConical, FileText
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -46,7 +51,7 @@ import {
   Legend,
   Filler
 } from 'chart.js';
-import { Line, Bar, Pie } from 'react-chartjs-2';
+import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
@@ -65,17 +70,32 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const COLORS = [
   '#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', 
-  '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#84cc16'
+  '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+  '#3b82f6', '#a855f7', '#10b981', '#f43f5e', '#0ea5e9'
 ];
 
-const BreakdownSection = ({ title, icon: Icon, data, expanded, onToggle }) => {
+const KVABreakdownSection = ({ data, expanded, onToggle }) => {
   if (!data || data.length === 0) return null;
   
+  // Group KVA into categories for better visualization
+  const categories = {
+    'Small (5-15 KVA)': data.filter(d => d.kva <= 15),
+    'Medium (16-50 KVA)': data.filter(d => d.kva > 15 && d.kva <= 50),
+    'Large (51-125 KVA)': data.filter(d => d.kva > 50 && d.kva <= 125),
+    'Industrial (126+ KVA)': data.filter(d => d.kva > 125)
+  };
+
+  const categoryTotals = Object.entries(categories).map(([name, items]) => ({
+    name,
+    leads: items.reduce((sum, i) => sum + (i.predicted_leads || 0), 0),
+    kva: items.reduce((sum, i) => sum + (i.predicted_kva_value || 0), 0)
+  }));
+
   const chartData = {
-    labels: data.slice(0, 10).map(d => d.name?.substring(0, 15) || 'Unknown'),
+    labels: categoryTotals.map(c => c.name),
     datasets: [{
-      data: data.slice(0, 10).map(d => d.predicted || 0),
-      backgroundColor: COLORS,
+      data: categoryTotals.map(c => c.leads),
+      backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'],
       borderWidth: 0
     }]
   };
@@ -83,46 +103,55 @@ const BreakdownSection = ({ title, icon: Icon, data, expanded, onToggle }) => {
   return (
     <Collapsible open={expanded} onOpenChange={onToggle}>
       <CollapsibleTrigger asChild>
-        <Button variant="ghost" className="w-full justify-between p-4 h-auto">
+        <Button variant="ghost" className="w-full justify-between p-4 h-auto bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100">
           <div className="flex items-center gap-2">
-            <Icon className="h-5 w-5" />
-            <span className="font-medium">{title}</span>
-            <Badge variant="secondary" className="ml-2">{data.length} items</Badge>
+            <Zap className="h-5 w-5 text-amber-600" />
+            <span className="font-medium">KVA Breakdown</span>
+            <Badge variant="secondary" className="ml-2 bg-amber-100">{data.length} products</Badge>
           </div>
           {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent className="px-4 pb-4">
+        {/* Category Summary */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 mt-4">
+          {categoryTotals.map((cat, idx) => (
+            <div key={cat.name} className="p-3 rounded-lg border" style={{ borderLeftColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'][idx], borderLeftWidth: 4 }}>
+              <p className="text-xs text-muted-foreground">{cat.name}</p>
+              <p className="text-lg font-bold">{cat.leads.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">{cat.kva.toLocaleString()} KVA</p>
+            </div>
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Table */}
-          <div className="border rounded-lg overflow-hidden">
+          {/* Detailed Table */}
+          <div className="border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-white">
                 <TableRow>
-                  <TableHead>{title.replace('By ', '')}</TableHead>
-                  <TableHead className="text-right">Predicted</TableHead>
+                  <TableHead>KVA</TableHead>
+                  <TableHead className="text-right">Leads</TableHead>
+                  <TableHead className="text-right">Total KVA</TableHead>
                   <TableHead className="text-right">%</TableHead>
-                  <TableHead className="w-24">Share</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.map((item, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-medium">{item.name || 'Unknown'}</TableCell>
-                    <TableCell className="text-right">{typeof item.predicted === 'number' ? item.predicted.toLocaleString() : 0}</TableCell>
-                    <TableCell className="text-right">{typeof item.percentage === 'number' ? item.percentage.toFixed(1) : '0.0'}%</TableCell>
-                    <TableCell>
-                      <Progress value={typeof item.percentage === 'number' ? item.percentage : 0} className="h-2" />
-                    </TableCell>
+                  <TableRow key={idx} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">{item.kva} KVA</TableCell>
+                    <TableCell className="text-right">{item.predicted_leads?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="text-right">{item.predicted_kva_value?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="text-right">{item.percentage?.toFixed(1) || 0}%</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
           
-          {/* Chart */}
+          {/* Category Chart */}
           <div className="h-64 flex items-center justify-center">
-            <Pie 
+            <Doughnut 
               data={chartData}
               options={{
                 responsive: true,
@@ -130,7 +159,12 @@ const BreakdownSection = ({ title, icon: Icon, data, expanded, onToggle }) => {
                 plugins: {
                   legend: {
                     position: 'right',
-                    labels: { boxWidth: 12, font: { size: 10 } }
+                    labels: { boxWidth: 12, font: { size: 11 } }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: (context) => `${context.label}: ${context.raw.toLocaleString()} leads`
+                    }
                   }
                 }
               }}
@@ -142,20 +176,72 @@ const BreakdownSection = ({ title, icon: Icon, data, expanded, onToggle }) => {
   );
 };
 
+const AccuracyMetricCard = ({ title, metrics, icon: Icon, color }) => {
+  if (!metrics) return null;
+  
+  const getGradeColor = (accuracy) => {
+    if (accuracy >= 90) return 'text-green-600';
+    if (accuracy >= 75) return 'text-blue-600';
+    if (accuracy >= 60) return 'text-amber-600';
+    return 'text-red-600';
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className={`pb-2 ${color}`}>
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Icon className="h-4 w-4" />
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <div className="text-3xl font-bold mb-2">
+          <span className={getGradeColor(metrics.accuracy_percentage)}>
+            {metrics.accuracy_percentage?.toFixed(1)}%
+          </span>
+        </div>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">MAPE</span>
+            <span className="font-medium">{metrics.mape?.toFixed(1)}%</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">MAE</span>
+            <span className="font-medium">{metrics.mae?.toFixed(0)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">R²</span>
+            <span className="font-medium">{metrics.r_squared?.toFixed(3)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Direction</span>
+            <span className="font-medium">{metrics.direction_accuracy?.toFixed(0)}%</span>
+          </div>
+        </div>
+        {metrics.interpretation && (
+          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+            {metrics.interpretation.mape}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 const Forecast = () => {
   const [horizon, setHorizon] = useState('3');
   const [state, setState] = useState('');
   const [dealer, setDealer] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingBacktest, setLoadingBacktest] = useState(false);
+  const [loadingFactors, setLoadingFactors] = useState(false);
   const [forecast, setForecast] = useState(null);
+  const [backtest, setBacktest] = useState(null);
+  const [factors, setFactors] = useState(null);
   const [error, setError] = useState(null);
   const [expandedMonth, setExpandedMonth] = useState(null);
-  const [expandedSections, setExpandedSections] = useState({
-    state: true,
-    dealer: false,
-    segment: false,
-    employee: false
-  });
+  const [expandedKva, setExpandedKva] = useState({});
+  const [activeTab, setActiveTab] = useState('forecast');
 
   const generateForecast = async () => {
     setLoading(true);
@@ -184,14 +270,49 @@ const Forecast = () => {
     }
   };
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
+  const runBacktest = async () => {
+    setLoadingBacktest(true);
+    try {
+      const res = await axios.post(`${API}/forecast/backtest`, {
+        window_size: 6,
+        test_periods: 12
+      }, { withCredentials: true });
+      
+      if (res.data.success) {
+        setBacktest(res.data);
+        setActiveTab('backtest');
+        toast.success('Backtest completed');
+      } else {
+        toast.error(res.data.message || 'Backtest failed');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Backtest failed');
+    } finally {
+      setLoadingBacktest(false);
+    }
   };
 
-  // Chart data for predictions - Bar chart style (better visibility)
+  const loadFactors = async () => {
+    setLoadingFactors(true);
+    try {
+      const res = await axios.get(`${API}/forecast/factors`, { withCredentials: true });
+      if (res.data.success) {
+        setFactors(res.data);
+        setActiveTab('factors');
+        toast.success('Factors loaded');
+      }
+    } catch (err) {
+      toast.error('Failed to load factors');
+    } finally {
+      setLoadingFactors(false);
+    }
+  };
+
+  const toggleKvaExpanded = (idx) => {
+    setExpandedKva(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
+
+  // Chart data for predictions
   const predictionChartData = forecast?.forecast?.predictions ? {
     labels: forecast.forecast.predictions.map(p => p.month),
     datasets: [
@@ -214,6 +335,43 @@ const Forecast = () => {
     ]
   } : null;
 
+  // KVA trend chart
+  const kvaChartData = forecast?.forecast?.predictions ? {
+    labels: forecast.forecast.predictions.map(p => p.month),
+    datasets: [{
+      label: 'Predicted Total KVA',
+      data: forecast.forecast.predictions.map(p => p.predicted_total_kva || 0),
+      borderColor: '#f59e0b',
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      fill: true,
+      tension: 0.4
+    }]
+  } : null;
+
+  // Backtest accuracy chart
+  const backtestChartData = backtest?.detailed_results ? {
+    labels: backtest.detailed_results.map(r => r.test_month),
+    datasets: [
+      {
+        label: 'Actual Enquiries',
+        data: backtest.detailed_results.map(r => r.actual.enquiries),
+        borderColor: '#22c55e',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        tension: 0.3
+      },
+      {
+        label: 'Predicted Enquiries',
+        data: backtest.detailed_results.map(r => r.predicted.enquiries),
+        borderColor: '#6366f1',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        tension: 0.3
+      }
+    ]
+  } : null;
+
   return (
     <div className="space-y-6">
       <div>
@@ -221,7 +379,7 @@ const Forecast = () => {
           <Sparkles className="h-8 w-8 text-primary" />
           AI-Powered Forecast
         </h1>
-        <p className="text-muted-foreground mt-1">Generate intelligent predictions with detailed breakdown</p>
+        <p className="text-muted-foreground mt-1">Generate intelligent predictions with KVA breakdown and accuracy testing</p>
       </div>
 
       {/* Configuration */}
@@ -237,7 +395,7 @@ const Forecast = () => {
             <div className="space-y-2">
               <Label>Forecast Horizon</Label>
               <Select value={horizon} onValueChange={setHorizon}>
-                <SelectTrigger className="w-40">
+                <SelectTrigger className="w-40" data-testid="horizon-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -254,6 +412,7 @@ const Forecast = () => {
                 value={state}
                 onChange={(e) => setState(e.target.value)}
                 className="w-48"
+                data-testid="state-filter"
               />
             </div>
             <div className="space-y-2">
@@ -263,29 +422,33 @@ const Forecast = () => {
                 value={dealer}
                 onChange={(e) => setDealer(e.target.value)}
                 className="w-48"
+                data-testid="dealer-filter"
               />
             </div>
-            <Button onClick={generateForecast} disabled={loading} className="gap-2">
-              {loading ? (
-                <>Generating...</>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  Generate Forecast
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={generateForecast} disabled={loading} className="gap-2" data-testid="generate-forecast-btn">
+                {loading ? 'Generating...' : <><Sparkles className="h-4 w-4" />Generate Forecast</>}
+              </Button>
+              <Button variant="outline" onClick={runBacktest} disabled={loadingBacktest} className="gap-2" data-testid="run-backtest-btn">
+                {loadingBacktest ? 'Testing...' : <><FlaskConical className="h-4 w-4" />Backtest</>}
+              </Button>
+              <Button variant="outline" onClick={loadFactors} disabled={loadingFactors} className="gap-2" data-testid="view-factors-btn">
+                {loadingFactors ? 'Loading...' : <><FileText className="h-4 w-4" />Factors</>}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Loading */}
-      {loading && (
+      {(loading || loadingBacktest) && (
         <Card>
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <p className="text-muted-foreground">AI is analyzing data and generating detailed forecast...</p>
+              <p className="text-muted-foreground">
+                {loading ? 'AI is analyzing data and generating detailed forecast...' : 'Running rolling window backtest...'}
+              </p>
               <p className="text-xs text-muted-foreground">This may take 30-60 seconds</p>
             </div>
           </CardContent>
@@ -304,181 +467,577 @@ const Forecast = () => {
         </Card>
       )}
 
-      {/* Forecast Results */}
-      {forecast?.success && forecast.forecast && (
-        <div className="space-y-6">
-          {/* Summary */}
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Forecast Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{forecast.forecast.summary}</p>
-              
-              {forecast.forecast.factors && (
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">Key Factors:</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {forecast.forecast.factors.map((factor, idx) => (
-                      <Badge key={idx} variant="secondary">{factor}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+      {/* Results Tabs */}
+      {(forecast || backtest || factors) && (
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
+              <Sparkles className="h-4 w-4 mr-2" />Forecast
+            </TabsTrigger>
+            <TabsTrigger value="backtest" disabled={!backtest} data-testid="tab-backtest">
+              <FlaskConical className="h-4 w-4 mr-2" />Backtest Results
+            </TabsTrigger>
+            <TabsTrigger value="factors" disabled={!factors} data-testid="tab-factors">
+              <FileText className="h-4 w-4 mr-2" />Factors
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Prediction Chart */}
-          {predictionChartData && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Prediction Trend</CardTitle>
-              </CardHeader>
-              <CardContent className="h-80">
-                <Bar 
-                  data={predictionChartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { 
-                        position: 'top',
-                        labels: { font: { size: 12 } }
-                      },
-                      tooltip: {
-                        callbacks: {
-                          label: (context) => `${context.dataset.label}: ${context.raw.toLocaleString()}`
-                        }
-                      }
-                    },
-                    scales: {
-                      y: { 
-                        beginAtZero: true,
-                        ticks: {
-                          callback: (value) => value.toLocaleString()
-                        }
-                      },
-                      x: {
-                        grid: { display: false }
-                      }
-                    }
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Detailed Monthly Predictions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Detailed Monthly Breakdown
-              </CardTitle>
-              <CardDescription>Click on a month to see the complete breakdown</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {forecast.forecast.predictions?.map((prediction, idx) => (
-                <Collapsible 
-                  key={idx} 
-                  open={expandedMonth === idx}
-                  onOpenChange={() => setExpandedMonth(expandedMonth === idx ? null : idx)}
-                >
-                  <CollapsibleTrigger asChild>
-                    <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="text-lg font-bold">{prediction.month}</div>
-                        <Badge variant={
-                          prediction.confidence === 'high' ? 'default' :
-                          prediction.confidence === 'medium' ? 'secondary' : 'outline'
-                        }>
-                          {prediction.confidence} confidence
-                        </Badge>
+          {/* Forecast Tab */}
+          <TabsContent value="forecast" className="space-y-6 mt-6">
+            {forecast?.success && forecast.forecast && (
+              <>
+                {/* Trend Analysis */}
+                {forecast.forecast.trend_analysis && (
+                  <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Trend Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Volume Trend</p>
+                          <p className="font-medium">{forecast.forecast.trend_analysis.volume_trend}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Conversion Trend</p>
+                          <p className="font-medium">{forecast.forecast.trend_analysis.conversion_trend}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">KVA Mix Trend</p>
+                          <p className="font-medium">{forecast.forecast.trend_analysis.kva_mix_trend}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Seasonal Patterns</p>
+                          <p className="font-medium">{forecast.forecast.trend_analysis.seasonal_patterns}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-primary">{prediction.predicted_enquiries?.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">Predicted Leads</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Summary */}
+                <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Info className="h-5 w-5" />
+                      Forecast Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">{forecast.forecast.summary}</p>
+                    
+                    {forecast.forecast.factors_considered && (
+                      <div className="mt-4">
+                        <h4 className="font-medium mb-2">Factors Considered:</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {forecast.forecast.factors_considered.map((factor, idx) => (
+                            <Badge key={idx} variant="secondary">{factor}</Badge>
+                          ))}
                         </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-green-600">{prediction.predicted_closures?.toLocaleString()}</p>
-                          <p className="text-xs text-muted-foreground">Predicted Closures</p>
-                        </div>
-                        {expandedMonth === idx ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Charts Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {predictionChartData && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Lead & Closure Predictions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-72">
+                        <Bar 
+                          data={predictionChartData}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top' } },
+                            scales: {
+                              y: { beginAtZero: true, ticks: { callback: (v) => v.toLocaleString() } },
+                              x: { grid: { display: false } }
+                            }
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {kvaChartData && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Total KVA Trend</CardTitle>
+                      </CardHeader>
+                      <CardContent className="h-72">
+                        <Line 
+                          data={kvaChartData}
+                          options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top' } },
+                            scales: {
+                              y: { beginAtZero: false, ticks: { callback: (v) => v.toLocaleString() } },
+                              x: { grid: { display: false } }
+                            }
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+
+                {/* KVA Distribution */}
+                {forecast.kva_distribution && forecast.kva_distribution.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Zap className="h-5 w-5 text-amber-500" />
+                        Historical KVA Product Distribution
+                      </CardTitle>
+                      <CardDescription>Your generator portfolio based on historical data</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                        {forecast.kva_distribution.map((kv, idx) => (
+                          <div key={idx} className="p-2 rounded border text-center hover:bg-muted/50 transition-colors">
+                            <p className="font-bold text-lg">{kv.kva}</p>
+                            <p className="text-xs text-muted-foreground">KVA</p>
+                            <p className="text-sm font-medium mt-1">{kv.count.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">{kv.percentage}%</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Monthly Predictions with KVA Breakdown */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Detailed Monthly Predictions
+                    </CardTitle>
+                    <CardDescription>Click on a month to see KVA breakdown</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {forecast.forecast.predictions?.map((prediction, idx) => (
+                      <Collapsible 
+                        key={idx} 
+                        open={expandedMonth === idx}
+                        onOpenChange={() => setExpandedMonth(expandedMonth === idx ? null : idx)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors">
+                            <div className="flex items-center gap-4">
+                              <div className="text-lg font-bold">{prediction.month}</div>
+                              <Badge variant={
+                                prediction.confidence === 'high' ? 'default' :
+                                prediction.confidence === 'medium' ? 'secondary' : 'outline'
+                              }>
+                                {prediction.confidence} confidence
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-primary">{prediction.predicted_enquiries?.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Leads</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-green-600">{prediction.predicted_closures?.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Closures</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-amber-600">{prediction.predicted_total_kva?.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Total KVA</p>
+                              </div>
+                              {expandedMonth === idx ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+                            </div>
+                          </div>
+                        </CollapsibleTrigger>
+                        
+                        <CollapsibleContent>
+                          {prediction.breakdown?.by_kva && (
+                            <div className="mt-2 border rounded-lg">
+                              <KVABreakdownSection
+                                data={prediction.breakdown.by_kva}
+                                expanded={expandedKva[idx] !== false}
+                                onToggle={() => toggleKvaExpanded(idx)}
+                              />
+                            </div>
+                          )}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* Recommendations & Risks */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {forecast.forecast.recommendations && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Lightbulb className="h-5 w-5 text-yellow-500" />
+                          Recommendations
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {forecast.forecast.recommendations.map((rec, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                              <span className="text-sm">{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {forecast.forecast.risks && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 text-red-500" />
+                          Risks & Uncertainties
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {forecast.forecast.risks.map((risk, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                              <span className="text-sm">{risk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Backtest Tab */}
+          <TabsContent value="backtest" className="space-y-6 mt-6">
+            {backtest && (
+              <>
+                {/* Summary */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FlaskConical className="h-5 w-5" />
+                      Backtest Summary
+                    </CardTitle>
+                    <CardDescription>
+                      Rolling window test: {backtest.backtest_summary?.window_size_months} months training, {backtest.backtest_summary?.total_tests} test periods
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-4 rounded-lg bg-muted">
+                        <p className="text-sm text-muted-foreground">Data Range</p>
+                        <p className="font-medium">{backtest.backtest_summary?.data_range}</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted">
+                        <p className="text-sm text-muted-foreground">Total Months</p>
+                        <p className="font-medium">{backtest.backtest_summary?.total_months_available}</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted">
+                        <p className="text-sm text-muted-foreground">Tests Run</p>
+                        <p className="font-medium">{backtest.backtest_summary?.total_tests}</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-green-50">
+                        <p className="text-sm text-muted-foreground">Overall Accuracy</p>
+                        <p className="font-bold text-2xl text-green-600">{backtest.accuracy_metrics?.overall_accuracy}%</p>
                       </div>
                     </div>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent>
-                    {prediction.breakdown && (
-                      <div className="mt-4 border rounded-lg divide-y">
-                        <BreakdownSection
-                          title="By State"
-                          icon={MapPin}
-                          data={prediction.breakdown.by_state}
-                          expanded={expandedSections.state}
-                          onToggle={() => toggleSection('state')}
-                        />
-                        <BreakdownSection
-                          title="By Dealer"
-                          icon={Building}
-                          data={prediction.breakdown.by_dealer}
-                          expanded={expandedSections.dealer}
-                          onToggle={() => toggleSection('dealer')}
-                        />
-                        <BreakdownSection
-                          title="By Segment"
-                          icon={PieChart}
-                          data={prediction.breakdown.by_segment}
-                          expanded={expandedSections.segment}
-                          onToggle={() => toggleSection('segment')}
-                        />
-                        <BreakdownSection
-                          title="By Employee"
-                          icon={Users}
-                          data={prediction.breakdown.by_employee}
-                          expanded={expandedSections.employee}
-                          onToggle={() => toggleSection('employee')}
-                        />
-                      </div>
-                    )}
-                    
-                    {!prediction.breakdown && (
-                      <div className="mt-4 p-4 bg-muted/50 rounded-lg text-center text-muted-foreground">
-                        Detailed breakdown not available for this prediction
-                      </div>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
-              ))}
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
 
-          {/* Recommendations */}
-          {forecast.forecast.recommendations && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-yellow-500" />
-                  AI Recommendations
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {forecast.forecast.recommendations.map((rec, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <span className="text-primary">•</span>
-                      <span>{rec}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+                {/* Accuracy Metrics */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <AccuracyMetricCard 
+                    title="Enquiry Predictions" 
+                    metrics={backtest.accuracy_metrics?.enquiries}
+                    icon={Target}
+                    color="bg-indigo-50"
+                  />
+                  <AccuracyMetricCard 
+                    title="Closure Predictions" 
+                    metrics={backtest.accuracy_metrics?.closures}
+                    icon={CheckCircle2}
+                    color="bg-green-50"
+                  />
+                  <AccuracyMetricCard 
+                    title="KVA Predictions" 
+                    metrics={backtest.accuracy_metrics?.kva}
+                    icon={Zap}
+                    color="bg-amber-50"
+                  />
+                </div>
+
+                {/* Actual vs Predicted Chart */}
+                {backtestChartData && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Actual vs Predicted (Enquiries)</CardTitle>
+                      <CardDescription>Solid line = Actual, Dashed line = Predicted</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-80">
+                      <Line 
+                        data={backtestChartData}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: { legend: { position: 'top' } },
+                          scales: {
+                            y: { beginAtZero: false },
+                            x: { grid: { display: false } }
+                          }
+                        }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Detailed Results Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Detailed Test Results</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Test Month</TableHead>
+                            <TableHead className="text-right">Actual Leads</TableHead>
+                            <TableHead className="text-right">Predicted</TableHead>
+                            <TableHead className="text-right">Error</TableHead>
+                            <TableHead className="text-right">Error %</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {backtest.detailed_results?.map((result, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium">{result.test_month}</TableCell>
+                              <TableCell className="text-right">{result.actual.enquiries}</TableCell>
+                              <TableCell className="text-right">{result.predicted.enquiries}</TableCell>
+                              <TableCell className={`text-right ${result.error.enquiries > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                {result.error.enquiries > 0 ? '+' : ''}{result.error.enquiries}
+                              </TableCell>
+                              <TableCell className={`text-right ${Math.abs(result.error_pct.enquiries) > 15 ? 'text-red-600' : 'text-green-600'}`}>
+                                {result.error_pct.enquiries > 0 ? '+' : ''}{result.error_pct.enquiries}%
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recommendations & Improvements */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-yellow-500" />
+                        Recommendations
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {backtest.recommendations?.map((rec, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                            <span className="text-sm">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-blue-500" />
+                        Improvement Suggestions
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {backtest.improvement_suggestions?.map((sug, idx) => (
+                          <div key={idx} className="flex items-start gap-3 p-2 rounded hover:bg-muted/50">
+                            <Badge variant={sug.impact === 'High' ? 'default' : 'secondary'} className="shrink-0">
+                              {sug.impact}
+                            </Badge>
+                            <div>
+                              <p className="font-medium text-sm">{sug.factor}</p>
+                              <p className="text-xs text-muted-foreground">{sug.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Factors Tab */}
+          <TabsContent value="factors" className="space-y-6 mt-6">
+            {factors && (
+              <>
+                {/* Data Quality */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Data Quality Overview</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="p-4 rounded-lg bg-muted text-center">
+                        <p className="text-3xl font-bold">{factors.data_quality?.total_leads?.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">Total Leads</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted text-center">
+                        <p className="text-3xl font-bold">{factors.data_quality?.leads_with_kva?.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">With KVA Data</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted text-center">
+                        <p className="text-3xl font-bold">{factors.data_quality?.kva_coverage}%</p>
+                        <p className="text-sm text-muted-foreground">KVA Coverage</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted text-center">
+                        <p className="text-3xl font-bold">{factors.data_quality?.date_coverage}%</p>
+                        <p className="text-sm text-muted-foreground">Date Coverage</p>
+                      </div>
+                      <div className="p-4 rounded-lg bg-muted text-center">
+                        <p className="text-3xl font-bold">{factors.data_quality?.months_of_data}</p>
+                        <p className="text-sm text-muted-foreground">Months of Data</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Forecast Factors */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-green-600">Primary Factors (High Weight)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {factors.forecast_factors?.primary_factors?.map((f, idx) => (
+                          <div key={idx} className="p-3 border rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{f.name}</p>
+                              <Badge>{f.weight}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{f.description}</p>
+                            {f.data_points && (
+                              <p className="text-xs text-muted-foreground mt-1">Data points: {f.data_points}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-blue-600">Secondary Factors</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {factors.forecast_factors?.secondary_factors?.map((f, idx) => (
+                          <div key={idx} className="p-3 border rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{f.name}</p>
+                              <Badge variant="secondary">{f.weight}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">{f.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Not Currently Used */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-amber-600">Factors Not Currently Used</CardTitle>
+                    <CardDescription>These could improve forecast accuracy if data becomes available</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {factors.forecast_factors?.not_currently_used?.map((f, idx) => (
+                        <Badge key={idx} variant="outline" className="text-muted-foreground">{f}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* KVA Products */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-amber-500" />
+                      All KVA Products in Your Portfolio
+                    </CardTitle>
+                    <CardDescription>{factors.kva_products?.length} different generator capacities</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-10 gap-2">
+                      {factors.kva_products?.map((kv, idx) => (
+                        <div key={idx} className="p-2 rounded border text-center hover:bg-amber-50 transition-colors">
+                          <p className="font-bold">{kv.kva}</p>
+                          <p className="text-xs text-muted-foreground">KVA</p>
+                          <p className="text-xs mt-1">{kv.percentage}%</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Methodology */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Forecast Methodology</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 border rounded-lg">
+                        <p className="font-medium">Model Type</p>
+                        <p className="text-sm text-muted-foreground">{factors.methodology?.model_type}</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <p className="font-medium">AI Component</p>
+                        <p className="text-sm text-muted-foreground">{factors.methodology?.ai_component}</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <p className="font-medium">Statistical Component</p>
+                        <p className="text-sm text-muted-foreground">{factors.methodology?.statistical_component}</p>
+                      </div>
+                      <div className="p-4 border rounded-lg">
+                        <p className="font-medium">Fallback Strategy</p>
+                        <p className="text-sm text-muted-foreground">{factors.methodology?.fallback}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
