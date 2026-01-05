@@ -786,26 +786,55 @@ async def generate_forecast(
         best_model_accuracy = 50.0
     
     # ============================================
-    # DIMENSION ACCURACY CALCULATION
-    # Calculate accuracy for each breakdown dimension
+    # PER-DIMENSION MODEL OPTIMIZATION
+    # Optimize models for each breakdown dimension separately
     # ============================================
+    dim_optimizer = DimensionModelOptimizer(complete_data, min_accuracy=70.0, target_accuracy=75.0)
+    dimension_distributions = {
+        "KVA": kva_dist,
+        "State": state_dist,
+        "Dealer": dealer_dist,
+        "Employee": employee_dist,
+        "Segment": segment_dist
+    }
+    dim_optimization_results = dim_optimizer.optimize_all_dimensions(dimension_distributions)
+    
+    # Build dimension accuracies from optimization results
     dimension_accuracies = []
-    
-    # Calculate accuracy for each dimension
-    kva_accuracy = await calculate_dimension_accuracy(db, "KVA", kva_dist, total_kva_leads, complete_data)
-    state_accuracy = await calculate_dimension_accuracy(db, "State", state_dist, total_state_leads, complete_data)
-    dealer_accuracy = await calculate_dimension_accuracy(db, "Dealer", dealer_dist, total_dealer_leads, complete_data)
-    employee_accuracy = await calculate_dimension_accuracy(db, "Employee", employee_dist, total_employee_leads, complete_data)
-    segment_accuracy = await calculate_dimension_accuracy(db, "Segment", segment_dist, total_segment_leads, complete_data)
-    
-    # Add model info to each dimension accuracy
-    kva_accuracy["model"] = best_model_name
-    state_accuracy["model"] = best_model_name
-    dealer_accuracy["model"] = best_model_name
-    employee_accuracy["model"] = best_model_name
-    segment_accuracy["model"] = best_model_name
-    
-    dimension_accuracies = [kva_accuracy, state_accuracy, dealer_accuracy, employee_accuracy, segment_accuracy]
+    for dim_name in ["KVA", "State", "Dealer", "Employee", "Segment"]:
+        dim_result = dim_optimization_results.get(dim_name, {})
+        
+        # Get conversion rate for this dimension
+        if dim_name == "KVA":
+            dist = kva_dist
+            total = total_kva_leads
+        elif dim_name == "State":
+            dist = state_dist
+            total = total_state_leads
+        elif dim_name == "Dealer":
+            dist = dealer_dist
+            total = total_dealer_leads
+        elif dim_name == "Employee":
+            dist = employee_dist
+            total = total_employee_leads
+        else:
+            dist = segment_dist
+            total = total_segment_leads
+        
+        # Calculate weighted conversion rate for this dimension
+        total_won = sum(d.get("won", 0) for d in dist)
+        total_count = sum(d.get("count", 0) for d in dist)
+        dim_conv_rate = total_won / total_count if total_count > 0 else overall_conversion_rate
+        
+        dimension_accuracies.append({
+            "dimension": dim_name,
+            "accuracy": dim_result.get("accuracy", 0),
+            "model": dim_result.get("model", best_model_name),
+            "status": dim_result.get("status", "unknown"),
+            "warning": dim_result.get("warning"),
+            "conversion_rate": round(dim_conv_rate * 100, 2),
+            "data_quality": dim_result.get("data_quality", {})
+        })
     
     # Find the dimension with highest accuracy
     valid_dimensions = [d for d in dimension_accuracies if d.get("accuracy", 0) > 0]
@@ -815,7 +844,7 @@ async def generate_forecast(
         # Fallback to overall if no dimension has valid accuracy
         winning_dimension = {"dimension": "Overall", "accuracy": best_model_accuracy, "conversion_rate": overall_conversion_rate * 100, "model": best_model_name}
     
-    # Use best model accuracy as the baseline, take maximum of model accuracy and dimension accuracy
+    # Use best model accuracy as the baseline
     final_accuracy = max(best_model_accuracy, winning_dimension.get("accuracy", 0))
     winning_dimension["accuracy"] = final_accuracy
     winning_dimension["model"] = best_model_name
