@@ -361,7 +361,10 @@ const Forecast = () => {
         }
       };
       
-      const res = await axios.post(`${API}/forecast`, payload, { withCredentials: true });
+      const res = await axios.post(`${API}/forecast`, payload, { 
+        withCredentials: true,
+        timeout: 120000 // 2 minute timeout for forecast generation
+      });
       
       if (res.data.success) {
         setForecast(res.data);
