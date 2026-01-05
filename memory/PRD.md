@@ -62,11 +62,8 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ### Forecast Module
 - `POST /api/forecast` - Generate forecast with auto-optimized model
-- `POST /api/forecast/backtest` - Run rolling window accuracy test
-- `GET /api/forecast/factors` - Get all forecast factors and data quality
 - `POST /api/forecast/save` - Save a generated forecast
 - `GET /api/forecast/saved` - Get list of saved forecasts
-- `DELETE /api/forecast/saved/{index}` - Delete a saved forecast
 
 ### Forecast Response Structure (Updated)
 ```json
