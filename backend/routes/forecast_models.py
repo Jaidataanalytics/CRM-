@@ -981,5 +981,5 @@ class DimensionModelOptimizer:
                 }
             }
         
-        self.dimension_results = results
-        return results
+        self.dimension_results = convert_numpy_types(results)
+        return self.dimension_results
