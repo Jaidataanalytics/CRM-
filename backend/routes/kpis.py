@@ -440,6 +440,9 @@ async def get_kpis(
         "quotations_sent": quotations_sent,
         "call_to_quotation_rate": round(call_to_quotation_rate, 2),
         "transferred_leads": transferred_leads,
+        "pending_dispatch": pending_dispatch,
+        "dispatched": dispatched_count,
+        "needs_dispatch_migration": no_dispatch_status,
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
             for s in segment_distribution
