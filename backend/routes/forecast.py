@@ -12,6 +12,7 @@ from models.user import User, UserRole
 from routes.auth import get_current_user, require_roles
 from routes.forecast_models import (
     ModelOptimizer, 
+    DimensionModelOptimizer,
     calculate_rolling_accuracy,
     SimpleMovingAverage,
     WeightedMovingAverage,
