@@ -620,50 +620,86 @@ async def generate_forecast(
     if len(complete_data) < 6:
         return {"success": False, "message": "Need at least 6 complete months of data."}
     
-    # KVA distribution
+    # Calculate overall conversion rate
+    total_leads_all = await db.leads.count_documents(query)
+    total_won_all = await db.leads.count_documents({**query, "enquiry_stage": "Closed-Won"})
+    overall_conversion_rate = total_won_all / total_leads_all if total_leads_all > 0 else 0.25
+    
+    # KVA distribution with conversion rates
     kva_pipeline = [
         {"$match": {**query, "kva": {"$exists": True, "$ne": None, "$gt": 0}}},
-        {"$group": {"_id": "$kva", "count": {"$sum": 1}}},
+        {"$group": {
+            "_id": "$kva", 
+            "count": {"$sum": 1},
+            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+        }},
         {"$sort": {"_id": 1}}
     ]
     kva_dist = await db.leads.aggregate(kva_pipeline).to_list(100)
     total_kva_leads = sum(d["count"] for d in kva_dist) or 1
+    # Add conversion rate to each KVA
+    for k in kva_dist:
+        k["conversion_rate"] = k["won"] / k["count"] if k["count"] > 0 else overall_conversion_rate
     
-    # State distribution
+    # State distribution with conversion rates
     state_pipeline = [
         {"$match": {**query, "state": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$group": {"_id": "$state", "count": {"$sum": 1}}},
+        {"$group": {
+            "_id": "$state", 
+            "count": {"$sum": 1},
+            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+        }},
         {"$sort": {"count": -1}}
     ]
     state_dist = await db.leads.aggregate(state_pipeline).to_list(100)
     total_state_leads = sum(d["count"] for d in state_dist) or 1
+    for s in state_dist:
+        s["conversion_rate"] = s["won"] / s["count"] if s["count"] > 0 else overall_conversion_rate
     
-    # Dealer distribution
+    # Dealer distribution with conversion rates
     dealer_pipeline = [
         {"$match": {**query, "dealer": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$group": {"_id": "$dealer", "count": {"$sum": 1}}},
+        {"$group": {
+            "_id": "$dealer", 
+            "count": {"$sum": 1},
+            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+        }},
         {"$sort": {"count": -1}}
     ]
     dealer_dist = await db.leads.aggregate(dealer_pipeline).to_list(100)
     total_dealer_leads = sum(d["count"] for d in dealer_dist) or 1
+    for d in dealer_dist:
+        d["conversion_rate"] = d["won"] / d["count"] if d["count"] > 0 else overall_conversion_rate
     
-    # Employee distribution (added_by field)
+    # Employee distribution with conversion rates
     employee_pipeline = [
         {"$match": {**query, "added_by": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$group": {"_id": "$added_by", "count": {"$sum": 1}}},
+        {"$group": {
+            "_id": "$added_by", 
+            "count": {"$sum": 1},
+            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+        }},
         {"$sort": {"count": -1}}
     ]
     employee_dist = await db.leads.aggregate(employee_pipeline).to_list(100)
     total_employee_leads = sum(d["count"] for d in employee_dist) or 1
+    for e in employee_dist:
+        e["conversion_rate"] = e["won"] / e["count"] if e["count"] > 0 else overall_conversion_rate
     
-    # Segment distribution
+    # Segment distribution with conversion rates
     segment_pipeline = [
         {"$match": {**query, "segment": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$group": {"_id": "$segment", "count": {"$sum": 1}}},
+        {"$group": {
+            "_id": "$segment", 
+            "count": {"$sum": 1},
+            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+        }},
         {"$sort": {"count": -1}}
     ]
     segment_dist = await db.leads.aggregate(segment_pipeline).to_list(100)
     total_segment_leads = sum(d["count"] for d in segment_dist) or 1
+    for seg in segment_dist:
+        seg["conversion_rate"] = seg["won"] / seg["count"] if seg["count"] > 0 else overall_conversion_rate
     
     # Determine start month
     last_month = complete_data[-1]['_id']
