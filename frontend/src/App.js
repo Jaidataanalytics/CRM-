@@ -14,6 +14,7 @@ import Charts from '@/pages/Charts';
 import Insights from '@/pages/Insights';
 import Leads from '@/pages/Leads';
 import Forecast from '@/pages/Forecast';
+import Dispatch from '@/pages/Dispatch';
 import Comparison from '@/pages/Comparison';
 import Admin from '@/pages/Admin';
 import EntityProfile from '@/pages/EntityProfile';
