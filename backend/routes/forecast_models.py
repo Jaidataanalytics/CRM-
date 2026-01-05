@@ -807,7 +807,7 @@ class ModelOptimizer:
                         "forecaster": ensemble
                     })
         
-        return {
+        return convert_numpy_types({
             "best_model": self.best_model.name if self.best_model else "None",
             "best_accuracy": self.best_accuracy,
             "meets_threshold": self.best_accuracy >= self.min_accuracy,
@@ -816,7 +816,7 @@ class ModelOptimizer:
                 for r in self.results
             ],
             "recommendation": self._get_recommendation()
-        }
+        })
     
     def _get_recommendation(self) -> str:
         """Get recommendation based on accuracy"""
