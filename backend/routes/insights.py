@@ -193,7 +193,7 @@ async def get_conversion_vs_followups(
     return {
         "data": data,
         "date_range": {"start_date": start_date, "end_date": end_date}
-
+    }
 
 
 @router.get("/closure-analysis")
