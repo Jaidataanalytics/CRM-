@@ -843,13 +843,32 @@ const Forecast = () => {
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Target className="h-5 w-5 text-indigo-600" />
                         Prediction Source of Truth
-                        <Badge className="bg-indigo-600">{forecast.source_of_truth.accuracy}% Accuracy</Badge>
+                        <Badge className={forecast.source_of_truth.accuracy >= 70 ? "bg-green-600" : "bg-amber-600"}>
+                          {forecast.source_of_truth.accuracy}% Accuracy
+                        </Badge>
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="font-medium text-indigo-700 mb-3">
                         {forecast.source_of_truth.explanation}
                       </p>
+                      
+                      {/* Model Info */}
+                      {forecast.model_info && (
+                        <div className="mb-4 p-3 bg-white rounded-lg border">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">Best Model Selected:</span>
+                            <Badge variant="outline" className="bg-indigo-50">{forecast.model_info.type}</Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>Model Accuracy: <strong className={forecast.model_info.accuracy >= 70 ? "text-green-600" : "text-amber-600"}>{forecast.model_info.accuracy}%</strong></span>
+                            <span>Training Data: {forecast.model_info.training_months} months</span>
+                          </div>
+                          {forecast.model_info.recommendation && (
+                            <p className="text-xs text-muted-foreground mt-2 italic">{forecast.model_info.recommendation}</p>
+                          )}
+                        </div>
+                      )}
                       
                       {/* Dimension Accuracy Comparison */}
                       {forecast.dimension_accuracies && (
@@ -865,12 +884,12 @@ const Forecast = () => {
                             >
                               <p className="text-xs text-muted-foreground">{dim.dimension}</p>
                               <p className={`font-bold ${
-                                dim.dimension === forecast.source_of_truth.dimension 
-                                  ? 'text-indigo-700' 
-                                  : 'text-gray-600'
+                                dim.accuracy >= 70 ? 'text-green-600' :
+                                dim.accuracy >= 50 ? 'text-amber-600' : 'text-red-500'
                               }`}>
                                 {dim.accuracy || 0}%
                               </p>
+                              <p className="text-[10px] text-muted-foreground">{dim.model}</p>
                               {dim.dimension === forecast.source_of_truth.dimension && (
                                 <CheckCircle2 className="h-3 w-3 text-indigo-600 mx-auto mt-1" />
                               )}
