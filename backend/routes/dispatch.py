@@ -150,8 +150,9 @@ async def update_dispatch_status(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
     
-    # Check if it's a won order
-    if lead.get("enquiry_stage") != "Closed-Won":
+    # Check if it's a won order (Closed-Won or Order Booked)
+    won_stages = ["Closed-Won", "Order Booked"]
+    if lead.get("enquiry_stage") not in won_stages:
         raise HTTPException(status_code=400, detail="Only won orders can have dispatch status")
     
     new_status = dispatch_data.dispatch_status
