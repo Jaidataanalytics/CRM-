@@ -311,6 +311,219 @@ const Insights = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Closure Analysis Tab */}
+        <TabsContent value="closure" className="space-y-6">
+          {closureLoading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+              </div>
+              <Skeleton className="h-96" />
+            </div>
+          ) : closureAnalysis ? (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Lost Leads</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {closureAnalysis.summary.total_lost_leads.toLocaleString()}
+                        </p>
+                      </div>
+                      <XCircle className="h-8 w-8 text-red-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">With Closure Data</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {closureAnalysis.summary.leads_with_closure_answers.toLocaleString()}
+                        </p>
+                      </div>
+                      <CheckCircle2 className="h-8 w-8 text-green-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pending Answers</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                          {closureAnalysis.summary.pending_closure_questions.toLocaleString()}
+                        </p>
+                      </div>
+                      <AlertTriangle className="h-8 w-8 text-orange-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Completion Rate</p>
+                        <p className={`text-2xl font-bold ${closureAnalysis.summary.completion_rate >= 70 ? 'text-green-600' : 'text-orange-600'}`}>
+                          {closureAnalysis.summary.completion_rate}%
+                        </p>
+                      </div>
+                      <Progress 
+                        value={closureAnalysis.summary.completion_rate} 
+                        className="w-16 h-2"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Question Analysis */}
+              {closureAnalysis.question_analysis.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {closureAnalysis.question_analysis.map((q, idx) => (
+                    <Card key={idx}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <HelpCircle className="h-4 w-4 text-primary" />
+                          {q.question}
+                        </CardTitle>
+                        <CardDescription>
+                          {q.total_responses} responses
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {q.top_answers.map((ans, ansIdx) => (
+                            <div key={ansIdx} className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="truncate max-w-[200px]" title={ans.answer}>
+                                  {ans.answer || 'Not Answered'}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {ans.count} ({ans.percentage}%)
+                                </span>
+                              </div>
+                              <Progress value={ans.percentage} className="h-2" />
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8 text-muted-foreground">
+                      <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <h3 className="font-medium mb-2">No Closure Data Yet</h3>
+                      <p className="text-sm">
+                        Closure question responses will appear here once leads are marked as Lost and questions are answered.
+                      </p>
+                      <p className="text-sm mt-2">
+                        Configure closure questions in <span className="font-medium">Admin Settings → Closure Questions</span>
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Lost Leads by State and Dealer */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* By State */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Lost Leads by State
+                    </CardTitle>
+                    <CardDescription>States with most lost leads</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {closureAnalysis.by_state.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>State</TableHead>
+                            <TableHead className="text-right">Lost</TableHead>
+                            <TableHead className="text-right">KVA Lost</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {closureAnalysis.by_state.slice(0, 10).map((s, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium">{s.state}</TableCell>
+                              <TableCell className="text-right text-red-600">{s.count}</TableCell>
+                              <TableCell className="text-right">{s.kva_lost.toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-4">No data available</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* By Dealer */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building className="h-5 w-5" />
+                      Lost Leads by Dealer
+                    </CardTitle>
+                    <CardDescription>Dealers with most lost leads</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {closureAnalysis.by_dealer.length > 0 ? (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Dealer</TableHead>
+                            <TableHead className="text-right">Lost</TableHead>
+                            <TableHead className="text-right">KVA Lost</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {closureAnalysis.by_dealer.slice(0, 10).map((d, idx) => (
+                            <TableRow key={idx}>
+                              <TableCell className="font-medium truncate max-w-[200px]">{d.dealer}</TableCell>
+                              <TableCell className="text-right text-red-600">{d.count}</TableCell>
+                              <TableCell className="text-right">{d.kva_lost.toLocaleString()}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-4">No data available</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8 text-muted-foreground">
+                  <XCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Failed to load closure analysis data</p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={loadClosureAnalysis}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
