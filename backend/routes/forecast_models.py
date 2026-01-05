@@ -134,10 +134,10 @@ class BaseForecaster:
         # Use rolling accuracy for more realistic measure
         result = calculate_rolling_accuracy(actual, predicted, window=3)
         result["model"] = self.name
-        result["actual_values"] = actual
-        result["predicted_values"] = predicted
+        result["actual_values"] = convert_numpy_types(actual)
+        result["predicted_values"] = convert_numpy_types(predicted)
         
-        return result
+        return convert_numpy_types(result)
 
 
 class SimpleMovingAverage(BaseForecaster):
