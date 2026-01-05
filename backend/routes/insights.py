@@ -277,8 +277,20 @@ async def get_closure_analysis(
         })
     
     # Get summary stats
+    # Lost stages = any "closed" stage except Closed-Won, Order Booked, and Closed-Faulty
+    # Using regex to match Closed-* stages that are not won/faulty
+    lost_stages_query = {
+        "$and": [
+            {"$or": [
+                {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
+                {"enquiry_stage": {"$regex": "^Lost$", "$options": "i"}}
+            ]},
+            {"enquiry_stage": {"$nin": ["Closed-Won", "Order Booked", "Closed-Faulty"]}}
+        ]
+    }
+    
     total_lost_leads = await db.leads.count_documents({
-        "enquiry_stage": "Closed-Lost",
+        **lost_stages_query,
         "enquiry_date": {"$gte": start_date, "$lte": end_date},
         "deleted_at": {"$exists": False}
     })
