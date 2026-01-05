@@ -197,7 +197,7 @@ class AdaptiveSeasonalForecaster:
     def _predict_for_month(self, target_month: int, metric: str = 'enquiries') -> Tuple[float, str]:
         """
         Predict value for a target calendar month.
-        Uses the MOST RECENT SAME MONTH value as primary anchor.
+        Uses MOST RECENT SAME MONTH * GROWTH FACTOR as primary predictor.
         Returns (prediction, method_used)
         """
         historical = self.by_month.get(target_month, [])
@@ -209,36 +209,35 @@ class AdaptiveSeasonalForecaster:
         values = [h[metric] for h in historical]
         years = [h['year'] for h in historical]
         
-        # CRITICAL: Use the most recent same-month value
+        # Get the most recent value for this month
         most_recent = values[-1]
+        most_recent_year = years[-1]
         
         if len(values) == 1:
-            return most_recent, "single_year"
+            # Apply overall YoY growth
+            return most_recent * self.yoy_growth.get(metric, 1.0), "single_year_growth"
         
-        # The most recent same-month is our best predictor
-        # Only apply adjustment if there's a clear, consistent trend across years
+        # Calculate this month's specific growth trend
+        # Compare each year to previous year for this month
+        month_growth_rates = []
+        for i in range(1, len(values)):
+            if values[i-1] > 0:
+                growth = values[i] / values[i-1]
+                month_growth_rates.append(growth)
         
-        if len(values) >= 3:
-            # Check if there's a consistent direction
-            changes = [values[i] - values[i-1] for i in range(1, len(values))]
-            positive_changes = sum(1 for c in changes if c > 0)
-            negative_changes = sum(1 for c in changes if c < 0)
+        if month_growth_rates:
+            # Use median of growth rates (more robust than mean)
+            median_growth = median(month_growth_rates)
+            # Blend month-specific growth with overall YoY growth
+            blended_growth = 0.6 * median_growth + 0.4 * self.yoy_growth.get(metric, 1.0)
+            # Cap the growth factor
+            blended_growth = max(0.85, min(1.25, blended_growth))
             
-            # Strong consistent trend (at least 2/3 in same direction)
-            if positive_changes >= len(changes) * 0.67:
-                # Growing trend - apply small uplift
-                avg_growth_pct = mean([c/values[i] for i, c in enumerate(changes) if values[i] > 0]) 
-                # Cap the growth between 0 and 15%
-                growth_adj = 1 + min(0.15, max(0, avg_growth_pct))
-                return most_recent * growth_adj, "trend_up"
-            elif negative_changes >= len(changes) * 0.67:
-                # Declining trend - apply small reduction
-                avg_decline_pct = mean([c/values[i] for i, c in enumerate(changes) if values[i] > 0])
-                decline_adj = 1 + max(-0.15, min(0, avg_decline_pct))
-                return most_recent * decline_adj, "trend_down"
+            prediction = most_recent * blended_growth
+            return prediction, "growth_adjusted"
         
-        # No clear trend - use most recent value as-is
-        return most_recent, "recent_stable"
+        # Fallback: apply YoY growth
+        return most_recent * self.yoy_growth.get(metric, 1.0), "yoy_growth"
     
     def _apply_trend_adjustment(self, base_value: float, metric: str, decay: float = 0.95) -> float:
         """Apply recent momentum adjustment"""
