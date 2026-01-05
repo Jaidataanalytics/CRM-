@@ -758,14 +758,17 @@ const Forecast = () => {
       )}
 
       {/* Results Tabs */}
-      {(forecast || backtest || factors) && (
+      {(forecast || backtest || factors || savedForecasts) && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
               <Sparkles className="h-4 w-4 mr-2" />Forecast
             </TabsTrigger>
+            <TabsTrigger value="saved" disabled={!savedForecasts} data-testid="tab-saved">
+              <Archive className="h-4 w-4 mr-2" />Saved ({savedForecasts?.total || 0})
+            </TabsTrigger>
             <TabsTrigger value="backtest" disabled={!backtest} data-testid="tab-backtest">
-              <FlaskConical className="h-4 w-4 mr-2" />Backtest Results
+              <FlaskConical className="h-4 w-4 mr-2" />Backtest
             </TabsTrigger>
             <TabsTrigger value="factors" disabled={!factors} data-testid="tab-factors">
               <FileText className="h-4 w-4 mr-2" />Factors
