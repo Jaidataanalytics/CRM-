@@ -37,7 +37,7 @@ import {
   Sparkles, TrendingUp, AlertCircle, Lightbulb, Calendar, 
   ChevronDown, ChevronRight, Zap, BarChart3, Target,
   CheckCircle2, XCircle, Info, FlaskConical, FileText,
-  MapPin, Building2, Users, Layers
+  MapPin, Building2, Users, Layers, Save, Archive, Trash2
 } from 'lucide-react';
 import {
   Chart as ChartJS,

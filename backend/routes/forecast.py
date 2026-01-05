@@ -879,3 +879,87 @@ async def generate_forecast(
         "filters": {"state": state, "dealer": dealer, "location": location},
         "generated_at": datetime.now(timezone.utc).isoformat()
     }
+
+
+@router.post("/save")
+async def save_forecast(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """Save a generated forecast projection to the database"""
+    db = await get_db(request)
+    body = await request.json()
+    
+    forecast_data = body.get("forecast_data")
+    if not forecast_data:
+        raise HTTPException(status_code=400, detail="No forecast data provided")
+    
+    # Create projection document
+    projection = {
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "saved_by": current_user.username,
+        "horizon_months": forecast_data.get("horizon_months", 3),
+        "filters": forecast_data.get("filters", {}),
+        "business_adjustments": forecast_data.get("business_adjustments", {}),
+        "summary": forecast_data.get("forecast", {}).get("summary", ""),
+        "predictions": forecast_data.get("forecast", {}).get("predictions", []),
+        "model_info": forecast_data.get("model_info", {}),
+        "generated_at": forecast_data.get("generated_at", "")
+    }
+    
+    result = await db.saved_forecasts.insert_one(projection)
+    
+    return {
+        "success": True,
+        "message": "Forecast saved successfully",
+        "projection_id": str(result.inserted_id)
+    }
+
+
+@router.get("/saved")
+async def get_saved_forecasts(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """Get all saved forecast projections"""
+    db = await get_db(request)
+    
+    # Get all saved forecasts, sorted by saved_at descending
+    cursor = db.saved_forecasts.find({}, {"_id": 0}).sort("saved_at", -1)
+    forecasts = await cursor.to_list(100)
+    
+    # Add an index to each for reference
+    for idx, f in enumerate(forecasts):
+        f["index"] = idx + 1
+    
+    return {
+        "success": True,
+        "forecasts": forecasts,
+        "total": len(forecasts)
+    }
+
+
+@router.delete("/saved/{index}")
+async def delete_saved_forecast(
+    request: Request,
+    index: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """Delete a saved forecast by its index (1-based)"""
+    db = await get_db(request)
+    
+    # Get all saved forecasts sorted by saved_at descending
+    cursor = db.saved_forecasts.find({}).sort("saved_at", -1)
+    forecasts = await cursor.to_list(100)
+    
+    if index < 1 or index > len(forecasts):
+        raise HTTPException(status_code=404, detail="Projection not found")
+    
+    # Delete the forecast at the given index (0-based internally)
+    forecast_to_delete = forecasts[index - 1]
+    await db.saved_forecasts.delete_one({"_id": forecast_to_delete["_id"]})
+    
+    return {
+        "success": True,
+        "message": "Forecast deleted successfully"
+    }
