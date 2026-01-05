@@ -1266,7 +1266,7 @@ async def compare_forecast_with_actuals(
         kva_accuracy = 100 - abs((predicted_kva - actual_kva) / max(predicted_kva, 1) * 100) if predicted_kva > 0 else 0
         
         comparison_results.append({
-            "month": month_str,
+            "month": display_month,
             "month_key": month_key,
             "predicted": {
                 "leads": predicted_leads,
