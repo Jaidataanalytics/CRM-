@@ -1299,13 +1299,17 @@ async def compare_forecast_with_actuals(
         total_actual_kva += actual_kva
         
         # Get breakdown comparisons for this month
-        # KVA breakdown
-        for kva_pred in pred.get("kva_breakdown", []):
-            kva_val = kva_pred.get("kva")
-            if kva_val not in kva_comparison:
+        breakdown = pred.get("breakdown", {})
+        
+        # KVA breakdown (check both old and new formats)
+        kva_data = pred.get("kva_breakdown", []) or breakdown.get("by_kva", [])
+        for kva_pred in kva_data:
+            kva_val = kva_pred.get("kva") or kva_pred.get("name")
+            if kva_val and kva_val not in kva_comparison:
                 kva_comparison[kva_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
-            kva_comparison[kva_val]["predicted_leads"] += kva_pred.get("predicted_leads", 0)
-            kva_comparison[kva_val]["predicted_closures"] += kva_pred.get("predicted_closures_category", 0)
+            if kva_val:
+                kva_comparison[kva_val]["predicted_leads"] += kva_pred.get("predicted_leads", 0)
+                kva_comparison[kva_val]["predicted_closures"] += kva_pred.get("predicted_closures_category", kva_pred.get("predicted_closures", 0))
         
         # Get actual KVA breakdown
         kva_actual_pipeline = [
