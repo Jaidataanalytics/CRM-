@@ -197,51 +197,48 @@ class AdaptiveSeasonalForecaster:
     def _predict_for_month(self, target_month: int, metric: str = 'enquiries') -> Tuple[float, str]:
         """
         Predict value for a target calendar month.
-        PRIMARY: Use most recent same-month value with growth adjustment.
+        Uses the MOST RECENT SAME MONTH value as primary anchor.
         Returns (prediction, method_used)
         """
         historical = self.by_month.get(target_month, [])
         
         if not historical:
-            # No data for this month - use overall median with growth
             base = self.stats[metric]['median']
-            return base * self.yoy_growth.get(metric, 1.0), "overall_median"
+            return base, "overall_median"
         
         values = [h[metric] for h in historical]
         years = [h['year'] for h in historical]
         
-        if len(values) == 1:
-            # Only one year of data - apply growth factor
-            prediction = values[0] * self.yoy_growth.get(metric, 1.0)
-            return prediction, "single_year_growth"
-        
-        # PRIMARY METHOD: Most recent same-month value
-        # This is the strongest predictor for seasonal business
+        # CRITICAL: Use the most recent same-month value
         most_recent = values[-1]
         
-        # Calculate the growth from the most recent to previous same month
-        if len(values) >= 2:
-            prev_value = values[-2]
-            if prev_value > 0:
-                recent_growth = most_recent / prev_value
-                # Dampen extreme recent growth
-                recent_growth = max(0.7, min(1.4, recent_growth))
-            else:
-                recent_growth = 1.0
-        else:
-            recent_growth = self.yoy_growth.get(metric, 1.0)
+        if len(values) == 1:
+            return most_recent, "single_year"
         
-        # Apply growth factor (blended from YoY and recent)
-        growth_factor = 0.6 * recent_growth + 0.4 * self.yoy_growth.get(metric, 1.0)
+        # The most recent same-month is our best predictor
+        # Only apply adjustment if there's a clear, consistent trend across years
         
-        # Prediction = most recent same month * growth factor
-        prediction = most_recent * growth_factor
+        if len(values) >= 3:
+            # Check if there's a consistent direction
+            changes = [values[i] - values[i-1] for i in range(1, len(values))]
+            positive_changes = sum(1 for c in changes if c > 0)
+            negative_changes = sum(1 for c in changes if c < 0)
+            
+            # Strong consistent trend (at least 2/3 in same direction)
+            if positive_changes >= len(changes) * 0.67:
+                # Growing trend - apply small uplift
+                avg_growth_pct = mean([c/values[i] for i, c in enumerate(changes) if values[i] > 0]) 
+                # Cap the growth between 0 and 15%
+                growth_adj = 1 + min(0.15, max(0, avg_growth_pct))
+                return most_recent * growth_adj, "trend_up"
+            elif negative_changes >= len(changes) * 0.67:
+                # Declining trend - apply small reduction
+                avg_decline_pct = mean([c/values[i] for i, c in enumerate(changes) if values[i] > 0])
+                decline_adj = 1 + max(-0.15, min(0, avg_decline_pct))
+                return most_recent * decline_adj, "trend_down"
         
-        # Sanity check: if prediction is within 15% of most recent, just use most recent
-        if abs(prediction - most_recent) / most_recent < 0.15:
-            return most_recent, "recent_stable"
-        
-        return prediction, "recent_growth"
+        # No clear trend - use most recent value as-is
+        return most_recent, "recent_stable"
     
     def _apply_trend_adjustment(self, base_value: float, metric: str, decay: float = 0.95) -> float:
         """Apply recent momentum adjustment"""
