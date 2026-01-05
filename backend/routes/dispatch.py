@@ -93,6 +93,8 @@ async def get_dispatch_list(
     dispatch_status: Optional[str] = None,  # "pending" or "dispatched"
     state: Optional[str] = None,
     dealer: Optional[str] = None,
+    employee_name: Optional[str] = None,
+    segment: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     search: Optional[str] = None,
@@ -114,6 +116,10 @@ async def get_dispatch_list(
         query["state"] = state
     if dealer:
         query["dealer"] = dealer
+    if employee_name:
+        query["employee_name"] = employee_name
+    if segment:
+        query["segment"] = segment
     if start_date and end_date:
         query["eo_po_date"] = {"$gte": start_date, "$lte": end_date}
     
