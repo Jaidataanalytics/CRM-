@@ -937,6 +937,27 @@ const Leads = () => {
             <Download className="h-4 w-4" />
             {exporting ? 'Exporting...' : 'Export'}
           </Button>
+          {pendingClosureCount > 0 && (
+            <Button
+              variant="outline"
+              onClick={async () => {
+                // Load leads with pending closure questions
+                try {
+                  const res = await axios.get(`${API}/leads/pending-closure-questions?limit=1`, { withCredentials: true });
+                  if (res.data.leads?.length > 0) {
+                    openClosureQuestionsDialog(res.data.leads[0]);
+                  }
+                } catch (error) {
+                  toast.error('Failed to load pending leads');
+                }
+              }}
+              className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+              title="Answer pending closure questions"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              {pendingClosureCount} Pending
+            </Button>
+          )}
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open);
             if (!open) {
