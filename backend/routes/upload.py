@@ -351,7 +351,13 @@ async def upload_leads(
                     
                     # Check if this update is changing status to Lost (was not lost before)
                     old_stage = existing.get('enquiry_stage', '')
-                    if is_lost_closure and 'lost' not in old_stage.lower():
+                    old_stage_lower = old_stage.lower() if old_stage else ''
+                    was_closed = old_stage_lower.startswith('closed') or old_stage_lower == 'lost'
+                    was_won = old_stage_lower in won_stages
+                    was_faulty = old_stage_lower in faulty_stages
+                    was_lost = was_closed and not was_won and not was_faulty
+                    
+                    if is_lost_closure and not was_lost:
                         lead_data['needs_closure_questions'] = True
                         lead_data['closure_type'] = 'lost'
                     
