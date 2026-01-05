@@ -406,10 +406,6 @@ const Forecast = () => {
     }
   };
 
-  const toggleKvaExpanded = (idx) => {
-    setExpandedKva(prev => ({ ...prev, [idx]: !prev[idx] }));
-  };
-
   // Chart data for predictions
   const predictionChartData = forecast?.forecast?.predictions ? {
     labels: forecast.forecast.predictions.map(p => p.month),
