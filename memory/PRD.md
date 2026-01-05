@@ -49,9 +49,16 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - **Frontend**: React + Tailwind CSS + Shadcn/UI + Chart.js
 - **Backend**: FastAPI + MongoDB
 - **AI**: GPT-4o via Emergent LLM Key
-- **ML Libraries**: scikit-learn, XGBoost (for model optimization)
+- **ML Libraries**: scikit-learn, XGBoost, statsmodels, Prophet
 
 ## Key API Endpoints
+
+### Dispatch Module (NEW)
+- `GET /api/dispatch/summary` - Get pending/dispatched counts
+- `GET /api/dispatch/list` - List won orders with dispatch status
+- `PATCH /api/dispatch/{lead_id}` - Update dispatch status
+- `GET /api/dispatch/{lead_id}/history` - Dispatch change history
+- `POST /api/dispatch/migrate` - Migrate existing data (admin only)
 
 ### Forecast Module
 - `POST /api/forecast` - Generate forecast with auto-optimized model
