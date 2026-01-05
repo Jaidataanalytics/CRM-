@@ -82,12 +82,12 @@ def calculate_rolling_accuracy(actual: List[float], predicted: List[float], wind
     mape = mean(mape_values)
     accuracy = max(0, min(100, 100 - mape))
     
-    return {
+    return convert_numpy_types({
         "accuracy": round(accuracy, 1),
         "mape": round(mape, 1),
         "rolling_window": window,
         "samples": len(mape_values)
-    }
+    })
 
 
 class BaseForecaster:
