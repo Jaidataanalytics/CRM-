@@ -832,92 +832,122 @@ async def generate_forecast(
         
         # Apply business context adjustment
         adjusted_enquiries = int(sp['predicted_enquiries'] * adjustment_multiplier)
-        adjusted_closures = int(sp['predicted_closures'] * adjustment_multiplier)
         adjusted_kva = int(sp['predicted_kva'] * adjustment_multiplier)
         
-        # KVA breakdown with closures
+        # ============================================
+        # MASTER CLOSURE CALCULATION
+        # Use winning dimension's conversion rate for consistent closures
+        # ============================================
+        master_closures = int(adjusted_enquiries * winning_conv_rate)
+        
+        # KVA breakdown with closures - distributed from master
         kva_breakdown = []
+        kva_total_closures = 0
         for k in kva_dist:
             pred_leads = int(adjusted_enquiries * k["count"]/total_kva_leads)
-            # Category-specific closure (based on historical conversion rate for this KVA)
-            cat_closures = int(pred_leads * k["conversion_rate"])
-            # Overall closure (based on overall conversion rate)
-            overall_closures = int(pred_leads * overall_conversion_rate)
+            # Distribute master closures proportionally by lead distribution
+            cat_closures = int(master_closures * k["count"]/total_kva_leads)
+            kva_total_closures += cat_closures
             kva_breakdown.append({
                 "kva": k["_id"],
                 "predicted_leads": pred_leads,
                 "predicted_closures_category": cat_closures,
-                "predicted_closures_overall": overall_closures,
                 "conversion_rate": round(k["conversion_rate"] * 100, 1),
                 "percentage": round(k["count"]/total_kva_leads*100, 2)
             })
         
-        # State breakdown with closures
+        # Adjust for rounding errors - add difference to largest item
+        if kva_breakdown and kva_total_closures != master_closures:
+            diff = master_closures - kva_total_closures
+            max_item = max(kva_breakdown, key=lambda x: x["predicted_leads"])
+            max_item["predicted_closures_category"] += diff
+        
+        # State breakdown with closures - distributed from master
         state_breakdown = []
+        state_total_closures = 0
         for s in state_dist[:20]:
             pred_leads = int(adjusted_enquiries * s["count"]/total_state_leads)
-            cat_closures = int(pred_leads * s["conversion_rate"])
-            overall_closures = int(pred_leads * overall_conversion_rate)
+            cat_closures = int(master_closures * s["count"]/total_state_leads)
+            state_total_closures += cat_closures
             state_breakdown.append({
                 "state": s["_id"],
                 "predicted_leads": pred_leads,
                 "predicted_closures_category": cat_closures,
-                "predicted_closures_overall": overall_closures,
                 "conversion_rate": round(s["conversion_rate"] * 100, 1),
                 "percentage": round(s["count"]/total_state_leads*100, 2)
             })
         
-        # Dealer breakdown with closures
+        if state_breakdown and state_total_closures != master_closures:
+            diff = master_closures - state_total_closures
+            max_item = max(state_breakdown, key=lambda x: x["predicted_leads"])
+            max_item["predicted_closures_category"] += diff
+        
+        # Dealer breakdown with closures - distributed from master
         dealer_breakdown = []
+        dealer_total_closures = 0
         for d in dealer_dist[:20]:
             pred_leads = int(adjusted_enquiries * d["count"]/total_dealer_leads)
-            cat_closures = int(pred_leads * d["conversion_rate"])
-            overall_closures = int(pred_leads * overall_conversion_rate)
+            cat_closures = int(master_closures * d["count"]/total_dealer_leads)
+            dealer_total_closures += cat_closures
             dealer_breakdown.append({
                 "dealer": d["_id"],
                 "predicted_leads": pred_leads,
                 "predicted_closures_category": cat_closures,
-                "predicted_closures_overall": overall_closures,
                 "conversion_rate": round(d["conversion_rate"] * 100, 1),
                 "percentage": round(d["count"]/total_dealer_leads*100, 2)
             })
         
-        # Employee breakdown with closures
+        if dealer_breakdown and dealer_total_closures != master_closures:
+            diff = master_closures - dealer_total_closures
+            max_item = max(dealer_breakdown, key=lambda x: x["predicted_leads"])
+            max_item["predicted_closures_category"] += diff
+        
+        # Employee breakdown with closures - distributed from master
         employee_breakdown = []
+        employee_total_closures = 0
         for e in employee_dist[:20]:
             pred_leads = int(adjusted_enquiries * e["count"]/total_employee_leads)
-            cat_closures = int(pred_leads * e["conversion_rate"])
-            overall_closures = int(pred_leads * overall_conversion_rate)
+            cat_closures = int(master_closures * e["count"]/total_employee_leads)
+            employee_total_closures += cat_closures
             employee_breakdown.append({
                 "employee": e["_id"],
                 "predicted_leads": pred_leads,
                 "predicted_closures_category": cat_closures,
-                "predicted_closures_overall": overall_closures,
                 "conversion_rate": round(e["conversion_rate"] * 100, 1),
                 "percentage": round(e["count"]/total_employee_leads*100, 2)
             })
         
-        # Segment breakdown with closures
+        if employee_breakdown and employee_total_closures != master_closures:
+            diff = master_closures - employee_total_closures
+            max_item = max(employee_breakdown, key=lambda x: x["predicted_leads"])
+            max_item["predicted_closures_category"] += diff
+        
+        # Segment breakdown with closures - distributed from master
         segment_breakdown = []
+        segment_total_closures = 0
         for seg in segment_dist:
             pred_leads = int(adjusted_enquiries * seg["count"]/total_segment_leads)
-            cat_closures = int(pred_leads * seg["conversion_rate"])
-            overall_closures = int(pred_leads * overall_conversion_rate)
+            cat_closures = int(master_closures * seg["count"]/total_segment_leads)
+            segment_total_closures += cat_closures
             segment_breakdown.append({
                 "segment": seg["_id"],
                 "predicted_leads": pred_leads,
                 "predicted_closures_category": cat_closures,
-                "predicted_closures_overall": overall_closures,
                 "conversion_rate": round(seg["conversion_rate"] * 100, 1),
                 "percentage": round(seg["count"]/total_segment_leads*100, 2)
             })
         
+        if segment_breakdown and segment_total_closures != master_closures:
+            diff = master_closures - segment_total_closures
+            max_item = max(segment_breakdown, key=lambda x: x["predicted_leads"])
+            max_item["predicted_closures_category"] += diff
+        
         predictions.append({
             "month": month_date.strftime("%Y-%m"),
             "predicted_enquiries": adjusted_enquiries,
-            "predicted_closures": adjusted_closures,
+            "predicted_closures": master_closures,  # Use master closures
             "predicted_total_kva": adjusted_kva,
-            "overall_conversion_rate": round(overall_conversion_rate * 100, 1),
+            "overall_conversion_rate": round(winning_conv_rate * 100, 1),
             "base_prediction": {
                 "enquiries": sp['predicted_enquiries'],
                 "closures": sp['predicted_closures'],
