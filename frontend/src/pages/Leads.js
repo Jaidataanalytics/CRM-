@@ -429,10 +429,32 @@ const Leads = () => {
       }
       
       if (editingLead) {
+        // Check if this is a Lost status change - trigger closure questions
+        const oldStage = editingLead.enquiry_stage;
+        const newStage = data.enquiry_stage;
+        const lostStages = ['Closed-Lost', 'Lost'];
+        const wasLost = lostStages.some(s => oldStage?.toLowerCase().includes(s.toLowerCase()));
+        const isNowLost = lostStages.some(s => newStage?.toLowerCase().includes(s.toLowerCase()));
+        
+        if (isNowLost && !wasLost) {
+          // Mark as needing closure questions
+          data.needs_closure_questions = true;
+          data.closure_type = 'lost';
+        }
+        
         await axios.put(`${API}/leads/${editingLead.lead_id}`, data, {
           withCredentials: true
         });
         toast.success('Lead updated successfully');
+        
+        // If status changed to Lost, trigger closure questions modal
+        if (isNowLost && !wasLost) {
+          setIsDialogOpen(false);
+          // Give a brief delay then open the closure questions modal
+          setTimeout(() => {
+            openClosureQuestionsDialog({ ...editingLead, ...data });
+          }, 300);
+        }
       } else {
         await axios.post(`${API}/leads`, data, {
           withCredentials: true
