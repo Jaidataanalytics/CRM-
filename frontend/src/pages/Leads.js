@@ -1958,6 +1958,89 @@ const Leads = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Closure Questions Dialog */}
+      <Dialog open={isClosureQuestionsOpen} onOpenChange={(open) => {
+        setIsClosureQuestionsOpen(open);
+        if (!open) {
+          setClosureQuestionsLead(null);
+          setClosureAnswers({});
+        }
+      }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Lost Lead Questions
+              {pendingClosureCount > 0 && (
+                <Badge variant="destructive" className="ml-2">{pendingClosureCount} Pending</Badge>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {closureQuestionsLead?.name || closureQuestionsLead?.enquiry_no} - Please answer these questions (optional, shows as pending until filled)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            {closureQuestions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No closure questions configured. You can add them in Admin Settings.
+              </p>
+            ) : (
+              closureQuestions.map((q) => (
+                <div key={q.question_id} className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    {q.question}
+                    {q.required && <span className="text-red-500">*</span>}
+                  </Label>
+                  {q.type === 'select' && q.options?.length > 0 ? (
+                    <Select 
+                      value={closureAnswers[q.question_id] || ''} 
+                      onValueChange={(v) => setClosureAnswers(prev => ({ ...prev, [q.question_id]: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an option" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {q.options.map((opt, idx) => (
+                          <SelectItem key={idx} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Textarea
+                      placeholder="Enter your answer..."
+                      value={closureAnswers[q.question_id] || ''}
+                      onChange={(e) => setClosureAnswers(prev => ({ ...prev, [q.question_id]: e.target.value }))}
+                      rows={2}
+                    />
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsClosureQuestionsOpen(false);
+                toast.info('Lead marked as Lost. Closure questions remain pending.');
+                loadLeads();
+                loadPendingClosureCount();
+              }}
+            >
+              Skip for Now
+            </Button>
+            <Button 
+              onClick={handleClosureAnswersSubmit}
+              disabled={closureQuestions.length === 0}
+            >
+              Save Answers
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
