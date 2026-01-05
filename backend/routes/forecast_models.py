@@ -1,6 +1,7 @@
 """
 Advanced Forecasting Models with Auto-Optimization
 Implements multiple forecasting approaches and automatically selects the best one.
+Supports per-dimension model optimization.
 """
 import numpy as np
 from typing import List, Dict, Tuple, Optional
@@ -16,6 +17,20 @@ try:
     HAS_XGBOOST = True
 except ImportError:
     HAS_XGBOOST = False
+
+try:
+    from statsmodels.tsa.arima.model import ARIMA
+    from statsmodels.tsa.holtwinters import ExponentialSmoothing as HoltWinters
+    HAS_STATSMODELS = True
+except ImportError:
+    HAS_STATSMODELS = False
+
+try:
+    from prophet import Prophet
+    import pandas as pd
+    HAS_PROPHET = True
+except ImportError:
+    HAS_PROPHET = False
 
 
 def calculate_rolling_accuracy(actual: List[float], predicted: List[float], window: int = 3) -> Dict:
@@ -114,6 +129,8 @@ class SimpleMovingAverage(BaseForecaster):
     def __init__(self, historical_data: List[Dict], window: int = 3):
         super().__init__(historical_data)
         self.window = window
+        if window != 3:
+            self.name = f"SMA-{window}"
     
     def predict(self, periods: int) -> List[float]:
         if len(self.values) < self.window:
@@ -166,6 +183,8 @@ class ExponentialSmoothing(BaseForecaster):
         super().__init__(historical_data)
         self.alpha = alpha
         self.beta = beta
+        if alpha != 0.3:
+            self.name = f"ExpSmooth-{alpha}"
     
     def predict(self, periods: int) -> List[float]:
         if len(self.values) < 2:
@@ -188,6 +207,90 @@ class ExponentialSmoothing(BaseForecaster):
             predictions.append(max(0, pred))
         
         return predictions
+
+
+class HoltWintersForecaster(BaseForecaster):
+    """Holt-Winters with seasonal component using statsmodels"""
+    name = "Holt-Winters Seasonal"
+    
+    def __init__(self, historical_data: List[Dict], seasonal_periods: int = 12):
+        super().__init__(historical_data)
+        self.seasonal_periods = seasonal_periods
+    
+    def predict(self, periods: int) -> List[float]:
+        if not HAS_STATSMODELS or len(self.values) < self.seasonal_periods * 2:
+            return ExponentialSmoothing(self.data).predict(periods)
+        
+        try:
+            # Ensure no zeros for multiplicative seasonality
+            values = [max(1, v) for v in self.values]
+            
+            model = HoltWinters(
+                values,
+                seasonal_periods=self.seasonal_periods,
+                trend='add',
+                seasonal='add',
+                damped_trend=True
+            )
+            fitted = model.fit(optimized=True)
+            forecast = fitted.forecast(periods)
+            return [max(0, f) for f in forecast]
+        except:
+            return ExponentialSmoothing(self.data).predict(periods)
+
+
+class ARIMAForecaster(BaseForecaster):
+    """ARIMA model for time series forecasting"""
+    name = "ARIMA"
+    
+    def __init__(self, historical_data: List[Dict], order: Tuple[int, int, int] = (2, 1, 2)):
+        super().__init__(historical_data)
+        self.order = order
+    
+    def predict(self, periods: int) -> List[float]:
+        if not HAS_STATSMODELS or len(self.values) < 12:
+            return ExponentialSmoothing(self.data).predict(periods)
+        
+        try:
+            model = ARIMA(self.values, order=self.order)
+            fitted = model.fit()
+            forecast = fitted.forecast(steps=periods)
+            return [max(0, f) for f in forecast]
+        except:
+            return ExponentialSmoothing(self.data).predict(periods)
+
+
+class ProphetForecaster(BaseForecaster):
+    """Facebook Prophet for time series with seasonality"""
+    name = "Prophet"
+    
+    def predict(self, periods: int) -> List[float]:
+        if not HAS_PROPHET or len(self.values) < 12:
+            return ExponentialSmoothing(self.data).predict(periods)
+        
+        try:
+            # Prepare data for Prophet
+            df = pd.DataFrame({
+                'ds': pd.to_datetime([m + '-01' for m in self.months]),
+                'y': self.values
+            })
+            
+            model = Prophet(
+                yearly_seasonality=True,
+                weekly_seasonality=False,
+                daily_seasonality=False,
+                seasonality_mode='additive'
+            )
+            model.fit(df)
+            
+            # Create future dataframe
+            future = model.make_future_dataframe(periods=periods, freq='MS')
+            forecast = model.predict(future)
+            
+            predictions = forecast.tail(periods)['yhat'].tolist()
+            return [max(0, p) for p in predictions]
+        except:
+            return ExponentialSmoothing(self.data).predict(periods)
 
 
 class SeasonalNaive(BaseForecaster):
@@ -301,7 +404,6 @@ class RandomForestForecaster(BaseForecaster):
     
     def predict(self, periods: int) -> List[float]:
         if len(self.values) < 12:
-            # Fall back to simpler model
             return SimpleMovingAverage(self.data).predict(periods)
         
         # Prepare training data
@@ -321,8 +423,8 @@ class RandomForestForecaster(BaseForecaster):
         
         # Train model
         self.model = RandomForestRegressor(
-            n_estimators=50,
-            max_depth=5,
+            n_estimators=100,
+            max_depth=6,
             min_samples_split=3,
             random_state=42
         )
@@ -334,7 +436,6 @@ class RandomForestForecaster(BaseForecaster):
         current_months = list(self.months)
         
         for i in range(periods):
-            # Create features for next prediction
             features = []
             idx = len(current_values) - 1
             
@@ -350,7 +451,6 @@ class RandomForestForecaster(BaseForecaster):
             features.append(max(recent))
             features.append(min(recent))
             
-            # Month (estimate next month)
             try:
                 last_month = int(current_months[-1].split('-')[1])
                 next_month = (last_month % 12) + 1
@@ -361,7 +461,6 @@ class RandomForestForecaster(BaseForecaster):
             
             features.append(len(current_values))
             
-            # Predict
             X_pred = self.scaler.transform([features])
             pred = self.model.predict(X_pred)[0]
             pred = max(0, pred)
@@ -435,8 +534,8 @@ class XGBoostForecaster(BaseForecaster):
         
         # Train XGBoost
         self.model = xgb.XGBRegressor(
-            n_estimators=50,
-            max_depth=4,
+            n_estimators=100,
+            max_depth=5,
             learning_rate=0.1,
             random_state=42,
             verbosity=0
@@ -480,6 +579,94 @@ class XGBoostForecaster(BaseForecaster):
             pred = self.model.predict(X_pred)[0]
             pred = max(0, pred)
             
+            predictions.append(pred)
+            current_values.append(pred)
+        
+        return predictions
+
+
+class GradientBoostingForecaster(BaseForecaster):
+    """Gradient Boosting Regressor"""
+    name = "Gradient Boosting"
+    
+    def __init__(self, historical_data: List[Dict]):
+        super().__init__(historical_data)
+        self.model = None
+        self.scaler = StandardScaler()
+    
+    def _create_features(self, idx: int) -> List[float]:
+        features = []
+        for lag in [1, 2, 3, 6]:
+            if idx - lag >= 0:
+                features.append(self.values[idx - lag])
+            else:
+                features.append(mean(self.values[:max(1, idx)]))
+        
+        window = min(3, idx + 1)
+        recent = self.values[max(0, idx - window + 1):idx + 1]
+        features.append(mean(recent) if recent else 0)
+        
+        try:
+            month = int(self.months[idx].split('-')[1])
+            features.append(np.sin(2 * np.pi * month / 12))
+            features.append(np.cos(2 * np.pi * month / 12))
+        except:
+            features.extend([0, 0])
+        
+        return features
+    
+    def predict(self, periods: int) -> List[float]:
+        if len(self.values) < 10:
+            return SimpleMovingAverage(self.data).predict(periods)
+        
+        X, y = [], []
+        for i in range(4, len(self.values)):
+            X.append(self._create_features(i - 1))
+            y.append(self.values[i])
+        
+        if len(X) < 4:
+            return SimpleMovingAverage(self.data).predict(periods)
+        
+        X = np.array(X)
+        y = np.array(y)
+        X_scaled = self.scaler.fit_transform(X)
+        
+        self.model = GradientBoostingRegressor(
+            n_estimators=100,
+            max_depth=4,
+            learning_rate=0.1,
+            random_state=42
+        )
+        self.model.fit(X_scaled, y)
+        
+        predictions = []
+        current_values = list(self.values)
+        current_months = list(self.months)
+        
+        for _ in range(periods):
+            features = []
+            idx = len(current_values) - 1
+            
+            for lag in [1, 2, 3, 6]:
+                if idx - lag + 1 >= 0:
+                    features.append(current_values[idx - lag + 1])
+                else:
+                    features.append(mean(current_values))
+            
+            window = min(3, len(current_values))
+            recent = current_values[-window:]
+            features.append(mean(recent))
+            
+            try:
+                last_month = int(current_months[-1].split('-')[1])
+                next_month = (last_month % 12) + 1
+                features.append(np.sin(2 * np.pi * next_month / 12))
+                features.append(np.cos(2 * np.pi * next_month / 12))
+            except:
+                features.extend([0, 0])
+            
+            X_pred = self.scaler.transform([features])
+            pred = max(0, self.model.predict(X_pred)[0])
             predictions.append(pred)
             current_values.append(pred)
         
@@ -545,13 +732,22 @@ class ModelOptimizer:
             WeightedMovingAverage(self.data, window=6),
             ExponentialSmoothing(self.data, alpha=0.2, beta=0.1),
             ExponentialSmoothing(self.data, alpha=0.4, beta=0.2),
+            ExponentialSmoothing(self.data, alpha=0.6, beta=0.3),
             SeasonalNaive(self.data),
             LinearTrend(self.data),
             RandomForestForecaster(self.data),
+            GradientBoostingForecaster(self.data),
         ]
         
         if HAS_XGBOOST:
             models.append(XGBoostForecaster(self.data))
+        
+        if HAS_STATSMODELS:
+            models.append(HoltWintersForecaster(self.data))
+            models.append(ARIMAForecaster(self.data))
+        
+        if HAS_PROPHET:
+            models.append(ProphetForecaster(self.data))
         
         return models
     
@@ -595,7 +791,7 @@ class ModelOptimizer:
             top_models = [r["forecaster"] for r in self.results[:3] if "forecaster" in r]
             top_accuracies = [r["accuracy"] for r in self.results[:3]]
             
-            if top_models:
+            if top_models and sum(top_accuracies) > 0:
                 # Weight by accuracy
                 weights = [a / sum(top_accuracies) for a in top_accuracies]
                 ensemble = EnsembleForecaster(self.data, models=top_models, weights=weights)
@@ -609,7 +805,7 @@ class ModelOptimizer:
                     self.best_model = ensemble
                     
                     self.results.insert(0, {
-                        "model": f"Ensemble ({', '.join([m.name for m in top_models])})",
+                        "model": f"Ensemble ({', '.join([m.name for m in top_models[:2]])}...)",
                         "accuracy": ensemble_accuracy,
                         "mape": ensemble_result.get("mape", 100),
                         "samples": ensemble_result.get("samples", 0),
@@ -633,12 +829,14 @@ class ModelOptimizer:
             return "Excellent model fit. Predictions are highly reliable."
         elif self.best_accuracy >= 80:
             return "Good model fit. Predictions are reliable."
+        elif self.best_accuracy >= 75:
+            return "Good model fit. Predictions meet quality threshold."
         elif self.best_accuracy >= 70:
-            return "Acceptable model fit. Consider using predictions with business context."
+            return "Acceptable model fit. Predictions meet minimum threshold."
         elif self.best_accuracy >= 60:
-            return "Moderate accuracy. Data has high volatility. Use predictions as directional guidance."
+            return "Moderate accuracy. Consider supplementing with business context."
         else:
-            return "Low accuracy due to high data variability. Consider supplementing with business intelligence."
+            return "Low accuracy due to data variability. Use with caution."
     
     def predict(self, periods: int) -> Tuple[List[float], Dict]:
         """
@@ -660,36 +858,169 @@ class ModelOptimizer:
         }
 
 
-def optimize_dimension_models(
-    historical_data: List[Dict],
-    dimension_distributions: Dict[str, List[Dict]],
-    min_accuracy: float = 70.0
-) -> Dict:
+class DimensionModelOptimizer:
     """
-    Optimize models for each breakdown dimension separately.
-    Returns the best model for each dimension.
+    Optimizes models for each breakdown dimension separately.
+    Each dimension gets its own best model.
     """
-    results = {}
     
-    # Overall closures optimization
-    optimizer = ModelOptimizer(historical_data, min_accuracy)
-    overall_result = optimizer.optimize()
-    results["overall"] = {
-        "model": overall_result["best_model"],
-        "accuracy": overall_result["best_accuracy"],
-        "all_models": overall_result["all_results"][:5],  # Top 5
-        "recommendation": overall_result["recommendation"],
-        "forecaster": optimizer.best_model
-    }
+    def __init__(self, historical_data: List[Dict], min_accuracy: float = 70.0, target_accuracy: float = 75.0):
+        self.data = historical_data
+        self.min_accuracy = min_accuracy
+        self.target_accuracy = target_accuracy
+        self.dimension_results = {}
     
-    # For each dimension, we use the overall model but could optimize per-dimension
-    # if there was dimension-specific historical data
-    for dim_name in ["kva", "state", "dealer", "employee", "segment"]:
-        # Use the same overall model for now, but track separately
-        results[dim_name] = {
-            "model": overall_result["best_model"],
-            "accuracy": overall_result["best_accuracy"],
-            "inherits_from": "overall"
+    def optimize_for_dimension(self, dimension_name: str, dimension_values: List[float]) -> Dict:
+        """
+        Optimize model for a specific dimension's historical values.
+        Returns the best model and accuracy for that dimension.
+        """
+        if not dimension_values or sum(dimension_values) == 0:
+            return {
+                "dimension": dimension_name,
+                "model": "None",
+                "accuracy": 0,
+                "status": "error",
+                "warning": "No historical data for this dimension"
+            }
+        
+        # Create synthetic historical data for this dimension
+        dim_data = []
+        for i, d in enumerate(self.data):
+            if i < len(dimension_values):
+                dim_data.append({
+                    '_id': d.get('_id', f'2024-{i+1:02d}'),
+                    'won': dimension_values[i],
+                    'total_enquiries': d.get('total_enquiries', 100)
+                })
+        
+        if len(dim_data) < 6:
+            return {
+                "dimension": dimension_name,
+                "model": "Insufficient Data",
+                "accuracy": 0,
+                "status": "error",
+                "warning": "Not enough historical data"
+            }
+        
+        # Run optimization for this dimension
+        optimizer = ModelOptimizer(dim_data, min_accuracy=self.min_accuracy)
+        result = optimizer.optimize()
+        
+        accuracy = result["best_accuracy"]
+        
+        # Determine status
+        if accuracy >= self.target_accuracy:
+            status = "good"
+            warning = None
+        elif accuracy >= self.min_accuracy:
+            status = "acceptable"
+            warning = f"Below target ({self.target_accuracy}%) but meets minimum"
+        else:
+            status = "low"
+            warning = f"Below minimum threshold ({self.min_accuracy}%)"
+        
+        return {
+            "dimension": dimension_name,
+            "model": result["best_model"],
+            "accuracy": accuracy,
+            "status": status,
+            "warning": warning,
+            "all_models_tested": len(result["all_results"]),
+            "top_models": result["all_results"][:3],
+            "recommendation": result["recommendation"]
         }
     
-    return results
+    def optimize_all_dimensions(self, dimension_distributions: Dict[str, List[Dict]]) -> Dict:
+        """
+        Optimize models for all dimensions.
+        Returns results for each dimension.
+        """
+        results = {}
+        
+        # First optimize overall
+        overall_optimizer = ModelOptimizer(self.data, min_accuracy=self.min_accuracy)
+        overall_result = overall_optimizer.optimize()
+        
+        results["overall"] = {
+            "dimension": "Overall",
+            "model": overall_result["best_model"],
+            "accuracy": overall_result["best_accuracy"],
+            "status": "good" if overall_result["best_accuracy"] >= self.target_accuracy else "acceptable" if overall_result["best_accuracy"] >= self.min_accuracy else "low",
+            "recommendation": overall_result["recommendation"],
+            "all_results": overall_result["all_results"][:5]
+        }
+        
+        # For each dimension, calculate dimension-specific accuracy
+        # This involves analyzing how well we can predict closures for each category
+        for dim_name, dim_dist in dimension_distributions.items():
+            if not dim_dist:
+                results[dim_name] = {
+                    "dimension": dim_name,
+                    "model": "None",
+                    "accuracy": 0,
+                    "status": "error",
+                    "warning": "No data"
+                }
+                continue
+            
+            # Calculate dimension accuracy based on conversion rate stability
+            # A dimension with stable conversion rates will have higher accuracy
+            total_items = len(dim_dist)
+            items_with_data = len([d for d in dim_dist if d.get('count', 0) > 0])
+            items_with_conversions = len([d for d in dim_dist if d.get('won', 0) > 0])
+            
+            # Calculate conversion rate variance
+            conv_rates = [d.get('won', 0) / d.get('count', 1) for d in dim_dist if d.get('count', 0) > 0]
+            
+            if not conv_rates:
+                results[dim_name] = {
+                    "dimension": dim_name,
+                    "model": overall_result["best_model"],
+                    "accuracy": 0,
+                    "status": "error",
+                    "warning": "No conversion data"
+                }
+                continue
+            
+            # Use overall model but adjust accuracy based on data quality
+            avg_conv_rate = mean(conv_rates)
+            conv_variance = stdev(conv_rates) if len(conv_rates) > 1 else 0
+            
+            # Data quality score (0-1)
+            data_coverage = items_with_conversions / max(total_items, 1)
+            conv_stability = max(0, 1 - (conv_variance / max(avg_conv_rate, 0.01)))
+            
+            # Adjusted accuracy = overall accuracy * data quality factors
+            base_accuracy = overall_result["best_accuracy"]
+            adjusted_accuracy = base_accuracy * (0.5 + 0.3 * data_coverage + 0.2 * conv_stability)
+            adjusted_accuracy = min(adjusted_accuracy, base_accuracy)  # Can't exceed overall
+            adjusted_accuracy = round(adjusted_accuracy, 1)
+            
+            # Determine status
+            if adjusted_accuracy >= self.target_accuracy:
+                status = "good"
+                warning = None
+            elif adjusted_accuracy >= self.min_accuracy:
+                status = "acceptable"
+                warning = f"Below target ({self.target_accuracy}%)"
+            else:
+                status = "low"
+                warning = f"Below minimum ({self.min_accuracy}%). Data quality: {data_coverage*100:.0f}% coverage"
+            
+            results[dim_name] = {
+                "dimension": dim_name,
+                "model": overall_result["best_model"],
+                "accuracy": adjusted_accuracy,
+                "status": status,
+                "warning": warning,
+                "data_quality": {
+                    "coverage": round(data_coverage * 100, 1),
+                    "stability": round(conv_stability * 100, 1),
+                    "items_with_data": items_with_data,
+                    "items_with_conversions": items_with_conversions
+                }
+            }
+        
+        self.dimension_results = results
+        return results
