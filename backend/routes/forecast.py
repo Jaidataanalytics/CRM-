@@ -1033,7 +1033,17 @@ async def generate_forecast(
             "segment": [{"segment": d["_id"], "count": d["count"], "percentage": round(d["count"]/total_segment_leads*100, 2)} for d in segment_dist]
         },
         "horizon_months": horizon,
-        "model_info": {"type": "Adaptive Seasonal with Business Context", "training_months": len(complete_data)},
+        "model_info": {
+            "type": best_model_name,
+            "accuracy": round(best_model_accuracy, 1),
+            "training_months": len(complete_data),
+            "meets_threshold": best_model_accuracy >= 70.0,
+            "optimization_results": [
+                {"model": r["model"], "accuracy": r.get("accuracy", 0)}
+                for r in optimization_result.get("all_results", [])[:5]
+            ],
+            "recommendation": optimization_result.get("recommendation", "")
+        },
         "filters": {"state": state, "dealer": dealer, "location": location},
         "generated_at": datetime.now(timezone.utc).isoformat()
     }
