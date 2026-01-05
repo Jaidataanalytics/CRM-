@@ -737,7 +737,8 @@ class ModelOptimizer:
         
         for model in models:
             try:
-                backtest_result = model.backtest(test_periods=6)
+                # Use fewer test periods for faster backtesting
+                backtest_result = model.backtest(test_periods=4)
                 accuracy = backtest_result.get("accuracy", 0)
                 
                 self.results.append({
