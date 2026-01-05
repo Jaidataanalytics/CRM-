@@ -88,6 +88,13 @@ class Lead(BaseModel):
     transferred_at: Optional[datetime] = None  # When it was transferred
     transferred_by: Optional[str] = None  # Who transferred it
     
+    # Dispatch tracking fields (for won orders)
+    dispatch_status: Optional[str] = None  # "pending" or "dispatched"
+    dispatch_date: Optional[str] = None  # Date when dispatched
+    delivery_address: Optional[str] = None  # Delivery address
+    transporter_details: Optional[str] = None  # Transporter info
+    dispatch_status_history: Optional[List[dict]] = None  # Track status changes with reasons
+    
     # System fields
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
