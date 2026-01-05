@@ -759,6 +759,32 @@ async def generate_forecast(
     for seg in segment_dist:
         seg["conversion_rate"] = seg["won"] / seg["count"] if seg["count"] > 0 else overall_conversion_rate
     
+    # ============================================
+    # DIMENSION ACCURACY CALCULATION
+    # Calculate accuracy for each breakdown dimension
+    # ============================================
+    dimension_accuracies = []
+    
+    # Calculate accuracy for each dimension
+    kva_accuracy = await calculate_dimension_accuracy(db, "KVA", kva_dist, total_kva_leads, complete_data)
+    state_accuracy = await calculate_dimension_accuracy(db, "State", state_dist, total_state_leads, complete_data)
+    dealer_accuracy = await calculate_dimension_accuracy(db, "Dealer", dealer_dist, total_dealer_leads, complete_data)
+    employee_accuracy = await calculate_dimension_accuracy(db, "Employee", employee_dist, total_employee_leads, complete_data)
+    segment_accuracy = await calculate_dimension_accuracy(db, "Segment", segment_dist, total_segment_leads, complete_data)
+    
+    dimension_accuracies = [kva_accuracy, state_accuracy, dealer_accuracy, employee_accuracy, segment_accuracy]
+    
+    # Find the dimension with highest accuracy
+    valid_dimensions = [d for d in dimension_accuracies if d.get("accuracy", 0) > 0]
+    if valid_dimensions:
+        winning_dimension = max(valid_dimensions, key=lambda x: x.get("accuracy", 0))
+    else:
+        # Fallback to overall if no dimension has valid accuracy
+        winning_dimension = {"dimension": "Overall", "accuracy": 0, "conversion_rate": overall_conversion_rate * 100}
+    
+    # Get the winning dimension's conversion rate for master closure calculation
+    winning_conv_rate = winning_dimension.get("conversion_rate", overall_conversion_rate * 100) / 100
+    
     # Determine start month
     last_month = complete_data[-1]['_id']
     try:
