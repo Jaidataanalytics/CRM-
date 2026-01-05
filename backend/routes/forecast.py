@@ -629,6 +629,42 @@ async def generate_forecast(
     kva_dist = await db.leads.aggregate(kva_pipeline).to_list(100)
     total_kva_leads = sum(d["count"] for d in kva_dist) or 1
     
+    # State distribution
+    state_pipeline = [
+        {"$match": {**query, "state": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$state", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    state_dist = await db.leads.aggregate(state_pipeline).to_list(100)
+    total_state_leads = sum(d["count"] for d in state_dist) or 1
+    
+    # Dealer distribution
+    dealer_pipeline = [
+        {"$match": {**query, "dealer": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$dealer", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    dealer_dist = await db.leads.aggregate(dealer_pipeline).to_list(100)
+    total_dealer_leads = sum(d["count"] for d in dealer_dist) or 1
+    
+    # Employee distribution (added_by field)
+    employee_pipeline = [
+        {"$match": {**query, "added_by": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$added_by", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    employee_dist = await db.leads.aggregate(employee_pipeline).to_list(100)
+    total_employee_leads = sum(d["count"] for d in employee_dist) or 1
+    
+    # Segment distribution
+    segment_pipeline = [
+        {"$match": {**query, "segment": {"$exists": True, "$ne": None, "$ne": ""}}},
+        {"$group": {"_id": "$segment", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    segment_dist = await db.leads.aggregate(segment_pipeline).to_list(100)
+    total_segment_leads = sum(d["count"] for d in segment_dist) or 1
+    
     # Determine start month
     last_month = complete_data[-1]['_id']
     try:
