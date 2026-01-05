@@ -876,27 +876,50 @@ const Forecast = () => {
                           {forecast.dimension_accuracies.map((dim, idx) => (
                             <div 
                               key={idx} 
-                              className={`p-2 rounded-lg border text-center ${
+                              className={`p-3 rounded-lg border text-center relative ${
                                 dim.dimension === forecast.source_of_truth.dimension 
                                   ? 'bg-indigo-100 border-indigo-400' 
-                                  : 'bg-white border-gray-200'
+                                  : dim.status === 'good' ? 'bg-green-50 border-green-200'
+                                  : dim.status === 'acceptable' ? 'bg-amber-50 border-amber-200'
+                                  : 'bg-red-50 border-red-200'
                               }`}
                             >
-                              <p className="text-xs text-muted-foreground">{dim.dimension}</p>
-                              <p className={`font-bold ${
-                                dim.accuracy >= 70 ? 'text-green-600' :
-                                dim.accuracy >= 50 ? 'text-amber-600' : 'text-red-500'
+                              <p className="text-xs font-medium text-muted-foreground">{dim.dimension}</p>
+                              <p className={`text-xl font-bold ${
+                                dim.accuracy >= 75 ? 'text-green-600' :
+                                dim.accuracy >= 70 ? 'text-amber-600' : 'text-red-500'
                               }`}>
                                 {dim.accuracy || 0}%
                               </p>
-                              <p className="text-[10px] text-muted-foreground">{dim.model}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{dim.model}</p>
+                              {dim.status === 'good' && (
+                                <CheckCircle2 className="h-3 w-3 text-green-600 mx-auto mt-1" />
+                              )}
+                              {dim.status === 'acceptable' && (
+                                <AlertCircle className="h-3 w-3 text-amber-600 mx-auto mt-1" />
+                              )}
+                              {dim.status === 'low' && (
+                                <XCircle className="h-3 w-3 text-red-500 mx-auto mt-1" />
+                              )}
+                              {dim.warning && (
+                                <p className="text-[9px] text-red-500 mt-1 truncate" title={dim.warning}>
+                                  {dim.warning.length > 30 ? dim.warning.substring(0, 30) + '...' : dim.warning}
+                                </p>
+                              )}
                               {dim.dimension === forecast.source_of_truth.dimension && (
-                                <CheckCircle2 className="h-3 w-3 text-indigo-600 mx-auto mt-1" />
+                                <Badge className="absolute -top-2 -right-2 text-[8px] bg-indigo-600">Winner</Badge>
                               )}
                             </div>
                           ))}
                         </div>
                       )}
+                      
+                      {/* Accuracy Legend */}
+                      <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-600" /> ≥75% Good</span>
+                        <span className="flex items-center gap-1"><AlertCircle className="h-3 w-3 text-amber-600" /> 70-74% Acceptable</span>
+                        <span className="flex items-center gap-1"><XCircle className="h-3 w-3 text-red-500" /> &lt;70% Low</span>
+                      </div>
                       
                       <p className="text-xs text-muted-foreground mt-3">
                         All breakdown totals are normalized to match the {forecast.source_of_truth.dimension} dimension's predictions for consistency.
