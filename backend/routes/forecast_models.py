@@ -702,29 +702,28 @@ class ModelOptimizer:
         self.best_accuracy = 0
     
     def get_all_models(self) -> List[BaseForecaster]:
-        """Get all available forecasting models"""
+        """Get available forecasting models - optimized for speed"""
+        # Use only fast, reliable models for real-time forecasting
         models = [
             SimpleMovingAverage(self.data, window=3),
             SimpleMovingAverage(self.data, window=6),
             WeightedMovingAverage(self.data, window=6),
-            ExponentialSmoothing(self.data, alpha=0.2, beta=0.1),
-            ExponentialSmoothing(self.data, alpha=0.4, beta=0.2),
-            ExponentialSmoothing(self.data, alpha=0.6, beta=0.3),
+            ExponentialSmoothing(self.data, alpha=0.3, beta=0.1),
+            ExponentialSmoothing(self.data, alpha=0.5, beta=0.2),
             SeasonalNaive(self.data),
             LinearTrend(self.data),
-            RandomForestForecaster(self.data),
-            GradientBoostingForecaster(self.data),
         ]
         
-        if HAS_XGBOOST:
-            models.append(XGBoostForecaster(self.data))
+        # Only add ML models if we have enough data (they're slower)
+        if len(self.data) >= 18:
+            models.append(GradientBoostingForecaster(self.data))
         
-        if HAS_STATSMODELS:
-            models.append(HoltWintersForecaster(self.data))
+        # ARIMA is reasonably fast
+        if HAS_STATSMODELS and len(self.data) >= 12:
             models.append(ARIMAForecaster(self.data))
         
-        if HAS_PROPHET:
-            models.append(ProphetForecaster(self.data))
+        # Skip Prophet (too slow), XGBoost (not much better than GB), 
+        # RandomForest (slower), HoltWinters (can be unstable)
         
         return models
     
