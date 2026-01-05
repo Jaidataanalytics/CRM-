@@ -344,17 +344,19 @@ async def run_backtest(
     actual_won, pred_won = [], []
     actual_kva, pred_kva = [], []
     
-    num_tests = min(test_periods, len(complete_data) - window_size)
+    # Run ONE-STEP-AHEAD forecasting test
+    # For each test month, train on all prior data, predict the next month
+    num_tests = min(test_periods, len(complete_data) - 12)  # Need at least 12 months for training
     
     for i in range(num_tests):
         test_idx = len(complete_data) - num_tests + i
         train_end = test_idx
-        train_start = max(0, train_end - window_size)
         
-        if train_end <= train_start or test_idx >= len(complete_data):
+        if train_end < 12 or test_idx >= len(complete_data):
             continue
         
-        train_data = complete_data[train_start:train_end]
+        # Use ALL available prior data for training
+        train_data = complete_data[:train_end]
         actual = complete_data[test_idx]
         
         test_month_num = int(actual['_id'].split('-')[1])
@@ -370,8 +372,13 @@ async def run_backtest(
         except Exception as e:
             continue
         
+        # Get same-month historical values for context
+        same_month_hist = [d['total_enquiries'] for d in train_data 
+                          if int(d['_id'].split('-')[1]) == test_month_num]
+        
         results.append({
             "training_period": f"{train_data[0]['_id']} to {train_data[-1]['_id']}",
+            "training_months": len(train_data),
             "test_month": actual['_id'],
             "actual": {"enquiries": actual['total_enquiries'], "closures": actual['won'], "kva": round(actual['total_kva'])},
             "predicted": {"enquiries": pred['predicted_enquiries'], "closures": pred['predicted_closures'], "kva": pred['predicted_kva']},
@@ -386,7 +393,10 @@ async def run_backtest(
                 "kva": round((actual['total_kva'] - pred['predicted_kva']) / actual['total_kva'] * 100, 1) if actual['total_kva'] > 0 else 0
             },
             "method": pred.get('method', 'unknown'),
-            "historical_range": pred.get('historical_range', {})
+            "same_month_history": {
+                "values": same_month_hist[-3:] if same_month_hist else [],
+                "prediction_based_on": same_month_hist[-1] if same_month_hist else None
+            }
         })
         
         actual_enq.append(actual['total_enquiries'])
@@ -411,25 +421,29 @@ async def run_backtest(
         kva_metrics.get('accuracy_percentage', 0) * 0.25
     )
     
+    # Analyze prediction quality
+    within_10pct = sum(1 for r in results if abs(r['error_pct']['enquiries']) <= 10)
+    within_20pct = sum(1 for r in results if abs(r['error_pct']['enquiries']) <= 20)
+    within_30pct = sum(1 for r in results if abs(r['error_pct']['enquiries']) <= 30)
+    
     recommendations = []
     if overall >= 90:
-        recommendations.append("✅ Excellent model performance. Predictions are highly reliable.")
+        recommendations.append("✅ Excellent model performance.")
     elif overall >= 80:
-        recommendations.append("🟢 Good model performance. Minor variations expected.")
+        recommendations.append("🟢 Good model performance.")
     elif overall >= 70:
-        recommendations.append("🟡 Fair model performance. Review months with high errors.")
+        recommendations.append("🟡 Acceptable performance for business planning.")
     else:
-        recommendations.append("🟠 Model shows typical forecast variance for your data.")
-        recommendations.append("Your data has 20-30% month-to-month variability, which limits prediction precision.")
+        recommendations.append("🟠 Your data has significant year-over-year variation.")
+        recommendations.append("Consider reviewing months with large errors for business insights.")
     
     return {
         "success": True,
         "backtest_summary": {
             "total_tests": len(results),
-            "window_size_months": window_size,
             "data_range": f"{complete_data[0]['_id']} to {complete_data[-1]['_id']}",
             "complete_months": len(complete_data),
-            "excluded_partial": len(all_data) - len(complete_data)
+            "methodology": "One-step-ahead forecasting using all available prior data"
         },
         "accuracy_metrics": {
             "enquiries": enq_metrics,
@@ -437,22 +451,18 @@ async def run_backtest(
             "kva": kva_metrics,
             "overall_accuracy": round(overall, 2)
         },
+        "prediction_quality": {
+            "within_10pct": f"{within_10pct}/{len(results)} ({round(within_10pct/len(results)*100)}%)",
+            "within_20pct": f"{within_20pct}/{len(results)} ({round(within_20pct/len(results)*100)}%)",
+            "within_30pct": f"{within_30pct}/{len(results)} ({round(within_30pct/len(results)*100)}%)"
+        },
         "model_info": {
             "type": "Adaptive Seasonal Forecaster",
-            "method": "Calendar-month based with variability-adaptive weighting",
-            "features": [
-                "Low variability months → weighted historical average",
-                "Medium variability → recent + average blend",  
-                "High variability → recent median (robust)"
-            ]
+            "method": "Most recent same-calendar-month value as primary predictor",
+            "note": "Works best when business patterns are stable year-over-year"
         },
         "detailed_results": results,
         "recommendations": recommendations,
-        "data_characteristics": {
-            "inherent_variability": "Your data shows 20-30% coefficient of variation by month",
-            "practical_accuracy_limit": "~85% accuracy is realistic given data variability",
-            "note": "Predictions fall within historical ranges for each month"
-        },
         "generated_at": datetime.now(timezone.utc).isoformat()
     }
 
