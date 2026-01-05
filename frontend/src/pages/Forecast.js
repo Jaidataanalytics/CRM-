@@ -657,6 +657,31 @@ const Forecast = () => {
                   </Card>
                 )}
 
+                {/* Business Adjustments Applied */}
+                {forecast.business_adjustments?.applied && (
+                  <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-600" />
+                        Business Context Adjustments Applied
+                        <Badge className="bg-green-600">{forecast.business_adjustments.total_adjustment}</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {forecast.business_adjustments.details?.map((detail, idx) => (
+                          <Badge key={idx} variant="outline" className="bg-white border-green-300">
+                            {detail}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        Base predictions have been adjusted by a multiplier of {forecast.business_adjustments.multiplier}x based on your business inputs.
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Summary */}
                 <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
                   <CardHeader>
