@@ -708,9 +708,17 @@ const Forecast = () => {
           </div>
           
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button onClick={generateForecast} disabled={loading} className="gap-2" data-testid="generate-forecast-btn">
               {loading ? 'Generating...' : <><Sparkles className="h-4 w-4" />Generate Forecast</>}
+            </Button>
+            {forecast && (
+              <Button onClick={saveProjection} disabled={loadingSave} variant="default" className="gap-2 bg-green-600 hover:bg-green-700" data-testid="save-projection-btn">
+                {loadingSave ? 'Saving...' : <><Save className="h-4 w-4" />Save Projection</>}
+              </Button>
+            )}
+            <Button variant="outline" onClick={loadSavedForecasts} disabled={loadingSaved} className="gap-2" data-testid="view-saved-btn">
+              {loadingSaved ? 'Loading...' : <><Archive className="h-4 w-4" />Saved Projections</>}
             </Button>
             <Button variant="outline" onClick={runBacktest} disabled={loadingBacktest} className="gap-2" data-testid="run-backtest-btn">
               {loadingBacktest ? 'Testing...' : <><FlaskConical className="h-4 w-4" />Backtest</>}
