@@ -715,9 +715,26 @@ async def generate_forecast(
         adjusted_closures = int(sp['predicted_closures'] * adjustment_multiplier)
         adjusted_kva = int(sp['predicted_kva'] * adjustment_multiplier)
         
+        # KVA breakdown
         kva_breakdown = [{"kva": k["_id"], "predicted_leads": int(adjusted_enquiries * k["count"]/total_kva_leads), 
                          "predicted_kva_value": int(adjusted_enquiries * k["count"]/total_kva_leads * k["_id"]),
                          "percentage": round(k["count"]/total_kva_leads*100, 2)} for k in kva_dist]
+        
+        # State breakdown
+        state_breakdown = [{"state": s["_id"], "predicted_leads": int(adjusted_enquiries * s["count"]/total_state_leads),
+                          "percentage": round(s["count"]/total_state_leads*100, 2)} for s in state_dist[:20]]  # Top 20 states
+        
+        # Dealer breakdown
+        dealer_breakdown = [{"dealer": d["_id"], "predicted_leads": int(adjusted_enquiries * d["count"]/total_dealer_leads),
+                           "percentage": round(d["count"]/total_dealer_leads*100, 2)} for d in dealer_dist[:20]]  # Top 20 dealers
+        
+        # Employee breakdown
+        employee_breakdown = [{"employee": e["_id"], "predicted_leads": int(adjusted_enquiries * e["count"]/total_employee_leads),
+                             "percentage": round(e["count"]/total_employee_leads*100, 2)} for e in employee_dist[:20]]  # Top 20 employees
+        
+        # Segment breakdown
+        segment_breakdown = [{"segment": seg["_id"], "predicted_leads": int(adjusted_enquiries * seg["count"]/total_segment_leads),
+                            "percentage": round(seg["count"]/total_segment_leads*100, 2)} for seg in segment_dist]
         
         predictions.append({
             "month": month_date.strftime("%Y-%m"),
@@ -731,7 +748,13 @@ async def generate_forecast(
             },
             "adjustment_applied": f"{total_adjustment_pct:+}%" if total_adjustment_pct != 0 else "None",
             "confidence": "high" if len(complete_data) >= 24 and adjustment_multiplier == 1.0 else "medium" if adjustment_multiplier == 1.0 else "adjusted",
-            "breakdown": {"by_kva": kva_breakdown}
+            "breakdown": {
+                "by_kva": kva_breakdown,
+                "by_state": state_breakdown,
+                "by_dealer": dealer_breakdown,
+                "by_employee": employee_breakdown,
+                "by_segment": segment_breakdown
+            }
         })
     
     return {
