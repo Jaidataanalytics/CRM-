@@ -7,18 +7,19 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ### 1. Lead Management
 - CRUD operations for leads
-- Bulk upload via Excel
+- Bulk upload via Excel (uses enquiry_no + phone_number composite key)
 - Advanced filtering (State, Dealer, Lead Type, Follow-up Date)
 - Export with applied filters
 - Follow-up tracking with history
+- **Lost Lead Questions**: Optional closure questions when lead is marked as Lost (shows "Pending" until filled)
 
 ### 2. Dashboard & KPIs
 - Real-time KPI cards (Hot/Warm/Cold/Won/Lost)
-- **Dispatch KPIs**: Pending Dispatch, Dispatched counts (NEW)
+- **Dispatch KPIs**: Pending Dispatch, Dispatched counts
 - Clickable KPI cards for filtering
 - Recent leads table with status indicators
 
-### 3. Dispatch Management (NEW - Jan 5, 2026)
+### 3. Dispatch Management
 - **Dedicated Dispatch Page**: Track and manage order dispatches
 - **Status Tracking**: Pending Dispatch → Dispatched
 - **Historical Data Handling**: 
@@ -39,6 +40,7 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - **Consistent Closure Totals**: All breakdowns equal monthly total
 - **Business Context Adjustments**
 - **Save & View Projections**
+- **Compare Forecasts**: Compare saved projections against actual results (NEW - Jan 5, 2026)
 
 ### 5. User Management
 - Role-based access (Admin, Manager, Employee)
@@ -46,14 +48,14 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Activity logging
 
 ## Technical Stack
-- **Frontend**: React + Tailwind CSS + Shadcn/UI + Chart.js
+- **Frontend**: React + Tailwind CSS + Shadcn/UI + Chart.js + Recharts
 - **Backend**: FastAPI + MongoDB
 - **AI**: GPT-4o via Emergent LLM Key
 - **ML Libraries**: scikit-learn, XGBoost, statsmodels, Prophet
 
 ## Key API Endpoints
 
-### Dispatch Module (NEW)
+### Dispatch Module
 - `GET /api/dispatch/summary` - Get pending/dispatched counts
 - `GET /api/dispatch/list` - List won orders with dispatch status
 - `PATCH /api/dispatch/{lead_id}` - Update dispatch status
@@ -64,21 +66,39 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - `POST /api/forecast` - Generate forecast with auto-optimized model
 - `POST /api/forecast/save` - Save a generated forecast
 - `GET /api/forecast/saved` - Get list of saved forecasts
+- `GET /api/forecast/compare/{index}` - Compare saved forecast with actual results (NEW)
 
-## Completed Work (Jan 5, 2026)
+### Closure Questions Module (NEW)
+- `GET /api/leads/pending-closure-questions/count` - Count leads needing closure questions
+- `GET /api/leads/pending-closure-questions` - List leads needing closure questions
+- `POST /api/leads/{lead_id}/closure-answers` - Save closure question answers
+- `GET /api/admin/closure-questions` - Get configured closure questions
+
+## Completed Work
+
+### Session 5 - Jan 5, 2026 (COMPLETED)
+1. ✅ **Compare Forecasts Page**:
+   - New page at /compare-forecasts
+   - Select saved forecast from dropdown
+   - Compare button triggers comparison
+   - Monthly comparison table with predicted vs actual
+   - KVA, State, Dealer breakdown tabs
+   - Accuracy metrics (Overall, Leads, Closures, KVA)
+   - Charts showing Predicted vs Actual
+2. ✅ **Lost Lead Questions**:
+   - Modal triggers when lead status changes to Lost
+   - Optional answers (shows "Pending" until filled)
+   - Backend endpoints for closure answers
+   - Pending count shown in Leads page header
+3. ✅ **Upload Composite Key Logic**:
+   - Uses enquiry_no + phone_number to identify existing leads
+   - Updates existing leads, creates new ones if not found
+4. ✅ All tests passed (12/12 backend, frontend verified)
 
 ### Session 4 - COMPLETED
-1. ✅ **Dispatch Management Feature**:
-   - New Dispatch page in sidebar
-   - Summary cards: Total Won (2606), Pending (9), Dispatched (2597)
-   - Tabs: Pending, Dispatched, All
-   - Dispatch modal with date, address, transporter fields
-   - Date validation (cannot be before won date)
-   - Reason required for status reversion (new orders only)
-   - Dispatch history tracking
+1. ✅ **Dispatch Management Feature**
 2. ✅ **KPI Cards**: Added Pending Dispatch and Dispatched to Dashboard
-3. ✅ **Migration**: Automatically set dispatch status for 4110 existing won orders
-4. ✅ All tests passed (15/15 backend, frontend verified)
+3. ✅ **Migration**: Dispatch status for historical orders
 
 ### Previous Sessions - COMPLETED
 - Auto Model Optimization (91.2% accuracy)
@@ -86,12 +106,9 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Closure consistency fix
 - Save/View projections
 
-## Upcoming Tasks
-- **Compare Projections (P1)**: Compare forecasted vs actual values
-
 ## Future/Backlog Tasks
 - Detailed audit logs (P2)
-- Refactor Forecast.js into smaller components
+- Refactor Forecast.js into smaller components (P2)
 
 ## Credentials
 - **Admin**: admin / admin123
