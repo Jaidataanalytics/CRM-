@@ -307,34 +307,49 @@ async def upload_leads(
                                 lead_data[db_field] = None
                 
                 enquiry_no = lead_data.get('enquiry_no')
+                phone_number = lead_data.get('phone_number')
                 
-                if enquiry_no:
-                    # Check if lead exists
+                # Build unique identifier query using enquiry_no + phone_number combination
+                existing = None
+                if enquiry_no and phone_number:
+                    # Check by both enquiry_no AND phone_number
+                    existing = await db.leads.find_one({
+                        "enquiry_no": str(enquiry_no),
+                        "phone_number": str(phone_number)
+                    })
+                elif enquiry_no:
+                    # Fallback: check by enquiry_no only
                     existing = await db.leads.find_one({"enquiry_no": str(enquiry_no)})
+                elif phone_number:
+                    # Fallback: check by phone_number only
+                    existing = await db.leads.find_one({"phone_number": str(phone_number)})
+                
+                # Check if this is a lost/closure update that needs questions
+                is_lost_closure = False
+                enquiry_stage = lead_data.get('enquiry_stage', '')
+                if enquiry_stage and 'lost' in enquiry_stage.lower():
+                    is_lost_closure = True
+                    # Mark that this lead needs closure questions answered
+                    lead_data['needs_closure_questions'] = True
+                    lead_data['closure_type'] = 'lost'
+                
+                if existing:
+                    # Update existing lead
+                    lead_data["updated_at"] = datetime.now(timezone.utc).isoformat()
                     
-                    if existing:
-                        # Update existing lead
-                        lead_data["updated_at"] = datetime.now(timezone.utc).isoformat()
-                        await db.leads.update_one(
-                            {"enquiry_no": str(enquiry_no)},
-                            {"$set": lead_data}
-                        )
-                        updated_count += 1
-                    else:
-                        # Create new lead - directly without Pydantic
-                        # Use current user's name for added_by (not System Import for regular uploads)
-                        uploader_name = current_user.name or current_user.email or "Unknown User"
-                        lead_doc = {
-                            "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
-                            **lead_data,
-                            "added_by": uploader_name,
-                            "created_at": datetime.now(timezone.utc).isoformat(),
-                            "updated_at": datetime.now(timezone.utc).isoformat()
-                        }
-                        await db.leads.insert_one(lead_doc)
-                        created_count += 1
+                    # Check if this update is changing status to Lost (was not lost before)
+                    old_stage = existing.get('enquiry_stage', '')
+                    if is_lost_closure and 'lost' not in old_stage.lower():
+                        lead_data['needs_closure_questions'] = True
+                        lead_data['closure_type'] = 'lost'
+                    
+                    await db.leads.update_one(
+                        {"lead_id": existing["lead_id"]},
+                        {"$set": lead_data}
+                    )
+                    updated_count += 1
                 else:
-                    # Create new lead without enquiry_no - directly without Pydantic
+                    # Create new lead
                     uploader_name = current_user.name or current_user.email or "Unknown User"
                     lead_doc = {
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
