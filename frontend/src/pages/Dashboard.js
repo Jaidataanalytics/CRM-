@@ -574,6 +574,21 @@ const Dashboard = () => {
           icon={Timer}
           color="text-violet-500"
         />
+        
+        {/* Dispatch KPI Cards */}
+        <KPICard
+          title="Pending Dispatch"
+          value={kpis?.pending_dispatch || 0}
+          icon={Clock}
+          color="text-amber-600"
+        />
+        <KPICard
+          title="Dispatched"
+          value={kpis?.dispatched || 0}
+          icon={Truck}
+          color="text-blue-600"
+        />
+        
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Metric Settings</CardTitle>
