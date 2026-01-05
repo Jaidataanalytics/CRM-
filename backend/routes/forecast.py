@@ -1161,3 +1161,272 @@ async def delete_saved_forecast(
         "success": True,
         "message": "Forecast deleted successfully"
     }
+
+
+@router.get("/compare/{index}")
+async def compare_forecast_with_actuals(
+    request: Request,
+    index: int,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """Compare a saved forecast projection with actual results"""
+    db = await get_db(request)
+    
+    # Get the saved forecast
+    cursor = db.saved_forecasts.find({}).sort("saved_at", -1)
+    forecasts = await cursor.to_list(100)
+    
+    if index < 1 or index > len(forecasts):
+        raise HTTPException(status_code=404, detail="Projection not found")
+    
+    forecast = forecasts[index - 1]
+    predictions = forecast.get("predictions", [])
+    
+    if not predictions:
+        raise HTTPException(status_code=400, detail="No predictions found in this forecast")
+    
+    comparison_results = []
+    total_predicted_leads = 0
+    total_actual_leads = 0
+    total_predicted_closures = 0
+    total_actual_closures = 0
+    total_predicted_kva = 0
+    total_actual_kva = 0
+    
+    # Breakdown comparisons
+    kva_comparison = {}
+    state_comparison = {}
+    dealer_comparison = {}
+    employee_comparison = {}
+    segment_comparison = {}
+    
+    for pred in predictions:
+        month_str = pred.get("month", "")  # e.g., "February 2026"
+        
+        # Parse the month to get date range
+        try:
+            from dateutil.parser import parse
+            month_date = parse(f"1 {month_str}")
+            year = month_date.year
+            month_num = month_date.month
+            month_key = f"{year}-{month_num:02d}"
+            
+            # Calculate start and end dates
+            start_date = f"{year}-{month_num:02d}-01"
+            if month_num == 12:
+                end_date = f"{year + 1}-01-01"
+            else:
+                end_date = f"{year}-{month_num + 1:02d}-01"
+        except Exception as e:
+            logger.error(f"Error parsing month: {month_str}, error: {e}")
+            continue
+        
+        # Get actual leads for this month
+        actual_pipeline = [
+            {"$match": {
+                "enquiry_date": {
+                    "$gte": start_date,
+                    "$lt": end_date
+                }
+            }},
+            {"$group": {
+                "_id": None,
+                "total_leads": {"$sum": 1},
+                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }}
+        ]
+        
+        actual_result = await db.leads.aggregate(actual_pipeline).to_list(1)
+        actual_data = actual_result[0] if actual_result else {"total_leads": 0, "won": 0, "total_kva": 0}
+        
+        predicted_leads = pred.get("predicted_enquiries", 0)
+        predicted_closures = pred.get("master_closures", pred.get("predicted_closures", 0))
+        predicted_kva = pred.get("predicted_kva", 0)
+        
+        actual_leads = actual_data.get("total_leads", 0)
+        actual_closures = actual_data.get("won", 0)
+        actual_kva = actual_data.get("total_kva", 0)
+        
+        # Calculate accuracy
+        leads_accuracy = 100 - abs((predicted_leads - actual_leads) / max(predicted_leads, 1) * 100) if predicted_leads > 0 else 0
+        closures_accuracy = 100 - abs((predicted_closures - actual_closures) / max(predicted_closures, 1) * 100) if predicted_closures > 0 else 0
+        kva_accuracy = 100 - abs((predicted_kva - actual_kva) / max(predicted_kva, 1) * 100) if predicted_kva > 0 else 0
+        
+        comparison_results.append({
+            "month": month_str,
+            "month_key": month_key,
+            "predicted": {
+                "leads": predicted_leads,
+                "closures": predicted_closures,
+                "kva": round(predicted_kva)
+            },
+            "actual": {
+                "leads": actual_leads,
+                "closures": actual_closures,
+                "kva": round(actual_kva)
+            },
+            "variance": {
+                "leads": actual_leads - predicted_leads,
+                "closures": actual_closures - predicted_closures,
+                "kva": round(actual_kva - predicted_kva)
+            },
+            "accuracy": {
+                "leads": round(max(0, leads_accuracy), 1),
+                "closures": round(max(0, closures_accuracy), 1),
+                "kva": round(max(0, kva_accuracy), 1)
+            },
+            "has_actual_data": actual_leads > 0
+        })
+        
+        total_predicted_leads += predicted_leads
+        total_actual_leads += actual_leads
+        total_predicted_closures += predicted_closures
+        total_actual_closures += actual_closures
+        total_predicted_kva += predicted_kva
+        total_actual_kva += actual_kva
+        
+        # Get breakdown comparisons for this month
+        # KVA breakdown
+        for kva_pred in pred.get("kva_breakdown", []):
+            kva_val = kva_pred.get("kva")
+            if kva_val not in kva_comparison:
+                kva_comparison[kva_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
+            kva_comparison[kva_val]["predicted_leads"] += kva_pred.get("predicted_leads", 0)
+            kva_comparison[kva_val]["predicted_closures"] += kva_pred.get("predicted_closures_category", 0)
+        
+        # Get actual KVA breakdown
+        kva_actual_pipeline = [
+            {"$match": {"enquiry_date": {"$gte": start_date, "$lt": end_date}, "kva": {"$exists": True, "$ne": None}}},
+            {"$group": {
+                "_id": "$kva",
+                "count": {"$sum": 1},
+                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            }}
+        ]
+        kva_actuals = await db.leads.aggregate(kva_actual_pipeline).to_list(100)
+        for ka in kva_actuals:
+            kva_val = ka["_id"]
+            if kva_val not in kva_comparison:
+                kva_comparison[kva_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
+            kva_comparison[kva_val]["actual_leads"] += ka["count"]
+            kva_comparison[kva_val]["actual_closures"] += ka["won"]
+        
+        # State breakdown
+        for state_pred in pred.get("state_breakdown", []):
+            state_val = state_pred.get("state")
+            if state_val not in state_comparison:
+                state_comparison[state_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
+            state_comparison[state_val]["predicted_leads"] += state_pred.get("predicted_leads", 0)
+            state_comparison[state_val]["predicted_closures"] += state_pred.get("predicted_closures_category", 0)
+        
+        # Get actual State breakdown
+        state_actual_pipeline = [
+            {"$match": {"enquiry_date": {"$gte": start_date, "$lt": end_date}, "state": {"$exists": True, "$ne": None}}},
+            {"$group": {
+                "_id": "$state",
+                "count": {"$sum": 1},
+                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            }}
+        ]
+        state_actuals = await db.leads.aggregate(state_actual_pipeline).to_list(100)
+        for sa in state_actuals:
+            state_val = sa["_id"]
+            if state_val not in state_comparison:
+                state_comparison[state_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
+            state_comparison[state_val]["actual_leads"] += sa["count"]
+            state_comparison[state_val]["actual_closures"] += sa["won"]
+        
+        # Dealer breakdown
+        for dealer_pred in pred.get("dealer_breakdown", []):
+            dealer_val = dealer_pred.get("dealer")
+            if dealer_val not in dealer_comparison:
+                dealer_comparison[dealer_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
+            dealer_comparison[dealer_val]["predicted_leads"] += dealer_pred.get("predicted_leads", 0)
+            dealer_comparison[dealer_val]["predicted_closures"] += dealer_pred.get("predicted_closures_category", 0)
+        
+        # Get actual Dealer breakdown
+        dealer_actual_pipeline = [
+            {"$match": {"enquiry_date": {"$gte": start_date, "$lt": end_date}, "dealer": {"$exists": True, "$ne": None}}},
+            {"$group": {
+                "_id": "$dealer",
+                "count": {"$sum": 1},
+                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            }}
+        ]
+        dealer_actuals = await db.leads.aggregate(dealer_actual_pipeline).to_list(100)
+        for da in dealer_actuals:
+            dealer_val = da["_id"]
+            if dealer_val not in dealer_comparison:
+                dealer_comparison[dealer_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
+            dealer_comparison[dealer_val]["actual_leads"] += da["count"]
+            dealer_comparison[dealer_val]["actual_closures"] += da["won"]
+    
+    # Calculate overall accuracy
+    overall_leads_accuracy = 100 - abs((total_predicted_leads - total_actual_leads) / max(total_predicted_leads, 1) * 100) if total_predicted_leads > 0 else 0
+    overall_closures_accuracy = 100 - abs((total_predicted_closures - total_actual_closures) / max(total_predicted_closures, 1) * 100) if total_predicted_closures > 0 else 0
+    overall_kva_accuracy = 100 - abs((total_predicted_kva - total_actual_kva) / max(total_predicted_kva, 1) * 100) if total_predicted_kva > 0 else 0
+    
+    # Convert breakdown dicts to lists with accuracy
+    def calc_breakdown_accuracy(comparison_dict):
+        result = []
+        for key, val in comparison_dict.items():
+            pred_leads = val["predicted_leads"]
+            actual_leads = val["actual_leads"]
+            pred_closures = val["predicted_closures"]
+            actual_closures = val["actual_closures"]
+            
+            leads_acc = 100 - abs((pred_leads - actual_leads) / max(pred_leads, 1) * 100) if pred_leads > 0 else 0
+            closures_acc = 100 - abs((pred_closures - actual_closures) / max(pred_closures, 1) * 100) if pred_closures > 0 else 0
+            
+            result.append({
+                "name": key,
+                "predicted_leads": pred_leads,
+                "actual_leads": actual_leads,
+                "variance_leads": actual_leads - pred_leads,
+                "accuracy_leads": round(max(0, leads_acc), 1),
+                "predicted_closures": pred_closures,
+                "actual_closures": actual_closures,
+                "variance_closures": actual_closures - pred_closures,
+                "accuracy_closures": round(max(0, closures_acc), 1)
+            })
+        return sorted(result, key=lambda x: x["actual_leads"], reverse=True)
+    
+    return {
+        "success": True,
+        "forecast_info": {
+            "saved_at": forecast.get("saved_at"),
+            "saved_by": forecast.get("saved_by"),
+            "horizon_months": forecast.get("horizon_months"),
+            "model_info": forecast.get("model_info", {})
+        },
+        "monthly_comparison": comparison_results,
+        "totals": {
+            "predicted": {
+                "leads": total_predicted_leads,
+                "closures": total_predicted_closures,
+                "kva": round(total_predicted_kva)
+            },
+            "actual": {
+                "leads": total_actual_leads,
+                "closures": total_actual_closures,
+                "kva": round(total_actual_kva)
+            },
+            "variance": {
+                "leads": total_actual_leads - total_predicted_leads,
+                "closures": total_actual_closures - total_predicted_closures,
+                "kva": round(total_actual_kva - total_predicted_kva)
+            },
+            "accuracy": {
+                "leads": round(max(0, overall_leads_accuracy), 1),
+                "closures": round(max(0, overall_closures_accuracy), 1),
+                "kva": round(max(0, overall_kva_accuracy), 1),
+                "overall": round((max(0, overall_leads_accuracy) * 0.4 + max(0, overall_closures_accuracy) * 0.35 + max(0, overall_kva_accuracy) * 0.25), 1)
+            }
+        },
+        "breakdown_comparison": {
+            "kva": calc_breakdown_accuracy(kva_comparison)[:15],
+            "state": calc_breakdown_accuracy(state_comparison)[:20],
+            "dealer": calc_breakdown_accuracy(dealer_comparison)[:20]
+        }
+    }
