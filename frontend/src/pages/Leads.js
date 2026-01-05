@@ -169,7 +169,18 @@ const Leads = () => {
     
     loadDropdownOptions();
     loadUsers();
+    loadPendingClosureCount();
   }, []);
+
+  // Load pending closure questions count
+  const loadPendingClosureCount = async () => {
+    try {
+      const res = await axios.get(`${API}/leads/pending-closure-questions/count`, { withCredentials: true });
+      setPendingClosureCount(res.data.count || 0);
+    } catch (error) {
+      console.error('Error loading pending closure count:', error);
+    }
+  };
 
   const loadLeads = async () => {
     setLoading(true);
