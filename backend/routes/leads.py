@@ -358,6 +358,52 @@ async def download_template(
     )
 
 
+# Closure Questions Endpoints - MUST be before /{lead_id} route
+@router.get("/pending-closure-questions/count")
+async def get_pending_closure_questions_count(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get count of leads pending closure questions"""
+    db = await get_db(request)
+    
+    count = await db.leads.count_documents({
+        "needs_closure_questions": True,
+        "deleted_at": {"$exists": False}
+    })
+    
+    return {"count": count}
+
+
+@router.get("/pending-closure-questions")
+async def get_leads_pending_closure_questions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500)
+):
+    """Get leads that need closure questions answered"""
+    db = await get_db(request)
+    
+    query = {
+        "needs_closure_questions": True,
+        "deleted_at": {"$exists": False}
+    }
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("updated_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit
+    }
+
+
 @router.get("/{lead_id}")
 async def get_lead(
     lead_id: str,
