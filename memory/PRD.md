@@ -42,7 +42,15 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - **Save & View Projections**
 - **Compare Forecasts**: Compare saved projections against actual results (NEW - Jan 5, 2026)
 
-### 5. User Management
+### 6. Analytics & Insights (Admin/Manager only)
+- **Top Performers**: By Employee, Dealer, State
+- **Conversion Analysis**: Conversion rate vs follow-ups
+- **Segment Analysis**: Performance by segment
+- **Closure Analysis** (NEW - Jan 5, 2026):
+  - Summary cards: Total Lost, With Closure Data, Pending, Completion Rate
+  - Question-by-question breakdown with answer distribution
+  - Lost leads by State and Dealer
+  - Helps identify patterns in why leads are lost
 - Role-based access (Admin, Manager, Employee)
 - Google OAuth via Emergent-managed Auth
 - Activity logging
