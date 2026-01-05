@@ -693,10 +693,22 @@ const Leads = () => {
 
   // Check if a lead needs closure questions and trigger modal
   const checkAndTriggerClosureQuestions = async (leadId, newStage, oldStage) => {
-    // Only trigger for transitions TO Lost status
-    const lostStages = ['Closed-Lost', 'Lost'];
-    const wasLost = lostStages.some(s => oldStage?.toLowerCase().includes(s.toLowerCase()));
-    const isNowLost = lostStages.some(s => newStage?.toLowerCase().includes(s.toLowerCase()));
+    // Won stages (no closure questions)
+    const wonStages = ['Closed-Won', 'Order Booked'];
+    // Faulty stage (no closure questions)
+    const faultyStages = ['Closed-Faulty'];
+    
+    // Check if new stage is a "closed" stage but NOT won or faulty = Lost
+    const isClosedStage = newStage?.toLowerCase().startsWith('closed') || newStage?.toLowerCase() === 'lost';
+    const isWonStage = wonStages.some(s => newStage?.toLowerCase() === s.toLowerCase());
+    const isFaultyStage = faultyStages.some(s => newStage?.toLowerCase() === s.toLowerCase());
+    const isNowLost = isClosedStage && !isWonStage && !isFaultyStage;
+    
+    // Check if old stage was already lost
+    const wasClosedStage = oldStage?.toLowerCase().startsWith('closed') || oldStage?.toLowerCase() === 'lost';
+    const wasWonStage = wonStages.some(s => oldStage?.toLowerCase() === s.toLowerCase());
+    const wasFaultyStage = faultyStages.some(s => oldStage?.toLowerCase() === s.toLowerCase());
+    const wasLost = wasClosedStage && !wasWonStage && !wasFaultyStage;
     
     if (isNowLost && !wasLost) {
       // Mark lead as needing closure questions
