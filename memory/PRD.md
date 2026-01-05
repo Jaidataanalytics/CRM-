@@ -84,6 +84,9 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - `POST /api/leads/{lead_id}/closure-answers` - Save closure question answers
 - `GET /api/admin/closure-questions` - Get configured closure questions
 
+### Insights Module (NEW)
+- `GET /api/insights/closure-analysis` - Get closure questions analysis for lost leads
+
 ## Completed Work
 
 ### Session 5 - Jan 5, 2026 (COMPLETED)
