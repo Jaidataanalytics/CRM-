@@ -368,6 +368,23 @@ const Leads = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    const requiredFields = {
+      name: 'Customer Name',
+      phone_number: 'Phone Number',
+      state: 'State',
+      dealer: 'Dealer',
+      segment: 'Segment'
+    };
+    
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field] || !formData[field].trim()) {
+        toast.error(`${label} is required`);
+        return;
+      }
+    }
+    
     try {
       const data = { ...formData };
       if (data.kva) data.kva = parseFloat(data.kva);
