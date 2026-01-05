@@ -99,7 +99,7 @@ def calculate_accuracy_metrics(actual: List[float], predicted: List[float]) -> D
 
 
 class AdaptiveSeasonalForecaster:
-    """Adaptive forecasting optimized for high-variability data"""
+    """Adaptive forecasting optimized for high-variability, growth-oriented data"""
     
     def __init__(self, historical_data: List[Dict], min_threshold: int = 50):
         # Filter incomplete months
@@ -119,6 +119,9 @@ class AdaptiveSeasonalForecaster:
         # Build month-indexed data for quick lookup
         self._build_month_index()
         
+        # Calculate YoY growth factor
+        self.yoy_growth = self._calculate_yoy_growth()
+        
         # Calculate baseline statistics
         self.stats = {
             'enquiries': {'mean': mean(self.enquiries), 'median': median(self.enquiries), 
@@ -128,6 +131,39 @@ class AdaptiveSeasonalForecaster:
             'kva': {'mean': mean(self.kva), 'median': median(self.kva),
                    'std': stdev(self.kva) if len(self.kva) > 1 else 0}
         }
+    
+    def _calculate_yoy_growth(self) -> Dict[str, float]:
+        """Calculate year-over-year growth factors"""
+        by_year = {}
+        for d in self.data:
+            year = self._get_year(d['_id'])
+            if year not in by_year:
+                by_year[year] = {'enquiries': [], 'closures': [], 'kva': []}
+            by_year[year]['enquiries'].append(d['total_enquiries'])
+            by_year[year]['closures'].append(d['won'])
+            by_year[year]['kva'].append(d['total_kva'])
+        
+        years = sorted(by_year.keys())
+        if len(years) < 2:
+            return {'enquiries': 1.0, 'closures': 1.0, 'kva': 1.0}
+        
+        # Compare most recent complete year with previous
+        recent_year = years[-1]
+        prev_year = years[-2]
+        
+        growth = {}
+        for metric in ['enquiries', 'closures', 'kva']:
+            recent_avg = mean(by_year[recent_year][metric]) if by_year[recent_year][metric] else 1
+            prev_avg = mean(by_year[prev_year][metric]) if by_year[prev_year][metric] else 1
+            
+            if prev_avg > 0:
+                raw_growth = recent_avg / prev_avg
+                # Cap growth factor between 0.8 and 1.3
+                growth[metric] = max(0.8, min(1.3, raw_growth))
+            else:
+                growth[metric] = 1.0
+        
+        return growth
     
     def _get_month_num(self, month_str: str) -> int:
         try:
