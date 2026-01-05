@@ -58,11 +58,17 @@ const Insights = () => {
   const [performers, setPerformers] = useState([]);
   const [conversionData, setConversionData] = useState([]);
   const [segmentData, setSegmentData] = useState([]);
+  const [closureAnalysis, setClosureAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [closureLoading, setClosureLoading] = useState(false);
 
   useEffect(() => {
     loadData();
   }, [buildQueryParams, performerType, metric]);
+
+  useEffect(() => {
+    loadClosureAnalysis();
+  }, [buildQueryParams]);
 
   const loadData = async () => {
     setLoading(true);
@@ -80,6 +86,19 @@ const Insights = () => {
       console.error('Error loading insights:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadClosureAnalysis = async () => {
+    setClosureLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/closure-analysis?${queryParams}`, { withCredentials: true });
+      setClosureAnalysis(res.data);
+    } catch (error) {
+      console.error('Error loading closure analysis:', error);
+    } finally {
+      setClosureLoading(false);
     }
   };
 
