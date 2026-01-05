@@ -1328,13 +1328,15 @@ async def compare_forecast_with_actuals(
             kva_comparison[kva_val]["actual_leads"] += ka["count"]
             kva_comparison[kva_val]["actual_closures"] += ka["won"]
         
-        # State breakdown
-        for state_pred in pred.get("state_breakdown", []):
-            state_val = state_pred.get("state")
-            if state_val not in state_comparison:
+        # State breakdown (check both old and new formats)
+        state_data = pred.get("state_breakdown", []) or breakdown.get("by_state", [])
+        for state_pred in state_data:
+            state_val = state_pred.get("state") or state_pred.get("name")
+            if state_val and state_val not in state_comparison:
                 state_comparison[state_val] = {"predicted_leads": 0, "predicted_closures": 0, "actual_leads": 0, "actual_closures": 0}
-            state_comparison[state_val]["predicted_leads"] += state_pred.get("predicted_leads", 0)
-            state_comparison[state_val]["predicted_closures"] += state_pred.get("predicted_closures_category", 0)
+            if state_val:
+                state_comparison[state_val]["predicted_leads"] += state_pred.get("predicted_leads", 0)
+                state_comparison[state_val]["predicted_closures"] += state_pred.get("predicted_closures_category", state_pred.get("predicted_closures", 0))
         
         # Get actual State breakdown
         state_actual_pipeline = [
