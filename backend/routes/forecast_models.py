@@ -85,7 +85,7 @@ class BaseForecaster:
     def predict(self, periods: int) -> List[float]:
         raise NotImplementedError
     
-    def backtest(self, test_periods: int = 6) -> Dict:
+    def backtest(self, test_periods: int = 4) -> Dict:
         """Run backtest using rolling window to calculate accuracy"""
         if len(self.values) < test_periods + 6:
             return {"accuracy": 0, "error": "Insufficient data"}
