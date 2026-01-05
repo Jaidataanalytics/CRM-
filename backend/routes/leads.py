@@ -741,3 +741,98 @@ async def get_transferred_stats(
         "total_transferred": total_transferred,
         "by_employee": [{"employee": e["_id"] or "Unknown", "count": e["count"]} for e in by_employee]
     }
+
+
+
+# Closure Questions Endpoints
+class ClosureAnswersRequest(BaseModel):
+    answers: List[dict]  # [{question_id, question, answer}]
+
+
+@router.post("/{lead_id}/closure-answers")
+async def save_closure_answers(
+    request: Request,
+    lead_id: str,
+    answers_data: ClosureAnswersRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Save closure question answers for a lost lead"""
+    db = await get_db(request)
+    
+    # Check if lead exists
+    lead = await db.leads.find_one({"lead_id": lead_id}, {"_id": 0})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    # Save the answers
+    await db.leads.update_one(
+        {"lead_id": lead_id},
+        {
+            "$set": {
+                "closure_answers": answers_data.answers,
+                "closure_answers_submitted_at": datetime.now(timezone.utc).isoformat(),
+                "closure_answers_submitted_by": current_user.name or current_user.email,
+                "needs_closure_questions": False,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="closure_answers_submitted",
+        resource_type="lead",
+        resource_id=lead_id,
+        details={"answers_count": len(answers_data.answers)}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {"message": "Closure answers saved successfully"}
+
+
+@router.get("/pending-closure-questions")
+async def get_leads_pending_closure_questions(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500)
+):
+    """Get leads that need closure questions answered"""
+    db = await get_db(request)
+    
+    query = {
+        "needs_closure_questions": True,
+        "deleted_at": {"$exists": False}
+    }
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("updated_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit
+    }
+
+
+@router.get("/pending-closure-questions/count")
+async def get_pending_closure_questions_count(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get count of leads pending closure questions"""
+    db = await get_db(request)
+    
+    count = await db.leads.count_documents({
+        "needs_closure_questions": True,
+        "deleted_at": {"$exists": False}
+    })
+    
+    return {"count": count}
