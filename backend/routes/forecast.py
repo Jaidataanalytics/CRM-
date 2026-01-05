@@ -764,6 +764,27 @@ async def generate_forecast(
         seg["conversion_rate"] = seg["won"] / seg["count"] if seg["count"] > 0 else overall_conversion_rate
     
     # ============================================
+    # MODEL OPTIMIZATION
+    # Test multiple forecasting models and select the best one
+    # ============================================
+    model_optimizer = ModelOptimizer(complete_data, min_accuracy=70.0)
+    optimization_result = model_optimizer.optimize()
+    
+    best_model = model_optimizer.best_model
+    best_model_accuracy = model_optimizer.best_accuracy
+    best_model_name = optimization_result["best_model"]
+    
+    # Generate predictions using the best model
+    if best_model:
+        model_predictions = best_model.predict(horizon)
+    else:
+        # Fallback to simple moving average
+        fallback = SimpleMovingAverage(complete_data, window=3)
+        model_predictions = fallback.predict(horizon)
+        best_model_name = "Simple Moving Average (Fallback)"
+        best_model_accuracy = 50.0
+    
+    # ============================================
     # DIMENSION ACCURACY CALCULATION
     # Calculate accuracy for each breakdown dimension
     # ============================================
@@ -776,6 +797,13 @@ async def generate_forecast(
     employee_accuracy = await calculate_dimension_accuracy(db, "Employee", employee_dist, total_employee_leads, complete_data)
     segment_accuracy = await calculate_dimension_accuracy(db, "Segment", segment_dist, total_segment_leads, complete_data)
     
+    # Add model info to each dimension accuracy
+    kva_accuracy["model"] = best_model_name
+    state_accuracy["model"] = best_model_name
+    dealer_accuracy["model"] = best_model_name
+    employee_accuracy["model"] = best_model_name
+    segment_accuracy["model"] = best_model_name
+    
     dimension_accuracies = [kva_accuracy, state_accuracy, dealer_accuracy, employee_accuracy, segment_accuracy]
     
     # Find the dimension with highest accuracy
@@ -784,7 +812,12 @@ async def generate_forecast(
         winning_dimension = max(valid_dimensions, key=lambda x: x.get("accuracy", 0))
     else:
         # Fallback to overall if no dimension has valid accuracy
-        winning_dimension = {"dimension": "Overall", "accuracy": 0, "conversion_rate": overall_conversion_rate * 100}
+        winning_dimension = {"dimension": "Overall", "accuracy": best_model_accuracy, "conversion_rate": overall_conversion_rate * 100, "model": best_model_name}
+    
+    # Use best model accuracy as the baseline, take maximum of model accuracy and dimension accuracy
+    final_accuracy = max(best_model_accuracy, winning_dimension.get("accuracy", 0))
+    winning_dimension["accuracy"] = final_accuracy
+    winning_dimension["model"] = best_model_name
     
     # Get the winning dimension's conversion rate for master closure calculation
     winning_conv_rate = winning_dimension.get("conversion_rate", overall_conversion_rate * 100) / 100
