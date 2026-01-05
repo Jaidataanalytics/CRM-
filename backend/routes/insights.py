@@ -241,7 +241,6 @@ async def get_closure_analysis(
     
     # Aggregate answers by question
     question_stats = {}
-    answer_breakdown = {}
     
     for lead in leads_with_answers:
         for answer in lead.get("closure_answers", []):
