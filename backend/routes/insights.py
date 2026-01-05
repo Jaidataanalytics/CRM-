@@ -193,6 +193,171 @@ async def get_conversion_vs_followups(
     return {
         "data": data,
         "date_range": {"start_date": start_date, "end_date": end_date}
+
+
+
+@router.get("/closure-analysis")
+async def get_closure_analysis(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """Get analysis of closure questions for lost leads"""
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Get closure questions configuration
+    questions = await db.closure_questions.find({}).to_list(100)
+    question_map = {q.get("question_id"): q.get("question") for q in questions}
+    
+    # Get all leads with closure answers
+    pipeline = [
+        {
+            "$match": {
+                "closure_answers": {"$exists": True, "$ne": []},
+                "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "lead_id": 1,
+                "closure_answers": 1,
+                "closure_type": 1,
+                "enquiry_stage": 1,
+                "kva": 1,
+                "state": 1,
+                "dealer": 1,
+                "employee_name": 1
+            }
+        }
+    ]
+    
+    leads_with_answers = await db.leads.aggregate(pipeline).to_list(1000)
+    
+    # Aggregate answers by question
+    question_stats = {}
+    answer_breakdown = {}
+    
+    for lead in leads_with_answers:
+        for answer in lead.get("closure_answers", []):
+            q_id = answer.get("question_id")
+            question = answer.get("question", question_map.get(q_id, "Unknown Question"))
+            ans_value = answer.get("answer", "Not Answered")
+            
+            if question not in question_stats:
+                question_stats[question] = {
+                    "question": question,
+                    "question_id": q_id,
+                    "total_responses": 0,
+                    "answers": {}
+                }
+            
+            question_stats[question]["total_responses"] += 1
+            
+            if ans_value not in question_stats[question]["answers"]:
+                question_stats[question]["answers"][ans_value] = 0
+            question_stats[question]["answers"][ans_value] += 1
+    
+    # Convert to list format for frontend
+    question_analysis = []
+    for q_key, stats in question_stats.items():
+        answers_list = [
+            {"answer": ans, "count": count, "percentage": round((count / stats["total_responses"]) * 100, 1) if stats["total_responses"] > 0 else 0}
+            for ans, count in sorted(stats["answers"].items(), key=lambda x: x[1], reverse=True)
+        ]
+        question_analysis.append({
+            "question": stats["question"],
+            "question_id": stats["question_id"],
+            "total_responses": stats["total_responses"],
+            "top_answers": answers_list[:10]  # Top 10 answers
+        })
+    
+    # Get summary stats
+    total_lost_leads = await db.leads.count_documents({
+        "enquiry_stage": "Closed-Lost",
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    })
+    
+    leads_with_closure_answers = await db.leads.count_documents({
+        "closure_answers": {"$exists": True, "$ne": []},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    })
+    
+    pending_closure_questions = await db.leads.count_documents({
+        "needs_closure_questions": True,
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    })
+    
+    # Get closure reasons by state
+    state_pipeline = [
+        {
+            "$match": {
+                "closure_answers": {"$exists": True, "$ne": []},
+                "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$state",
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    
+    by_state = await db.leads.aggregate(state_pipeline).to_list(15)
+    
+    # Get closure reasons by dealer
+    dealer_pipeline = [
+        {
+            "$match": {
+                "closure_answers": {"$exists": True, "$ne": []},
+                "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$dealer",
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    
+    by_dealer = await db.leads.aggregate(dealer_pipeline).to_list(15)
+    
+    return {
+        "summary": {
+            "total_lost_leads": total_lost_leads,
+            "leads_with_closure_answers": leads_with_closure_answers,
+            "pending_closure_questions": pending_closure_questions,
+            "completion_rate": round((leads_with_closure_answers / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0
+        },
+        "question_analysis": sorted(question_analysis, key=lambda x: x["total_responses"], reverse=True),
+        "by_state": [
+            {"state": s["_id"] or "Unknown", "count": s["count"], "kva_lost": round(s["total_kva"])}
+            for s in by_state if s["_id"]
+        ],
+        "by_dealer": [
+            {"dealer": d["_id"] or "Unknown", "count": d["count"], "kva_lost": round(d["total_kva"])}
+            for d in by_dealer if d["_id"]
+        ],
+        "date_range": {"start_date": start_date, "end_date": end_date}
+    }
     }
 
 
