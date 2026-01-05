@@ -613,6 +613,80 @@ const Leads = () => {
     }
   };
 
+  // Closure questions functions
+  const openClosureQuestionsDialog = async (lead) => {
+    setClosureQuestionsLead(lead);
+    setClosureAnswers({});
+    try {
+      const res = await axios.get(`${API}/admin/closure-questions`, { withCredentials: true });
+      // Filter questions that apply to 'lost' or 'all'
+      const questions = (res.data.questions || []).filter(q => 
+        q.applies_to === 'all' || q.applies_to === 'lost'
+      );
+      setClosureQuestions(questions);
+      setIsClosureQuestionsOpen(true);
+    } catch (error) {
+      toast.error('Failed to load closure questions');
+    }
+  };
+
+  const handleClosureAnswersSubmit = async () => {
+    // Build answers array
+    const answers = closureQuestions.map(q => ({
+      question_id: q.question_id,
+      question: q.question,
+      answer: closureAnswers[q.question_id] || ''
+    }));
+    
+    try {
+      await axios.post(`${API}/leads/${closureQuestionsLead.lead_id}/closure-answers`, 
+        { answers },
+        { withCredentials: true }
+      );
+      toast.success('Closure answers saved successfully');
+      setIsClosureQuestionsOpen(false);
+      setClosureQuestionsLead(null);
+      setClosureAnswers({});
+      loadLeads();
+      loadPendingClosureCount();
+    } catch (error) {
+      console.error('Error saving closure answers:', error);
+      toast.error('Failed to save closure answers');
+    }
+  };
+
+  // Check if a lead needs closure questions and trigger modal
+  const checkAndTriggerClosureQuestions = async (leadId, newStage, oldStage) => {
+    // Only trigger for transitions TO Lost status
+    const lostStages = ['Closed-Lost', 'Lost'];
+    const wasLost = lostStages.some(s => oldStage?.toLowerCase().includes(s.toLowerCase()));
+    const isNowLost = lostStages.some(s => newStage?.toLowerCase().includes(s.toLowerCase()));
+    
+    if (isNowLost && !wasLost) {
+      // Mark lead as needing closure questions
+      try {
+        await axios.put(`${API}/leads/${leadId}`, 
+          { 
+            enquiry_stage: newStage,
+            needs_closure_questions: true,
+            closure_type: 'lost'
+          },
+          { withCredentials: true }
+        );
+        // Fetch the updated lead and open questions modal
+        const leadRes = await axios.get(`${API}/leads`, { withCredentials: true });
+        const updatedLead = leadRes.data.leads?.find(l => l.lead_id === leadId);
+        if (updatedLead) {
+          openClosureQuestionsDialog(updatedLead);
+        }
+        return true; // Indicates we handled the update
+      } catch (error) {
+        console.error('Error triggering closure questions:', error);
+      }
+    }
+    return false; // Let normal update continue
+  };
+
   // Transfer lead to dealer (BDM only)
   const handleTransferLead = async (lead) => {
     if (lead.dealer?.toUpperCase() !== 'BDM') {
