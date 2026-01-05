@@ -900,15 +900,82 @@ const Forecast = () => {
                         </CollapsibleTrigger>
                         
                         <CollapsibleContent>
-                          {prediction.breakdown?.by_kva && (
-                            <div className="mt-2 border rounded-lg">
-                              <KVABreakdownSection
-                                data={prediction.breakdown.by_kva}
-                                expanded={expandedKva[idx] !== false}
-                                onToggle={() => toggleKvaExpanded(idx)}
-                              />
-                            </div>
-                          )}
+                          <div className="mt-2 space-y-2">
+                            {/* KVA Breakdown */}
+                            {prediction.breakdown?.by_kva && (
+                              <div className="border rounded-lg">
+                                <KVABreakdownSection
+                                  data={prediction.breakdown.by_kva}
+                                  expanded={expandedBreakdown[`${idx}-kva`] !== false}
+                                  onToggle={() => toggleBreakdown(idx, 'kva')}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* State Breakdown */}
+                            {prediction.breakdown?.by_state && prediction.breakdown.by_state.length > 0 && (
+                              <div className="border rounded-lg">
+                                <GenericBreakdownSection
+                                  data={prediction.breakdown.by_state}
+                                  title="State Breakdown"
+                                  icon={MapPin}
+                                  iconColor="text-blue-600"
+                                  bgGradient="bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100"
+                                  fieldName="state"
+                                  expanded={expandedBreakdown[`${idx}-state`] === true}
+                                  onToggle={() => toggleBreakdown(idx, 'state')}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Dealer Breakdown */}
+                            {prediction.breakdown?.by_dealer && prediction.breakdown.by_dealer.length > 0 && (
+                              <div className="border rounded-lg">
+                                <GenericBreakdownSection
+                                  data={prediction.breakdown.by_dealer}
+                                  title="Dealer Breakdown"
+                                  icon={Building2}
+                                  iconColor="text-purple-600"
+                                  bgGradient="bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100"
+                                  fieldName="dealer"
+                                  expanded={expandedBreakdown[`${idx}-dealer`] === true}
+                                  onToggle={() => toggleBreakdown(idx, 'dealer')}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Employee Breakdown */}
+                            {prediction.breakdown?.by_employee && prediction.breakdown.by_employee.length > 0 && (
+                              <div className="border rounded-lg">
+                                <GenericBreakdownSection
+                                  data={prediction.breakdown.by_employee}
+                                  title="Employee Breakdown"
+                                  icon={Users}
+                                  iconColor="text-green-600"
+                                  bgGradient="bg-gradient-to-r from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100"
+                                  fieldName="employee"
+                                  expanded={expandedBreakdown[`${idx}-employee`] === true}
+                                  onToggle={() => toggleBreakdown(idx, 'employee')}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Segment Breakdown */}
+                            {prediction.breakdown?.by_segment && prediction.breakdown.by_segment.length > 0 && (
+                              <div className="border rounded-lg">
+                                <GenericBreakdownSection
+                                  data={prediction.breakdown.by_segment}
+                                  title="Segment Breakdown"
+                                  icon={Layers}
+                                  iconColor="text-indigo-600"
+                                  bgGradient="bg-gradient-to-r from-indigo-50 to-violet-50 hover:from-indigo-100 hover:to-violet-100"
+                                  fieldName="segment"
+                                  expanded={expandedBreakdown[`${idx}-segment`] === true}
+                                  onToggle={() => toggleBreakdown(idx, 'segment')}
+                                />
+                              </div>
+                            )}
+                          </div>
                         </CollapsibleContent>
                       </Collapsible>
                     ))}
