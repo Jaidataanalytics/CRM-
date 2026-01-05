@@ -96,9 +96,9 @@ async def get_dispatch_list(
     """Get list of won orders with dispatch status"""
     db = await get_db(request)
     
-    # Base query for won orders
+    # Base query for won orders (Closed-Won or Order Booked)
     query = {
-        "enquiry_stage": "Closed-Won",
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
         "deleted_at": {"$exists": False}
     }
     
