@@ -703,6 +703,11 @@ async def upload_lost_leads(
                 if not lead_data.get('lost_date'):
                     lead_data['lost_date'] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 
+                # For lost leads: use enquiry_date from file if present, otherwise use lost_date
+                # This ensures lost leads are properly included in date-based filters and KPIs
+                if not lead_data.get('enquiry_date'):
+                    lead_data['enquiry_date'] = lead_data.get('lost_date')
+                
                 # Create new lead
                 uploader_name = current_user.name or current_user.email or "Unknown User"
                 lead_doc = {
