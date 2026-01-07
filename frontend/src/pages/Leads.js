@@ -595,14 +595,18 @@ const Leads = () => {
     formData.append('file', file);
     
     try {
+      console.log('Starting lost leads upload...');
       const res = await axios.post(`${API}/upload/lost-leads`, formData, {
         withCredentials: true,
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
+      console.log('Lost leads upload response:', res.data);
+      
       // Show summary modal with detailed results
       setUploadSummaryData(res.data);
       setIsUploadSummaryOpen(true);
+      console.log('Modal should be open now');
       
       loadLeads();
     } catch (error) {
