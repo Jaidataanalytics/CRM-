@@ -634,6 +634,122 @@ const Leads = () => {
     }
   };
 
+  // Bulk delete functions
+  const toggleLeadSelection = (leadId) => {
+    setSelectedLeads(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(leadId)) {
+        newSet.delete(leadId);
+      } else {
+        newSet.add(leadId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAllOnPage = () => {
+    if (selectAllOnPage) {
+      // Deselect all on current page
+      const currentPageIds = leads.map(l => l.lead_id);
+      setSelectedLeads(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+      setSelectAllOnPage(false);
+    } else {
+      // Select all on current page
+      const currentPageIds = leads.map(l => l.lead_id);
+      setSelectedLeads(prev => {
+        const newSet = new Set(prev);
+        currentPageIds.forEach(id => newSet.add(id));
+        return newSet;
+      });
+      setSelectAllOnPage(true);
+    }
+  };
+
+  const handlePreviewBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      const requestBody = selectAllMatching
+        ? {
+            select_all_matching: true,
+            state: filters.state || null,
+            dealer: filters.dealer || null,
+            employee_name: filters.employee || null,
+            segment: filters.segment || null,
+            enquiry_stage: filters.stage || null,
+            start_date: filters.startDate || null,
+            end_date: filters.endDate || null,
+            search: searchQuery || null
+          }
+        : {
+            lead_ids: Array.from(selectedLeads)
+          };
+      
+      const res = await axios.post(`${API}/leads/bulk-delete/preview`, requestBody, { withCredentials: true });
+      setBulkDeletePreview(res.data);
+      setShowBulkDeletePreview(true);
+    } catch (error) {
+      console.error('Error previewing bulk delete:', error);
+      toast.error(error.response?.data?.detail || 'Failed to preview bulk delete');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      const requestBody = selectAllMatching
+        ? {
+            select_all_matching: true,
+            state: filters.state || null,
+            dealer: filters.dealer || null,
+            employee_name: filters.employee || null,
+            segment: filters.segment || null,
+            enquiry_stage: filters.stage || null,
+            start_date: filters.startDate || null,
+            end_date: filters.endDate || null,
+            search: searchQuery || null
+          }
+        : {
+            lead_ids: Array.from(selectedLeads)
+          };
+      
+      const res = await axios.post(`${API}/leads/bulk-delete`, requestBody, { withCredentials: true });
+      toast.success(res.data.message || `Deleted ${res.data.deleted_count} leads`);
+      
+      // Reset state
+      setSelectedLeads(new Set());
+      setSelectAllOnPage(false);
+      setSelectAllMatching(false);
+      setBulkDeleteMode(false);
+      setShowBulkDeletePreview(false);
+      setBulkDeletePreview(null);
+      
+      // Reload leads
+      loadLeads();
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete leads');
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const cancelBulkDelete = () => {
+    setSelectedLeads(new Set());
+    setSelectAllOnPage(false);
+    setSelectAllMatching(false);
+    setBulkDeleteMode(false);
+    setShowBulkDeletePreview(false);
+    setBulkDeletePreview(null);
+  };
+
+  const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
+
   // Qualification functions
   const openQualifyDialog = async (lead) => {
     setQualifyingLead(lead);
