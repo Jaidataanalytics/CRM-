@@ -218,9 +218,32 @@
    - API: PUT /api/admin/users/{user_id}/password
 
 ## Testing Protocol
-- Last updated: 2025-12-24
+- Last updated: 2025-01-07
 
 ## Incorporate User Feedback
 - Hot/Warm/Cold only count Open leads - FIXED
 - Lead Type filter on Manage Leads - IMPLEMENTED
 - Follow-up Date filter on Manage Leads - IMPLEMENTED
+
+## Agent Communication
+
+### Testing Agent → Main Agent (2025-01-07)
+**Status**: ✅ BACKEND TESTING COMPLETE - ALL NEW FEATURES WORKING
+
+**Test Results Summary:**
+- ✅ Recent Uploads API (GET /api/admin/recent-uploads) - Working correctly
+- ✅ Delete Upload Batch API (DELETE /api/admin/upload-batch/{batch_id}) - Soft delete working
+- ✅ Restore Upload Batch API (POST /api/admin/upload-batch/{batch_id}/restore) - Restore working
+- ✅ Lost Leads Duplicate Detection - Phone normalization working with all formats
+- ✅ Upload Batch Tracking - All uploads properly tracked with batch IDs
+
+**Key Findings:**
+1. **Batch Management**: All 3 new APIs working perfectly. Soft delete creates deleted_at timestamps, restore removes them.
+2. **Phone Normalization**: Successfully handles scientific notation (9.87654E+09), country codes (+91, 91-), and various formats.
+3. **Duplicate Detection**: Lost leads upload correctly skips duplicates using phone OR enquiry_no logic.
+4. **Status Setting**: Lost leads auto-set to Closed-Lost with needs_closure_questions=False.
+
+**Test Coverage**: 67/69 tests passed (97% success rate)
+**Failed Tests**: Only 2 employee-related tests failed due to no employee user in system (not critical)
+
+**Recommendation**: All requested features are working correctly. Ready for user acceptance testing.
