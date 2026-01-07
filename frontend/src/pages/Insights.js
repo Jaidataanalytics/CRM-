@@ -112,6 +112,19 @@ const Insights = () => {
     }
   };
 
+  const loadCompetitorAnalysis = async () => {
+    setCompetitorLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/competitor-analysis?dimension=${competitorDimension}&${queryParams}`, { withCredentials: true });
+      setCompetitorAnalysis(res.data);
+    } catch (error) {
+      console.error('Error loading competitor analysis:', error);
+    } finally {
+      setCompetitorLoading(false);
+    }
+  };
+
   const conversionChartData = {
     labels: conversionData.map(d => `${d.followups} follow-ups`),
     datasets: [
