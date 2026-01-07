@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-07T14:11:07.855545",
-  "total_tests": 51,
-  "passed_tests": 49,
-  "success_rate": "96.1%",
+  "timestamp": "2026-01-07T15:00:21.250332",
+  "total_tests": 69,
+  "passed_tests": 67,
+  "success_rate": "97.1%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -172,7 +172,7 @@
     {
       "test": "Duplicate Count API",
       "success": true,
-      "details": "Count: 1678"
+      "details": "Count: 1696"
     },
     {
       "test": "Get Duplicate Leads List",
@@ -192,7 +192,7 @@
     {
       "test": "Run Duplicate Detection",
       "success": true,
-      "details": "Flagged: 1, Checked: 9772"
+      "details": "Flagged: 0, Checked: 9769"
     },
     {
       "test": "Get Initial Duplicate Count",
@@ -222,7 +222,7 @@
     {
       "test": "Duplicate Detection Working",
       "success": true,
-      "details": "Duplicate detection ran successfully (count: 1679 -> 1679)"
+      "details": "Duplicate detection ran successfully (count: 1696 -> 1696)"
     },
     {
       "test": "Verify Main List Excludes Duplicates",
@@ -242,7 +242,7 @@
     {
       "test": "KPIs Exclude Duplicates",
       "success": true,
-      "details": "KPIs calculated (Hot: 961, Total: 3208)"
+      "details": "KPIs calculated (Hot: 961, Total: 3207)"
     },
     {
       "test": "Get Duplicates for Unflag Test",
@@ -257,7 +257,97 @@
     {
       "test": "Unflag Duplicate Functionality",
       "success": true,
-      "details": "Successfully unflagged lead lead_2a2ee575feff"
+      "details": "Successfully unflagged lead lead_dcbdcafd8d8e"
+    },
+    {
+      "test": "Get Recent Uploads (7 days)",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Recent Uploads API Structure",
+      "success": true,
+      "details": "Response has all required fields for 12 uploads"
+    },
+    {
+      "test": "Create Test Upload for Batch Delete",
+      "success": true,
+      "details": "Created 1 test leads"
+    },
+    {
+      "test": "Get Recent Uploads for Batch ID",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Delete Upload Batch",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Delete Upload Batch",
+      "success": true,
+      "details": "Successfully deleted 1 leads from batch"
+    },
+    {
+      "test": "Verify Batch Deletion",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Verify Soft Delete",
+      "success": true,
+      "details": "Batch shows 0 current leads after deletion"
+    },
+    {
+      "test": "Restore Upload Batch",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Restore Upload Batch",
+      "success": true,
+      "details": "Successfully restored 1 leads"
+    },
+    {
+      "test": "Verify Batch Restoration",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Verify Restoration",
+      "success": true,
+      "details": "Batch shows 1 leads after restoration"
+    },
+    {
+      "test": "Create Regular Lead for Duplicate Test",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Create Regular Lead",
+      "success": true,
+      "details": "Created regular lead for duplicate testing"
+    },
+    {
+      "test": "Lost Leads Duplicate Detection",
+      "success": true,
+      "details": "Correctly skipped 2 duplicate(s), created 1"
+    },
+    {
+      "test": "Verify Lost Lead Status and Closure Questions",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Lead Status Verification",
+      "success": true,
+      "details": "Lost lead has correct status (Closed-Lost) and needs_closure_questions=False"
+    },
+    {
+      "test": "Phone Normalization Test",
+      "success": true,
+      "details": "Scientific notation test: 1 created, 0 skipped"
     }
   ]
 }
