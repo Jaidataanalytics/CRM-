@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-07T14:07:55.878434",
-  "total_tests": 51,
-  "passed_tests": 47,
-  "success_rate": "92.2%",
+  "timestamp": "2026-01-07T14:08:27.774982",
+  "total_tests": 49,
+  "passed_tests": 45,
+  "success_rate": "91.8%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -87,7 +87,7 @@
     {
       "test": "KPI Hot/Warm/Cold Counts",
       "success": true,
-      "details": "Hot/Warm/Cold counts (2401) are within Open leads (2659)"
+      "details": "Hot/Warm/Cold counts (2308) are within Open leads (2557)"
     },
     {
       "test": "Leads Filter - Single Type (Hot)",
@@ -162,17 +162,7 @@
     {
       "test": "Lost Leads Upload",
       "success": true,
-      "details": "Created: 2, Skipped: 0"
-    },
-    {
-      "test": "Verify Lost Lead Status",
-      "success": true,
-      "details": "Status: 200"
-    },
-    {
-      "test": "Lost Lead Status Verification",
-      "success": true,
-      "details": "Lead has correct status and no closure questions required"
+      "details": "Created: 0, Skipped: 2"
     },
     {
       "test": "Lost Leads Duplicate Skip",
@@ -187,7 +177,7 @@
     {
       "test": "Duplicate Count API",
       "success": true,
-      "details": "Count: 0"
+      "details": "Count: 1678"
     },
     {
       "test": "Get Duplicate Leads List",
@@ -197,7 +187,7 @@
     {
       "test": "Duplicate Leads List API",
       "success": true,
-      "details": "Retrieved 0 duplicates"
+      "details": "Retrieved 10 duplicates"
     },
     {
       "test": "Run Duplicate Detection",
@@ -207,7 +197,7 @@
     {
       "test": "Run Duplicate Detection",
       "success": true,
-      "details": "Flagged: 1677, Checked: 11450"
+      "details": "Flagged: 1, Checked: 9772"
     },
     {
       "test": "Create Test Lead 1 for Duplicate Detection",
@@ -232,7 +222,7 @@
     {
       "test": "Duplicates Excluded from Main List",
       "success": false,
-      "details": "Found 50 leads, expected 1"
+      "details": "Found 4 leads, expected 1"
     },
     {
       "test": "Verify KPIs Exclude Duplicates",
