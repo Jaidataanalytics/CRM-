@@ -198,6 +198,10 @@ const Insights = () => {
           <TabsTrigger value="performers">Top Performers</TabsTrigger>
           <TabsTrigger value="conversion">Conversion Analysis</TabsTrigger>
           <TabsTrigger value="segments">Segment Analysis</TabsTrigger>
+          <TabsTrigger value="competitors" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Competitor Analysis
+          </TabsTrigger>
           <TabsTrigger value="closure" className="flex items-center gap-2">
             <XCircle className="h-4 w-4" />
             Closure Analysis
