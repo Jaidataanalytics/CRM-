@@ -444,6 +444,63 @@ async def migrate_normalize_duplicates():
         # Don't raise - allow server to start even if migration fails
 
 
+async def migrate_detect_duplicates():
+    """
+    Automatic migration to detect and flag duplicate leads in the database.
+    Runs on startup to ensure all duplicates are properly flagged.
+    
+    Duplicate criteria:
+    - Same phone number (exact match after normalization)
+    - Similar employee_name (fuzzy match)
+    - Similar corporate_name (fuzzy match)
+    
+    The NEWEST lead (by created_at) is kept as the "original",
+    all older matching leads are flagged as duplicates.
+    """
+    from utils.duplicate_detector import run_duplicate_detection_migration
+    
+    logger.info("Running duplicate lead detection migration...")
+    
+    try:
+        # Check if we've already run detection recently (within 1 hour)
+        # This prevents running on every server restart
+        last_detection = await db.migration_status.find_one({"migration": "duplicate_detection"})
+        
+        if last_detection:
+            last_run = last_detection.get("last_run")
+            if last_run:
+                from datetime import datetime, timezone, timedelta
+                if isinstance(last_run, str):
+                    last_run = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
+                
+                # Skip if ran within last hour
+                if datetime.now(timezone.utc) - last_run < timedelta(hours=1):
+                    logger.info("Duplicate detection already ran recently, skipping...")
+                    return
+        
+        # Run duplicate detection
+        result = await run_duplicate_detection_migration(db)
+        
+        # Record that we ran the migration
+        await db.migration_status.update_one(
+            {"migration": "duplicate_detection"},
+            {
+                "$set": {
+                    "migration": "duplicate_detection",
+                    "last_run": datetime.now(timezone.utc).isoformat(),
+                    "result": result
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Duplicate detection complete: {result.get('duplicates_flagged', 0)} duplicates flagged out of {result.get('total_checked', 0)} leads")
+        
+    except Exception as e:
+        logger.error(f"Duplicate detection migration failed: {str(e)}")
+        # Don't raise - allow server to start even if migration fails
+
+
 @app.on_event("startup")
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
