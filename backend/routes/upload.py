@@ -715,11 +715,6 @@ async def upload_lost_leads(
                         if existing:
                             logger.debug(f"Found duplicate by enquiry_no: {enquiry_str}")
                 
-                if existing:
-                    # Skip this row - duplicate found
-                    skipped_count += 1
-                    continue
-                
                 # Auto-set lost status fields
                 lead_data['enquiry_stage'] = 'Closed-Lost'
                 lead_data['enquiry_status'] = 'Closed'
@@ -738,19 +733,37 @@ async def upload_lost_leads(
                 if not lead_data.get('enquiry_date'):
                     lead_data['enquiry_date'] = lead_data.get('lost_date')
                 
-                # Create new lead
-                uploader_name = current_user.name or current_user.email or "Unknown User"
-                lead_doc = {
-                    "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
-                    **lead_data,
-                    "added_by": f"Lost Lead Import - {uploader_name}",
-                    "upload_batch_id": upload_batch_id,  # Track which upload this came from
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                    "updated_at": datetime.now(timezone.utc).isoformat()
-                }
-                
-                await db.leads.insert_one(lead_doc)
-                created_count += 1
+                if existing:
+                    # Check if already Lost - skip if so
+                    existing_stage = existing.get('enquiry_stage', '').lower()
+                    if existing_stage in ['closed-lost', 'lost']:
+                        skipped_count += 1
+                        continue
+                    
+                    # UPDATE existing lead to Lost status
+                    lead_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+                    lead_data['lost_upload_batch_id'] = upload_batch_id  # Track this update
+                    
+                    await db.leads.update_one(
+                        {"lead_id": existing["lead_id"]},
+                        {"$set": lead_data}
+                    )
+                    updated_count += 1
+                    logger.info(f"Updated lead {existing['lead_id']} to Lost status")
+                else:
+                    # Create new lead
+                    uploader_name = current_user.name or current_user.email or "Unknown User"
+                    lead_doc = {
+                        "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
+                        **lead_data,
+                        "added_by": f"Lost Lead Import - {uploader_name}",
+                        "upload_batch_id": upload_batch_id,  # Track which upload this came from
+                        "created_at": datetime.now(timezone.utc).isoformat(),
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    await db.leads.insert_one(lead_doc)
+                    created_count += 1
                 
             except Exception as e:
                 logger.error(f"Lost lead row {idx + 2} error: {e}")
