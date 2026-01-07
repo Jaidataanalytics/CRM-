@@ -147,7 +147,18 @@ class FuzzyMatcher:
         """Normalize status/enquiry_stage field"""
         if not value:
             return value
+        
+        # First check direct mappings (case variations)
+        if value in self.STATUS_MAPPINGS:
+            return self.STATUS_MAPPINGS[value]
+        
+        # Check case-insensitive match against standard statuses
+        value_lower = value.lower().strip()
+        for std in self.STANDARD_STATUSES:
+            if std.lower() == value_lower:
+                return std
             
+        # Try fuzzy match
         match, score = self.find_best_match(value, self.STANDARD_STATUSES, min_score=70)
         if match:
             return match
