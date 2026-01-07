@@ -748,7 +748,7 @@ const Leads = () => {
     setBulkDeletePreview(null);
   };
 
-  const isAdminOrManager = user?.role === 'admin' || user?.role === 'manager';
+  const isAdminOrManager = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'manager';
 
   // Qualification functions
   const openQualifyDialog = async (lead) => {
