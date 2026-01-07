@@ -81,13 +81,20 @@ async def get_kpis(
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
-    # Build base query - exclude soft-deleted and transferred leads
+    # Build base query - exclude soft-deleted, transferred leads, AND duplicates
     base_query = {
         "is_deleted": {"$ne": True},
-        "$or": [
-            {"is_transferred": {"$exists": False}},
-            {"is_transferred": False},
-            {"is_transferred": None}
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False},
+                {"is_duplicate": None}
+            ]}
         ]
     }
     if state:
@@ -101,7 +108,7 @@ async def get_kpis(
     
     base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
-    # Total leads (excluding transferred)
+    # Total leads (excluding transferred and duplicates)
     total_leads = await db.leads.count_documents(base_query)
     
     # Get configurable metrics
