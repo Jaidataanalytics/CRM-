@@ -240,6 +240,54 @@ const Admin = () => {
     }
   };
 
+  const loadRecentUploads = async () => {
+    setLoadingUploads(true);
+    try {
+      const res = await axios.get(`${API}/admin/recent-uploads?days=7`, { withCredentials: true });
+      setRecentUploads(res.data.uploads || []);
+    } catch (error) {
+      console.error('Error loading recent uploads:', error);
+    } finally {
+      setLoadingUploads(false);
+    }
+  };
+
+  const handleDeleteUploadBatch = async (batchId) => {
+    if (!window.confirm('Are you sure you want to delete all leads from this upload? This action can be undone by restoring from trash.')) {
+      return;
+    }
+    
+    setDeletingBatch(batchId);
+    try {
+      const res = await axios.delete(`${API}/admin/upload-batch/${batchId}`, { withCredentials: true });
+      toast.success(res.data.message || 'Upload batch deleted successfully');
+      loadRecentUploads();
+      loadDataStats();
+      loadTrashStats();
+    } catch (error) {
+      console.error('Error deleting upload batch:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete upload batch');
+    } finally {
+      setDeletingBatch(null);
+    }
+  };
+
+  const handleRestoreUploadBatch = async (batchId) => {
+    setDeletingBatch(batchId);
+    try {
+      const res = await axios.post(`${API}/admin/upload-batch/${batchId}/restore`, {}, { withCredentials: true });
+      toast.success(res.data.message || 'Upload batch restored successfully');
+      loadRecentUploads();
+      loadDataStats();
+      loadTrashStats();
+    } catch (error) {
+      console.error('Error restoring upload batch:', error);
+      toast.error(error.response?.data?.detail || 'Failed to restore upload batch');
+    } finally {
+      setDeletingBatch(null);
+    }
+  };
+
   const loadEntityProfileConfig = async () => {
     try {
       const [configRes, kpisRes] = await Promise.all([
