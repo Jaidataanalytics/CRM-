@@ -397,6 +397,39 @@ const Dashboard = () => {
     }
   };
 
+  const handleKPINavigate = (filter) => {
+    // Build the URL with filter parameters
+    let url = '/leads?';
+    const params = new URLSearchParams();
+    
+    // Add existing date filters
+    if (filters.startDate) params.append('start_date', filters.startDate);
+    if (filters.endDate) params.append('end_date', filters.endDate);
+    if (filters.state) params.append('state', filters.state);
+    if (filters.dealer) params.append('dealer', filters.dealer);
+    if (filters.employee) params.append('employee', filters.employee);
+    if (filters.segment) params.append('segment', filters.segment);
+    
+    // Add KPI-specific filters
+    if (filter === 'won') params.append('stage', 'Closed-Won');
+    else if (filter === 'lost') params.append('stage', 'Closed-Lost');
+    else if (filter === 'open') params.append('status', 'Open');
+    else if (filter === 'hot') {
+      params.append('lead_type', 'Hot');
+      params.append('status', 'Open');
+    }
+    else if (filter === 'warm') {
+      params.append('lead_type', 'Warm');
+      params.append('status', 'Open');
+    }
+    else if (filter === 'cold') {
+      params.append('lead_type', 'Cold');
+      params.append('status', 'Open');
+    }
+    
+    window.location.href = url + params.toString();
+  };
+
   const handleLeadClick = (lead) => {
     setSelectedLead(lead);
     setIsDetailOpen(true);
