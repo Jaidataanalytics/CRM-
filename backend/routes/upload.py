@@ -779,6 +779,7 @@ async def upload_lost_leads(
                 "upload_batch_id": upload_batch_id,
                 "filename": file.filename,
                 "created": created_count,
+                "updated": updated_count,
                 "skipped": skipped_count,
                 "errors": len(errors)
             }
@@ -790,10 +791,11 @@ async def upload_lost_leads(
         return {
             "success": True,
             "created": created_count,
+            "updated": updated_count,
             "skipped": skipped_count,
             "errors": errors[:10] if errors else [],
             "total_errors": len(errors),
-            "message": f"Lost leads processed: {created_count} created, {skipped_count} skipped (duplicates)"
+            "message": f"Lost leads processed: {created_count} created, {updated_count} updated to Lost, {skipped_count} skipped (already Lost)"
         }
         
     except HTTPException:
