@@ -1028,6 +1028,170 @@ async def normalize_existing_data(
     activity_doc = activity.model_dump()
     activity_doc["created_at"] = activity_doc["created_at"].isoformat()
     await db.activity_logs.insert_one(activity_doc)
+
+
+
+# Direct data fix for specific duplicates
+@router.post("/migrate/fix-duplicates")
+async def fix_duplicate_values(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    dry_run: bool = Query(True, description="If true, only show what would be changed")
+):
+    """
+    Direct fix for specific duplicate values like:
+    - OPEN/Open -> Open
+    - FAULTY/Faulty -> Closed-Faulty
+    - SKS ENTERPRISES/SKS ENTER PRISES -> SKS Enterprises
+    - RK TYRE/R K Tyres -> R K Tyres
+    """
+    db = await get_db(request)
+    
+    # Define explicit mappings for known duplicates
+    status_fixes = {
+        "OPEN": "Open",
+        "open": "Open",
+        "FAULTY": "Closed-Faulty",
+        "faulty": "Closed-Faulty",
+        "Faulty": "Closed-Faulty",
+        "CLOSED-FAULTY": "Closed-Faulty",
+        "closed-faulty": "Closed-Faulty",
+        "LOST": "Closed-Lost",
+        "lost": "Closed-Lost",
+        "Lost": "Closed-Lost",
+        "CLOSED-LOST": "Closed-Lost",
+        "closed-lost": "Closed-Lost",
+        "WON": "Closed-Won",
+        "won": "Closed-Won",
+        "Won": "Closed-Won",
+        "CLOSED-WON": "Closed-Won",
+        "closed-won": "Closed-Won",
+        "ORDER BOOKED": "Order Booked",
+        "order booked": "Order Booked",
+        "PROSPECTING": "Prospecting",
+        "prospecting": "Prospecting",
+        "QUALIFIED": "Qualified",
+        "qualified": "Qualified",
+        "NEGOTIATION": "Negotiation",
+        "negotiation": "Negotiation",
+        "HOT": "Hot",
+        "hot": "Hot",
+        "WARM": "Warm",
+        "warm": "Warm",
+        "COLD": "Cold",
+        "cold": "Cold",
+        "NEW": "New",
+        "new": "New",
+        "PENDING": "Pending",
+        "pending": "Pending",
+    }
+    
+    dealer_fixes = {
+        "SKS ENTER PRISES": "SKS Enterprises",
+        "SKS ENTERPRISES": "SKS Enterprises",
+        "sks enterprises": "SKS Enterprises",
+        "Sks Enterprises": "SKS Enterprises",
+        "RK TYRE": "R K Tyres",
+        "rk tyre": "R K Tyres",
+        "Rk Tyre": "R K Tyres",
+        "RK Tyres": "R K Tyres",
+        "rk tyres": "R K Tyres",
+        "J.B. ENTERPRISES": "J.B. Enterprises",
+        "j.b. enterprises": "J.B. Enterprises",
+        "J.B enterprises": "J.B. Enterprises",
+        "jb enterprises": "J.B. Enterprises",
+        "JB ENTERPRISES": "J.B. Enterprises",
+        "RAJ AUTO": "Raj Auto",
+        "raj auto": "Raj Auto",
+        "PSS EQUIPMENT": "PSS Equipment",
+        "pss equipment": "PSS Equipment",
+        "SDPL": "SDPL",
+        "sdpl": "SDPL",
+        "Sdpl": "SDPL",
+        "SANJIV JI": "Sanjiv Ji",
+        "sanjiv ji": "Sanjiv Ji",
+        "SS ENTERPRISES": "SS Enterprises",
+        "ss enterprises": "SS Enterprises",
+        "RAJ INFORMATICS CONSTRUCTION": "RAJ Informatics Construction",
+        "Raj Informatics Construction": "RAJ Informatics Construction",
+        "SHASTRI ASSOCIATES": "Shastri Associates",
+        "shastri associates": "Shastri Associates",
+    }
+    
+    results = {
+        "status_fixes": [],
+        "dealer_fixes": [],
+        "total_records_updated": 0
+    }
+    
+    # Get current unique values
+    current_stages = await db.leads.distinct("enquiry_stage")
+    current_dealers = await db.leads.distinct("dealer")
+    
+    # Find which fixes apply
+    for old_val, new_val in status_fixes.items():
+        if old_val in current_stages and old_val != new_val:
+            count = await db.leads.count_documents({"enquiry_stage": old_val})
+            if count > 0:
+                results["status_fixes"].append({
+                    "from": old_val,
+                    "to": new_val,
+                    "count": count
+                })
+    
+    for old_val, new_val in dealer_fixes.items():
+        if old_val in current_dealers and old_val != new_val:
+            count = await db.leads.count_documents({"dealer": old_val})
+            if count > 0:
+                results["dealer_fixes"].append({
+                    "from": old_val,
+                    "to": new_val,
+                    "count": count
+                })
+    
+    if dry_run:
+        return {
+            "status": "dry_run",
+            "message": "No changes made. Set dry_run=false to apply.",
+            "fixes_to_apply": results
+        }
+    
+    # Apply fixes
+    total_updated = 0
+    
+    for fix in results["status_fixes"]:
+        result = await db.leads.update_many(
+            {"enquiry_stage": fix["from"]},
+            {"$set": {"enquiry_stage": fix["to"]}}
+        )
+        total_updated += result.modified_count
+    
+    for fix in results["dealer_fixes"]:
+        result = await db.leads.update_many(
+            {"dealer": fix["from"]},
+            {"$set": {"dealer": fix["to"]}}
+        )
+        total_updated += result.modified_count
+    
+    results["total_records_updated"] = total_updated
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="fix_duplicates",
+        resource_type="leads",
+        resource_id="bulk",
+        details={"records_updated": total_updated, "fixes": results}
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {
+        "status": "completed",
+        "message": f"Fixed {total_updated} records",
+        "fixes_applied": results
+    }
     
     return {
         "status": "completed",
