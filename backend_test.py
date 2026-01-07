@@ -877,11 +877,16 @@ class LeadManagementTester:
         self.test_admin_password_change()
         self.test_system_import_notifications()
         
-        # Run new filtering tests
+        # Run filtering tests
         self.test_kpis_hot_warm_cold_counts()
         self.test_leads_enquiry_type_filter()
         self.test_leads_followup_date_filter()
         self.test_leads_combined_filters()
+        
+        # Run NEW duplicate detection and lost leads tests
+        self.test_lost_leads_upload()
+        self.test_duplicate_detection_apis()
+        self.test_duplicate_filtering_logic()
         
         # Print summary
         print("\n" + "=" * 60)
