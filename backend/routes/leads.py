@@ -553,6 +553,209 @@ async def get_leads_pending_closure_questions(
     }
 
 
+# Bulk Delete Endpoints - MUST be before /{lead_id} route
+@router.post("/bulk-delete/preview")
+async def preview_bulk_delete(
+    request: Request,
+    body: BulkDeleteRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Preview leads that will be deleted by bulk delete operation.
+    Returns count and sample of leads that match the criteria.
+    """
+    # Check role permission
+    if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Only Admin or Manager can bulk delete leads")
+    
+    db = await get_db(request)
+    
+    # Get the delete limit for this user's role
+    delete_limit = BULK_DELETE_LIMITS.get(current_user.role, 0)
+    
+    # Build query
+    query = {
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False},
+            {"is_duplicate": None}
+        ]
+    }
+    
+    if body.lead_ids and len(body.lead_ids) > 0:
+        # Specific lead IDs
+        query["lead_id"] = {"$in": body.lead_ids}
+    elif body.select_all_matching:
+        # Build filter query
+        if body.state:
+            query["state"] = body.state
+        if body.dealer:
+            query["dealer"] = body.dealer
+        if body.employee_name:
+            query["employee_name"] = body.employee_name
+        if body.segment:
+            query["segment"] = body.segment
+        if body.enquiry_status:
+            query["enquiry_status"] = body.enquiry_status
+        if body.enquiry_stage:
+            query["enquiry_stage"] = body.enquiry_stage
+        if body.start_date and body.end_date:
+            query["enquiry_date"] = {"$gte": body.start_date, "$lte": body.end_date}
+        elif body.start_date:
+            query["enquiry_date"] = {"$gte": body.start_date}
+        elif body.end_date:
+            query["enquiry_date"] = {"$lte": body.end_date}
+        if body.search:
+            query["$or"] = [
+                {"name": {"$regex": body.search, "$options": "i"}},
+                {"phone_number": {"$regex": body.search, "$options": "i"}},
+                {"enquiry_no": {"$regex": body.search, "$options": "i"}}
+            ]
+    else:
+        raise HTTPException(status_code=400, detail="Must provide lead_ids or set select_all_matching=true with filters")
+    
+    # Count total matching
+    total_count = await db.leads.count_documents(query)
+    
+    # Check limit
+    exceeds_limit = total_count > delete_limit
+    
+    # Get sample leads (first 10)
+    sample_leads = await db.leads.find(query, {"_id": 0, "lead_id": 1, "name": 1, "phone_number": 1, "enquiry_no": 1, "enquiry_date": 1, "state": 1}).limit(10).to_list(10)
+    
+    return {
+        "total_count": total_count,
+        "delete_limit": delete_limit,
+        "exceeds_limit": exceeds_limit,
+        "can_delete": total_count <= delete_limit and total_count > 0,
+        "sample_leads": sample_leads,
+        "message": f"Found {total_count} leads matching criteria" + (f". Limit is {delete_limit}." if exceeds_limit else "")
+    }
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_leads(
+    request: Request,
+    body: BulkDeleteRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Bulk soft delete leads. Admin can delete up to 10000, Manager up to 500.
+    """
+    # Check role permission
+    if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Only Admin or Manager can bulk delete leads")
+    
+    db = await get_db(request)
+    
+    # Get the delete limit for this user's role
+    delete_limit = BULK_DELETE_LIMITS.get(current_user.role, 0)
+    
+    # Build query
+    query = {
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False},
+            {"is_duplicate": None}
+        ]
+    }
+    
+    if body.lead_ids and len(body.lead_ids) > 0:
+        # Specific lead IDs
+        if len(body.lead_ids) > delete_limit:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot delete more than {delete_limit} leads at once. You selected {len(body.lead_ids)}."
+            )
+        query["lead_id"] = {"$in": body.lead_ids}
+    elif body.select_all_matching:
+        # Build filter query
+        if body.state:
+            query["state"] = body.state
+        if body.dealer:
+            query["dealer"] = body.dealer
+        if body.employee_name:
+            query["employee_name"] = body.employee_name
+        if body.segment:
+            query["segment"] = body.segment
+        if body.enquiry_status:
+            query["enquiry_status"] = body.enquiry_status
+        if body.enquiry_stage:
+            query["enquiry_stage"] = body.enquiry_stage
+        if body.start_date and body.end_date:
+            query["enquiry_date"] = {"$gte": body.start_date, "$lte": body.end_date}
+        elif body.start_date:
+            query["enquiry_date"] = {"$gte": body.start_date}
+        elif body.end_date:
+            query["enquiry_date"] = {"$lte": body.end_date}
+        if body.search:
+            query["$or"] = [
+                {"name": {"$regex": body.search, "$options": "i"}},
+                {"phone_number": {"$regex": body.search, "$options": "i"}},
+                {"enquiry_no": {"$regex": body.search, "$options": "i"}}
+            ]
+    else:
+        raise HTTPException(status_code=400, detail="Must provide lead_ids or set select_all_matching=true with filters")
+    
+    # Count total matching
+    total_count = await db.leads.count_documents(query)
+    
+    if total_count == 0:
+        raise HTTPException(status_code=404, detail="No leads found matching criteria")
+    
+    if total_count > delete_limit:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete more than {delete_limit} leads at once. Found {total_count} matching leads. Please narrow your selection."
+        )
+    
+    # Perform soft delete
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.leads.update_many(
+        query,
+        {
+            "$set": {
+                "deleted_at": now,
+                "deleted_by": current_user.user_id,
+                "updated_at": now
+            }
+        }
+    )
+    
+    deleted_count = result.modified_count
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="bulk_delete",
+        resource_type="lead",
+        details={
+            "deleted_count": deleted_count,
+            "filters": {
+                "lead_ids": body.lead_ids[:10] if body.lead_ids else None,
+                "select_all_matching": body.select_all_matching,
+                "state": body.state,
+                "dealer": body.dealer,
+                "employee_name": body.employee_name,
+                "segment": body.segment,
+                "start_date": body.start_date,
+                "end_date": body.end_date
+            }
+        }
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {
+        "success": True,
+        "message": f"Successfully deleted {deleted_count} leads",
+        "deleted_count": deleted_count
+    }
+
+
 @router.get("/{lead_id}")
 async def get_lead(
     lead_id: str,
