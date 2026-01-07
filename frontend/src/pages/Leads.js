@@ -1929,11 +1929,12 @@ const Leads = () => {
 
               {/* Tabbed Content for All Details */}
               <Tabs defaultValue="contact" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 h-auto">
+                <TabsList className="grid w-full grid-cols-6 h-auto">
                   <TabsTrigger value="contact" className="text-xs py-2">Contact</TabsTrigger>
                   <TabsTrigger value="location" className="text-xs py-2">Location</TabsTrigger>
                   <TabsTrigger value="product" className="text-xs py-2">Product</TabsTrigger>
                   <TabsTrigger value="dates" className="text-xs py-2">Dates</TabsTrigger>
+                  <TabsTrigger value="lost" className="text-xs py-2">Lost Info</TabsTrigger>
                   <TabsTrigger value="other" className="text-xs py-2">Other</TabsTrigger>
                 </TabsList>
 
