@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Depends, Query
+from fastapi import APIRouter, HTTPException, Request, Depends, Query, Body
 from fastapi.responses import StreamingResponse
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -14,6 +14,28 @@ from routes.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/leads", tags=["Leads"])
+
+
+# Bulk delete limits by role
+BULK_DELETE_LIMITS = {
+    UserRole.ADMIN: 10000,  # Essentially unlimited
+    UserRole.MANAGER: 500,
+}
+
+
+class BulkDeleteRequest(BaseModel):
+    lead_ids: Optional[List[str]] = None  # Specific lead IDs to delete
+    select_all_matching: bool = False  # If true, delete all leads matching filters
+    # Filters (only used when select_all_matching is True)
+    state: Optional[str] = None
+    dealer: Optional[str] = None
+    employee_name: Optional[str] = None
+    segment: Optional[str] = None
+    enquiry_status: Optional[str] = None
+    enquiry_stage: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    search: Optional[str] = None
 
 
 async def get_db(request: Request):
