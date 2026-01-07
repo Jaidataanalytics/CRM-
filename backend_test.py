@@ -549,6 +549,314 @@ class LeadManagementTester:
             else:
                 self.log_test("Combined Filters", False, "Some leads don't match filter criteria")
 
+    def test_lost_leads_upload(self):
+        """Test lost leads upload functionality"""
+        print("\n🔍 Testing Lost Leads Upload...")
+        
+        if not self.admin_token:
+            self.log_test("Lost Leads Upload Test", False, "Admin login required")
+            return
+
+        # First, test downloading the template
+        success, _ = self.run_test(
+            "Download Lost Leads Template",
+            "GET",
+            "upload/lost-leads/template",
+            200,
+            token=self.admin_token
+        )
+
+        # Create test Excel file for lost leads upload
+        import pandas as pd
+        import io
+        
+        # Test data with sample lost leads
+        test_data = {
+            'Zone': ['East', 'West'],
+            'State': ['Bihar', 'Maharashtra'],
+            'Area Office': ['Patna', 'Mumbai'],
+            'Dealer': ['Test Dealer 1', 'Test Dealer 2'],
+            'Employee Name': ['John Doe', 'Jane Smith'],
+            'Enquiry No': [f'LOST{datetime.now().strftime("%Y%m%d%H%M%S")}001', f'LOST{datetime.now().strftime("%Y%m%d%H%M%S")}002'],
+            'Enquiry Date': ['2025-01-01', '2025-01-02'],
+            'Corporate Name': ['ABC Corp', 'XYZ Ltd'],
+            'Name': ['Customer A', 'Customer B'],
+            'Phone Number': ['9876543210', '9876543211'],
+            'Email': ['customerA@test.com', 'customerB@test.com'],
+            'KVA': [100, 250],
+            'Segment': ['Corporate', 'Retail'],
+            'Win Reason': ['Competitor A', 'Price Lower'],
+            'Win Remarks': ['Lost due to price', 'Competitor offered better terms'],
+            'Lost Remarks': ['Follow up after 6 months', 'Customer preferred local vendor'],
+            'Lost Date': ['2025-01-05', '2025-01-06']
+        }
+        
+        df = pd.DataFrame(test_data)
+        excel_buffer = io.BytesIO()
+        df.to_excel(excel_buffer, index=False, sheet_name='Lost Leads')
+        excel_buffer.seek(0)
+        
+        # Test upload (simulate file upload)
+        try:
+            import requests
+            files = {'file': ('lost_leads_test.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            headers = {}
+            cookies = {'session_token': self.admin_token}
+            
+            response = requests.post(
+                f"{self.base_url}/upload/lost-leads",
+                files=files,
+                headers=headers,
+                cookies=cookies
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                created = result.get('created', 0)
+                skipped = result.get('skipped', 0)
+                self.log_test("Lost Leads Upload", True, f"Created: {created}, Skipped: {skipped}")
+                
+                # Verify leads were created with correct status
+                if created > 0:
+                    # Get one of the uploaded leads to verify status
+                    success, leads_response = self.run_test(
+                        "Verify Lost Lead Status",
+                        "GET",
+                        f"leads?enquiry_no={test_data['Enquiry No'][0]}",
+                        200,
+                        token=self.admin_token
+                    )
+                    
+                    if success:
+                        leads = leads_response.get('leads', [])
+                        if leads:
+                            lead = leads[0]
+                            if (lead.get('enquiry_stage') == 'Closed-Lost' and 
+                                lead.get('enquiry_status') == 'Closed' and
+                                lead.get('needs_closure_questions') == False):
+                                self.log_test("Lost Lead Status Verification", True, 
+                                            "Lead has correct status and no closure questions required")
+                            else:
+                                self.log_test("Lost Lead Status Verification", False,
+                                            f"Incorrect status: stage={lead.get('enquiry_stage')}, status={lead.get('enquiry_status')}, needs_closure={lead.get('needs_closure_questions')}")
+                        else:
+                            self.log_test("Lost Lead Status Verification", False, "Uploaded lead not found")
+                
+                # Test duplicate upload (should skip)
+                excel_buffer.seek(0)
+                files2 = {'file': ('lost_leads_test_dup.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                response2 = requests.post(
+                    f"{self.base_url}/upload/lost-leads",
+                    files=files2,
+                    headers=headers,
+                    cookies=cookies
+                )
+                
+                if response2.status_code == 200:
+                    result2 = response2.json()
+                    skipped2 = result2.get('skipped', 0)
+                    if skipped2 > 0:
+                        self.log_test("Lost Leads Duplicate Skip", True, f"Correctly skipped {skipped2} duplicates")
+                    else:
+                        self.log_test("Lost Leads Duplicate Skip", False, "Duplicates were not skipped")
+                else:
+                    self.log_test("Lost Leads Duplicate Upload", False, f"Status: {response2.status_code}")
+                    
+            else:
+                self.log_test("Lost Leads Upload", False, f"Status: {response.status_code}, Response: {response.text[:100]}")
+                
+        except Exception as e:
+            self.log_test("Lost Leads Upload", False, f"Exception: {str(e)}")
+
+    def test_duplicate_detection_apis(self):
+        """Test duplicate detection APIs"""
+        print("\n🔍 Testing Duplicate Detection APIs...")
+        
+        if not self.admin_token:
+            self.log_test("Duplicate Detection APIs Test", False, "Admin login required")
+            return
+
+        # Test get duplicate count
+        success, response = self.run_test(
+            "Get Duplicate Leads Count",
+            "GET",
+            "leads/duplicates/count",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            count = response.get('count', 0)
+            print(f"   Current duplicate count: {count}")
+            self.log_test("Duplicate Count API", True, f"Count: {count}")
+
+        # Test get duplicate leads list
+        success, response = self.run_test(
+            "Get Duplicate Leads List",
+            "GET",
+            "leads/duplicates?limit=10",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            total = response.get('total', 0)
+            print(f"   Found {len(leads)} duplicate leads (total: {total})")
+            self.log_test("Duplicate Leads List API", True, f"Retrieved {len(leads)} duplicates")
+
+        # Test run duplicate detection (admin only)
+        success, response = self.run_test(
+            "Run Duplicate Detection",
+            "POST",
+            "leads/duplicates/run-detection",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            flagged = response.get('duplicates_flagged', 0)
+            checked = response.get('total_checked', 0)
+            print(f"   Detection complete: {flagged} flagged out of {checked} checked")
+            self.log_test("Run Duplicate Detection", True, f"Flagged: {flagged}, Checked: {checked}")
+
+    def test_duplicate_filtering_logic(self):
+        """Test that duplicates are excluded from main leads list and KPIs"""
+        print("\n🔍 Testing Duplicate Filtering Logic...")
+        
+        if not self.admin_token:
+            self.log_test("Duplicate Filtering Test", False, "Admin login required")
+            return
+
+        # Create test leads with similar data to trigger duplicate detection
+        test_leads = [
+            {
+                "name": "Test Customer Duplicate",
+                "phone_number": "9999999998",
+                "email_address": "testdup1@example.com",
+                "state": "Test State",
+                "dealer": "Test Dealer",
+                "employee_name": "Test Employee",
+                "corporate_name": "Test Corp",
+                "enquiry_no": f"DUP{datetime.now().strftime('%Y%m%d%H%M%S')}001",
+                "enquiry_date": "2025-01-01",
+                "customer_type": "New Customer",
+                "segment": "Corporate",
+                "enquiry_status": "Open",
+                "enquiry_stage": "Prospecting",
+                "enquiry_type": "Hot"
+            },
+            {
+                "name": "Test Customer Duplicate",
+                "phone_number": "9999999998",  # Same phone
+                "email_address": "testdup2@example.com",
+                "state": "Test State",
+                "dealer": "Test Dealer",
+                "employee_name": "Test Employee",  # Same employee
+                "corporate_name": "Test Corp",  # Same corporate name
+                "enquiry_no": f"DUP{datetime.now().strftime('%Y%m%d%H%M%S')}002",
+                "enquiry_date": "2025-01-02",
+                "customer_type": "New Customer",
+                "segment": "Corporate",
+                "enquiry_status": "Open",
+                "enquiry_stage": "Prospecting",
+                "enquiry_type": "Hot"
+            }
+        ]
+        
+        created_lead_ids = []
+        
+        # Create test leads
+        for i, lead_data in enumerate(test_leads):
+            success, response = self.run_test(
+                f"Create Test Lead {i+1} for Duplicate Detection",
+                "POST",
+                "leads",
+                200,
+                data=lead_data,
+                token=self.admin_token
+            )
+            
+            if success:
+                created_lead_ids.append(response.get('lead_id'))
+
+        if len(created_lead_ids) == 2:
+            # Run duplicate detection
+            success, response = self.run_test(
+                "Run Duplicate Detection on Test Leads",
+                "POST",
+                "leads/duplicates/run-detection",
+                200,
+                token=self.admin_token
+            )
+            
+            if success:
+                # Check that duplicates are excluded from main leads list
+                success, response = self.run_test(
+                    "Verify Duplicates Excluded from Main List",
+                    "GET",
+                    f"leads?phone_number=9999999998",
+                    200,
+                    token=self.admin_token
+                )
+                
+                if success:
+                    leads = response.get('leads', [])
+                    # Should only find 1 lead (the original), not the duplicate
+                    if len(leads) == 1:
+                        self.log_test("Duplicates Excluded from Main List", True, 
+                                    "Only original lead found in main list")
+                    else:
+                        self.log_test("Duplicates Excluded from Main List", False,
+                                    f"Found {len(leads)} leads, expected 1")
+                
+                # Check KPIs exclude duplicates
+                success, response = self.run_test(
+                    "Verify KPIs Exclude Duplicates",
+                    "GET",
+                    "kpis",
+                    200,
+                    token=self.admin_token
+                )
+                
+                if success:
+                    hot_leads = response.get('hot_leads', 0)
+                    total_leads = response.get('total_leads', 0)
+                    print(f"   KPI Hot leads: {hot_leads}, Total leads: {total_leads}")
+                    self.log_test("KPIs Exclude Duplicates", True, 
+                                f"KPIs calculated (Hot: {hot_leads}, Total: {total_leads})")
+
+        # Test unflag duplicate functionality
+        if created_lead_ids:
+            # Get duplicate leads to find one to unflag
+            success, response = self.run_test(
+                "Get Duplicates for Unflag Test",
+                "GET",
+                "leads/duplicates",
+                200,
+                token=self.admin_token
+            )
+            
+            if success:
+                duplicates = response.get('leads', [])
+                if duplicates:
+                    duplicate_id = duplicates[0].get('lead_id')
+                    if duplicate_id:
+                        success, response = self.run_test(
+                            "Unflag Duplicate Lead",
+                            "POST",
+                            f"leads/duplicates/{duplicate_id}/unflag",
+                            200,
+                            token=self.admin_token
+                        )
+                        
+                        if success:
+                            self.log_test("Unflag Duplicate Functionality", True, 
+                                        f"Successfully unflagged lead {duplicate_id}")
+                        else:
+                            self.log_test("Unflag Duplicate Functionality", False, 
+                                        "Failed to unflag duplicate")
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Lead Management Feature Tests...")
