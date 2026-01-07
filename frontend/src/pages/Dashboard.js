@@ -50,7 +50,7 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const KPICard = ({ title, value, icon: Icon, color, onClick, active, trend, unit }) => {
+const KPICard = ({ title, value, icon: Icon, color, onClick, onDoubleClick, active, trend, unit }) => {
   const formatValue = (val) => {
     if (typeof val === 'string') return val;
     if (typeof val === 'number') {
@@ -64,7 +64,9 @@ const KPICard = ({ title, value, icon: Icon, color, onClick, active, trend, unit
     <Card 
       className={`cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 ${active ? 'ring-2 ring-primary shadow-lg' : ''}`}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       data-testid={`kpi-${title.toLowerCase().replace(/\s/g, '-')}`}
+      title="Click to filter • Double-click to view all"
     >
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
@@ -83,6 +85,7 @@ const KPICard = ({ title, value, icon: Icon, color, onClick, active, trend, unit
             <span>{Math.abs(trend)}% vs last period</span>
           </div>
         )}
+        <p className="text-xs text-muted-foreground mt-2">Double-click to view leads →</p>
       </CardContent>
     </Card>
   );
