@@ -596,7 +596,7 @@ const Leads = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      toast.success(`Lost leads upload: ${res.data.created} created, ${res.data.updated || 0} updated to Lost, ${res.data.skipped} skipped (already Lost)`);
+      toast.success(`Lost leads: ${res.data.created} new, ${res.data.updated || 0} updated to Lost, ${res.data.skipped} skipped`);
       if (res.data.total_errors > 0) {
         toast.warning(`${res.data.total_errors} rows had errors`);
       }
