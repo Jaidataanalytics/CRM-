@@ -1,6 +1,64 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: KPI Logic & Filtering Fixes
+## Latest Test: Duplicate Detection & Lost Leads Upload
+**Date**: 2025-01-07
+**Status**: IMPLEMENTING
+
+### Features Being Implemented
+
+1. **Duplicate Lead Detection System**
+   - Fuzzy matching on Phone + Employee Name + Corporate Name
+   - Newest lead is "original", older matches flagged as "duplicates"
+   - Duplicates excluded from all KPIs, dashboards, lead lists
+   - New "Duplicate Leads" page for viewing flagged entries
+   - Admin can run detection manually or unflag leads
+
+2. **Lost Leads Upload**
+   - New file upload endpoint `POST /api/upload/lost-leads`
+   - Different duplicate logic: Skip if phone_number OR enquiry_no exists
+   - Column mapping: Win Reason → competitor, Win Remarks → lost_reason, Lost Remarks → lost_remarks
+   - Auto-sets status to 'Lost' (enquiry_stage = 'Closed-Lost')
+   - NO closure questions required for uploaded lost leads
+
+3. **Schema Changes**
+   - Added fields: `is_duplicate`, `original_lead_id`, `duplicate_detected_at`
+   - Added fields: `lost_reason`, `lost_remarks`, `lost_date`, `competitor`
+
+### Files Modified
+- `/app/backend/models/lead.py` - Added new fields to Lead model
+- `/app/backend/routes/upload.py` - Added lost leads upload endpoint
+- `/app/backend/routes/leads.py` - Added duplicate detection endpoints, filter duplicates from main list
+- `/app/backend/routes/kpis.py` - Exclude duplicates from KPI calculations
+- `/app/backend/utils/duplicate_detector.py` - New utility for fuzzy duplicate detection
+- `/app/frontend/src/pages/DuplicateLeads.js` - New page for viewing duplicates
+- `/app/frontend/src/pages/Leads.js` - Added lost leads upload UI
+- `/app/frontend/src/App.js` - Added route for DuplicateLeads page
+- `/app/frontend/src/components/layout/Sidebar.js` - Added Duplicate Leads nav item
+
+### API Endpoints Added
+- `GET /api/leads/duplicates/count` - Count of duplicate leads
+- `GET /api/leads/duplicates` - List duplicate leads with search/pagination
+- `POST /api/leads/duplicates/{lead_id}/unflag` - Remove duplicate flag (Admin/Manager)
+- `POST /api/leads/duplicates/run-detection` - Manually run detection (Admin only)
+- `POST /api/upload/lost-leads` - Upload lost leads file
+- `GET /api/upload/lost-leads/template` - Download lost leads template
+
+### Testing Required
+1. Upload a lost leads file and verify:
+   - New leads created with Lost status
+   - Duplicates (by phone OR enquiry_no) skipped
+   - Column mapping works correctly
+   - No closure questions triggered
+
+2. Run duplicate detection and verify:
+   - Duplicates flagged correctly
+   - Duplicates excluded from main leads list
+   - Duplicates excluded from KPIs
+   - Unflag functionality works
+
+## Previous Tests
+
+## Test: KPI Logic & Filtering Fixes
 **Date**: 2025-12-24
 **Status**: IMPLEMENTED
 
