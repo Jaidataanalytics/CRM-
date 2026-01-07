@@ -742,11 +742,26 @@ class LeadManagementTester:
             self.log_test("Duplicate Filtering Test", False, "Admin login required")
             return
 
+        # Get current duplicate count before creating test leads
+        success, response = self.run_test(
+            "Get Initial Duplicate Count",
+            "GET",
+            "leads/duplicates/count",
+            200,
+            token=self.admin_token
+        )
+        
+        initial_duplicate_count = 0
+        if success:
+            initial_duplicate_count = response.get('count', 0)
+            print(f"   Initial duplicate count: {initial_duplicate_count}")
+
         # Create test leads with similar data to trigger duplicate detection
+        unique_phone = f"999999{datetime.now().strftime('%H%M%S')}"  # Use unique phone for this test
         test_leads = [
             {
                 "name": "Test Customer Duplicate",
-                "phone_number": "9999999998",
+                "phone_number": unique_phone,
                 "email_address": "testdup1@example.com",
                 "state": "Test State",
                 "dealer": "Test Dealer",
@@ -762,7 +777,7 @@ class LeadManagementTester:
             },
             {
                 "name": "Test Customer Duplicate",
-                "phone_number": "9999999998",  # Same phone
+                "phone_number": unique_phone,  # Same phone
                 "email_address": "testdup2@example.com",
                 "state": "Test State",
                 "dealer": "Test Dealer",
@@ -805,25 +820,45 @@ class LeadManagementTester:
             )
             
             if success:
+                flagged = response.get('duplicates_flagged', 0)
+                print(f"   Flagged {flagged} new duplicates")
+                
+                # Check that duplicate count increased
+                success, response = self.run_test(
+                    "Verify Duplicate Count Increased",
+                    "GET",
+                    "leads/duplicates/count",
+                    200,
+                    token=self.admin_token
+                )
+                
+                if success:
+                    new_duplicate_count = response.get('count', 0)
+                    if new_duplicate_count > initial_duplicate_count:
+                        self.log_test("Duplicate Detection Working", True, 
+                                    f"Duplicate count increased from {initial_duplicate_count} to {new_duplicate_count}")
+                    else:
+                        self.log_test("Duplicate Detection Working", False,
+                                    f"Duplicate count did not increase: {initial_duplicate_count} -> {new_duplicate_count}")
+                
                 # Check that duplicates are excluded from main leads list
                 success, response = self.run_test(
                     "Verify Duplicates Excluded from Main List",
                     "GET",
-                    f"leads?search=9999999998&search_field=phone_number",
+                    f"leads?search={unique_phone}&search_field=phone_number",
                     200,
                     token=self.admin_token
                 )
                 
                 if success:
                     leads = response.get('leads', [])
-                    # Should find fewer leads than before duplicate detection
-                    # (some should be flagged as duplicates and excluded)
-                    if len(leads) <= 4:  # Allow some tolerance since there might be existing test data
+                    # Should find only the original lead, not the duplicate
+                    if len(leads) == 1:
                         self.log_test("Duplicates Excluded from Main List", True, 
-                                    f"Found {len(leads)} leads (duplicates properly excluded)")
+                                    f"Found {len(leads)} lead (duplicates properly excluded)")
                     else:
                         self.log_test("Duplicates Excluded from Main List", False,
-                                    f"Found {len(leads)} leads, expected fewer due to duplicate exclusion")
+                                    f"Found {len(leads)} leads, expected 1 (original only)")
                 
                 # Check KPIs exclude duplicates
                 success, response = self.run_test(
