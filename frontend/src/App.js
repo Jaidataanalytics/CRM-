@@ -107,6 +107,11 @@ const AppRouter = () => {
         } />
         <Route path="/profile/:entityType/:entityId" element={<EntityProfile />} />
         <Route path="/transferred-leads" element={<TransferredLeads />} />
+        <Route path="/duplicate-leads" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <DuplicateLeads />
+          </ProtectedRoute>
+        } />
         
         {/* Manager+ only */}
         <Route path="/forecast" element={
