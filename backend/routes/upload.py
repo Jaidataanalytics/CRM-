@@ -463,6 +463,8 @@ LOST_LEADS_COLUMN_MAPPING = {
     "Area Office": "area",
     "Dealer": "dealer",
     "dealer": "dealer",
+    "Dealer Branch": "dealer",  # From demmoooo.xlsx
+    "dealer branch": "dealer",
     "Branch": "branch",
     "branch": "branch",
     "Location": "location",
@@ -472,8 +474,12 @@ LOST_LEADS_COLUMN_MAPPING = {
     "Employee Name": "employee_name",
     "employee name": "employee_name",
     "Employee": "employee_name",
+    "Sales Executive": "employee_name",  # From demmoooo.xlsx
+    "sales executive": "employee_name",
     "Enquiry No": "enquiry_no",
     "enquiry no": "enquiry_no",
+    "Enquiry No.": "enquiry_no",  # With period - from demmoooo.xlsx
+    "enquiry no.": "enquiry_no",
     "Enquiry Date": "enquiry_date",
     "enquiry date": "enquiry_date",
     "Customer Type": "customer_type",
