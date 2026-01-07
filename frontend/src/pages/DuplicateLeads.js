@@ -298,47 +298,68 @@ const DuplicateLeads = () => {
                     <TableHead>Enquiry No</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Corporate Name</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Lost Info</TableHead>
                     <TableHead>Detected At</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leads.map((lead) => (
-                    <TableRow key={lead.lead_id} className="hover:bg-muted/50">
-                      <TableCell className="font-mono text-sm">{lead.enquiry_no || '-'}</TableCell>
-                      <TableCell className="font-medium">{lead.name || lead.corporate_name || '-'}</TableCell>
-                      <TableCell>{lead.phone_number || '-'}</TableCell>
-                      <TableCell>{lead.employee_name || '-'}</TableCell>
-                      <TableCell>{lead.corporate_name || '-'}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(lead.duplicate_detected_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleViewLead(lead)}
-                            title="View Details"
+                  {leads.map((lead) => {
+                    const isWon = ['Closed-Won', 'Order Booked'].includes(lead.enquiry_stage);
+                    const isLost = ['Closed-Lost', 'Lost'].includes(lead.enquiry_stage);
+                    const hasLostInfo = lead.competitor || lead.lost_reason || lead.lost_remarks;
+                    
+                    return (
+                      <TableRow key={lead.lead_id} className="hover:bg-muted/50">
+                        <TableCell className="font-mono text-sm">{lead.enquiry_no || '-'}</TableCell>
+                        <TableCell className="font-medium">{lead.name || lead.corporate_name || '-'}</TableCell>
+                        <TableCell>{lead.phone_number || '-'}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={isWon ? 'default' : isLost ? 'destructive' : 'secondary'}
+                            className={isWon ? 'bg-green-600' : ''}
                           >
-                            <Eye className="h-4 w-4 text-blue-600" />
-                          </Button>
-                          {(isAdmin || isManager) && (
+                            {lead.enquiry_stage || '-'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {isWon ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700">Won</Badge>
+                          ) : hasLostInfo ? (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700">Has Info</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700">Missing</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(lead.duplicate_detected_at)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
                             <Button 
                               variant="ghost" 
                               size="icon"
-                              onClick={() => setUnflagLead(lead)}
-                              title="Unflag (Remove from duplicates)"
+                              onClick={() => handleViewLead(lead)}
+                              title="View Details"
                             >
-                              <Trash2 className="h-4 w-4 text-red-600" />
+                              <Eye className="h-4 w-4 text-blue-600" />
                             </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {(isAdmin || isManager) && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => setUnflagLead(lead)}
+                                title="Unflag (Remove from duplicates)"
+                              >
+                                <Trash2 className="h-4 w-4 text-red-600" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 
