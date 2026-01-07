@@ -162,15 +162,15 @@ class DuplicateDetector:
                 
                 if len(matches) > 1:
                     # Sort by created_at descending - newest first
-                    def get_created_at(l):
-                        created = l.get('created_at')
+                    def get_created_at(lead_item):
+                        created = lead_item.get('created_at')
                         if isinstance(created, datetime):
                             return created
                         if isinstance(created, str):
                             try:
                                 # Try parsing ISO format
                                 return datetime.fromisoformat(created.replace('Z', '+00:00'))
-                            except:
+                            except ValueError:
                                 pass
                         return datetime.min
                     
