@@ -1295,6 +1295,371 @@ class LeadManagementTester:
         else:
             self.log_test("Create Regular Lead", False, "Failed to create regular lead for duplicate testing")
 
+    def test_competitor_analysis_api(self):
+        """Test competitor analysis API with different dimensions"""
+        print("\n🔍 Testing Competitor Analysis API...")
+        
+        if not self.admin_token:
+            self.log_test("Competitor Analysis API Test", False, "Admin login required")
+            return
+
+        # Test with dimension=competitor
+        success, response = self.run_test(
+            "Competitor Analysis - Competitor Dimension",
+            "GET",
+            "insights/competitor-analysis?dimension=competitor",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            # Verify response structure
+            required_fields = ['dimension', 'analysis', 'summary', 'top_by_kva', 'filters']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                analysis = response.get('analysis', [])
+                summary = response.get('summary', {})
+                
+                # Check summary structure
+                summary_fields = ['total_lost_leads', 'with_data', 'without_data', 'unique_values']
+                summary_missing = [field for field in summary_fields if field not in summary]
+                
+                if not summary_missing:
+                    self.log_test("Competitor Analysis Response Structure", True, 
+                                f"Valid structure with {len(analysis)} competitors, {summary.get('total_lost_leads', 0)} total lost leads")
+                else:
+                    self.log_test("Competitor Analysis Response Structure", False,
+                                f"Missing summary fields: {summary_missing}")
+            else:
+                self.log_test("Competitor Analysis Response Structure", False,
+                            f"Missing fields: {missing_fields}")
+
+        # Test with dimension=lost_reason
+        success, response = self.run_test(
+            "Competitor Analysis - Lost Reason Dimension",
+            "GET",
+            "insights/competitor-analysis?dimension=lost_reason",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            dimension = response.get('dimension')
+            if dimension == 'lost_reason':
+                self.log_test("Lost Reason Dimension", True, "Correctly returned lost_reason dimension")
+            else:
+                self.log_test("Lost Reason Dimension", False, f"Expected 'lost_reason', got '{dimension}'")
+
+        # Test with dimension=lost_remarks
+        success, response = self.run_test(
+            "Competitor Analysis - Lost Remarks Dimension",
+            "GET",
+            "insights/competitor-analysis?dimension=lost_remarks",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            dimension = response.get('dimension')
+            if dimension == 'lost_remarks':
+                self.log_test("Lost Remarks Dimension", True, "Correctly returned lost_remarks dimension")
+            else:
+                self.log_test("Lost Remarks Dimension", False, f"Expected 'lost_remarks', got '{dimension}'")
+
+    def test_lost_leads_breakdown_api(self):
+        """Test lost leads breakdown API with different grouping options"""
+        print("\n🔍 Testing Lost Leads Breakdown API...")
+        
+        if not self.admin_token:
+            self.log_test("Lost Leads Breakdown API Test", False, "Admin login required")
+            return
+
+        # Test with group_by=competitor
+        success, response = self.run_test(
+            "Lost Leads Breakdown - Group by Competitor",
+            "GET",
+            "insights/lost-leads-breakdown?group_by=competitor",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            # Verify response structure
+            required_fields = ['group_by', 'total_lost_leads', 'breakdown', 'filters']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                breakdown = response.get('breakdown', [])
+                group_by = response.get('group_by')
+                total_lost = response.get('total_lost_leads', 0)
+                
+                if group_by == 'competitor':
+                    self.log_test("Lost Leads Breakdown - Competitor", True, 
+                                f"Valid breakdown with {len(breakdown)} competitors, {total_lost} total lost leads")
+                else:
+                    self.log_test("Lost Leads Breakdown - Competitor", False,
+                                f"Expected group_by='competitor', got '{group_by}'")
+                
+                # Check breakdown item structure
+                if breakdown:
+                    first_item = breakdown[0]
+                    item_fields = ['name', 'count', 'percentage', 'total_kva']
+                    item_missing = [field for field in item_fields if field not in first_item]
+                    
+                    if not item_missing:
+                        self.log_test("Breakdown Item Structure", True, "All required fields present")
+                    else:
+                        self.log_test("Breakdown Item Structure", False, f"Missing fields: {item_missing}")
+            else:
+                self.log_test("Lost Leads Breakdown Response Structure", False,
+                            f"Missing fields: {missing_fields}")
+
+        # Test with group_by=state
+        success, response = self.run_test(
+            "Lost Leads Breakdown - Group by State",
+            "GET",
+            "insights/lost-leads-breakdown?group_by=state",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            group_by = response.get('group_by')
+            if group_by == 'state':
+                breakdown = response.get('breakdown', [])
+                self.log_test("Lost Leads Breakdown - State", True, 
+                            f"Valid state breakdown with {len(breakdown)} states")
+            else:
+                self.log_test("Lost Leads Breakdown - State", False,
+                            f"Expected group_by='state', got '{group_by}'")
+
+        # Test with group_by=dealer
+        success, response = self.run_test(
+            "Lost Leads Breakdown - Group by Dealer",
+            "GET",
+            "insights/lost-leads-breakdown?group_by=dealer",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            group_by = response.get('group_by')
+            if group_by == 'dealer':
+                breakdown = response.get('breakdown', [])
+                self.log_test("Lost Leads Breakdown - Dealer", True, 
+                            f"Valid dealer breakdown with {len(breakdown)} dealers")
+            else:
+                self.log_test("Lost Leads Breakdown - Dealer", False,
+                            f"Expected group_by='dealer', got '{group_by}'")
+
+    def test_kpi_navigation_urls(self):
+        """Test KPI card navigation URL formation"""
+        print("\n🔍 Testing KPI Navigation URL Formation...")
+        
+        if not self.admin_token:
+            self.log_test("KPI Navigation Test", False, "Admin login required")
+            return
+
+        # This test verifies the expected URL parameters for KPI navigation
+        # Since we can't directly test frontend navigation, we test the leads API with expected filters
+        
+        # Test Won leads filter (stage=Closed-Won)
+        success, response = self.run_test(
+            "KPI Navigation - Won Leads Filter",
+            "GET",
+            "leads?stage=Closed-Won&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            # Verify all returned leads are won
+            all_won = all(lead.get('enquiry_stage') in ['Closed-Won', 'Order Booked'] for lead in leads)
+            if all_won or len(leads) == 0:
+                self.log_test("Won Leads Navigation Filter", True, 
+                            f"Correctly filtered {len(leads)} won leads")
+            else:
+                self.log_test("Won Leads Navigation Filter", False,
+                            "Some leads are not won")
+
+        # Test Lost leads filter (stage=Closed-Lost)
+        success, response = self.run_test(
+            "KPI Navigation - Lost Leads Filter",
+            "GET",
+            "leads?stage=Closed-Lost&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            # Verify all returned leads are lost
+            all_lost = all(lead.get('enquiry_stage') in ['Closed-Lost', 'Closed-Dropped'] for lead in leads)
+            if all_lost or len(leads) == 0:
+                self.log_test("Lost Leads Navigation Filter", True, 
+                            f"Correctly filtered {len(leads)} lost leads")
+            else:
+                self.log_test("Lost Leads Navigation Filter", False,
+                            "Some leads are not lost")
+
+        # Test Open leads filter (status=Open)
+        success, response = self.run_test(
+            "KPI Navigation - Open Leads Filter",
+            "GET",
+            "leads?status=Open&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            # Verify all returned leads are open
+            all_open = all(lead.get('enquiry_status') == 'Open' for lead in leads)
+            if all_open or len(leads) == 0:
+                self.log_test("Open Leads Navigation Filter", True, 
+                            f"Correctly filtered {len(leads)} open leads")
+            else:
+                self.log_test("Open Leads Navigation Filter", False,
+                            "Some leads are not open")
+
+        # Test Hot leads filter (lead_type=Hot&status=Open)
+        success, response = self.run_test(
+            "KPI Navigation - Hot Leads Filter",
+            "GET",
+            "leads?lead_type=Hot&status=Open&limit=5",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            leads = response.get('leads', [])
+            # Verify all returned leads are hot and open
+            all_hot_open = all(
+                lead.get('enquiry_type') == 'Hot' and lead.get('enquiry_status') == 'Open' 
+                for lead in leads
+            )
+            if all_hot_open or len(leads) == 0:
+                self.log_test("Hot Leads Navigation Filter", True, 
+                            f"Correctly filtered {len(leads)} hot open leads")
+            else:
+                self.log_test("Hot Leads Navigation Filter", False,
+                            "Some leads are not hot or not open")
+
+    def test_competitor_analysis_with_lost_leads_data(self):
+        """Test competitor analysis with actual lost leads data"""
+        print("\n🔍 Testing Competitor Analysis with Lost Leads Data...")
+        
+        if not self.admin_token:
+            self.log_test("Competitor Analysis Data Test", False, "Admin login required")
+            return
+
+        # First, create some test lost leads with competitor data
+        unique_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        
+        test_lost_leads = [
+            {
+                "name": "Lost Customer A",
+                "phone_number": f"9876{unique_timestamp}01",
+                "email_address": "lostA@competitor-test.com",
+                "state": "Test State",
+                "dealer": "Test Dealer",
+                "employee_name": "Test Employee",
+                "enquiry_no": f"COMP{unique_timestamp}001",
+                "enquiry_date": "2025-01-01",
+                "customer_type": "New Customer",
+                "segment": "Corporate",
+                "enquiry_status": "Closed",
+                "enquiry_stage": "Closed-Lost",
+                "competitor": "Test Competitor A",
+                "lost_reason": "Price too high",
+                "lost_remarks": "Customer found better pricing elsewhere",
+                "kva": 100
+            },
+            {
+                "name": "Lost Customer B",
+                "phone_number": f"9876{unique_timestamp}02",
+                "email_address": "lostB@competitor-test.com",
+                "state": "Test State",
+                "dealer": "Test Dealer",
+                "employee_name": "Test Employee",
+                "enquiry_no": f"COMP{unique_timestamp}002",
+                "enquiry_date": "2025-01-01",
+                "customer_type": "New Customer",
+                "segment": "Industrial",
+                "enquiry_status": "Closed",
+                "enquiry_stage": "Closed-Lost",
+                "competitor": "Test Competitor B",
+                "lost_reason": "Better service offered",
+                "lost_remarks": "Competitor provided better after-sales support",
+                "kva": 250
+            }
+        ]
+        
+        created_leads = []
+        for i, lead_data in enumerate(test_lost_leads):
+            success, response = self.run_test(
+                f"Create Test Lost Lead {i+1} for Competitor Analysis",
+                "POST",
+                "leads",
+                200,
+                data=lead_data,
+                token=self.admin_token
+            )
+            
+            if success:
+                created_leads.append(response.get('lead_id'))
+
+        if len(created_leads) == 2:
+            # Now test competitor analysis with our test data
+            success, response = self.run_test(
+                "Competitor Analysis with Test Data",
+                "GET",
+                "insights/competitor-analysis?dimension=competitor",
+                200,
+                token=self.admin_token
+            )
+            
+            if success:
+                analysis = response.get('analysis', [])
+                summary = response.get('summary', {})
+                
+                # Check if our test competitors appear in the analysis
+                test_competitors = ['Test Competitor A', 'Test Competitor B']
+                found_competitors = [item['value'] for item in analysis if item['value'] in test_competitors]
+                
+                if len(found_competitors) >= 1:
+                    self.log_test("Competitor Analysis with Test Data", True,
+                                f"Found {len(found_competitors)} test competitors in analysis")
+                    
+                    # Test lost_reason dimension
+                    success, response = self.run_test(
+                        "Lost Reason Analysis with Test Data",
+                        "GET",
+                        "insights/competitor-analysis?dimension=lost_reason",
+                        200,
+                        token=self.admin_token
+                    )
+                    
+                    if success:
+                        analysis = response.get('analysis', [])
+                        test_reasons = ['Price too high', 'Better service offered']
+                        found_reasons = [item['value'] for item in analysis if item['value'] in test_reasons]
+                        
+                        if len(found_reasons) >= 1:
+                            self.log_test("Lost Reason Analysis with Test Data", True,
+                                        f"Found {len(found_reasons)} test reasons in analysis")
+                        else:
+                            self.log_test("Lost Reason Analysis with Test Data", False,
+                                        "Test lost reasons not found in analysis")
+                else:
+                    self.log_test("Competitor Analysis with Test Data", False,
+                                "Test competitors not found in analysis")
+        else:
+            self.log_test("Create Test Lost Leads", False, 
+                        f"Only created {len(created_leads)} out of 2 test leads")
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Lead Management Feature Tests...")
@@ -1321,15 +1686,21 @@ class LeadManagementTester:
         self.test_leads_followup_date_filter()
         self.test_leads_combined_filters()
         
-        # Run NEW duplicate detection and lost leads tests
+        # Run duplicate detection and lost leads tests
         self.test_lost_leads_upload()
         self.test_duplicate_detection_apis()
         self.test_duplicate_filtering_logic()
         
-        # Run NEW batch management tests
+        # Run batch management tests
         self.test_recent_uploads_api()
         self.test_upload_batch_deletion_and_restore()
         self.test_lost_leads_duplicate_detection()
+        
+        # Run NEW competitor analysis and KPI navigation tests
+        self.test_competitor_analysis_api()
+        self.test_lost_leads_breakdown_api()
+        self.test_kpi_navigation_urls()
+        self.test_competitor_analysis_with_lost_leads_data()
         
         # Print summary
         print("\n" + "=" * 60)
