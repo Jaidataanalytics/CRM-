@@ -882,3 +882,156 @@ async def get_data_stats(
             for m in monthly_data
         ]
     }
+
+
+
+
+# Data Normalization Migration
+@router.post("/migrate/normalize-data")
+async def normalize_existing_data(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    dry_run: bool = Query(True, description="If true, only show what would be changed without making changes")
+):
+    """
+    Normalize existing lead data using fuzzy matching.
+    This migration will:
+    - Standardize dealer names (e.g., "j.b. enterprises" -> "J.B. Enterprises")
+    - Standardize state names
+    - Standardize employee names
+    - Standardize segments
+    - Standardize enquiry_stage values
+    """
+    from utils.fuzzy_matcher import fuzzy_matcher, FuzzyMatcher
+    
+    db = await get_db(request)
+    
+    # Get all unique values for each field
+    dealers = await db.leads.distinct("dealer")
+    states = await db.leads.distinct("state")
+    employees = await db.leads.distinct("employee_name")
+    segments = await db.leads.distinct("segment")
+    stages = await db.leads.distinct("enquiry_stage")
+    
+    # Filter out None/empty values
+    dealers = [d for d in dealers if d]
+    states = [s for s in states if s]
+    employees = [e for e in employees if e]
+    segments = [s for s in segments if s]
+    stages = [s for s in stages if s]
+    
+    # Build normalization mappings
+    matcher = FuzzyMatcher(threshold=80)
+    
+    def build_normalization_map(values, field_name):
+        """Build a map of original values to normalized values"""
+        normalized_map = {}
+        canonical_values = []
+        
+        for value in sorted(values, key=lambda x: len(x), reverse=True):
+            # Check if this value matches any existing canonical value
+            match, score = matcher.find_best_match(value, canonical_values, min_score=80)
+            
+            if match and score >= 80:
+                # Map to existing canonical value
+                normalized_map[value] = match
+            else:
+                # This becomes a new canonical value
+                if field_name == 'enquiry_stage':
+                    canonical = matcher.normalize_status(value)
+                else:
+                    canonical = matcher.smart_title_case(value)
+                
+                canonical_values.append(canonical)
+                if value != canonical:
+                    normalized_map[value] = canonical
+        
+        return normalized_map
+    
+    # Build maps for each field
+    dealer_map = build_normalization_map(dealers, 'dealer')
+    state_map = build_normalization_map(states, 'state')
+    employee_map = build_normalization_map(employees, 'employee_name')
+    segment_map = build_normalization_map(segments, 'segment')
+    stage_map = build_normalization_map(stages, 'enquiry_stage')
+    
+    changes_summary = {
+        "dealer": {"changes": len(dealer_map), "examples": list(dealer_map.items())[:10]},
+        "state": {"changes": len(state_map), "examples": list(state_map.items())[:10]},
+        "employee_name": {"changes": len(employee_map), "examples": list(employee_map.items())[:10]},
+        "segment": {"changes": len(segment_map), "examples": list(segment_map.items())[:10]},
+        "enquiry_stage": {"changes": len(stage_map), "examples": list(stage_map.items())[:10]}
+    }
+    
+    if dry_run:
+        return {
+            "status": "dry_run",
+            "message": "No changes made. Set dry_run=false to apply changes.",
+            "changes_summary": changes_summary,
+            "total_changes": sum(len(m) for m in [dealer_map, state_map, employee_map, segment_map, stage_map])
+        }
+    
+    # Apply changes
+    updated_count = 0
+    
+    # Update dealers
+    for old_value, new_value in dealer_map.items():
+        result = await db.leads.update_many(
+            {"dealer": old_value},
+            {"$set": {"dealer": new_value}}
+        )
+        updated_count += result.modified_count
+    
+    # Update states
+    for old_value, new_value in state_map.items():
+        result = await db.leads.update_many(
+            {"state": old_value},
+            {"$set": {"state": new_value}}
+        )
+        updated_count += result.modified_count
+    
+    # Update employees
+    for old_value, new_value in employee_map.items():
+        result = await db.leads.update_many(
+            {"employee_name": old_value},
+            {"$set": {"employee_name": new_value}}
+        )
+        updated_count += result.modified_count
+    
+    # Update segments
+    for old_value, new_value in segment_map.items():
+        result = await db.leads.update_many(
+            {"segment": old_value},
+            {"$set": {"segment": new_value}}
+        )
+        updated_count += result.modified_count
+    
+    # Update stages
+    for old_value, new_value in stage_map.items():
+        result = await db.leads.update_many(
+            {"enquiry_stage": old_value},
+            {"$set": {"enquiry_stage": new_value}}
+        )
+        updated_count += result.modified_count
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="data_normalization",
+        resource_type="leads",
+        resource_id="bulk",
+        details={
+            "records_updated": updated_count,
+            "changes_summary": {k: v["changes"] for k, v in changes_summary.items()}
+        }
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {
+        "status": "completed",
+        "message": f"Successfully normalized {updated_count} lead records",
+        "changes_summary": changes_summary,
+        "records_updated": updated_count
+    }
