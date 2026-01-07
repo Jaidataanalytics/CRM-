@@ -2518,6 +2518,130 @@ const Leads = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Lost Leads Upload Summary Modal */}
+      <Dialog open={isUploadSummaryOpen} onOpenChange={setIsUploadSummaryOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Lost Leads Upload Summary</DialogTitle>
+            <DialogDescription>
+              {uploadSummaryData?.total_rows} rows processed
+            </DialogDescription>
+          </DialogHeader>
+          
+          {uploadSummaryData && (
+            <div className="flex-1 overflow-auto space-y-4">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-green-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-green-600">{uploadSummaryData.created}</div>
+                  <div className="text-xs text-green-700">New Created</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-blue-600">{uploadSummaryData.updated}</div>
+                  <div className="text-xs text-blue-700">Updated to Lost</div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-gray-600">{uploadSummaryData.skipped_lost}</div>
+                  <div className="text-xs text-gray-700">Already Lost</div>
+                </div>
+                <div className="bg-amber-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-amber-600">{uploadSummaryData.skipped_won}</div>
+                  <div className="text-xs text-amber-700">Won (Preserved)</div>
+                </div>
+              </div>
+              
+              {uploadSummaryData.total_errors > 0 && (
+                <div className="bg-red-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-red-700">
+                    {uploadSummaryData.total_errors} rows had errors
+                  </div>
+                </div>
+              )}
+
+              {/* Updated Leads Details */}
+              {uploadSummaryData.updated_details?.length > 0 && (
+                <div className="border rounded-lg">
+                  <div className="bg-blue-50 px-3 py-2 border-b">
+                    <h4 className="font-medium text-sm text-blue-800">Updated to Lost ({uploadSummaryData.updated})</h4>
+                  </div>
+                  <ScrollArea className="h-[150px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Row</TableHead>
+                          <TableHead className="text-xs">Name</TableHead>
+                          <TableHead className="text-xs">Phone</TableHead>
+                          <TableHead className="text-xs">Previous Stage</TableHead>
+                          <TableHead className="text-xs">Lost Info</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {uploadSummaryData.updated_details.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="text-xs">{item.row}</TableCell>
+                            <TableCell className="text-xs">{item.name}</TableCell>
+                            <TableCell className="text-xs">{item.phone}</TableCell>
+                            <TableCell className="text-xs">{item.previous_stage}</TableCell>
+                            <TableCell className="text-xs">
+                              {item.has_lost_info ? (
+                                <Badge variant="outline" className="bg-green-50 text-green-700">Has Info</Badge>
+                              ) : (
+                                <Badge variant="outline" className="bg-yellow-50 text-yellow-700">Needs Questions</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Skipped Leads Details */}
+              {uploadSummaryData.skipped_details?.length > 0 && (
+                <div className="border rounded-lg">
+                  <div className="bg-gray-50 px-3 py-2 border-b">
+                    <h4 className="font-medium text-sm text-gray-800">Skipped ({uploadSummaryData.skipped_total})</h4>
+                  </div>
+                  <ScrollArea className="h-[150px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Row</TableHead>
+                          <TableHead className="text-xs">Name</TableHead>
+                          <TableHead className="text-xs">Phone</TableHead>
+                          <TableHead className="text-xs">Reason</TableHead>
+                          <TableHead className="text-xs">Current Stage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {uploadSummaryData.skipped_details.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="text-xs">{item.row}</TableCell>
+                            <TableCell className="text-xs">{item.name}</TableCell>
+                            <TableCell className="text-xs">{item.phone}</TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant={item.reason === 'Won - Preserved' ? 'default' : 'secondary'} className="text-xs">
+                                {item.reason}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">{item.current_stage}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setIsUploadSummaryOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
