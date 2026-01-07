@@ -17,8 +17,45 @@ class FuzzyMatcher:
     STANDARD_STATUSES = [
         "Prospecting", "Qualified", "Negotiation", "Closed-Won", "Closed-Lost",
         "Closed-Faulty", "Closed-Dropped", "Order Booked", "Hot", "Warm", "Cold",
-        "Follow-up", "Lost", "Won", "Pending", "New"
+        "Follow-up", "Lost", "Won", "Pending", "New", "Open"
     ]
+    
+    # Direct mappings for case variations of statuses
+    STATUS_MAPPINGS = {
+        "open": "Open",
+        "OPEN": "Open",
+        "faulty": "Closed-Faulty",
+        "FAULTY": "Closed-Faulty",
+        "Faulty": "Closed-Faulty",
+        "lost": "Closed-Lost",
+        "LOST": "Closed-Lost",
+        "Lost": "Closed-Lost",
+        "won": "Closed-Won",
+        "WON": "Closed-Won",
+        "Won": "Closed-Won",
+        "prospecting": "Prospecting",
+        "PROSPECTING": "Prospecting",
+        "qualified": "Qualified",
+        "QUALIFIED": "Qualified",
+        "negotiation": "Negotiation",
+        "NEGOTIATION": "Negotiation",
+        "hot": "Hot",
+        "HOT": "Hot",
+        "warm": "Warm",
+        "WARM": "Warm",
+        "cold": "Cold",
+        "COLD": "Cold",
+        "order booked": "Order Booked",
+        "ORDER BOOKED": "Order Booked",
+        "closed-won": "Closed-Won",
+        "CLOSED-WON": "Closed-Won",
+        "closed-lost": "Closed-Lost",
+        "CLOSED-LOST": "Closed-Lost",
+        "closed-faulty": "Closed-Faulty",
+        "CLOSED-FAULTY": "Closed-Faulty",
+        "closed-dropped": "Closed-Dropped",
+        "CLOSED-DROPPED": "Closed-Dropped",
+    }
     
     def __init__(self, threshold: int = 75):
         """
