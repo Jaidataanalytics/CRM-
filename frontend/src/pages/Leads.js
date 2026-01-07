@@ -2422,6 +2422,81 @@ const Leads = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Delete Preview Dialog */}
+      <Dialog open={showBulkDeletePreview} onOpenChange={setShowBulkDeletePreview}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Confirm Bulk Delete
+            </DialogTitle>
+            <DialogDescription>
+              Review the leads that will be deleted. This action moves leads to trash (recoverable for 14 days).
+            </DialogDescription>
+          </DialogHeader>
+          
+          {bulkDeletePreview && (
+            <div className="space-y-4">
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                  {bulkDeletePreview.total_count.toLocaleString()} leads
+                </div>
+                <p className="text-sm text-muted-foreground">will be moved to trash</p>
+              </div>
+              
+              {bulkDeletePreview.exceeds_limit && (
+                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 text-yellow-800 dark:text-yellow-200 text-sm">
+                  <strong>Limit exceeded:</strong> You can delete up to {bulkDeletePreview.delete_limit.toLocaleString()} leads at once. 
+                  Please narrow your selection.
+                </div>
+              )}
+              
+              {bulkDeletePreview.sample_leads?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Sample of leads to delete:</p>
+                  <div className="max-h-48 overflow-y-auto space-y-2">
+                    {bulkDeletePreview.sample_leads.map((lead, idx) => (
+                      <div key={lead.lead_id || idx} className="p-2 bg-muted rounded text-sm flex justify-between">
+                        <span>{lead.name || lead.enquiry_no || 'Unknown'}</span>
+                        <span className="text-muted-foreground">{lead.phone_number || '-'}</span>
+                      </div>
+                    ))}
+                    {bulkDeletePreview.total_count > 10 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        ... and {bulkDeletePreview.total_count - 10} more
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowBulkDeletePreview(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmBulkDelete}
+              disabled={bulkDeleting || !bulkDeletePreview?.can_delete}
+            >
+              {bulkDeleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete {bulkDeletePreview?.total_count?.toLocaleString()} Leads
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
