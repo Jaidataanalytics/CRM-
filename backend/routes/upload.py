@@ -310,6 +310,27 @@ async def upload_leads(
                 enquiry_no = lead_data.get('enquiry_no')
                 phone_number = lead_data.get('phone_number')
                 
+                # ============================================
+                # FUZZY MATCHING: Normalize field values
+                # ============================================
+                # Get existing unique values from database for fuzzy matching
+                if not hasattr(upload_lead, '_existing_values'):
+                    # Cache existing values for the upload session
+                    existing_dealers = await db.leads.distinct("dealer")
+                    existing_states = await db.leads.distinct("state")
+                    existing_employees = await db.leads.distinct("employee_name")
+                    existing_segments = await db.leads.distinct("segment")
+                    upload_lead._existing_values = {
+                        "dealer": [d for d in existing_dealers if d],
+                        "state": [s for s in existing_states if s],
+                        "employee_name": [e for e in existing_employees if e],
+                        "segment": [s for s in existing_segments if s],
+                        "enquiry_stage": fuzzy_matcher.STANDARD_STATUSES
+                    }
+                
+                # Normalize the lead data using fuzzy matching
+                lead_data = normalize_lead_data(lead_data, upload_lead._existing_values)
+                
                 # Build unique identifier query using enquiry_no + phone_number combination
                 existing = None
                 if enquiry_no and phone_number:
