@@ -833,6 +833,8 @@ async def upload_lost_leads(
                 errors.append({"row": idx + 2, "error": str(e)})
                 continue
         
+        total_skipped = skipped_lost_count + skipped_won_count
+        
         # Log activity
         activity = ActivityLog(
             user_id=current_user.user_id,
@@ -843,7 +845,8 @@ async def upload_lost_leads(
                 "filename": file.filename,
                 "created": created_count,
                 "updated": updated_count,
-                "skipped": skipped_count,
+                "skipped_lost": skipped_lost_count,
+                "skipped_won": skipped_won_count,
                 "errors": len(errors)
             }
         )
@@ -855,10 +858,15 @@ async def upload_lost_leads(
             "success": True,
             "created": created_count,
             "updated": updated_count,
-            "skipped": skipped_count,
+            "skipped_lost": skipped_lost_count,
+            "skipped_won": skipped_won_count,
+            "skipped_total": total_skipped,
+            "skipped_details": skipped_details,
+            "updated_details": updated_details,
             "errors": errors[:10] if errors else [],
             "total_errors": len(errors),
-            "message": f"Lost leads processed: {created_count} new, {updated_count} updated to Lost, {skipped_count} skipped (already Lost/Won)"
+            "total_rows": len(df),
+            "message": f"Lost leads processed: {created_count} new, {updated_count} updated to Lost, {skipped_lost_count} already Lost, {skipped_won_count} Won (preserved)"
         }
         
     except HTTPException:
