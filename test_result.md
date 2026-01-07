@@ -2,29 +2,65 @@
 
 ## Latest Test: Delete Upload Batches & Lost Leads Duplicate Fix
 **Date**: 2025-01-07
-**Status**: IMPLEMENTING
+**Status**: TESTED ✅
 
-### Features Being Implemented
+### Features Tested
 
 1. **Delete Upload Batches**
-   - New API: GET /api/admin/recent-uploads - List recent uploads (last 7 days)
-   - New API: DELETE /api/admin/upload-batch/{batch_id} - Soft delete all leads from an upload
-   - New API: POST /api/admin/upload-batch/{batch_id}/restore - Restore deleted batch
-   - UI: "Recent Uploads" section in Admin > Data Management tab
+   - ✅ New API: GET /api/admin/recent-uploads - List recent uploads (last 7 days)
+   - ✅ New API: DELETE /api/admin/upload-batch/{batch_id} - Soft delete all leads from an upload
+   - ✅ New API: POST /api/admin/upload-batch/{batch_id}/restore - Restore deleted batch
+   - ✅ Batch tracking with upload_batch_id working correctly
+   - ✅ Soft delete functionality verified (leads marked with deleted_at)
+   - ✅ Restore functionality verified (deleted_at field removed)
 
 2. **Lost Leads Duplicate Detection Fix**
-   - Improved phone normalization (handles scientific notation, country codes)
-   - Better matching with multiple phone formats
-   - Logging for debugging duplicate matches
+   - ✅ Improved phone normalization (handles scientific notation, country codes)
+   - ✅ Better matching with multiple phone formats
+   - ✅ Duplicate detection working correctly (2 duplicates skipped, 1 created)
+   - ✅ Phone formats tested: "9876543210", "+919876543211", "91-9876-543212", "9.87654E+09"
+   - ✅ Lost leads auto-set to 'Closed-Lost' status with needs_closure_questions=False
 
 3. **Upload Batch Tracking**
-   - All uploads now store `upload_batch_id` for tracking
-   - Enables batch deletion of uploaded data
+   - ✅ All uploads now store `upload_batch_id` for tracking
+   - ✅ Enables batch deletion of uploaded data
+   - ✅ Recent uploads API shows batch information correctly
 
-### Testing Required
-1. Upload a lost leads file and verify duplicates are correctly skipped
-2. Delete an upload batch and verify leads are soft-deleted
-3. Restore a deleted batch and verify leads are restored
+### Backend Testing Results
+
+**✅ PASSED TESTS (67/69):**
+
+**New Batch Management APIs:**
+- ✅ GET /api/admin/recent-uploads (found 12 uploads in last 7 days)
+- ✅ DELETE /api/admin/upload-batch/{batch_id} (soft delete working)
+- ✅ POST /api/admin/upload-batch/{batch_id}/restore (restore working)
+- ✅ Batch tracking and upload_batch_id generation
+
+**Lost Leads Duplicate Detection:**
+- ✅ Phone normalization handles scientific notation (9.87654E+09)
+- ✅ Phone normalization handles country codes (+91, 91-)
+- ✅ Duplicate detection by phone OR enquiry_no (not AND)
+- ✅ Lost leads upload correctly skips duplicates
+- ✅ Lost leads auto-set to Closed-Lost with needs_closure_questions=False
+
+**Existing Features (Still Working):**
+- ✅ Regular duplicate detection APIs
+- ✅ Lost leads upload template download
+- ✅ KPI calculations exclude duplicates
+- ✅ Main leads list excludes duplicates
+- ✅ Unflag duplicate functionality
+
+**❌ FAILED TESTS (2/69):**
+- ❌ Employee login (no employee user exists in system)
+- ❌ Employee notifications test (requires employee login)
+
+### Key Verification Points
+✅ **Batch deletion creates soft deletes (deleted_at timestamp)**
+✅ **Batch restoration removes deleted_at field**
+✅ **Lost leads upload duplicate detection works with various phone formats**
+✅ **Phone normalization handles scientific notation and country codes**
+✅ **Lost leads auto-set to Closed-Lost status without closure questions**
+✅ **Upload batch tracking enables proper batch management**
 
 ## Previous Test: Duplicate Detection & Lost Leads Upload
 **Date**: 2025-01-07
