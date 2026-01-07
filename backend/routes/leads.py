@@ -478,7 +478,7 @@ async def run_duplicate_detection(
         result = await run_duplicate_detection_migration(db)
         return {
             "success": True,
-            "message": f"Duplicate detection complete",
+            "message": "Duplicate detection complete",
             **result
         }
     except Exception as e:
