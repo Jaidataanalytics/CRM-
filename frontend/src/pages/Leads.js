@@ -1197,6 +1197,23 @@ const Leads = () => {
             <Download className="h-4 w-4" />
             {exporting ? 'Exporting...' : 'Export'}
           </Button>
+          {isAdminOrManager && (
+            <Button
+              variant={bulkDeleteMode ? "destructive" : "outline"}
+              onClick={() => {
+                if (bulkDeleteMode) {
+                  cancelBulkDelete();
+                } else {
+                  setBulkDeleteMode(true);
+                }
+              }}
+              className="gap-2"
+              title="Bulk delete leads"
+            >
+              <Trash2 className="h-4 w-4" />
+              {bulkDeleteMode ? 'Cancel' : 'Bulk Delete'}
+            </Button>
+          )}
           {pendingClosureCount > 0 && (
             <Button
               variant="outline"
