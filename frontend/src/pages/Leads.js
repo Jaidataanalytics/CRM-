@@ -572,6 +572,59 @@ const Leads = () => {
     }
   };
 
+  // Lost leads upload handler
+  const handleLostLeadsUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingLostLeads(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const res = await axios.post(`${API}/upload/lost-leads`, formData, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      toast.success(`Lost leads upload: ${res.data.created} created, ${res.data.skipped} skipped (duplicates)`);
+      if (res.data.total_errors > 0) {
+        toast.warning(`${res.data.total_errors} rows had errors`);
+      }
+      loadLeads();
+    } catch (error) {
+      console.error('Lost leads upload error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to upload lost leads file');
+    } finally {
+      setUploadingLostLeads(false);
+      if (lostLeadsFileInputRef.current) lostLeadsFileInputRef.current.value = '';
+    }
+  };
+
+  // Download lost leads template
+  const handleDownloadLostLeadsTemplate = async () => {
+    try {
+      const response = await axios.get(`${API}/upload/lost-leads/template`, {
+        withCredentials: true,
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'lost_leads_upload_template.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Lost leads template downloaded');
+    } catch (error) {
+      console.error('Error downloading lost leads template:', error);
+      toast.error('Failed to download template');
+    }
+  };
+
   // Qualification functions
   const openQualifyDialog = async (lead) => {
     setQualifyingLead(lead);
