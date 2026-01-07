@@ -557,6 +557,9 @@ async def upload_lost_leads(
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
     
+    # Generate upload batch ID for tracking
+    upload_batch_id = f"lost_upload_{uuid.uuid4().hex[:8]}"
+    
     try:
         import pandas as pd
         
