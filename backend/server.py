@@ -282,6 +282,7 @@ async def migrate_normalize_duplicates():
     Automatic migration to normalize duplicate values in the database.
     Fixes case variations like OPEN/Open, FAULTY/Faulty, etc.
     """
+    import re
     logger.info("Running data normalization migration...")
     
     # Status/enquiry_stage fixes
@@ -347,98 +348,100 @@ async def migrate_normalize_duplicates():
     
     total_updated = 0
     
-    # Apply status fixes
-    for old_val, new_val in status_fixes.items():
-        if old_val != new_val:
-            result = await db.leads.update_many(
-                {"enquiry_stage": old_val},
-                {"$set": {"enquiry_stage": new_val}}
-            )
-            if result.modified_count > 0:
-                logger.info(f"Normalized enquiry_stage: '{old_val}' -> '{new_val}' ({result.modified_count} records)")
-                total_updated += result.modified_count
-    
-    # Apply dealer fixes
-    for old_val, new_val in dealer_fixes.items():
-        if old_val != new_val:
-            result = await db.leads.update_many(
-                {"dealer": old_val},
-                {"$set": {"dealer": new_val}}
-            )
-            if result.modified_count > 0:
-                logger.info(f"Normalized dealer: '{old_val}' -> '{new_val}' ({result.modified_count} records)")
-                total_updated += result.modified_count
-    
-    # Additional: Normalize by finding similar values and merging them
-    # Get all unique dealers and find duplicates with different cases
-    unique_dealers = await db.leads.distinct("dealer")
-    dealer_groups = {}
-    for dealer in unique_dealers:
-        if dealer:
-            # Create a normalized key (lowercase, no extra spaces)
-            import re
-            key = re.sub(r'\s+', ' ', dealer.lower().strip())
-            key = re.sub(r'[^a-z0-9\s]', '', key)
-            if key not in dealer_groups:
-                dealer_groups[key] = []
-            dealer_groups[key].append(dealer)
-    
-    # For groups with multiple values, normalize to the one with most records
-    for key, dealers in dealer_groups.items():
-        if len(dealers) > 1:
-            # Find the most common variant
-            counts = []
-            for d in dealers:
-                count = await db.leads.count_documents({"dealer": d})
-                counts.append((d, count))
-            counts.sort(key=lambda x: x[1], reverse=True)
-            canonical = counts[0][0]
-            
-            # Update all variants to canonical
-            for d, count in counts[1:]:
-                if count > 0:
-                    result = await db.leads.update_many(
-                        {"dealer": d},
-                        {"$set": {"dealer": canonical}}
-                    )
-                    if result.modified_count > 0:
-                        logger.info(f"Merged dealer: '{d}' -> '{canonical}' ({result.modified_count} records)")
-                        total_updated += result.modified_count
-    
-    # Same for employee names
-    unique_employees = await db.leads.distinct("employee_name")
-    employee_groups = {}
-    for emp in unique_employees:
-        if emp:
-            import re
-            key = re.sub(r'\s+', ' ', emp.lower().strip())
-            if key not in employee_groups:
-                employee_groups[key] = []
-            employee_groups[key].append(emp)
-    
-    for key, employees in employee_groups.items():
-        if len(employees) > 1:
-            counts = []
-            for e in employees:
-                count = await db.leads.count_documents({"employee_name": e})
-                counts.append((e, count))
-            counts.sort(key=lambda x: x[1], reverse=True)
-            canonical = counts[0][0]
-            
-            for e, count in counts[1:]:
-                if count > 0:
-                    result = await db.leads.update_many(
-                        {"employee_name": e},
-                        {"$set": {"employee_name": canonical}}
-                    )
-                    if result.modified_count > 0:
-                        logger.info(f"Merged employee: '{e}' -> '{canonical}' ({result.modified_count} records)")
-                        total_updated += result.modified_count
-    
-    if total_updated > 0:
-        logger.info(f"Data normalization complete: updated {total_updated} record(s)")
-    else:
-        logger.info("Data normalization complete: no duplicates found")
+    try:
+        # Apply status fixes
+        for old_val, new_val in status_fixes.items():
+            if old_val != new_val:
+                result = await db.leads.update_many(
+                    {"enquiry_stage": old_val},
+                    {"$set": {"enquiry_stage": new_val}}
+                )
+                if result.modified_count > 0:
+                    logger.info(f"Normalized enquiry_stage: '{old_val}' -> '{new_val}' ({result.modified_count} records)")
+                    total_updated += result.modified_count
+        
+        # Apply dealer fixes
+        for old_val, new_val in dealer_fixes.items():
+            if old_val != new_val:
+                result = await db.leads.update_many(
+                    {"dealer": old_val},
+                    {"$set": {"dealer": new_val}}
+                )
+                if result.modified_count > 0:
+                    logger.info(f"Normalized dealer: '{old_val}' -> '{new_val}' ({result.modified_count} records)")
+                    total_updated += result.modified_count
+        
+        # Additional: Normalize by finding similar values and merging them
+        # Get all unique dealers and find duplicates with different cases
+        unique_dealers = await db.leads.distinct("dealer")
+        dealer_groups = {}
+        for dealer in unique_dealers:
+            if dealer:
+                # Create a normalized key (lowercase, no extra spaces)
+                key = re.sub(r'\s+', ' ', dealer.lower().strip())
+                key = re.sub(r'[^a-z0-9\s]', '', key)
+                if key not in dealer_groups:
+                    dealer_groups[key] = []
+                dealer_groups[key].append(dealer)
+        
+        # For groups with multiple values, normalize to the one with most records
+        for key, dealers in dealer_groups.items():
+            if len(dealers) > 1:
+                # Find the most common variant
+                counts = []
+                for d in dealers:
+                    count = await db.leads.count_documents({"dealer": d})
+                    counts.append((d, count))
+                counts.sort(key=lambda x: x[1], reverse=True)
+                canonical = counts[0][0]
+                
+                # Update all variants to canonical
+                for d, count in counts[1:]:
+                    if count > 0:
+                        result = await db.leads.update_many(
+                            {"dealer": d},
+                            {"$set": {"dealer": canonical}}
+                        )
+                        if result.modified_count > 0:
+                            logger.info(f"Merged dealer: '{d}' -> '{canonical}' ({result.modified_count} records)")
+                            total_updated += result.modified_count
+        
+        # Same for employee names
+        unique_employees = await db.leads.distinct("employee_name")
+        employee_groups = {}
+        for emp in unique_employees:
+            if emp:
+                key = re.sub(r'\s+', ' ', emp.lower().strip())
+                if key not in employee_groups:
+                    employee_groups[key] = []
+                employee_groups[key].append(emp)
+        
+        for key, employees in employee_groups.items():
+            if len(employees) > 1:
+                counts = []
+                for e in employees:
+                    count = await db.leads.count_documents({"employee_name": e})
+                    counts.append((e, count))
+                counts.sort(key=lambda x: x[1], reverse=True)
+                canonical = counts[0][0]
+                
+                for e, count in counts[1:]:
+                    if count > 0:
+                        result = await db.leads.update_many(
+                            {"employee_name": e},
+                            {"$set": {"employee_name": canonical}}
+                        )
+                        if result.modified_count > 0:
+                            logger.info(f"Merged employee: '{e}' -> '{canonical}' ({result.modified_count} records)")
+                            total_updated += result.modified_count
+        
+        if total_updated > 0:
+            logger.info(f"Data normalization complete: updated {total_updated} record(s)")
+        else:
+            logger.info("Data normalization complete: no duplicates found")
+    except Exception as e:
+        logger.error(f"Data normalization migration failed: {str(e)}")
+        # Don't raise - allow server to start even if migration fails
 
 
 @app.on_event("startup")
