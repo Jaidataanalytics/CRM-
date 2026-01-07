@@ -993,6 +993,23 @@ const Leads = () => {
 
   // DataGrid columns configuration
   const gridColumns = [
+    // Checkbox column for bulk delete (only when in bulk delete mode)
+    ...(bulkDeleteMode ? [{
+      key: 'select',
+      label: '',
+      sortable: false,
+      filterable: false,
+      width: '50px',
+      render: (_, row) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={selectedLeads.has(row.lead_id)}
+            onCheckedChange={() => toggleLeadSelection(row.lead_id)}
+            disabled={selectAllMatching}
+          />
+        </div>
+      )
+    }] : []),
     { key: 'enquiry_no', label: 'Enquiry No', sortable: true },
     { key: 'name', label: 'Name', sortable: true, render: (val, row) => val || row.corporate_name || '-' },
     { key: 'state', label: 'State', sortable: true },
