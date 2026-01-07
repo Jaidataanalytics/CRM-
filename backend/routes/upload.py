@@ -623,8 +623,15 @@ async def upload_lost_leads(
                 def normalize_phone(phone):
                     if not phone:
                         return ""
+                    phone_str = str(phone)
+                    # Handle scientific notation (e.g., 9.87654E+09)
+                    if 'e' in phone_str.lower() or 'E' in phone_str:
+                        try:
+                            phone_str = str(int(float(phone_str)))
+                        except (ValueError, OverflowError):
+                            pass
                     # Remove all non-digit characters
-                    normalized = ''.join(c for c in str(phone) if c.isdigit())
+                    normalized = ''.join(c for c in phone_str if c.isdigit())
                     # Handle country code prefixes (India: 91)
                     if len(normalized) > 10 and normalized.startswith('91'):
                         normalized = normalized[2:]
@@ -638,24 +645,40 @@ async def upload_lost_leads(
                 existing = None
                 
                 if normalized_phone and len(normalized_phone) >= 10:
-                    # Search for matching phone with various formats
-                    # Check normalized version and also try regex for partial matches
-                    existing = await db.leads.find_one({
+                    # Build a comprehensive query to find matches
+                    # Also normalize all stored phone numbers for comparison
+                    phone_query = {
                         "$or": [
                             {"phone_number": normalized_phone},
-                            {"phone_number": str(phone_number)},
-                            {"phone_number": {"$regex": f"{normalized_phone}$"}}  # Ends with normalized phone
+                            {"phone_number": str(phone_number) if phone_number else ""},
                         ]
-                    })
+                    }
+                    
+                    # Also check with regex for phones that might have prefixes
+                    # Match any phone ending with the normalized 10 digits
+                    phone_query["$or"].append({"phone_number": {"$regex": f"{normalized_phone}$"}})
+                    
+                    # For phones stored with country code
+                    phone_query["$or"].append({"phone_number": f"91{normalized_phone}"})
+                    phone_query["$or"].append({"phone_number": f"+91{normalized_phone}"})
+                    
+                    existing = await db.leads.find_one(phone_query)
+                    
+                    if existing:
+                        logger.debug(f"Found duplicate by phone: {normalized_phone} matches {existing.get('phone_number')}")
                 
                 if not existing and enquiry_no:
                     enquiry_str = str(enquiry_no).strip()
-                    existing = await db.leads.find_one({
-                        "$or": [
-                            {"enquiry_no": enquiry_str},
-                            {"enquiry_no": {"$regex": f"^{enquiry_str}$", "$options": "i"}}  # Case-insensitive
-                        ]
-                    })
+                    if enquiry_str:
+                        existing = await db.leads.find_one({
+                            "$or": [
+                                {"enquiry_no": enquiry_str},
+                                {"enquiry_no": {"$regex": f"^{enquiry_str}$", "$options": "i"}}
+                            ]
+                        })
+                        
+                        if existing:
+                            logger.debug(f"Found duplicate by enquiry_no: {enquiry_str}")
                 
                 if existing:
                     # Skip this row - duplicate found
