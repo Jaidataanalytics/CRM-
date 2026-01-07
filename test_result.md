@@ -1,66 +1,37 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: Delete Upload Batches & Lost Leads Duplicate Fix
+## Latest Test: Competitor Analysis & Clickable KPIs
 **Date**: 2025-01-07
-**Status**: TESTED ✅
+**Status**: IMPLEMENTING
 
-### Features Tested
+### Features Implemented
 
-1. **Delete Upload Batches**
-   - ✅ New API: GET /api/admin/recent-uploads - List recent uploads (last 7 days)
-   - ✅ New API: DELETE /api/admin/upload-batch/{batch_id} - Soft delete all leads from an upload
-   - ✅ New API: POST /api/admin/upload-batch/{batch_id}/restore - Restore deleted batch
-   - ✅ Batch tracking with upload_batch_id working correctly
-   - ✅ Soft delete functionality verified (leads marked with deleted_at)
-   - ✅ Restore functionality verified (deleted_at field removed)
+1. **Competitor Analysis on Insights Page**
+   - New tab: "Competitor Analysis"
+   - Dropdown to select dimension: Competitor, Lost Reason, Lost Remarks
+   - Summary cards: Total Lost, With Data, Without Data, Unique Values
+   - Bar chart showing top competitors/reasons
+   - Doughnut chart for distribution
+   - Detailed table with counts, percentages, KVA
+   - Top by KVA section
+   - APIs: GET /api/insights/competitor-analysis, GET /api/insights/lost-leads-breakdown
 
-2. **Lost Leads Duplicate Detection Fix**
-   - ✅ Improved phone normalization (handles scientific notation, country codes)
-   - ✅ Better matching with multiple phone formats
-   - ✅ Duplicate detection working correctly (2 duplicates skipped, 1 created)
-   - ✅ Phone formats tested: "9876543210", "+919876543211", "91-9876-543212", "9.87654E+09"
-   - ✅ Lost leads auto-set to 'Closed-Lost' status with needs_closure_questions=False
+2. **Clickable KPI Cards**
+   - Single-click: Filters leads inline on dashboard
+   - Double-click: Navigates to Leads page with filters applied
+   - Shows "Double-click to view leads →" hint on all cards
 
-3. **Upload Batch Tracking**
-   - ✅ All uploads now store `upload_batch_id` for tracking
-   - ✅ Enables batch deletion of uploaded data
-   - ✅ Recent uploads API shows batch information correctly
+3. **Lost Leads Field Mapping Migration**
+   - Automatically copies corporate_name to name if empty
+   - Automatically copies district/area to location if empty
+   - Runs on server startup
 
-### Backend Testing Results
+### Files Modified
+- `/app/backend/routes/insights.py` - Added competitor analysis endpoints
+- `/app/frontend/src/pages/Insights.js` - Added Competitor Analysis tab
+- `/app/frontend/src/pages/Dashboard.js` - Added double-click navigation to KPI cards
 
-**✅ PASSED TESTS (67/69):**
-
-**New Batch Management APIs:**
-- ✅ GET /api/admin/recent-uploads (found 12 uploads in last 7 days)
-- ✅ DELETE /api/admin/upload-batch/{batch_id} (soft delete working)
-- ✅ POST /api/admin/upload-batch/{batch_id}/restore (restore working)
-- ✅ Batch tracking and upload_batch_id generation
-
-**Lost Leads Duplicate Detection:**
-- ✅ Phone normalization handles scientific notation (9.87654E+09)
-- ✅ Phone normalization handles country codes (+91, 91-)
-- ✅ Duplicate detection by phone OR enquiry_no (not AND)
-- ✅ Lost leads upload correctly skips duplicates
-- ✅ Lost leads auto-set to Closed-Lost with needs_closure_questions=False
-
-**Existing Features (Still Working):**
-- ✅ Regular duplicate detection APIs
-- ✅ Lost leads upload template download
-- ✅ KPI calculations exclude duplicates
-- ✅ Main leads list excludes duplicates
-- ✅ Unflag duplicate functionality
-
-**❌ FAILED TESTS (2/69):**
-- ❌ Employee login (no employee user exists in system)
-- ❌ Employee notifications test (requires employee login)
-
-### Key Verification Points
-✅ **Batch deletion creates soft deletes (deleted_at timestamp)**
-✅ **Batch restoration removes deleted_at field**
-✅ **Lost leads upload duplicate detection works with various phone formats**
-✅ **Phone normalization handles scientific notation and country codes**
-✅ **Lost leads auto-set to Closed-Lost status without closure questions**
-✅ **Upload batch tracking enables proper batch management**
+## Previous Test: Delete Upload Batches & Lost Leads Duplicate Fix
 
 ## Previous Test: Duplicate Detection & Lost Leads Upload
 **Date**: 2025-01-07
