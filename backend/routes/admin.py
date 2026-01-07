@@ -885,6 +885,195 @@ async def get_data_stats(
     }
 
 
+@router.get("/recent-uploads")
+async def get_recent_uploads(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN)),
+    days: int = Query(7, ge=1, le=30, description="Number of days to look back")
+):
+    """
+    Get list of recent data uploads (last N days).
+    Returns upload history with batch IDs for deletion capability.
+    """
+    db = await get_db(request)
+    
+    # Calculate date threshold
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff_str = cutoff_date.isoformat()
+    
+    # Get upload activities from activity logs
+    upload_actions = ["bulk_upload", "lost_leads_upload", "historical_data_upload"]
+    
+    activities = await db.activity_logs.find(
+        {
+            "action": {"$in": upload_actions},
+            "created_at": {"$gte": cutoff_str}
+        },
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # For each activity, get the count of leads with that batch ID
+    uploads = []
+    for activity in activities:
+        details = activity.get("details", {})
+        batch_id = details.get("upload_batch_id")
+        
+        # Count leads for this batch
+        lead_count = 0
+        if batch_id:
+            lead_count = await db.leads.count_documents({
+                "upload_batch_id": batch_id,
+                "deleted_at": {"$exists": False}
+            })
+        else:
+            # For older uploads without batch_id, estimate from activity log
+            lead_count = details.get("created", 0)
+        
+        uploads.append({
+            "activity_id": activity.get("activity_id"),
+            "upload_batch_id": batch_id,
+            "action": activity.get("action"),
+            "filename": details.get("filename", "Unknown"),
+            "created_at": activity.get("created_at"),
+            "user_id": activity.get("user_id"),
+            "created_count": details.get("created", 0),
+            "skipped_count": details.get("skipped", 0),
+            "updated_count": details.get("updated", 0),
+            "current_lead_count": lead_count,
+            "can_delete": batch_id is not None and lead_count > 0
+        })
+    
+    return {
+        "uploads": uploads,
+        "days_queried": days,
+        "total_uploads": len(uploads)
+    }
+
+
+@router.delete("/upload-batch/{batch_id}")
+async def delete_upload_batch(
+    batch_id: str,
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """
+    Delete all leads from a specific upload batch.
+    This is a soft delete - leads are marked with deleted_at timestamp.
+    """
+    db = await get_db(request)
+    
+    # Verify batch exists and has leads
+    lead_count = await db.leads.count_documents({
+        "upload_batch_id": batch_id,
+        "deleted_at": {"$exists": False}
+    })
+    
+    if lead_count == 0:
+        raise HTTPException(
+            status_code=404, 
+            detail=f"No leads found for batch ID: {batch_id}"
+        )
+    
+    # Soft delete all leads in this batch
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.leads.update_many(
+        {
+            "upload_batch_id": batch_id,
+            "deleted_at": {"$exists": False}
+        },
+        {
+            "$set": {
+                "deleted_at": now,
+                "deleted_by": current_user.user_id,
+                "updated_at": now
+            }
+        }
+    )
+    
+    deleted_count = result.modified_count
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="delete_upload_batch",
+        resource_type="lead",
+        resource_id=batch_id,
+        details={
+            "batch_id": batch_id,
+            "deleted_count": deleted_count
+        }
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {
+        "success": True,
+        "message": f"Deleted {deleted_count} leads from batch {batch_id}",
+        "deleted_count": deleted_count,
+        "batch_id": batch_id
+    }
+
+
+@router.post("/upload-batch/{batch_id}/restore")
+async def restore_upload_batch(
+    batch_id: str,
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """
+    Restore all leads from a deleted upload batch.
+    """
+    db = await get_db(request)
+    
+    # Find soft-deleted leads for this batch
+    deleted_count = await db.leads.count_documents({
+        "upload_batch_id": batch_id,
+        "deleted_at": {"$exists": True}
+    })
+    
+    if deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No deleted leads found for batch ID: {batch_id}"
+        )
+    
+    # Restore leads
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.leads.update_many(
+        {
+            "upload_batch_id": batch_id,
+            "deleted_at": {"$exists": True}
+        },
+        {
+            "$unset": {"deleted_at": "", "deleted_by": ""},
+            "$set": {"updated_at": now}
+        }
+    )
+    
+    restored_count = result.modified_count
+    
+    # Log activity
+    activity = ActivityLog(
+        user_id=current_user.user_id,
+        action="restore_upload_batch",
+        resource_type="lead",
+        resource_id=batch_id,
+        details={
+            "batch_id": batch_id,
+            "restored_count": restored_count
+        }
+    )
+    activity_doc = activity.model_dump()
+    activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+    await db.activity_logs.insert_one(activity_doc)
+    
+    return {
+        "success": True,
+        "message": f"Restored {restored_count} leads from batch {batch_id}",
+        "restored_count": restored_count,
+        "batch_id": batch_id
+    }
 
 
 # Data Normalization Migration
