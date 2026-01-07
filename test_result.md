@@ -1,6 +1,42 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: Competitor Analysis & Clickable KPIs
+## Latest Test: Lost Leads Upload Endpoint Direct Testing
+**Date**: 2025-01-07
+**Status**: TESTED ✅
+
+### Features Tested
+
+1. **Lost Leads Upload Endpoint (POST /api/upload/lost-leads)**
+   - ✅ Admin login with username: admin, password: admin123
+   - ✅ File upload with /tmp/unique_lost_leads.xlsx (3 unique lost leads with 555 phone numbers)
+   - ✅ Response structure validation: success, created, updated, skipped_lost, skipped_won, skipped_details, updated_details, total_rows
+   - ✅ Duplicate detection working: All 3 leads already existed as "Closed-Lost" and were correctly skipped
+   - ✅ Detailed response arrays: skipped_details and updated_details properly populated
+   - ✅ Phone number normalization: 555079521, 555079522, 555079523 correctly identified as duplicates
+
+### Backend Testing Results
+
+**✅ PASSED TESTS (7/7):**
+
+**Lost Leads Upload API:**
+- ✅ Admin Login (username: admin, password: admin123)
+- ✅ POST /api/upload/lost-leads with Excel file upload
+- ✅ Response contains success: true
+- ✅ Response contains all required fields: created, updated, skipped_lost, skipped_won, skipped_details, updated_details, total_rows
+- ✅ File processing: 3 rows detected and processed correctly
+- ✅ Duplicate detection: All 3 leads correctly identified as already "Closed-Lost" and skipped
+- ✅ Response arrays: skipped_details and updated_details are proper arrays with detailed information
+
+**Test Results Summary:**
+- File: /tmp/unique_lost_leads.xlsx (3 rows)
+- Created: 0 (no new leads)
+- Updated: 0 (no leads updated)
+- Skipped Lost: 3 (all 3 leads already in "Closed-Lost" status)
+- Skipped Won: 0 (no won leads)
+- Total Rows: 3
+- Success Rate: 100% (7/7 tests passed)
+
+## Previous Test: Competitor Analysis & Clickable KPIs
 **Date**: 2025-01-07
 **Status**: TESTED ✅
 
