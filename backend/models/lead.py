@@ -36,11 +36,13 @@ class Lead(BaseModel):
     pincode: Optional[str] = None
     tehsil: Optional[str] = None
     district: Optional[str] = None
+    address: Optional[str] = None
     
     # Product fields
     kva: Optional[float] = None
     phase: Optional[str] = None
     qty: Optional[int] = None
+    model: Optional[str] = None
     remarks: Optional[str] = None
     
     # Status fields
