@@ -1556,6 +1556,7 @@ class LeadManagementTester:
             return
 
         # First, create some test lost leads with competitor data
+        # Use dates within the current Indian Financial Year (April 2025 - March 2026)
         unique_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         
         test_lost_leads = [
@@ -1567,7 +1568,7 @@ class LeadManagementTester:
                 "dealer": "Test Dealer",
                 "employee_name": "Test Employee",
                 "enquiry_no": f"COMP{unique_timestamp}001",
-                "enquiry_date": "2025-01-01",
+                "enquiry_date": "2025-06-01",  # Within FY 2025-26
                 "customer_type": "New Customer",
                 "segment": "Corporate",
                 "enquiry_status": "Closed",
@@ -1585,7 +1586,7 @@ class LeadManagementTester:
                 "dealer": "Test Dealer",
                 "employee_name": "Test Employee",
                 "enquiry_no": f"COMP{unique_timestamp}002",
-                "enquiry_date": "2025-01-01",
+                "enquiry_date": "2025-07-01",  # Within FY 2025-26
                 "customer_type": "New Customer",
                 "segment": "Industrial",
                 "enquiry_status": "Closed",
@@ -1654,8 +1655,10 @@ class LeadManagementTester:
                             self.log_test("Lost Reason Analysis with Test Data", False,
                                         "Test lost reasons not found in analysis")
                 else:
+                    # If not found, show what competitors were found for debugging
+                    competitor_names = [item['value'] for item in analysis[:5]]
                     self.log_test("Competitor Analysis with Test Data", False,
-                                "Test competitors not found in analysis")
+                                f"Test competitors not found. Found: {competitor_names}")
         else:
             self.log_test("Create Test Lost Leads", False, 
                         f"Only created {len(created_leads)} out of 2 test leads")
