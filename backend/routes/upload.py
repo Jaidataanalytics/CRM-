@@ -7,6 +7,7 @@ import uuid
 from models.user import User, UserRole
 from models.activity_log import ActivityLog
 from routes.auth import get_current_user
+from utils.fuzzy_matcher import fuzzy_matcher, normalize_lead_data
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/upload", tags=["Upload"])
