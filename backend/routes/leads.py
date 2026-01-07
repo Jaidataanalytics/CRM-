@@ -46,13 +46,20 @@ async def get_leads(
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
     
-    # Build filter query - exclude soft-deleted leads AND transferred leads
+    # Build filter query - exclude soft-deleted leads, transferred leads, AND duplicates
     query = {
         "deleted_at": {"$exists": False},
-        "$or": [
-            {"is_transferred": {"$exists": False}},
-            {"is_transferred": False},
-            {"is_transferred": None}
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False},
+                {"is_duplicate": None}
+            ]}
         ]
     }
     
