@@ -454,6 +454,9 @@ async def startup_db_client():
     # Run data normalization migration
     await migrate_normalize_duplicates()
     
+    # Run duplicate lead detection migration
+    await migrate_detect_duplicates()
+    
     # Create indexes for better query performance
     await db.leads.create_index("lead_id", unique=True)
     await db.leads.create_index("enquiry_no")
@@ -463,6 +466,8 @@ async def startup_db_client():
     await db.leads.create_index("segment")
     await db.leads.create_index("enquiry_status")
     await db.leads.create_index("enquiry_date")
+    await db.leads.create_index("is_duplicate")  # Index for duplicate filtering
+    await db.leads.create_index("phone_number")  # Index for duplicate detection
     await db.users.create_index("user_id", unique=True)
     await db.users.create_index("email", unique=True)
     await db.user_sessions.create_index("session_token", unique=True)
