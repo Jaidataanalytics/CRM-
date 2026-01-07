@@ -75,6 +75,11 @@ const Admin = () => {
   const [historicalUploadResult, setHistoricalUploadResult] = useState(null);
   const [uploadProgress, setUploadProgress] = useState({ progress: 0, message: '', status: '' });
   
+  // Recent Uploads state
+  const [recentUploads, setRecentUploads] = useState([]);
+  const [loadingUploads, setLoadingUploads] = useState(false);
+  const [deletingBatch, setDeletingBatch] = useState(null);
+  
   // Delete Leads state
   const [deleteFilters, setDeleteFilters] = useState({
     deleteAll: false,
