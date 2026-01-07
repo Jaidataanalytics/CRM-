@@ -501,6 +501,40 @@ async def migrate_detect_duplicates():
         # Don't raise - allow server to start even if migration fails
 
 
+async def migrate_lost_leads_enquiry_date():
+    """
+    Migration to set enquiry_date = lost_date for existing lost leads that don't have enquiry_date.
+    This ensures lost leads are properly included in date-based filters and KPIs.
+    """
+    logger.info("Running lost leads enquiry_date migration...")
+    
+    try:
+        # Find lost leads without enquiry_date but with lost_date
+        result = await db.leads.update_many(
+            {
+                "closure_type": "lost",
+                "lost_date": {"$exists": True, "$ne": None},
+                "$or": [
+                    {"enquiry_date": {"$exists": False}},
+                    {"enquiry_date": None},
+                    {"enquiry_date": ""}
+                ]
+            },
+            [
+                {"$set": {"enquiry_date": "$lost_date"}}
+            ]
+        )
+        
+        if result.modified_count > 0:
+            logger.info(f"Lost leads migration: Updated {result.modified_count} leads with enquiry_date from lost_date")
+        else:
+            logger.info("Lost leads migration: No updates needed")
+            
+    except Exception as e:
+        logger.error(f"Lost leads enquiry_date migration failed: {str(e)}")
+        # Don't raise - allow server to start even if migration fails
+
+
 @app.on_event("startup")
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
@@ -513,6 +547,9 @@ async def startup_db_client():
     
     # Run duplicate lead detection migration
     await migrate_detect_duplicates()
+    
+    # Run lost leads enquiry_date migration
+    await migrate_lost_leads_enquiry_date()
     
     # Create indexes for better query performance
     await db.leads.create_index("lead_id", unique=True)
