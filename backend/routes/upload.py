@@ -610,8 +610,11 @@ async def upload_lost_leads(
         
         created_count = 0
         updated_count = 0
-        skipped_count = 0
+        skipped_lost_count = 0
+        skipped_won_count = 0
         errors = []
+        skipped_details = []  # Track details of skipped leads
+        updated_details = []  # Track details of updated leads
         
         for idx, row in df.iterrows():
             try:
