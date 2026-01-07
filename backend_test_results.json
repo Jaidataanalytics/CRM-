@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-07T15:43:18.853714",
-  "total_tests": 92,
-  "passed_tests": 86,
-  "success_rate": "93.5%",
+  "timestamp": "2026-01-07T15:47:11.031757",
+  "total_tests": 94,
+  "passed_tests": 92,
+  "success_rate": "97.9%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -172,7 +172,7 @@
     {
       "test": "Duplicate Count API",
       "success": true,
-      "details": "Count: 1695"
+      "details": "Count: 1694"
     },
     {
       "test": "Get Duplicate Leads List",
@@ -192,7 +192,7 @@
     {
       "test": "Run Duplicate Detection",
       "success": true,
-      "details": "Flagged: 0, Checked: 9773"
+      "details": "Flagged: 0, Checked: 9775"
     },
     {
       "test": "Get Initial Duplicate Count",
@@ -222,7 +222,7 @@
     {
       "test": "Duplicate Detection Working",
       "success": true,
-      "details": "Duplicate detection ran successfully (count: 1695 -> 1695)"
+      "details": "Duplicate detection ran successfully (count: 1694 -> 1694)"
     },
     {
       "test": "Verify Main List Excludes Duplicates",
@@ -242,7 +242,7 @@
     {
       "test": "KPIs Exclude Duplicates",
       "success": true,
-      "details": "KPIs calculated (Hot: 961, Total: 3207)"
+      "details": "KPIs calculated (Hot: 961, Total: 3213)"
     },
     {
       "test": "Get Duplicates for Unflag Test",
@@ -257,7 +257,7 @@
     {
       "test": "Unflag Duplicate Functionality",
       "success": true,
-      "details": "Successfully unflagged lead lead_37200500aa74"
+      "details": "Successfully unflagged lead lead_db616d8128ae"
     },
     {
       "test": "Get Recent Uploads (7 days)",
@@ -267,7 +267,7 @@
     {
       "test": "Recent Uploads API Structure",
       "success": true,
-      "details": "Response has all required fields for 17 uploads"
+      "details": "Response has all required fields for 22 uploads"
     },
     {
       "test": "Create Test Upload for Batch Delete",
@@ -347,7 +347,7 @@
     {
       "test": "Competitor Analysis Response Structure",
       "success": true,
-      "details": "Valid structure with 0 competitors, 56 total lost leads"
+      "details": "Valid structure with 0 competitors, 62 total lost leads"
     },
     {
       "test": "Competitor Analysis - Lost Reason Dimension",
@@ -377,7 +377,7 @@
     {
       "test": "Lost Leads Breakdown - Competitor",
       "success": true,
-      "details": "Valid breakdown with 1 competitors, 56 total lost leads"
+      "details": "Valid breakdown with 1 competitors, 62 total lost leads"
     },
     {
       "test": "Breakdown Item Structure",
@@ -392,7 +392,7 @@
     {
       "test": "Lost Leads Breakdown - State",
       "success": true,
-      "details": "Valid state breakdown with 2 states"
+      "details": "Valid state breakdown with 3 states"
     },
     {
       "test": "Lost Leads Breakdown - Group by Dealer",
@@ -402,7 +402,7 @@
     {
       "test": "Lost Leads Breakdown - Dealer",
       "success": true,
-      "details": "Valid dealer breakdown with 10 dealers"
+      "details": "Valid dealer breakdown with 11 dealers"
     },
     {
       "test": "KPI Navigation - Won Leads Filter",
@@ -411,8 +411,8 @@
     },
     {
       "test": "Won Leads Navigation Filter",
-      "success": false,
-      "details": "Some leads are not won"
+      "success": true,
+      "details": "Correctly filtered 5 won leads"
     },
     {
       "test": "KPI Navigation - Lost Leads Filter",
@@ -421,8 +421,8 @@
     },
     {
       "test": "Lost Leads Navigation Filter",
-      "success": false,
-      "details": "Some leads are not lost"
+      "success": true,
+      "details": "Correctly filtered 5 lost leads"
     },
     {
       "test": "KPI Navigation - Open Leads Filter",
@@ -441,8 +441,8 @@
     },
     {
       "test": "Hot Leads Navigation Filter",
-      "success": false,
-      "details": "Some leads are not hot or not open"
+      "success": true,
+      "details": "Correctly filtered 5 hot open leads"
     },
     {
       "test": "Create Test Lost Lead 1 for Competitor Analysis",
@@ -461,8 +461,18 @@
     },
     {
       "test": "Competitor Analysis with Test Data",
-      "success": false,
-      "details": "Test competitors not found in analysis"
+      "success": true,
+      "details": "Competitor analysis working correctly - found 4 competitors with 4 leads having competitor data"
+    },
+    {
+      "test": "Lost Reason Analysis with Test Data",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Reason Analysis with Test Data",
+      "success": true,
+      "details": "Lost reason analysis working correctly - found 4 reasons"
     }
   ]
 }
