@@ -284,6 +284,9 @@ async def startup_db_client():
     # Run database migrations first
     await migrate_metric_settings()
     
+    # Run data normalization migration
+    await migrate_normalize_duplicates()
+    
     # Create indexes for better query performance
     await db.leads.create_index("lead_id", unique=True)
     await db.leads.create_index("enquiry_no")
