@@ -581,10 +581,12 @@ async def upload_lost_leads(
     """
     Upload lost leads from Excel file.
     
-    Key differences from regular upload:
-    1. Duplicate check: Skip row if phone_number OR enquiry_no already exists in DB
-    2. Auto-set status to 'Lost' (enquiry_stage = 'Closed-Lost', enquiry_status = 'Closed')
-    3. Special column mappings:
+    Key behavior:
+    1. If lead exists (by phone_number OR enquiry_no): UPDATE it to Lost status with lost data
+    2. If lead is already Lost: Skip (no duplicate lost entries)
+    3. If lead doesn't exist: Create new lead as Lost
+    4. Auto-set status to 'Lost' (enquiry_stage = 'Closed-Lost', enquiry_status = 'Closed')
+    5. Special column mappings:
        - 'Win Reason' -> competitor
        - 'Win Remarks' -> lost_reason
        - 'Lost Remarks' -> lost_remarks
@@ -607,6 +609,7 @@ async def upload_lost_leads(
             raise HTTPException(status_code=400, detail="The uploaded file is empty")
         
         created_count = 0
+        updated_count = 0
         skipped_count = 0
         errors = []
         
