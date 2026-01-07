@@ -1910,7 +1910,7 @@ const Leads = () => {
                   <ShieldCheck className="h-4 w-4 mr-2" />
                   Qualify
                 </Button>
-                {isBDMLead(selectedLead) && (
+                {canTransferLead(selectedLead) && (
                   <Button 
                     variant="secondary" 
                     onClick={() => handleTransferLead(selectedLead)}
