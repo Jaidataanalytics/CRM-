@@ -552,6 +552,7 @@ const Dashboard = () => {
           icon={Snowflake}
           color="text-blue-500"
           onClick={() => handleKPIClick('cold')}
+          onDoubleClick={() => handleKPINavigate('cold')}
           active={selectedKPI === 'cold'}
         />
         <KPICard
