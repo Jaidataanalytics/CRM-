@@ -63,7 +63,11 @@ async def get_leads(
     search: Optional[str] = None,
     search_field: Optional[str] = None,
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=10000)
+    limit: int = Query(50, ge=1, le=10000),
+    # KPI Navigation parameters (aliases for frontend compatibility)
+    stage: Optional[str] = None,  # Maps to enquiry_stage
+    status: Optional[str] = None,  # Maps to enquiry_status
+    lead_type: Optional[str] = None  # Maps to enquiry_type
 ):
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
