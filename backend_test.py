@@ -1638,7 +1638,7 @@ class LeadManagementTester:
                     success, response = self.run_test(
                         "Lost Reason Analysis with Test Data",
                         "GET",
-                        "insights/competitor-analysis?dimension=lost_reason",
+                        "insights/competitor-analysis?dimension=lost_reason&start_date=2025-01-01&end_date=2025-12-31",
                         200,
                         token=self.admin_token
                     )
