@@ -93,6 +93,15 @@ const Leads = () => {
   const [uploadingLostLeads, setUploadingLostLeads] = useState(false);
   const lostLeadsFileInputRef = useRef(null);
   
+  // Bulk delete state
+  const [selectedLeads, setSelectedLeads] = useState(new Set());
+  const [selectAllOnPage, setSelectAllOnPage] = useState(false);
+  const [bulkDeleteMode, setBulkDeleteMode] = useState(false);
+  const [showBulkDeletePreview, setShowBulkDeletePreview] = useState(false);
+  const [bulkDeletePreview, setBulkDeletePreview] = useState(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [selectAllMatching, setSelectAllMatching] = useState(false);
+  
   // Qualification state
   const [isQualifyDialogOpen, setIsQualifyDialogOpen] = useState(false);
   const [qualifyingLead, setQualifyingLead] = useState(null);
