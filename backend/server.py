@@ -535,6 +535,84 @@ async def migrate_lost_leads_enquiry_date():
         # Don't raise - allow server to start even if migration fails
 
 
+async def migrate_lost_leads_field_mapping():
+    """
+    Migration to fix field mappings for existing lost leads:
+    1. If name is empty but corporate_name exists, copy corporate_name to name
+    2. If location is empty but district exists, copy district to location
+    
+    This ensures existing data follows the correct mappings:
+    - Prospect Name -> name
+    - District -> location
+    """
+    logger.info("Running lost leads field mapping migration...")
+    
+    try:
+        # Fix name field: copy from corporate_name if name is empty
+        name_result = await db.leads.update_many(
+            {
+                "$or": [
+                    {"name": {"$exists": False}},
+                    {"name": None},
+                    {"name": ""}
+                ],
+                "corporate_name": {"$exists": True, "$ne": None, "$ne": ""}
+            },
+            [
+                {"$set": {"name": "$corporate_name"}}
+            ]
+        )
+        
+        if name_result.modified_count > 0:
+            logger.info(f"Lost leads field mapping: Updated {name_result.modified_count} leads with name from corporate_name")
+        
+        # Fix location field: copy from district if location is empty
+        location_result = await db.leads.update_many(
+            {
+                "$or": [
+                    {"location": {"$exists": False}},
+                    {"location": None},
+                    {"location": ""}
+                ],
+                "district": {"$exists": True, "$ne": None, "$ne": ""}
+            },
+            [
+                {"$set": {"location": "$district"}}
+            ]
+        )
+        
+        if location_result.modified_count > 0:
+            logger.info(f"Lost leads field mapping: Updated {location_result.modified_count} leads with location from district")
+        
+        # Also check for area field as fallback for location
+        area_result = await db.leads.update_many(
+            {
+                "$or": [
+                    {"location": {"$exists": False}},
+                    {"location": None},
+                    {"location": ""}
+                ],
+                "area": {"$exists": True, "$ne": None, "$ne": ""}
+            },
+            [
+                {"$set": {"location": "$area"}}
+            ]
+        )
+        
+        if area_result.modified_count > 0:
+            logger.info(f"Lost leads field mapping: Updated {area_result.modified_count} leads with location from area")
+        
+        total_updates = name_result.modified_count + location_result.modified_count + area_result.modified_count
+        if total_updates == 0:
+            logger.info("Lost leads field mapping: No updates needed")
+        else:
+            logger.info(f"Lost leads field mapping complete: {total_updates} total updates")
+            
+    except Exception as e:
+        logger.error(f"Lost leads field mapping migration failed: {str(e)}")
+        # Don't raise - allow server to start even if migration fails
+
+
 @app.on_event("startup")
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
@@ -551,6 +629,9 @@ async def startup_db_client():
     # Run lost leads enquiry_date migration
     await migrate_lost_leads_enquiry_date()
     
+    # Run lost leads field mapping migration (name, location)
+    await migrate_lost_leads_field_mapping()
+    
     # Create indexes for better query performance
     await db.leads.create_index("lead_id", unique=True)
     await db.leads.create_index("enquiry_no")
@@ -562,6 +643,7 @@ async def startup_db_client():
     await db.leads.create_index("enquiry_date")
     await db.leads.create_index("is_duplicate")  # Index for duplicate filtering
     await db.leads.create_index("phone_number")  # Index for duplicate detection
+    await db.leads.create_index("location")  # Index for location queries
     await db.users.create_index("user_id", unique=True)
     await db.users.create_index("email", unique=True)
     await db.user_sessions.create_index("session_token", unique=True)
