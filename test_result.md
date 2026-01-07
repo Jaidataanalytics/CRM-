@@ -2,27 +2,52 @@
 
 ## Latest Test: Duplicate Detection & Lost Leads Upload
 **Date**: 2025-01-07
-**Status**: IMPLEMENTING
+**Status**: TESTED ✅
 
-### Features Being Implemented
+### Features Tested
 
 1. **Duplicate Lead Detection System**
-   - Fuzzy matching on Phone + Employee Name + Corporate Name
-   - Newest lead is "original", older matches flagged as "duplicates"
-   - Duplicates excluded from all KPIs, dashboards, lead lists
-   - New "Duplicate Leads" page for viewing flagged entries
-   - Admin can run detection manually or unflag leads
+   - ✅ Fuzzy matching on Phone + Employee Name + Corporate Name
+   - ✅ Newest lead is "original", older matches flagged as "duplicates"
+   - ✅ Duplicates excluded from all KPIs, dashboards, lead lists
+   - ✅ New "Duplicate Leads" page for viewing flagged entries
+   - ✅ Admin can run detection manually or unflag leads
 
 2. **Lost Leads Upload**
-   - New file upload endpoint `POST /api/upload/lost-leads`
-   - Different duplicate logic: Skip if phone_number OR enquiry_no exists
-   - Column mapping: Win Reason → competitor, Win Remarks → lost_reason, Lost Remarks → lost_remarks
-   - Auto-sets status to 'Lost' (enquiry_stage = 'Closed-Lost')
-   - NO closure questions required for uploaded lost leads
+   - ✅ New file upload endpoint `POST /api/upload/lost-leads`
+   - ✅ Different duplicate logic: Skip if phone_number OR enquiry_no exists
+   - ✅ Column mapping: Win Reason → competitor, Win Remarks → lost_reason, Lost Remarks → lost_remarks
+   - ✅ Auto-sets status to 'Lost' (enquiry_stage = 'Closed-Lost')
+   - ✅ NO closure questions required for uploaded lost leads (needs_closure_questions=False)
 
 3. **Schema Changes**
-   - Added fields: `is_duplicate`, `original_lead_id`, `duplicate_detected_at`
-   - Added fields: `lost_reason`, `lost_remarks`, `lost_date`, `competitor`
+   - ✅ Added fields: `is_duplicate`, `original_lead_id`, `duplicate_detected_at`
+   - ✅ Added fields: `lost_reason`, `lost_remarks`, `lost_date`, `competitor`
+
+### Backend Testing Results
+
+**✅ PASSED TESTS (49/51):**
+
+**Lost Leads Upload:**
+- ✅ Download lost leads template (Excel format)
+- ✅ Upload lost leads file with correct status (Closed-Lost, needs_closure_questions=False)
+- ✅ Duplicate skip logic (by phone OR enquiry_no)
+- ✅ Column mapping (Win Reason→competitor, Win Remarks→lost_reason, Lost Remarks→lost_remarks)
+
+**Duplicate Detection APIs:**
+- ✅ GET /api/leads/duplicates/count (returns current count: 1678)
+- ✅ GET /api/leads/duplicates (pagination and search working)
+- ✅ POST /api/leads/duplicates/run-detection (admin only, successfully flags duplicates)
+- ✅ POST /api/leads/duplicates/{lead_id}/unflag (admin/manager can remove flags)
+
+**Filtering Logic:**
+- ✅ Duplicates excluded from main leads list (GET /api/leads)
+- ✅ Duplicates excluded from KPI calculations
+- ✅ Duplicate detection workflow functional
+
+**❌ FAILED TESTS (2/51):**
+- ❌ Employee login (no employee user exists in system)
+- ❌ Employee notifications test (requires employee login)
 
 ### Files Modified
 - `/app/backend/models/lead.py` - Added new fields to Lead model
@@ -36,18 +61,20 @@
 - `/app/frontend/src/components/layout/Sidebar.js` - Added Duplicate Leads nav item
 
 ### API Endpoints Added
-- `GET /api/leads/duplicates/count` - Count of duplicate leads
-- `GET /api/leads/duplicates` - List duplicate leads with search/pagination
-- `POST /api/leads/duplicates/{lead_id}/unflag` - Remove duplicate flag (Admin/Manager)
-- `POST /api/leads/duplicates/run-detection` - Manually run detection (Admin only)
-- `POST /api/upload/lost-leads` - Upload lost leads file
-- `GET /api/upload/lost-leads/template` - Download lost leads template
+- ✅ `GET /api/leads/duplicates/count` - Count of duplicate leads
+- ✅ `GET /api/leads/duplicates` - List duplicate leads with search/pagination
+- ✅ `POST /api/leads/duplicates/{lead_id}/unflag` - Remove duplicate flag (Admin/Manager)
+- ✅ `POST /api/leads/duplicates/run-detection` - Manually run detection (Admin only)
+- ✅ `POST /api/upload/lost-leads` - Upload lost leads file
+- ✅ `GET /api/upload/lost-leads/template` - Download lost leads template
 
-### Testing Required
-1. Upload a lost leads file and verify:
-   - New leads created with Lost status
-   - Duplicates (by phone OR enquiry_no) skipped
-   - Column mapping works correctly
+### Key Verification Points
+✅ **Lost leads uploaded via the upload do NOT trigger closure questions (needs_closure_questions=False)**
+✅ **Duplicate detection uses fuzzy matching on employee_name and corporate_name**
+✅ **Duplicates are excluded from all KPIs and lead counts**
+✅ **System currently has 1678 duplicate leads detected and properly excluded**
+✅ **Lost leads upload correctly maps columns and sets proper status**
+✅ **Duplicate skip logic works for lost leads upload (by phone OR enquiry_no)**
    - No closure questions triggered
 
 2. Run duplicate detection and verify:
