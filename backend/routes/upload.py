@@ -483,6 +483,9 @@ LOST_LEADS_COLUMN_MAPPING = {
     "Name": "name",
     "name": "name",
     "Customer Name": "name",
+    "Prospect Name": "name",  # Lost leads mapping
+    "prospect name": "name",
+    "PROSPECT NAME": "name",
     "Phone Number": "phone_number",
     "phone number": "phone_number",
     "Phone": "phone_number",
@@ -495,8 +498,10 @@ LOST_LEADS_COLUMN_MAPPING = {
     "email": "email_address",
     "PinCode": "pincode",
     "pincode": "pincode",
-    "District": "district",
-    "district": "district",
+    "District": "location",  # Map District to Location for lost leads
+    "district": "location",
+    "Location": "location",
+    "location": "location",
     "KVA": "kva",
     "kva": "kva",
     "Phase": "phase",
