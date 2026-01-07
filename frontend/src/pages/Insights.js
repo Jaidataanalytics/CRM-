@@ -61,6 +61,11 @@ const Insights = () => {
   const [closureAnalysis, setClosureAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [closureLoading, setClosureLoading] = useState(false);
+  
+  // Competitor Analysis state
+  const [competitorDimension, setCompetitorDimension] = useState('competitor');
+  const [competitorAnalysis, setCompetitorAnalysis] = useState(null);
+  const [competitorLoading, setCompetitorLoading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -68,7 +73,12 @@ const Insights = () => {
 
   useEffect(() => {
     loadClosureAnalysis();
+    loadCompetitorAnalysis();
   }, [buildQueryParams]);
+
+  useEffect(() => {
+    loadCompetitorAnalysis();
+  }, [competitorDimension]);
 
   const loadData = async () => {
     setLoading(true);
