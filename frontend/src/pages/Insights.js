@@ -339,6 +339,266 @@ const Insights = () => {
           </Card>
         </TabsContent>
 
+        {/* Competitor Analysis Tab */}
+        <TabsContent value="competitors" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Select value={competitorDimension} onValueChange={setCompetitorDimension}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select dimension" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="competitor">Competitor</SelectItem>
+                  <SelectItem value="lost_reason">Lost Reason</SelectItem>
+                  <SelectItem value="lost_remarks">Lost Remarks</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={loadCompetitorAnalysis}
+                disabled={competitorLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${competitorLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          {competitorLoading ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+              </div>
+              <Skeleton className="h-96" />
+            </div>
+          ) : competitorAnalysis ? (
+            <>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Lost Leads</p>
+                        <p className="text-2xl font-bold text-red-600">
+                          {competitorAnalysis.summary?.total_lost_leads?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                      <XCircle className="h-8 w-8 text-red-500 opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">With {competitorDimension === 'competitor' ? 'Competitor' : competitorDimension === 'lost_reason' ? 'Reason' : 'Remarks'} Data</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {competitorAnalysis.summary?.with_data?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                      <CheckCircle2 className="h-8 w-8 text-blue-500 opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Without Data</p>
+                        <p className="text-2xl font-bold text-gray-600">
+                          {competitorAnalysis.summary?.without_data?.toLocaleString() || 0}
+                        </p>
+                      </div>
+                      <HelpCircle className="h-8 w-8 text-gray-400 opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Unique Values</p>
+                        <p className="text-2xl font-bold text-purple-600">
+                          {competitorAnalysis.summary?.unique_values || 0}
+                        </p>
+                      </div>
+                      <Users className="h-8 w-8 text-purple-500 opacity-50" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Bar Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">
+                      {competitorDimension === 'competitor' ? 'Top Competitors' : 
+                       competitorDimension === 'lost_reason' ? 'Top Lost Reasons' : 'Top Lost Remarks'}
+                    </CardTitle>
+                    <CardDescription>By number of lost leads</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <Bar
+                        data={{
+                          labels: competitorAnalysis.analysis?.slice(0, 10).map(a => 
+                            a.value?.length > 20 ? a.value.substring(0, 20) + '...' : a.value
+                          ) || [],
+                          datasets: [{
+                            label: 'Lost Leads',
+                            data: competitorAnalysis.analysis?.slice(0, 10).map(a => a.count) || [],
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderColor: 'rgb(239, 68, 68)',
+                            borderWidth: 1
+                          }]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          indexAxis: 'y',
+                          plugins: {
+                            legend: { display: false }
+                          },
+                          scales: {
+                            x: { beginAtZero: true }
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Doughnut Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Distribution</CardTitle>
+                    <CardDescription>Percentage breakdown</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <Doughnut
+                        data={{
+                          labels: competitorAnalysis.analysis?.slice(0, 8).map(a => 
+                            a.value?.length > 15 ? a.value.substring(0, 15) + '...' : a.value
+                          ) || [],
+                          datasets: [{
+                            data: competitorAnalysis.analysis?.slice(0, 8).map(a => a.count) || [],
+                            backgroundColor: [
+                              'rgba(239, 68, 68, 0.8)',
+                              'rgba(249, 115, 22, 0.8)',
+                              'rgba(234, 179, 8, 0.8)',
+                              'rgba(34, 197, 94, 0.8)',
+                              'rgba(59, 130, 246, 0.8)',
+                              'rgba(139, 92, 246, 0.8)',
+                              'rgba(236, 72, 153, 0.8)',
+                              'rgba(107, 114, 128, 0.8)'
+                            ]
+                          }]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          plugins: {
+                            legend: {
+                              position: 'right',
+                              labels: { boxWidth: 12, font: { size: 11 } }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Detailed Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Detailed Breakdown</CardTitle>
+                  <CardDescription>All {competitorDimension === 'competitor' ? 'competitors' : competitorDimension === 'lost_reason' ? 'lost reasons' : 'lost remarks'}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">#</TableHead>
+                        <TableHead>{competitorDimension === 'competitor' ? 'Competitor' : competitorDimension === 'lost_reason' ? 'Lost Reason' : 'Lost Remarks'}</TableHead>
+                        <TableHead className="text-right">Count</TableHead>
+                        <TableHead className="text-right">%</TableHead>
+                        <TableHead className="text-right">Total KVA</TableHead>
+                        <TableHead className="text-right">States</TableHead>
+                        <TableHead className="text-right">Dealers</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {competitorAnalysis.analysis?.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-mono text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="font-medium max-w-xs truncate" title={item.value}>
+                            {item.value}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{item.count.toLocaleString()}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant="outline">{item.percentage}%</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{item.total_kva?.toLocaleString() || 0}</TableCell>
+                          <TableCell className="text-right">{item.unique_states || 0}</TableCell>
+                          <TableCell className="text-right">{item.unique_dealers || 0}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!competitorAnalysis.analysis || competitorAnalysis.analysis.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            No {competitorDimension} data available for lost leads
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+
+              {/* Top by KVA */}
+              {competitorAnalysis.top_by_kva?.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Top by KVA Lost</CardTitle>
+                    <CardDescription>Highest value losses</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {competitorAnalysis.top_by_kva.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-red-600">{idx + 1}</span>
+                            <span className="font-medium">{item.value}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-red-600">{item.total_kva?.toLocaleString()} KVA</p>
+                            <p className="text-sm text-muted-foreground">{item.count} leads</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>No competitor analysis data available</p>
+                <p className="text-sm">Make sure lost leads have competitor/reason data</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         {/* Closure Analysis Tab */}
         <TabsContent value="closure" className="space-y-6">
           {closureLoading ? (
