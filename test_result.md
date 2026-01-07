@@ -1,6 +1,32 @@
 # Test Results - Sharda Lead Management Dashboard
 
-## Latest Test: Duplicate Detection & Lost Leads Upload
+## Latest Test: Delete Upload Batches & Lost Leads Duplicate Fix
+**Date**: 2025-01-07
+**Status**: IMPLEMENTING
+
+### Features Being Implemented
+
+1. **Delete Upload Batches**
+   - New API: GET /api/admin/recent-uploads - List recent uploads (last 7 days)
+   - New API: DELETE /api/admin/upload-batch/{batch_id} - Soft delete all leads from an upload
+   - New API: POST /api/admin/upload-batch/{batch_id}/restore - Restore deleted batch
+   - UI: "Recent Uploads" section in Admin > Data Management tab
+
+2. **Lost Leads Duplicate Detection Fix**
+   - Improved phone normalization (handles scientific notation, country codes)
+   - Better matching with multiple phone formats
+   - Logging for debugging duplicate matches
+
+3. **Upload Batch Tracking**
+   - All uploads now store `upload_batch_id` for tracking
+   - Enables batch deletion of uploaded data
+
+### Testing Required
+1. Upload a lost leads file and verify duplicates are correctly skipped
+2. Delete an upload batch and verify leads are soft-deleted
+3. Restore a deleted batch and verify leads are restored
+
+## Previous Test: Duplicate Detection & Lost Leads Upload
 **Date**: 2025-01-07
 **Status**: TESTED ✅
 
