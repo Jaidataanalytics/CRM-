@@ -1,135 +1,196 @@
 <analysis>**original_problem_statement:**
-The user wants to significantly enhance the Sharda Lead Management Dashboard's forecasting capabilities.
+The user wants to build a comprehensive lead management and forecasting dashboard named Sharda. The project has evolved through several stages:
 
-Initial requests included:
-1.  Adding a KVA-wise breakdown to the forecast.
-2.  Understanding the factors used in the current forecast calculation.
-3.  Performing a split test (backtesting) on historical data to evaluate forecast accuracy.
-4.  Improving the forecast accuracy to be above 90%.
+**Phase 1: Advanced Forecasting & Dispatch**
+*   Develop an AI-powered forecasting module with breakdowns (KVA, State, Dealer, etc.) and a >75% accuracy target for *all* dimensions.
+*   Implement Save Projection and Compare Projections (vs. actuals) features.
+*   Create a Dispatch Management system to track Won/Booked orders through Pending Dispatch and Dispatched statuses.
 
-Subsequent requests during the session evolved to include:
-1.  Adding user-adjustable Business Context inputs (e.g., marketing efforts, campaigns) to refine predictions.
-2.  Expanding the forecast breakdowns to also include State, Dealer, Employee, and Segment.
-3.  Within each breakdown category, showing the *predicted number of closures* and conversion rate, not just the predicted lead count.
-4.  Adding a Save Projection button to store and reference generated forecasts.
+**Phase 2: Lead Management & Data Quality**
+*   Enhance Excel uploads to use a composite key ( + ) for updating leads.
+*   Trigger Lost Lead Questions when a lead's status is changed to 'Lost'.
+*   Add a Closure Analysis tab to the Insights page, with access restricted to Admin/Manager roles.
+*   Refine the logic for Won vs. Lost leads.
+*   Implement aggressive, system-wide fuzzy matching () to normalize inconsistent data entry for fields like 'Dealer Name', 'Status', 'State', etc. This includes a one-time migration to clean existing data.
+*   Allow all leads to be transferred to dealers, removing a previous restriction.
+
+**Phase 3: Duplicate Management & New Upload Flow (Current Request)**
+*   **Lost Leads Upload**: Create a new, separate file upload functionality on the Manage Leads page. This upload should only add leads from the file if their  OR  does not already exist in the database. The upload must support smart column mapping (based on a user-provided Excel file) and add new fields like , , and .
+*   **Duplicate Lead Detection**: Implement a system to identify and flag duplicate leads.
+    *   **Criteria**: Leads with the same , , AND  (all fields fuzzy matched).
+    *   **Logic**: The newest lead (by creation date) is the original; all older matches are flagged as duplicates.
+    *   **Exclusion**: Flagged duplicates must be excluded from all KPI calculations, dashboard counts, follow-ups, and general lead lists. They should only be visible in a new, dedicated Duplicate Leads tab.
+*   **UI Enhancements**: Make all KPI cards on the dashboard clickable, navigating to a filtered list of the relevant leads.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack lead management application with an advanced forecasting module. The forecast page now includes:
-*   AI-powered forecast generation (using GPT-4o) that provides qualitative trend analysis.
-*   A Backtest feature to evaluate the model's accuracy against historical data.
-*   A Factors tab that explains the data and variables driving the forecast.
-*   Business Context Adjustments which allow users to manually influence the forecast based on their knowledge of marketing campaigns, market conditions, etc.
-*   Multi-dimensional, collapsible forecast breakdowns for KVA, State, Dealer, Employee, and Segment, showing predicted lead volumes.
+A full-stack lead management application with several advanced features:
+-   **Forecasting**: An AI-powered module with multi-dimensional analysis, saved projections, and a Compare Forecasts page. The performance has been optimized to prevent timeouts.
+-   **Lead Management**: Full CRUD, two types of Excel uploads (general and now a planned lost leads upload), and a Lost Lead Questions workflow.
+-   **Dispatch Management**: A dedicated page with global filter integration to track the status of won orders.
+-   **Data Quality**: A fuzzy matching utility () is integrated into the upload process. A startup migration script exists in  to automatically normalize key data fields (, , , ) in the database upon deployment, intended to resolve data consistency issues seen in production.
+-   **Role-Based Access**: The Insights page is restricted to Admin and Manager roles.
 
 **Last working item**:
-*   **Last item agent was working**: Implementing the user's request to add **predicted closures** and **conversion rates** to all forecast breakdowns, and to add a **save functionality** for projections. The agent began by modifying the backend logic.
-*   **Status**: IN PROGRESS
-*   **Agent Testing Done**: N
-*   **Which testing method agent to use?**: backend testing agent to test the new API response structure via . After UI implementation, use the frontend testing agent to test the new UI components. Finally, a full end-to-end test using the  is recommended.
+*   **Last item agent was working**: The agent was in the final stages of clarifying requirements for the new **Lost Leads Upload** and **Duplicate Lead Detection** features. The user provided their final confirmations and a sample Excel file () for column mapping. The implementation has not yet begun.
+*   **Status**: NOT STARTED
+*   **Agent Testing Done**: N/A
+*   **Which testing method agent to use?**: both. This is a large set of features.
+    -    to test the new lost lead upload endpoint, the duplicate detection migration script, and the exclusion of duplicates from all API endpoints (KPIs, lead lists, etc.).
+    -    to test the new UI for the lost lead upload, the Duplicate Leads tab, and to ensure all KPI cards are clickable and filter correctly.
 *   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-None. The issue of low forecast accuracy was addressed by implementing the Business Context Adjustments feature, which the user accepted as the solution for improving predictions with domain knowledge.
+*   **Issue 1: Data Normalization Not Live in Production (P0)**
+    *   **Description**: The user reported seeing inconsistent data (e.g., J.B enterprises vs. j.b. enterprises) in the deployed application, despite the agent implementing normalization logic. The agent correctly identified that the issue is because the code containing the fix has not been deployed. An automatic migration script was added to  to run on startup.
+    *   **Next debug checklist**:
+        1.  Confirm with the user that the fix requires deploying the latest code.
+        2.  After deployment, verify that the data inconsistencies are resolved.
+        3.  If issues persist, check the production logs for errors during the startup migration.
+    *   **Why fix this issue and what will be achieved with the fix?**: This is a critical data integrity issue that affects all reporting and analytics. Fixing it ensures data is consistent and reliable.
+    *   **Status**: BLOCKED (Awaiting user deployment)
+    *   **Is recurring issue?**: Y
+    *   **Should Test frontend/backend/both after fix?**: Both (verify on frontend UI and via backend API).
+    *   **Blocked on other issue**: None.
+*   **Issue 2: Forecast Generation Failing in Deployed Environment (P1)**
+    *   **Description**: The user reported that forecast generation was timing out after 3 minutes in the deployed app. The agent fixed this in the preview environment by optimizing the model selection process and removing the slow 'Prophet' model, reducing runtime to ~15 seconds. The user later reported a  error, which could be a proxy timeout. The agent added a longer  to the frontend  request as a potential fix.
+    *   **Next debug checklist**:
+        1.  Verify if the performance fixes and frontend timeout changes have resolved the issue post-deployment.
+        2.  Check production logs for any timeout or application errors related to .
+    *   **Why fix this issue and what will be achieved with the fix?**: The forecast feature is a core part of the application and is currently unusable in production.
+    *   **Status**: USER VERIFICATION PENDING
+    *   **Is recurring issue?**: Y
+    *   **Should Test frontend/backend/both after fix?**: Both.
+    *   **Blocked on other issue**: None.
+*   **Issue 3: Per-Dimension Accuracy Feature Lacks Final Verification (P2)**
+    *   **Description**: A core user requirement was >75% forecast accuracy for every single breakdown dimension. The agent implemented a complex per-dimension model optimization engine, but a full end-to-end verification via the testing agent was never successfully completed due to unrelated errors at the time.
+    *   **Next debug checklist**:
+        1.  Run the  with a specific prompt to verify the accuracy of each dimension in the forecast output.
+    *   **Why fix this issue and what will be achieved with the fix?**: This validates a critical and technically complex feature requested by the user.
+    *   **Status**: USER VERIFICATION PENDING
+    *   **Is recurring issue?**: N
+    *   **Should Test frontend/backend/both after fix?**: Both.
+    *   **Blocked on other issue**: None.
 
 **In progress Task List**:
-*   **Task 1: Enhance Forecast with Closure Predictions & Saving (P0)**
-    *   **Description**: This is the highest priority task, directly from the user's last message. It involves adding predicted closure counts, conversion rates, and a save mechanism to the forecast feature.
-    *   **Where to resume**:
-        1.  **Backend ()**: The agent has started modifying this file. The next step is to complete the data aggregation logic to calculate category-specific conversion rates (e.g., conversion rate for each KVA value, each state). Then, use these rates to calculate the  for each item in the , , etc., and add this to the API response.
-        2.  **Backend (New Endpoint)**: Create a new endpoint, e.g., , to handle saving projections. This endpoint should accept the forecast data and store it in a new MongoDB collection (e.g., ).
-        3.  **Frontend ()**: Modify the UI to display the new data.
-            *   In the breakdown tables, replace the Total KVA column with Predicted Closures and Conversion Rate %.
-            *   Add a Save Projection button near the Generate Forecast button.
-            *   Implement the  handler for the save button to call the new backend endpoint and show a success toast.
-    *   **What will be achieved with this?**: The forecast will become significantly more actionable by showing expected business outcomes (closures) for each category. Users will also be able to save and review important projections.
-    *   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: Both
-    *   **Blocked on something**: None.
+None.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
-    -   **View Saved Projections (P1)**: Create a new UI to list, view, and possibly compare previously saved forecasts. This is the logical follow-up to the current in-progress task.
+    *   **Task 1: Implement Duplicate Lead Detection & Management (P0)**
+        *   Add  (boolean) and  (string/ObjectId) fields to the  model in .
+        *   Create a migration script (e.g., in  or as a startup task in ) to find and flag existing duplicates. Logic: group by fuzzy-matched , , ; for each group, mark all but the newest lead as duplicates.
+        *   Modify all data-fetching endpoints (, , , , ) to add a filter  to exclude duplicates from all counts and lists.
+        *   Create a new route and frontend page/tab () to display only the flagged duplicates.
+    *   **Task 2: Implement Lost Leads Upload Feature (P0)**
+        *   Add a new file upload component to .
+        *   Create a new backend endpoint (e.g., ) in .
+        *   Implement logic to read the Excel file (), and for each row, check if a lead with the same  or  exists. If not, create a new lead.
+        *   Use the  utility for smart column mapping, including the special cases ( -> ,  -> ).
+        *   Add new fields (, , , ) to the  model.
+    *   **Task 3: Make All KPI Cards Clickable (P1)**
+        *   In , wrap each KPI card component in a clickable element.
+        *   On click, use the  and filter context to redirect to the  page with the correct filter pre-applied (e.g., status, follow-up state).
 *   **Future Tasks**:
-    -   **Detailed Audit Logs (P2)**: A postponed request from a previous session to enhance system audit logs with more detail.
-    -   **UX/UI Improvement Suggestions (P2)**: A postponed task to provide a formal list of UI/UX improvements.
+    *   Detailed Audit Logs (P2).
+    *   Refactor  into smaller components (P2).
 
 **Completed work in this session**
--   **Forecast Backtesting & Factors**: Implemented features to test forecast accuracy against historical data and to display the factors influencing the forecast.
--   **Forecast Model Iteration**: Significantly improved the statistical forecasting model, moving from a simple baseline to an adaptive seasonal model that accounts for data volatility, increasing accuracy from ~48% to ~71.5%.
--   **Business Context Adjustments**: Created a UI for users to manually adjust forecast predictions based on their business intelligence (marketing, promotions, etc.), addressing the user's need for higher accuracy.
--   **Multi-Dimensional Breakdowns**: Added comprehensive, interactive breakdowns to the forecast results for KVA, State, Dealer, Employee, and Segment.
+-   **Feature: Compare Forecasts**: Implemented a new page and API to compare saved forecast projections against actual results.
+-   **Feature: Lost Lead Questions**: Implemented a modal workflow to capture reasons for losing a lead, triggered both from manual edits and Excel uploads.
+-   **Feature: Closure Analysis**: Added a new tab to the Insights page to analyze lost lead data.
+-   **Feature: Dispatch Page Filters**: Integrated the global filter context (Date, State, Dealer, etc.) into the Dispatch Management page.
+-   **Enhancement: Access Control**: Restricted the Insights page to Admin and Manager roles.
+-   **Enhancement: Data Normalization**: Implemented an aggressive fuzzy matching system () and created an automatic startup migration in  to clean inconsistent data (, , etc.) upon application deployment.
+-   **Enhancement: Lead Logic**: Refined the application-wide definitions of Won (, ) and Lost leads.
+-   **Bugfix: Forecast Performance**: Resolved a critical timeout issue by removing the slow 'Prophet' model and optimizing the model selection process, reducing forecast generation time from over 3 minutes to under 15 seconds.
+-   **Bugfix: Numpy Serialization**: Fixed a  in the forecast API response caused by unserializable numpy data types.
 
 **Earlier issues found/mentioned but not fixed**
-None in this session. The postponed tasks from the previous session are listed under Future Tasks.
+None beyond what is listed in the Pending/In progress Issue list.
 
 **Known issue recurrence from previous fork**
-None.
+-   **Session expiration during automated testing**: This was noted in the previous handoff and may still be a factor in long-running tests.
+-   **Production environment divergence**: Issues like data inconsistency and performance timeouts appear in the deployed environment but not in the local preview, indicating differences in database state or infrastructure configuration (e.g., proxy timeouts).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-*   **Time-Series Forecasting**: Implemented and evaluated several models including Holt-Winters Triple Exponential Smoothing, seasonal decomposition, and custom blended/ensemble models to handle data with high variability and trends.
-*   **MongoDB Aggregation**: Used complex aggregation pipelines to group historical data, calculate distributions, and derive conversion rates across multiple dimensions (KVA, State, Dealer, Segment, Employee).
-*   **AI Integration (GPT-4o)**: Leveraged an LLM to generate qualitative, human-readable trend analysis and insights based on the quantitative forecast data produced by the statistical model.
-*   **React State Management & UI**: Extensive modifications to the  page, using  to manage complex UI states (filters, collapsible sections, business context inputs) and integrating  for data visualization.
-*   **API Design**: Created and evolved multiple endpoints under  to support backtesting, factor analysis, and the main forecast generation, including handling new input parameters for business context.
+*   **Fuzzy String Matching**: Using the  library to normalize inconsistent user-entered data by finding the closest match from a list of canonical values.
+*   **Automatic Startup Migrations**: Adding a function to the FastAPI  event in  to perform data cleaning or migration tasks automatically every time the application starts. This ensures data consistency in the deployed environment.
+*   **Composite Keys for Upsert**: Using  +  to uniquely identify leads during Excel uploads.
+*   **Advanced Time-Series Forecasting**: Using models like SARIMAX, Holt-Winters, and WMA in a competitive framework to generate sales forecasts.
 
 **key DB schema**
-*   **leads**: No changes to the schema, but this collection was heavily read from for all forecasting calculations.
-*   **saved_forecasts**: A new collection to be created to support the Save Projection feature. It will likely store the forecast parameters, a high-level summary, and the detailed breakdown data for each saved projection.
+*   **leads**:
+    *   Existing fields: , , , , , , , , etc.
+    *   **Upcoming fields to add**:  (Boolean),  (String),  (String),  (DateTime),  (String),  (String).
 
 **changes in tech stack**
-*   **Dependencies Added**:  and  were installed in the backend to support more advanced statistical forecasting models.
+*   **Added**:  for fuzzy string matching.
 
 **All files of reference**
-*   : The core backend file for all forecasting logic.
-*   : The primary frontend file for the forecast page UI.
-*   : The product requirements document created and updated during the session.
+*    (New fuzzy matching logic)
+*    (Contains the startup migration)
+*    (To be modified for lost leads upload)
+*    (Contains manual migration logic)
+*    (To be modified for duplicate filtering)
+*    (To be modified for new upload UI)
+*    (Sample file for lost leads upload mapping)
 
 **Areas that need refactoring**:
-*   The  file has grown significantly and now contains multiple large sub-components (e.g., , ). These should be extracted into separate, reusable component files under  to improve code organization and maintainability.
+*    is still very large and could be broken down into smaller components.
+*    is accumulating one-off migration scripts. These could be organized into a dedicated  directory with a proper runner.
 
 **key api endpoints**
-*   : The main endpoint for generating forecasts. It accepts filters and business context adjustments and returns the full forecast data, including all breakdowns.
-*   : Runs a historical backtest and returns accuracy metrics.
-*   : Returns the data and weights for the factors influencing the forecast.
-*   : **To be created**. This endpoint will save a generated forecast to the database.
+*   : Generates a forecast (performance optimized).
+*   : Manual data normalization endpoint.
+*   : Manual endpoint to fix specific hardcoded duplicates.
+*   **Upcoming**: : New endpoint for the lost leads upload feature.
+*   **Upcoming**: A new endpoint or page to view flagged duplicates.
 
 **Critical Info for New Agent**
-*   Your immediate priority is to complete the in-progress task: add predicted closures and conversion rates to all forecast breakdowns and implement the Save Projection feature. Follow the plan outlined in the In progress Task List.
-*   The user's original request for >90% forecast accuracy from the model alone is not feasible with the current data volatility. The agreed-upon solution is the Business Context Adjustments feature. Do not spend time trying to further optimize the statistical model's base accuracy; focus on building the features the user has requested.
-*   Consider refactoring the  page by extracting the breakdown sections into separate components as a code quality improvement after the main feature is delivered.
+1.  **Prioritize New Features**: The user's latest request for **Lost Leads Upload** and **Duplicate Lead Detection** is the highest priority. All requirements have been clarified, and a sample file is available.
+2.  **Explain Production Fix**: The data normalization issue on the deployed version is due to old code. You must clearly explain to the user that **deploying the latest version** will trigger the automatic migration script in  and fix the data inconsistencies. Do not attempt to re-implement the fix.
+3.  **Duplicate Logic is Critical**: The logic for excluding duplicates must be applied universally. Every API endpoint that returns lead counts or lists needs to be updated to filter out leads where  is true. This is a critical and wide-reaching change.
+4.  **Use the Sample File**: The  file is essential for building the smart column mapping for the lost leads upload.
+5.  **Re-verify After Deployment**: Once the user deploys the code, a full verification of the forecast performance and data normalization should be done on the live environment to close out those pending issues.
 
 **documents and test reports created in this job**
 *   
+*   
+*   
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**:  - Provided clear, specific answers to the agent's questions about how to implement the closure prediction UI and save functionality. **Status**: Actionable input, forms the basis of the current task.
-2.  **User**:  - Requested to add predicted closures to breakdowns and a save projections button. **Status**: This is the current P0 task.
-3.  **User**:  - Requested breakdowns for State, Dealer, Employee, and Segment. **Status**: Completed.
-4.  **User**:  - Agreed to the agent's proposal to add Business Context inputs to the forecast. **Status**: Completed.
-5.  **User**:  - Asked for forecast accuracy to be improved to >90%. **Status**: Addressed by adding user-adjustable business context.
-6.  **User**:  - Provided initial preferences for KVA breakdown and backtesting. **Status**: Completed.
-7.  **User**:  - The initial feature request of the session. **Status**: Completed.
+1.  **User**: Provided the  sample file for the Lost Leads Upload and clarified special column mappings ( -> ). **Status**: Final requirement for the next task.
+2.  **User**: Confirmed details for the Duplicate and Lost Lead upload features, including choosing dropdowns for lost reasons, handling column mapping, and specifying how to handle duplicate records (newest is original, move old to a separate tab). **Status**: Core requirements defined.
+3.  **User**: Gave initial high-level requirements for a Lost Leads Upload feature and a Duplicate Lead Detection system. Asked for clarifying questions. **Status**: Initiated the current block of work.
+4.  **User**: Asked about the Run Migration and Needs Migration logic on the Dispatch page. **Status**: Agent explained it was a one-time process for historical data.
+5.  **User**: Reported that the forecast feature is failing on the deployed version (loads for 3 mins then fails). **Status**: This triggered the forecast performance investigation and fix.
+6.  **User**: Confirmed the logic for Won and Lost leads, specifying that  is a Won state and that Won leads should not trigger closure questions. **Status**: Implemented.
+7.  **User**: Asked for confirmation of the Won and Lost lead logic. **Status**: Agent provided a summary and asked for confirmation.
+8.  **User**: Requested that the Dispatch page should also respect the global filters. **Status**: Implemented.
+9.  **User**: Requested an analysis of closure questions on the Insights page and to remove employee access to it. **Status**: Implemented.
+10. **User**: Saw screenshots from the deployed version showing that data was not normalized (OPEN vs open). **Status**: This triggered the investigation into data normalization on production.
 
 **Project Health Check:**
-*   **Broken**: None. The forecasting feature is functional but awaits the completion of the latest user request.
+*   **Broken**: The deployed version has known data inconsistencies ( vs ) and may still suffer from forecast timeouts. The latest code in the preview environment contains fixes for both, but they are pending deployment.
 *   **Mocked**: None.
 
 **3rd Party Integrations**
-*   **OpenAI GPT-4o**: Used for generating qualitative trend analysis in the forecast module. This integration uses the Emergent LLM Key.
+*   **OpenAI GPT-4o**: Used for qualitative trend analysis in the forecast module. Uses the Emergent LLM Key.
+*   **rapidfuzz**: A Python library added for fuzzy string matching.
 
 **Testing status**
-*   **Testing agent used after significant changes**: YES. The agent used  and  extensively to test backend APIs and frontend UI changes after each major implementation step.
-*   **Troubleshoot agent used after agent stuck in loop**: NO
-*   **Test files created**: None.
-*   **Known regressions**: None.
+*   **Testing agent used after significant changes**: YES.  confirms the last major feature set was tested.
+*   **Troubleshoot agent used after agent stuck in loop**: NO.
+*   **Test files created**: .
+*   **Known regressions**: None in the preview environment. The state of the deployed environment is a known issue.
 
 **Credentials to test flow:**
 *   **Admin**:  / 
 
 **What agent forgot to execute**
-The agent has successfully addressed all user requests in a sequential manner and is currently working on the most recent one. Nothing has been forgotten.</analysis>
+The agent has not forgotten any recent requests. It was actively gathering requirements for the next major task when the session ended. The only long-standing forgotten item is the final end-to-end verification of the **per-dimension forecast accuracy** feature, which was sidelined several sessions ago.</analysis>
