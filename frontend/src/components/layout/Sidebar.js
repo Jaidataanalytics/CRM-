@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   ArrowLeftRight,
   Truck,
-  Target
+  Target,
+  Copy
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,6 +33,7 @@ const menuItems = [
   { path: '/insights', icon: TrendingUp, label: 'Insights', roles: ['Admin', 'Manager'] },
   { path: '/leads', icon: FileSpreadsheet, label: 'Manage Leads', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/transferred-leads', icon: ArrowLeftRight, label: 'Transferred Leads', roles: ['Admin', 'Manager', 'Employee'] },
+  { path: '/duplicate-leads', icon: Copy, label: 'Duplicate Leads', roles: ['Admin', 'Manager'] },
   { path: '/dispatch', icon: Truck, label: 'Dispatch', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/comparison', icon: GitCompare, label: 'Comparison', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/forecast', icon: LineChart, label: 'Forecast', roles: ['Admin', 'Manager'] },
