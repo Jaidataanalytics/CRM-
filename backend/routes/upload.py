@@ -611,15 +611,43 @@ async def upload_lost_leads(
                 phone_number = lead_data.get('phone_number')
                 enquiry_no = lead_data.get('enquiry_no')
                 
+                # Normalize phone number for comparison
+                def normalize_phone(phone):
+                    if not phone:
+                        return ""
+                    # Remove all non-digit characters
+                    normalized = ''.join(c for c in str(phone) if c.isdigit())
+                    # Handle country code prefixes (India: 91)
+                    if len(normalized) > 10 and normalized.startswith('91'):
+                        normalized = normalized[2:]
+                    # Return last 10 digits
+                    return normalized[-10:] if len(normalized) >= 10 else normalized
+                
+                normalized_phone = normalize_phone(phone_number)
+                
                 # Skip if phone_number OR enquiry_no already exists
                 # This is different from regular upload which uses AND logic
                 existing = None
                 
-                if phone_number:
-                    existing = await db.leads.find_one({"phone_number": str(phone_number)})
+                if normalized_phone and len(normalized_phone) >= 10:
+                    # Search for matching phone with various formats
+                    # Check normalized version and also try regex for partial matches
+                    existing = await db.leads.find_one({
+                        "$or": [
+                            {"phone_number": normalized_phone},
+                            {"phone_number": str(phone_number)},
+                            {"phone_number": {"$regex": f"{normalized_phone}$"}}  # Ends with normalized phone
+                        ]
+                    })
                 
                 if not existing and enquiry_no:
-                    existing = await db.leads.find_one({"enquiry_no": str(enquiry_no)})
+                    enquiry_str = str(enquiry_no).strip()
+                    existing = await db.leads.find_one({
+                        "$or": [
+                            {"enquiry_no": enquiry_str},
+                            {"enquiry_no": {"$regex": f"^{enquiry_str}$", "$options": "i"}}  # Case-insensitive
+                        ]
+                    })
                 
                 if existing:
                     # Skip this row - duplicate found
