@@ -102,6 +102,17 @@ class Lead(BaseModel):
     closure_answers_submitted_at: Optional[str] = None  # When answers were submitted
     closure_answers_submitted_by: Optional[str] = None  # Who submitted
     
+    # Lost lead fields (from lost leads upload)
+    lost_reason: Optional[str] = None  # Maps from "Win Remarks" in lost leads upload
+    lost_remarks: Optional[str] = None  # Maps from "Lost Remarks" in lost leads upload
+    lost_date: Optional[str] = None  # Date when lead was marked as lost
+    competitor: Optional[str] = None  # Maps from "Win Reason" (competitor who won)
+    
+    # Duplicate detection fields
+    is_duplicate: Optional[bool] = None  # True if this lead is a duplicate
+    original_lead_id: Optional[str] = None  # Reference to the original (newest) lead
+    duplicate_detected_at: Optional[str] = None  # When duplicate was flagged
+    
     # System fields
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -220,6 +231,16 @@ class LeadUpdate(BaseModel):
     # Closure questions fields (for lost leads)
     needs_closure_questions: Optional[bool] = None  # Flag to show closure questions modal
     closure_type: Optional[str] = None  # "won" or "lost"
+    
+    # Lost lead fields
+    lost_reason: Optional[str] = None
+    lost_remarks: Optional[str] = None
+    lost_date: Optional[str] = None
+    competitor: Optional[str] = None
+    
+    # Duplicate detection fields
+    is_duplicate: Optional[bool] = None
+    original_lead_id: Optional[str] = None
 
 
 class LeadResponse(BaseModel):
