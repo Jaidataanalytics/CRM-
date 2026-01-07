@@ -565,3 +565,201 @@ async def get_district_performance(
         "state": state,
         "date_range": {"start_date": start_date, "end_date": end_date}
     }
+
+
+@router.get("/competitor-analysis")
+async def get_competitor_analysis(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    dimension: str = Query("competitor", enum=["competitor", "lost_reason", "lost_remarks"]),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    segment: Optional[str] = None,
+    limit: int = Query(20, ge=1, le=100)
+):
+    """
+    Get analysis of competitor, lost_reason, or lost_remarks for lost leads.
+    This helps understand why leads are being lost and to whom.
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build query for lost leads
+    query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"enquiry_stage": {"$in": ["Closed-Lost", "Closed-Dropped"]}},
+            {"closure_type": "lost"}
+        ]
+    }
+    
+    # Add optional filters
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if segment:
+        query["segment"] = segment
+    
+    # The field to analyze
+    field_map = {
+        "competitor": "$competitor",
+        "lost_reason": "$lost_reason",
+        "lost_remarks": "$lost_remarks"
+    }
+    group_field = field_map.get(dimension, "$competitor")
+    
+    # Pipeline for aggregation
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": group_field,
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "states": {"$addToSet": "$state"},
+                "dealers": {"$addToSet": "$dealer"},
+                "segments": {"$addToSet": "$segment"}
+            }
+        },
+        {"$match": {"_id": {"$ne": None, "$ne": ""}}},
+        {"$sort": {"count": -1}},
+        {"$limit": limit}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(limit)
+    
+    # Get total lost leads for percentage calculation
+    total_lost = await db.leads.count_documents(query)
+    
+    # Format results
+    analysis = []
+    for r in results:
+        value = r["_id"]
+        if value:
+            analysis.append({
+                "value": value,
+                "count": r["count"],
+                "percentage": round((r["count"] / total_lost * 100), 1) if total_lost > 0 else 0,
+                "total_kva": round(r["total_kva"], 2),
+                "unique_states": len([s for s in r.get("states", []) if s]),
+                "unique_dealers": len([d for d in r.get("dealers", []) if d]),
+                "unique_segments": len([s for s in r.get("segments", []) if s])
+            })
+    
+    # Get summary statistics
+    summary = {
+        "total_lost_leads": total_lost,
+        "with_data": sum(r["count"] for r in analysis),
+        "without_data": total_lost - sum(r["count"] for r in analysis),
+        "unique_values": len(analysis)
+    }
+    
+    # Get top values by KVA
+    top_by_kva = sorted(analysis, key=lambda x: x["total_kva"], reverse=True)[:5]
+    
+    return {
+        "dimension": dimension,
+        "analysis": analysis,
+        "summary": summary,
+        "top_by_kva": top_by_kva,
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "state": state,
+            "dealer": dealer,
+            "segment": segment
+        }
+    }
+
+
+@router.get("/lost-leads-breakdown")
+async def get_lost_leads_breakdown(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    group_by: str = Query("competitor", enum=["competitor", "lost_reason", "state", "dealer", "segment", "employee_name"]),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    competitor: Optional[str] = None,
+    lost_reason: Optional[str] = None
+):
+    """
+    Get detailed breakdown of lost leads with multiple grouping options.
+    Useful for drilling down into specific competitors or reasons.
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build query for lost leads
+    query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"enquiry_stage": {"$in": ["Closed-Lost", "Closed-Dropped"]}},
+            {"closure_type": "lost"}
+        ]
+    }
+    
+    # Add drill-down filters
+    if competitor:
+        query["competitor"] = competitor
+    if lost_reason:
+        query["lost_reason"] = lost_reason
+    
+    # Group field
+    field_map = {
+        "competitor": "$competitor",
+        "lost_reason": "$lost_reason",
+        "state": "$state",
+        "dealer": "$dealer",
+        "segment": "$segment",
+        "employee_name": "$employee_name"
+    }
+    group_field = field_map.get(group_by, "$competitor")
+    
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": group_field,
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "avg_kva": {"$avg": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$match": {"_id": {"$ne": None, "$ne": ""}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 50}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(50)
+    
+    total = await db.leads.count_documents(query)
+    
+    return {
+        "group_by": group_by,
+        "total_lost_leads": total,
+        "breakdown": [
+            {
+                "name": r["_id"] or "Unknown",
+                "count": r["count"],
+                "percentage": round((r["count"] / total * 100), 1) if total > 0 else 0,
+                "total_kva": round(r["total_kva"], 2),
+                "avg_kva": round(r["avg_kva"], 2) if r["avg_kva"] else 0
+            }
+            for r in results
+        ],
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "competitor": competitor,
+            "lost_reason": lost_reason
+        }
+    }
