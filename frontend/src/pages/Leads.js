@@ -89,6 +89,10 @@ const Leads = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   
+  // Lost leads upload state
+  const [uploadingLostLeads, setUploadingLostLeads] = useState(false);
+  const lostLeadsFileInputRef = useRef(null);
+  
   // Qualification state
   const [isQualifyDialogOpen, setIsQualifyDialogOpen] = useState(false);
   const [qualifyingLead, setQualifyingLead] = useState(null);
