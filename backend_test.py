@@ -558,13 +558,27 @@ class LeadManagementTester:
             return
 
         # First, test downloading the template
-        success, _ = self.run_test(
-            "Download Lost Leads Template",
-            "GET",
-            "upload/lost-leads/template",
-            200,
-            token=self.admin_token
-        )
+        try:
+            import requests
+            headers = {}
+            cookies = {'session_token': self.admin_token}
+            
+            response = requests.get(
+                f"{self.base_url}/upload/lost-leads/template",
+                headers=headers,
+                cookies=cookies
+            )
+            
+            if response.status_code == 200:
+                # Check if response is Excel file (binary content)
+                if response.headers.get('content-type', '').startswith('application/vnd.openxmlformats'):
+                    self.log_test("Download Lost Leads Template", True, "Excel template downloaded successfully")
+                else:
+                    self.log_test("Download Lost Leads Template", False, "Response is not Excel format")
+            else:
+                self.log_test("Download Lost Leads Template", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_test("Download Lost Leads Template", False, f"Exception: {str(e)}")
 
         # Create test Excel file for lost leads upload
         import pandas as pd
