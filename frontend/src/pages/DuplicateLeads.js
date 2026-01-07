@@ -462,6 +462,48 @@ const DuplicateLeads = () => {
                 </div>
               </div>
 
+              {/* Lost Info Section */}
+              {(selectedLead.competitor || selectedLead.lost_reason || selectedLead.lost_remarks) ? (
+                <div className="space-y-4">
+                  <h4 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                    Lost Information
+                    <Badge variant="outline" className="bg-blue-50 text-blue-700">Has Info</Badge>
+                  </h4>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="space-y-3 text-sm">
+                      {selectedLead.competitor && (
+                        <div>
+                          <p className="text-muted-foreground">Competitor</p>
+                          <p className="font-medium">{selectedLead.competitor}</p>
+                        </div>
+                      )}
+                      {selectedLead.lost_reason && (
+                        <div>
+                          <p className="text-muted-foreground">Lost Reason</p>
+                          <p className="font-medium">{selectedLead.lost_reason}</p>
+                        </div>
+                      )}
+                      {selectedLead.lost_remarks && (
+                        <div>
+                          <p className="text-muted-foreground">Lost Remarks</p>
+                          <p className="font-medium">{selectedLead.lost_remarks}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : !['Closed-Won', 'Order Booked'].includes(selectedLead.enquiry_stage) && (
+                <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="font-medium">Missing Lost Information</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This lead does not have competitor, lost reason, or lost remarks filled in.
+                  </p>
+                </div>
+              )}
+
               {originalLead && (
                 <>
                   <Separator />
