@@ -264,6 +264,31 @@
 **Status**: ✅ BACKEND TESTING COMPLETE - ALL NEW FEATURES WORKING
 
 **Test Results Summary:**
+- ✅ Competitor Analysis API (GET /api/insights/competitor-analysis) - Working with all 3 dimensions
+- ✅ Lost Leads Breakdown API (GET /api/insights/lost-leads-breakdown) - Working with all grouping options
+- ✅ KPI Navigation URL Formation - All filters working correctly (won, lost, open, hot leads)
+- ✅ Backend URL parameter mapping - Added support for stage, status, lead_type aliases
+
+**Key Findings:**
+1. **Competitor Analysis**: All 3 dimensions (competitor, lost_reason, lost_remarks) working correctly with proper response structure
+2. **Lost Leads Breakdown**: Multiple grouping options (competitor, state, dealer) working with correct data aggregation
+3. **KPI Navigation**: Fixed URL parameter mapping by adding aliases (stage→enquiry_stage, status→enquiry_status, lead_type→enquiry_type)
+4. **Data Validation**: APIs return correct data when lost leads have competitor/reason information
+
+**Test Coverage**: 97.9% success rate (92/94 tests passed)
+**Failed Tests**: Only 2 employee-related tests failed due to no employee user in system (not critical)
+
+**Minor Fix Applied**: Added URL parameter aliases in `/app/backend/routes/leads.py` to support KPI navigation from frontend
+
+**Recommendation**: All competitor analysis and KPI navigation features are working correctly. Ready for user acceptance testing.
+
+### Testing Agent → Main Agent (2025-01-07)
+**Status**: ✅ BACKEND TESTING COMPLETE - ALL NEW FEATURES WORKING
+
+### Testing Agent → Main Agent (2025-01-07)
+**Status**: ✅ BACKEND TESTING COMPLETE - ALL NEW FEATURES WORKING
+
+**Test Results Summary:**
 - ✅ Recent Uploads API (GET /api/admin/recent-uploads) - Working correctly
 - ✅ Delete Upload Batch API (DELETE /api/admin/upload-batch/{batch_id}) - Soft delete working
 - ✅ Restore Upload Batch API (POST /api/admin/upload-batch/{batch_id}/restore) - Restore working
