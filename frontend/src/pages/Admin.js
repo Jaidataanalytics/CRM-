@@ -167,6 +167,7 @@ const Admin = () => {
     loadDeleteFilterOptions();
     loadTrashStats();
     loadEntityProfileConfig();
+    loadRecentUploads();
   }, []);
 
   useEffect(() => {
