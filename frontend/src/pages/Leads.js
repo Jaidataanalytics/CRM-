@@ -989,6 +989,13 @@ const Leads = () => {
             accept=".xlsx,.xls"
             onChange={handleFileUpload}
           />
+          <input
+            type="file"
+            ref={lostLeadsFileInputRef}
+            className="hidden"
+            accept=".xlsx,.xls"
+            onChange={handleLostLeadsUpload}
+          />
           <Button
             variant="outline"
             onClick={handleDownloadTemplate}
@@ -1007,6 +1014,55 @@ const Leads = () => {
             <Upload className="h-4 w-4" />
             {uploading ? 'Uploading...' : 'Upload'}
           </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                title="Upload lost leads from Excel"
+              >
+                <FileDown className="h-4 w-4" />
+                Lost Leads
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-4" align="end">
+              <div className="space-y-3">
+                <div>
+                  <h4 className="font-medium text-sm mb-1">Lost Leads Upload</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Upload historical lost leads. Duplicates (by phone or enquiry no) will be skipped.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start gap-2"
+                    onClick={handleDownloadLostLeadsTemplate}
+                  >
+                    <FileDown className="h-4 w-4" />
+                    Download Template
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full justify-start gap-2 bg-red-600 hover:bg-red-700"
+                    onClick={() => lostLeadsFileInputRef.current?.click()}
+                    disabled={uploadingLostLeads}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadingLostLeads ? 'Uploading...' : 'Upload Lost Leads'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Column mapping:</strong><br/>
+                  Win Reason → Competitor<br/>
+                  Win Remarks → Lost Reason<br/>
+                  Lost Remarks → Lost Remarks
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button
             variant="outline"
             onClick={handleExport}
