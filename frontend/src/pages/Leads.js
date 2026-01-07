@@ -1668,6 +1668,66 @@ const Leads = () => {
         </div>
       </div>
 
+      {/* Bulk Delete Action Bar */}
+      {bulkDeleteMode && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Checkbox
+                checked={selectAllOnPage}
+                onCheckedChange={toggleSelectAllOnPage}
+                id="select-all-page"
+              />
+              <Label htmlFor="select-all-page" className="cursor-pointer">
+                Select all on page
+              </Label>
+              
+              <div className="h-4 w-px bg-red-300" />
+              
+              <Checkbox
+                checked={selectAllMatching}
+                onCheckedChange={(checked) => {
+                  setSelectAllMatching(checked);
+                  if (checked) {
+                    setSelectedLeads(new Set());
+                    setSelectAllOnPage(false);
+                  }
+                }}
+                id="select-all-matching"
+              />
+              <Label htmlFor="select-all-matching" className="cursor-pointer">
+                Select all {totalLeads.toLocaleString()} matching leads
+              </Label>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                {selectAllMatching 
+                  ? `All ${totalLeads.toLocaleString()} matching leads` 
+                  : `${selectedLeads.size} selected`}
+              </span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handlePreviewBulkDelete}
+                disabled={bulkDeleting || (selectedLeads.size === 0 && !selectAllMatching)}
+                className="gap-2"
+              >
+                {bulkDeleting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Preview Delete
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={cancelBulkDelete}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           {/* Advanced Filters Bar */}
