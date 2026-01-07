@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-07T14:09:26.433940",
-  "total_tests": 48,
-  "passed_tests": 45,
-  "success_rate": "93.8%",
+  "timestamp": "2026-01-07T14:10:29.278737",
+  "total_tests": 51,
+  "passed_tests": 47,
+  "success_rate": "92.2%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -195,6 +195,11 @@
       "details": "Flagged: 1, Checked: 9772"
     },
     {
+      "test": "Get Initial Duplicate Count",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
       "test": "Create Test Lead 1 for Duplicate Detection",
       "success": true,
       "details": "Status: 200"
@@ -210,6 +215,16 @@
       "details": "Status: 200"
     },
     {
+      "test": "Verify Duplicate Count Increased",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Duplicate Detection Working",
+      "success": false,
+      "details": "Duplicate count did not increase: 1679 -> 1679"
+    },
+    {
       "test": "Verify Duplicates Excluded from Main List",
       "success": true,
       "details": "Status: 200"
@@ -217,7 +232,7 @@
     {
       "test": "Duplicates Excluded from Main List",
       "success": false,
-      "details": "Found 6 leads, expected fewer due to duplicate exclusion"
+      "details": "Found 2 leads, expected 1 (original only)"
     },
     {
       "test": "Verify KPIs Exclude Duplicates",
