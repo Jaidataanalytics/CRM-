@@ -444,6 +444,289 @@ async def upload_leads(
         raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
 
 
+# Column mapping for Lost Leads upload
+LOST_LEADS_COLUMN_MAPPING = {
+    # Standard fields
+    "Zone": "zone",
+    "zone": "zone",
+    "State": "state",
+    "state": "state",
+    "Area": "area",
+    "area": "area",
+    "Office": "office",
+    "office": "office",
+    "Area Office": "area",
+    "Dealer": "dealer",
+    "dealer": "dealer",
+    "Branch": "branch",
+    "branch": "branch",
+    "Location": "location",
+    "location": "location",
+    "Employee Code": "employee_code",
+    "employee code": "employee_code",
+    "Employee Name": "employee_name",
+    "employee name": "employee_name",
+    "Employee": "employee_name",
+    "Enquiry No": "enquiry_no",
+    "enquiry no": "enquiry_no",
+    "Enquiry Date": "enquiry_date",
+    "enquiry date": "enquiry_date",
+    "Customer Type": "customer_type",
+    "customer type": "customer_type",
+    "Corporate Name": "corporate_name",
+    "corporate name": "corporate_name",
+    "Name": "name",
+    "name": "name",
+    "Customer Name": "name",
+    "Phone Number": "phone_number",
+    "phone number": "phone_number",
+    "Phone": "phone_number",
+    "phone": "phone_number",
+    "Mobile": "phone_number",
+    "mobile": "phone_number",
+    "Email Address": "email_address",
+    "email address": "email_address",
+    "Email": "email_address",
+    "email": "email_address",
+    "PinCode": "pincode",
+    "pincode": "pincode",
+    "District": "district",
+    "district": "district",
+    "KVA": "kva",
+    "kva": "kva",
+    "Phase": "phase",
+    "phase": "phase",
+    "Qty": "qty",
+    "qty": "qty",
+    "Remarks": "remarks",
+    "remarks": "remarks",
+    "Segment": "segment",
+    "segment": "segment",
+    "SubSegment": "sub_segment",
+    "sub segment": "sub_segment",
+    "Source": "source",
+    "source": "source",
+    
+    # Lost lead specific mappings
+    "Win Reason": "competitor",  # Competitor who won the deal
+    "win reason": "competitor",
+    "Win reason": "competitor",
+    "WIN REASON": "competitor",
+    "Competitor": "competitor",
+    "competitor": "competitor",
+    
+    "Win Remarks": "lost_reason",  # Reason for losing
+    "win remarks": "lost_reason",
+    "Win remarks": "lost_reason",
+    "WIN REMARKS": "lost_reason",
+    "Lost Reason": "lost_reason",
+    "lost reason": "lost_reason",
+    
+    "Lost Remarks": "lost_remarks",  # Additional remarks about the loss
+    "lost remarks": "lost_remarks",
+    "Lost remarks": "lost_remarks",
+    "LOST REMARKS": "lost_remarks",
+    
+    "Lost Date": "lost_date",
+    "lost date": "lost_date",
+    "Closure Date": "lost_date",
+    "closure date": "lost_date",
+    "Enquiry Closure Date": "lost_date",
+}
+
+
+@router.post("/lost-leads")
+async def upload_lost_leads(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload lost leads from Excel file.
+    
+    Key differences from regular upload:
+    1. Duplicate check: Skip row if phone_number OR enquiry_no already exists in DB
+    2. Auto-set status to 'Lost' (enquiry_stage = 'Closed-Lost', enquiry_status = 'Closed')
+    3. Special column mappings:
+       - 'Win Reason' -> competitor
+       - 'Win Remarks' -> lost_reason
+       - 'Lost Remarks' -> lost_remarks
+    """
+    db = await get_db(request)
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
+    
+    try:
+        import pandas as pd
+        
+        content = await file.read()
+        df = pd.read_excel(io.BytesIO(content))
+        
+        if df.empty:
+            raise HTTPException(status_code=400, detail="The uploaded file is empty")
+        
+        created_count = 0
+        skipped_count = 0
+        errors = []
+        
+        for idx, row in df.iterrows():
+            try:
+                lead_data = {}
+                
+                # Map columns
+                for excel_col, db_field in LOST_LEADS_COLUMN_MAPPING.items():
+                    if excel_col in df.columns:
+                        val = row[excel_col]
+                        
+                        # Handle date fields
+                        if db_field in ['enquiry_date', 'lost_date']:
+                            lead_data[db_field] = parse_date(val)
+                        # Handle numeric fields
+                        elif db_field in ['kva']:
+                            cleaned = clean_value(val)
+                            if cleaned is not None:
+                                try:
+                                    lead_data[db_field] = float(cleaned)
+                                except (ValueError, TypeError):
+                                    lead_data[db_field] = None
+                            else:
+                                lead_data[db_field] = None
+                        elif db_field in ['qty']:
+                            cleaned = clean_value(val)
+                            if cleaned is not None:
+                                try:
+                                    lead_data[db_field] = int(float(cleaned))
+                                except (ValueError, TypeError):
+                                    lead_data[db_field] = None
+                            else:
+                                lead_data[db_field] = None
+                        else:
+                            cleaned = clean_value(val)
+                            if cleaned is not None:
+                                lead_data[db_field] = str(cleaned) if not isinstance(cleaned, str) else cleaned
+                            else:
+                                lead_data[db_field] = None
+                
+                phone_number = lead_data.get('phone_number')
+                enquiry_no = lead_data.get('enquiry_no')
+                
+                # Skip if phone_number OR enquiry_no already exists
+                # This is different from regular upload which uses AND logic
+                existing = None
+                
+                if phone_number:
+                    existing = await db.leads.find_one({"phone_number": str(phone_number)})
+                
+                if not existing and enquiry_no:
+                    existing = await db.leads.find_one({"enquiry_no": str(enquiry_no)})
+                
+                if existing:
+                    # Skip this row - duplicate found
+                    skipped_count += 1
+                    continue
+                
+                # Auto-set lost status fields
+                lead_data['enquiry_stage'] = 'Closed-Lost'
+                lead_data['enquiry_status'] = 'Closed'
+                lead_data['closure_type'] = 'lost'
+                
+                # Set lost_date to today if not provided
+                if not lead_data.get('lost_date'):
+                    lead_data['lost_date'] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                
+                # Create new lead
+                uploader_name = current_user.name or current_user.email or "Unknown User"
+                lead_doc = {
+                    "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
+                    **lead_data,
+                    "added_by": f"Lost Lead Import - {uploader_name}",
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                await db.leads.insert_one(lead_doc)
+                created_count += 1
+                
+            except Exception as e:
+                logger.error(f"Lost lead row {idx + 2} error: {e}")
+                errors.append({"row": idx + 2, "error": str(e)})
+                continue
+        
+        # Log activity
+        activity = ActivityLog(
+            user_id=current_user.user_id,
+            action="lost_leads_upload",
+            resource_type="lead",
+            details={
+                "filename": file.filename,
+                "created": created_count,
+                "skipped": skipped_count,
+                "errors": len(errors)
+            }
+        )
+        activity_doc = activity.model_dump()
+        activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+        await db.activity_logs.insert_one(activity_doc)
+        
+        return {
+            "success": True,
+            "created": created_count,
+            "skipped": skipped_count,
+            "errors": errors[:10] if errors else [],
+            "total_errors": len(errors),
+            "message": f"Lost leads processed: {created_count} created, {skipped_count} skipped (duplicates)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Lost leads upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+
+
+@router.get("/lost-leads/template")
+async def get_lost_leads_template(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Download template for lost leads upload"""
+    import pandas as pd
+    
+    template_data = {
+        'Zone': ['East', 'West'],
+        'State': ['Bihar', 'Maharashtra'],
+        'Area Office': ['Patna', 'Mumbai'],
+        'Dealer': ['Dealer Name', 'Another Dealer'],
+        'Employee Name': ['John Doe', 'Jane Smith'],
+        'Enquiry No': ['E2504XXX00001', 'E2504XXX00002'],
+        'Enquiry Date': ['2025-04-01', '2025-04-02'],
+        'Corporate Name': ['ABC Corp', 'XYZ Ltd'],
+        'Name': ['Customer Name', 'Customer 2'],
+        'Phone Number': ['9876543210', '9876543211'],
+        'Email': ['email@example.com', 'email2@example.com'],
+        'KVA': [100, 250],
+        'Segment': ['Corporate', 'Retail'],
+        'Win Reason': ['Competitor A', 'Price Lower'],
+        'Win Remarks': ['Lost due to price', 'Competitor offered better terms'],
+        'Lost Remarks': ['Follow up after 6 months', 'Customer preferred local vendor'],
+        'Lost Date': ['2025-06-01', '2025-06-15']
+    }
+    
+    df = pd.DataFrame(template_data)
+    
+    output = io.BytesIO()
+    df.to_excel(output, index=False, sheet_name='Lost Leads Template')
+    output.seek(0)
+    
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=lost_leads_upload_template.xlsx"}
+    )
+
+
 @router.get("/template")
 async def get_upload_template(
     current_user: User = Depends(get_current_user)
