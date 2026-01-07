@@ -1382,7 +1382,7 @@ const Leads = () => {
                 </div>
                 <div className="flex justify-between gap-2">
                   <div>
-                    {editingLead && isBDMLead(editingLead) && (
+                    {editingLead && canTransferLead(editingLead) && (
                       <Button 
                         type="button"
                         variant="secondary"
