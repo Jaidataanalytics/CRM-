@@ -70,7 +70,7 @@ async def get_leads(
             # Search in specific field
             query[search_field] = {"$regex": search_term, "$options": "i"}
         else:
-            # Search in multiple fields - need to use $and to combine with existing $or
+            # Search in multiple fields - need to use $and to combine with existing query
             search_or = [
                 {"name": {"$regex": search_term, "$options": "i"}},
                 {"phone_number": {"$regex": search_term, "$options": "i"}},
@@ -85,6 +85,7 @@ async def get_leads(
                 "$and": [
                     {"deleted_at": {"$exists": False}},
                     {"$or": [{"is_transferred": {"$exists": False}}, {"is_transferred": False}, {"is_transferred": None}]},
+                    {"$or": [{"is_duplicate": {"$exists": False}}, {"is_duplicate": False}, {"is_duplicate": None}]},
                     {"$or": search_or}
                 ]
             }
