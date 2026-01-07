@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-07T15:00:21.250332",
-  "total_tests": 69,
-  "passed_tests": 67,
-  "success_rate": "97.1%",
+  "timestamp": "2026-01-07T15:43:18.853714",
+  "total_tests": 92,
+  "passed_tests": 86,
+  "success_rate": "93.5%",
   "test_details": [
     {
       "test": "Admin Login",
@@ -172,7 +172,7 @@
     {
       "test": "Duplicate Count API",
       "success": true,
-      "details": "Count: 1696"
+      "details": "Count: 1695"
     },
     {
       "test": "Get Duplicate Leads List",
@@ -192,7 +192,7 @@
     {
       "test": "Run Duplicate Detection",
       "success": true,
-      "details": "Flagged: 0, Checked: 9769"
+      "details": "Flagged: 0, Checked: 9773"
     },
     {
       "test": "Get Initial Duplicate Count",
@@ -222,7 +222,7 @@
     {
       "test": "Duplicate Detection Working",
       "success": true,
-      "details": "Duplicate detection ran successfully (count: 1696 -> 1696)"
+      "details": "Duplicate detection ran successfully (count: 1695 -> 1695)"
     },
     {
       "test": "Verify Main List Excludes Duplicates",
@@ -257,7 +257,7 @@
     {
       "test": "Unflag Duplicate Functionality",
       "success": true,
-      "details": "Successfully unflagged lead lead_dcbdcafd8d8e"
+      "details": "Successfully unflagged lead lead_37200500aa74"
     },
     {
       "test": "Get Recent Uploads (7 days)",
@@ -267,7 +267,7 @@
     {
       "test": "Recent Uploads API Structure",
       "success": true,
-      "details": "Response has all required fields for 12 uploads"
+      "details": "Response has all required fields for 17 uploads"
     },
     {
       "test": "Create Test Upload for Batch Delete",
@@ -332,22 +332,137 @@
     {
       "test": "Lost Leads Duplicate Detection",
       "success": true,
-      "details": "Correctly skipped 2 duplicate(s), created 1"
-    },
-    {
-      "test": "Verify Lost Lead Status and Closure Questions",
-      "success": true,
-      "details": "Status: 200"
-    },
-    {
-      "test": "Lost Lead Status Verification",
-      "success": true,
-      "details": "Lost lead has correct status (Closed-Lost) and needs_closure_questions=False"
+      "details": "Correctly skipped 3 duplicate(s), created 0"
     },
     {
       "test": "Phone Normalization Test",
       "success": true,
-      "details": "Scientific notation test: 1 created, 0 skipped"
+      "details": "Scientific notation test: 0 created, 1 skipped"
+    },
+    {
+      "test": "Competitor Analysis - Competitor Dimension",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Competitor Analysis Response Structure",
+      "success": true,
+      "details": "Valid structure with 0 competitors, 56 total lost leads"
+    },
+    {
+      "test": "Competitor Analysis - Lost Reason Dimension",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Reason Dimension",
+      "success": true,
+      "details": "Correctly returned lost_reason dimension"
+    },
+    {
+      "test": "Competitor Analysis - Lost Remarks Dimension",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Remarks Dimension",
+      "success": true,
+      "details": "Correctly returned lost_remarks dimension"
+    },
+    {
+      "test": "Lost Leads Breakdown - Group by Competitor",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Leads Breakdown - Competitor",
+      "success": true,
+      "details": "Valid breakdown with 1 competitors, 56 total lost leads"
+    },
+    {
+      "test": "Breakdown Item Structure",
+      "success": true,
+      "details": "All required fields present"
+    },
+    {
+      "test": "Lost Leads Breakdown - Group by State",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Leads Breakdown - State",
+      "success": true,
+      "details": "Valid state breakdown with 2 states"
+    },
+    {
+      "test": "Lost Leads Breakdown - Group by Dealer",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Leads Breakdown - Dealer",
+      "success": true,
+      "details": "Valid dealer breakdown with 10 dealers"
+    },
+    {
+      "test": "KPI Navigation - Won Leads Filter",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Won Leads Navigation Filter",
+      "success": false,
+      "details": "Some leads are not won"
+    },
+    {
+      "test": "KPI Navigation - Lost Leads Filter",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Lost Leads Navigation Filter",
+      "success": false,
+      "details": "Some leads are not lost"
+    },
+    {
+      "test": "KPI Navigation - Open Leads Filter",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Open Leads Navigation Filter",
+      "success": true,
+      "details": "Correctly filtered 5 open leads"
+    },
+    {
+      "test": "KPI Navigation - Hot Leads Filter",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Hot Leads Navigation Filter",
+      "success": false,
+      "details": "Some leads are not hot or not open"
+    },
+    {
+      "test": "Create Test Lost Lead 1 for Competitor Analysis",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Create Test Lost Lead 2 for Competitor Analysis",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Competitor Analysis with Test Data",
+      "success": true,
+      "details": "Status: 200"
+    },
+    {
+      "test": "Competitor Analysis with Test Data",
+      "success": false,
+      "details": "Test competitors not found in analysis"
     }
   ]
 }
