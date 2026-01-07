@@ -600,10 +600,10 @@ const Leads = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      toast.success(`Lost leads: ${res.data.created} new, ${res.data.updated || 0} updated to Lost, ${res.data.skipped} skipped`);
-      if (res.data.total_errors > 0) {
-        toast.warning(`${res.data.total_errors} rows had errors`);
-      }
+      // Show summary modal with detailed results
+      setUploadSummaryData(res.data);
+      setIsUploadSummaryOpen(true);
+      
       loadLeads();
     } catch (error) {
       console.error('Lost leads upload error:', error);
