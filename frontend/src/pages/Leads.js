@@ -735,13 +735,8 @@ const Leads = () => {
     return false; // Let normal update continue
   };
 
-  // Transfer lead to dealer (BDM only)
+  // Transfer lead to dealer
   const handleTransferLead = async (lead) => {
-    if (lead.dealer?.toUpperCase() !== 'BDM') {
-      toast.error('Only BDM leads can be transferred');
-      return;
-    }
-    
     setTransferring(true);
     try {
       await axios.post(`${API}/leads/${lead.lead_id}/transfer`, {}, { withCredentials: true });
@@ -756,9 +751,10 @@ const Leads = () => {
     }
   };
 
-  // Check if lead is BDM lead (can be transferred)
-  const isBDMLead = (lead) => {
-    return lead?.dealer?.toUpperCase() === 'BDM';
+  // Check if lead can be transferred (all leads can now be transferred)
+  const canTransferLead = (lead) => {
+    // All leads can be transferred - removed BDM restriction
+    return lead && lead.lead_id;
   };
 
   const getCallStatusBadge = (status) => {
