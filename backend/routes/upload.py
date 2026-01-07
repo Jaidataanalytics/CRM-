@@ -352,6 +352,12 @@ async def upload_leads(
                 # Lost = any "closed" stage that is NOT won or faulty
                 is_lost_closure = False
                 enquiry_stage = lead_data.get('enquiry_stage', '')
+                
+                # Normalize enquiry_stage using fuzzy matching
+                if enquiry_stage:
+                    enquiry_stage = fuzzy_matcher.normalize_status(enquiry_stage)
+                    lead_data['enquiry_stage'] = enquiry_stage
+                
                 stage_lower = enquiry_stage.lower() if enquiry_stage else ''
                 
                 won_stages = ['closed-won', 'order booked']
