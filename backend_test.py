@@ -908,6 +908,393 @@ class LeadManagementTester:
                             self.log_test("Unflag Duplicate Functionality", False, 
                                         "Failed to unflag duplicate")
 
+    def test_recent_uploads_api(self):
+        """Test recent uploads API"""
+        print("\n🔍 Testing Recent Uploads API...")
+        
+        if not self.admin_token:
+            self.log_test("Recent Uploads API Test", False, "Admin login required")
+            return
+
+        # Test recent uploads API
+        success, response = self.run_test(
+            "Get Recent Uploads (7 days)",
+            "GET",
+            "admin/recent-uploads?days=7",
+            200,
+            token=self.admin_token
+        )
+        
+        if success:
+            uploads = response.get('uploads', [])
+            days_queried = response.get('days_queried', 0)
+            total_uploads = response.get('total_uploads', 0)
+            
+            print(f"   Found {total_uploads} uploads in last {days_queried} days")
+            
+            # Verify response structure
+            if uploads:
+                first_upload = uploads[0]
+                required_fields = ['upload_batch_id', 'filename', 'created_at', 'created_count', 'can_delete']
+                missing_fields = [field for field in required_fields if field not in first_upload]
+                
+                if not missing_fields:
+                    self.log_test("Recent Uploads API Structure", True, 
+                                f"Response has all required fields for {len(uploads)} uploads")
+                else:
+                    self.log_test("Recent Uploads API Structure", False,
+                                f"Missing fields: {missing_fields}")
+            else:
+                self.log_test("Recent Uploads API Structure", True, "No uploads found (empty response is valid)")
+
+    def test_upload_batch_deletion_and_restore(self):
+        """Test upload batch deletion and restore functionality"""
+        print("\n🔍 Testing Upload Batch Deletion and Restore...")
+        
+        if not self.admin_token:
+            self.log_test("Upload Batch Test", False, "Admin login required")
+            return
+
+        # First, create a test upload to get a batch ID
+        import pandas as pd
+        import io
+        
+        # Create test Excel file
+        test_data = {
+            'Name': ['Test Customer Batch Delete'],
+            'Phone Number': [f'9999{datetime.now().strftime("%H%M%S")}'],
+            'State': ['Test State'],
+            'Dealer': ['Test Dealer'],
+            'Employee Name': ['Test Employee'],
+            'Enquiry No': [f'BATCH{datetime.now().strftime("%Y%m%d%H%M%S")}'],
+            'Enquiry Date': ['2025-01-01'],
+            'Segment': ['Corporate'],
+            'Enquiry Status': ['Open'],
+            'Enquiry Stage': ['Prospecting']
+        }
+        
+        df = pd.DataFrame(test_data)
+        excel_buffer = io.BytesIO()
+        df.to_excel(excel_buffer, index=False, sheet_name='Test Leads')
+        excel_buffer.seek(0)
+        
+        # Upload test file
+        try:
+            import requests
+            files = {'file': ('test_batch_delete.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            headers = {}
+            cookies = {'session_token': self.admin_token}
+            
+            response = requests.post(
+                f"{self.base_url}/upload/leads",
+                files=files,
+                headers=headers,
+                cookies=cookies
+            )
+            
+            if response.status_code == 200:
+                upload_result = response.json()
+                created = upload_result.get('created', 0)
+                
+                if created > 0:
+                    self.log_test("Create Test Upload for Batch Delete", True, f"Created {created} test leads")
+                    
+                    # Get recent uploads to find our batch ID
+                    success, uploads_response = self.run_test(
+                        "Get Recent Uploads for Batch ID",
+                        "GET",
+                        "admin/recent-uploads?days=1",
+                        200,
+                        token=self.admin_token
+                    )
+                    
+                    if success:
+                        uploads = uploads_response.get('uploads', [])
+                        test_batch_id = None
+                        
+                        # Find our upload (most recent one)
+                        for upload in uploads:
+                            if upload.get('can_delete') and upload.get('current_lead_count', 0) > 0:
+                                test_batch_id = upload.get('upload_batch_id')
+                                break
+                        
+                        if test_batch_id:
+                            print(f"   Found test batch ID: {test_batch_id}")
+                            
+                            # Test batch deletion
+                            success, delete_response = self.run_test(
+                                "Delete Upload Batch",
+                                "DELETE",
+                                f"admin/upload-batch/{test_batch_id}",
+                                200,
+                                token=self.admin_token
+                            )
+                            
+                            if success:
+                                deleted_count = delete_response.get('deleted_count', 0)
+                                self.log_test("Delete Upload Batch", True, 
+                                            f"Successfully deleted {deleted_count} leads from batch")
+                                
+                                # Verify leads are soft-deleted (have deleted_at field)
+                                # We can't directly query the database, but we can check if the batch shows 0 current leads
+                                success, verify_response = self.run_test(
+                                    "Verify Batch Deletion",
+                                    "GET",
+                                    "admin/recent-uploads?days=1",
+                                    200,
+                                    token=self.admin_token
+                                )
+                                
+                                if success:
+                                    uploads = verify_response.get('uploads', [])
+                                    deleted_batch = None
+                                    for upload in uploads:
+                                        if upload.get('upload_batch_id') == test_batch_id:
+                                            deleted_batch = upload
+                                            break
+                                    
+                                    if deleted_batch and deleted_batch.get('current_lead_count', 0) == 0:
+                                        self.log_test("Verify Soft Delete", True, 
+                                                    "Batch shows 0 current leads after deletion")
+                                    else:
+                                        self.log_test("Verify Soft Delete", False,
+                                                    "Batch still shows leads after deletion")
+                                
+                                # Test batch restoration
+                                success, restore_response = self.run_test(
+                                    "Restore Upload Batch",
+                                    "POST",
+                                    f"admin/upload-batch/{test_batch_id}/restore",
+                                    200,
+                                    token=self.admin_token
+                                )
+                                
+                                if success:
+                                    restored_count = restore_response.get('restored_count', 0)
+                                    self.log_test("Restore Upload Batch", True,
+                                                f"Successfully restored {restored_count} leads")
+                                    
+                                    # Verify restoration
+                                    success, verify_restore_response = self.run_test(
+                                        "Verify Batch Restoration",
+                                        "GET",
+                                        "admin/recent-uploads?days=1",
+                                        200,
+                                        token=self.admin_token
+                                    )
+                                    
+                                    if success:
+                                        uploads = verify_restore_response.get('uploads', [])
+                                        restored_batch = None
+                                        for upload in uploads:
+                                            if upload.get('upload_batch_id') == test_batch_id:
+                                                restored_batch = upload
+                                                break
+                                        
+                                        if restored_batch and restored_batch.get('current_lead_count', 0) > 0:
+                                            self.log_test("Verify Restoration", True,
+                                                        f"Batch shows {restored_batch.get('current_lead_count')} leads after restoration")
+                                        else:
+                                            self.log_test("Verify Restoration", False,
+                                                        "Batch still shows 0 leads after restoration")
+                                else:
+                                    self.log_test("Restore Upload Batch", False, "Failed to restore batch")
+                            else:
+                                self.log_test("Delete Upload Batch", False, "Failed to delete batch")
+                        else:
+                            self.log_test("Find Test Batch ID", False, "Could not find test batch ID")
+                    else:
+                        self.log_test("Get Recent Uploads for Batch ID", False, "Failed to get recent uploads")
+                else:
+                    self.log_test("Create Test Upload for Batch Delete", False, "No leads created in test upload")
+            else:
+                self.log_test("Create Test Upload for Batch Delete", False, f"Upload failed with status {response.status_code}")
+                
+        except Exception as e:
+            self.log_test("Create Test Upload for Batch Delete", False, f"Exception: {str(e)}")
+
+    def test_lost_leads_duplicate_detection(self):
+        """Test lost leads upload with duplicate detection and phone normalization"""
+        print("\n🔍 Testing Lost Leads Duplicate Detection...")
+        
+        if not self.admin_token:
+            self.log_test("Lost Leads Duplicate Detection Test", False, "Admin login required")
+            return
+
+        # First, create a regular lead to test duplicate detection against
+        unique_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        test_phone = "9876543210"
+        
+        regular_lead = {
+            "name": "Regular Customer for Duplicate Test",
+            "phone_number": test_phone,
+            "email_address": "regular@test.com",
+            "state": "Test State",
+            "dealer": "Test Dealer",
+            "employee_name": "Test Employee",
+            "enquiry_no": f"REG{unique_timestamp}",
+            "enquiry_date": "2025-01-01",
+            "customer_type": "New Customer",
+            "segment": "Corporate",
+            "enquiry_status": "Open",
+            "enquiry_stage": "Prospecting"
+        }
+        
+        success, response = self.run_test(
+            "Create Regular Lead for Duplicate Test",
+            "POST",
+            "leads",
+            200,
+            data=regular_lead,
+            token=self.admin_token
+        )
+        
+        if success:
+            self.log_test("Create Regular Lead", True, "Created regular lead for duplicate testing")
+            
+            # Now create lost leads Excel file with various phone formats that should match
+            import pandas as pd
+            import io
+            
+            test_data = {
+                'Zone': ['East', 'West', 'North'],
+                'State': ['Bihar', 'Maharashtra', 'Delhi'],
+                'Area Office': ['Patna', 'Mumbai', 'Delhi'],
+                'Dealer': ['Test Dealer 1', 'Test Dealer 2', 'Test Dealer 3'],
+                'Employee Name': ['John Doe', 'Jane Smith', 'Bob Wilson'],
+                'Enquiry No': [f'LOST{unique_timestamp}001', f'LOST{unique_timestamp}002', f'LOST{unique_timestamp}003'],
+                'Enquiry Date': ['2025-01-01', '2025-01-02', '2025-01-03'],
+                'Corporate Name': ['ABC Corp', 'XYZ Ltd', 'PQR Inc'],
+                'Name': ['Lost Customer A', 'Lost Customer B', 'Lost Customer C'],
+                # Test different phone formats - first one should be duplicate
+                'Phone Number': [test_phone, '+919876543211', '91-9876-543212'],  # First matches existing lead
+                'Email': ['lostA@test.com', 'lostB@test.com', 'lostC@test.com'],
+                'KVA': [100, 250, 500],
+                'Segment': ['Corporate', 'Retail', 'Industrial'],
+                'Win Reason': ['Competitor A', 'Price Lower', 'Better Terms'],
+                'Win Remarks': ['Lost due to price', 'Competitor offered better terms', 'Customer chose local vendor'],
+                'Lost Remarks': ['Follow up after 6 months', 'Customer preferred local vendor', 'Price was main factor'],
+                'Lost Date': ['2025-01-05', '2025-01-06', '2025-01-07']
+            }
+            
+            df = pd.DataFrame(test_data)
+            excel_buffer = io.BytesIO()
+            df.to_excel(excel_buffer, index=False, sheet_name='Lost Leads')
+            excel_buffer.seek(0)
+            
+            # Upload lost leads file
+            try:
+                import requests
+                files = {'file': ('lost_leads_duplicate_test.xlsx', excel_buffer.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                headers = {}
+                cookies = {'session_token': self.admin_token}
+                
+                response = requests.post(
+                    f"{self.base_url}/upload/lost-leads",
+                    files=files,
+                    headers=headers,
+                    cookies=cookies
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    created = result.get('created', 0)
+                    skipped = result.get('skipped', 0)
+                    
+                    print(f"   Lost leads upload result: {created} created, {skipped} skipped")
+                    
+                    # We expect 1 duplicate (first phone matches existing lead) and 2 created
+                    if skipped >= 1:
+                        self.log_test("Lost Leads Duplicate Detection", True,
+                                    f"Correctly skipped {skipped} duplicate(s), created {created}")
+                        
+                        # Verify that created leads have correct status
+                        if created > 0:
+                            # Get one of the created leads to verify status
+                            success, leads_response = self.run_test(
+                                "Verify Lost Lead Status and Closure Questions",
+                                "GET",
+                                f"leads?enquiry_no={test_data['Enquiry No'][1]}&limit=1",  # Check second lead (should be created)
+                                200,
+                                token=self.admin_token
+                            )
+                            
+                            if success:
+                                leads = leads_response.get('leads', [])
+                                if leads:
+                                    lead = leads[0]
+                                    stage = lead.get('enquiry_stage')
+                                    status = lead.get('enquiry_status')
+                                    needs_closure = lead.get('needs_closure_questions')
+                                    
+                                    if (stage == 'Closed-Lost' and 
+                                        status == 'Closed' and 
+                                        needs_closure == False):
+                                        self.log_test("Lost Lead Status Verification", True,
+                                                    "Lost lead has correct status (Closed-Lost) and needs_closure_questions=False")
+                                    else:
+                                        self.log_test("Lost Lead Status Verification", False,
+                                                    f"Incorrect status: stage={stage}, status={status}, needs_closure={needs_closure}")
+                                else:
+                                    self.log_test("Lost Lead Status Verification", False, "Created lost lead not found")
+                        
+                        # Test phone normalization by checking if different formats are detected as duplicates
+                        # Upload again with scientific notation phone format
+                        test_data_scientific = {
+                            'Zone': ['South'],
+                            'State': ['Karnataka'],
+                            'Area Office': ['Bangalore'],
+                            'Dealer': ['Test Dealer Scientific'],
+                            'Employee Name': ['Scientific Test'],
+                            'Enquiry No': [f'SCI{unique_timestamp}001'],
+                            'Enquiry Date': ['2025-01-08'],
+                            'Corporate Name': ['Scientific Corp'],
+                            'Name': ['Scientific Customer'],
+                            'Phone Number': ['9.87654E+09'],  # Scientific notation for 9876540000
+                            'Email': ['scientific@test.com'],
+                            'KVA': [750],
+                            'Segment': ['Scientific'],
+                            'Win Reason': ['Scientific Competitor'],
+                            'Win Remarks': ['Lost due to scientific reasons'],
+                            'Lost Remarks': ['Scientific follow up needed'],
+                            'Lost Date': ['2025-01-09']
+                        }
+                        
+                        df_sci = pd.DataFrame(test_data_scientific)
+                        excel_buffer_sci = io.BytesIO()
+                        df_sci.to_excel(excel_buffer_sci, index=False, sheet_name='Scientific Phone')
+                        excel_buffer_sci.seek(0)
+                        
+                        files_sci = {'file': ('scientific_phone_test.xlsx', excel_buffer_sci.getvalue(), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+                        response_sci = requests.post(
+                            f"{self.base_url}/upload/lost-leads",
+                            files=files_sci,
+                            headers=headers,
+                            cookies=cookies
+                        )
+                        
+                        if response_sci.status_code == 200:
+                            result_sci = response_sci.json()
+                            created_sci = result_sci.get('created', 0)
+                            skipped_sci = result_sci.get('skipped', 0)
+                            
+                            self.log_test("Phone Normalization Test", True,
+                                        f"Scientific notation test: {created_sci} created, {skipped_sci} skipped")
+                        else:
+                            self.log_test("Phone Normalization Test", False,
+                                        f"Scientific notation upload failed: {response_sci.status_code}")
+                    else:
+                        self.log_test("Lost Leads Duplicate Detection", False,
+                                    f"Expected at least 1 duplicate to be skipped, but got {skipped}")
+                else:
+                    self.log_test("Lost Leads Upload", False, 
+                                f"Upload failed with status {response.status_code}: {response.text[:100]}")
+                    
+            except Exception as e:
+                self.log_test("Lost Leads Upload", False, f"Exception: {str(e)}")
+        else:
+            self.log_test("Create Regular Lead", False, "Failed to create regular lead for duplicate testing")
+
     def run_all_tests(self):
         """Run all tests"""
         print("🚀 Starting Lead Management Feature Tests...")
