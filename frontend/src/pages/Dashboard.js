@@ -494,6 +494,7 @@ const Dashboard = () => {
           icon={Users}
           color="text-primary"
           onClick={() => handleKPIClick('all')}
+          onDoubleClick={() => handleKPINavigate('all')}
           active={selectedKPI === 'all'}
         />
         <KPICard
@@ -502,6 +503,7 @@ const Dashboard = () => {
           icon={CheckCircle}
           color="text-green-500"
           onClick={() => handleKPIClick('won')}
+          onDoubleClick={() => handleKPINavigate('won')}
           active={selectedKPI === 'won'}
         />
         <KPICard
@@ -510,6 +512,7 @@ const Dashboard = () => {
           icon={XCircle}
           color="text-red-500"
           onClick={() => handleKPIClick('lost')}
+          onDoubleClick={() => handleKPINavigate('lost')}
           active={selectedKPI === 'lost'}
         />
         <KPICard
@@ -518,6 +521,7 @@ const Dashboard = () => {
           icon={Target}
           color="text-yellow-500"
           onClick={() => handleKPIClick('open')}
+          onDoubleClick={() => handleKPINavigate('open')}
           active={selectedKPI === 'open'}
         />
       </div>
@@ -530,6 +534,7 @@ const Dashboard = () => {
           icon={Flame}
           color="text-red-500"
           onClick={() => handleKPIClick('hot')}
+          onDoubleClick={() => handleKPINavigate('hot')}
           active={selectedKPI === 'hot'}
         />
         <KPICard
@@ -538,6 +543,7 @@ const Dashboard = () => {
           icon={ThermometerSun}
           color="text-orange-500"
           onClick={() => handleKPIClick('warm')}
+          onDoubleClick={() => handleKPINavigate('warm')}
           active={selectedKPI === 'warm'}
         />
         <KPICard
