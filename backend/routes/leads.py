@@ -72,6 +72,14 @@ async def get_leads(
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
     
+    # Handle KPI navigation parameter aliases
+    if stage and not enquiry_stage:
+        enquiry_stage = stage
+    if status and not enquiry_status:
+        enquiry_status = status
+    if lead_type and not enquiry_type:
+        enquiry_type = lead_type
+    
     # Build filter query - exclude soft-deleted leads, transferred leads, AND duplicates
     query = {
         "deleted_at": {"$exists": False},
