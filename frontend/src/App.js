@@ -20,6 +20,7 @@ import CompareForecasts from '@/pages/CompareForecasts';
 import Admin from '@/pages/Admin';
 import EntityProfile from '@/pages/EntityProfile';
 import TransferredLeads from '@/pages/TransferredLeads';
+import DuplicateLeads from '@/pages/DuplicateLeads';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
