@@ -498,6 +498,12 @@ LOST_LEADS_COLUMN_MAPPING = {
     "phone": "phone_number",
     "Mobile": "phone_number",
     "mobile": "phone_number",
+    "Phone / Mobile No": "phone_number",  # From demmoooo.xlsx
+    "phone / mobile no": "phone_number",
+    "Phone/Mobile No": "phone_number",
+    "Phone/Mobile": "phone_number",
+    "Mobile No": "phone_number",
+    "mobile no": "phone_number",
     "Email Address": "email_address",
     "email address": "email_address",
     "Email": "email_address",
@@ -506,20 +512,35 @@ LOST_LEADS_COLUMN_MAPPING = {
     "pincode": "pincode",
     "District": "location",  # Map District to Location for lost leads
     "district": "location",
+    "Tehsil": "location",  # From demmoooo.xlsx - map to location
+    "tehsil": "location",
+    "Address": "address",  # From demmoooo.xlsx
+    "address": "address",
     "Location": "location",
     "location": "location",
     "KVA": "kva",
     "kva": "kva",
+    "Model": "model",  # From demmoooo.xlsx
+    "model": "model",
+    "Type": "enquiry_type",  # From demmoooo.xlsx - Hot/Warm/Cold
+    "type": "enquiry_type",
     "Phase": "phase",
     "phase": "phase",
     "Qty": "qty",
     "qty": "qty",
     "Remarks": "remarks",
     "remarks": "remarks",
+    "Latest Follow-up Remark": "remarks",  # From demmoooo.xlsx
+    "latest follow-up remark": "remarks",
+    "No Of Follow ups Done": "no_of_followups",  # From demmoooo.xlsx
+    "no of follow ups done": "no_of_followups",
     "Segment": "segment",
     "segment": "segment",
-    "SubSegment": "sub_segment",
+    "Sub Segment": "sub_segment",  # From demmoooo.xlsx (with space)
     "sub segment": "sub_segment",
+    "SubSegment": "sub_segment",
+    "Enquiry Source": "source",  # From demmoooo.xlsx
+    "enquiry source": "source",
     "Source": "source",
     "source": "source",
     
