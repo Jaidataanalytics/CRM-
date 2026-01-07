@@ -829,7 +829,7 @@ async def upload_lost_leads(
             "skipped": skipped_count,
             "errors": errors[:10] if errors else [],
             "total_errors": len(errors),
-            "message": f"Lost leads processed: {created_count} created, {updated_count} updated to Lost, {skipped_count} skipped (already Lost)"
+            "message": f"Lost leads processed: {created_count} new, {updated_count} updated to Lost, {skipped_count} skipped (already Lost/Won)"
         }
         
     except HTTPException:
