@@ -404,6 +404,7 @@ async def upload_leads(
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                         **lead_data,
                         "added_by": uploader_name,
+                        "upload_batch_id": upload_batch_id,  # Track which upload this came from
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
@@ -421,6 +422,7 @@ async def upload_leads(
             action="bulk_upload",
             resource_type="lead",
             details={
+                "upload_batch_id": upload_batch_id,
                 "filename": file.filename,
                 "created": created_count,
                 "updated": updated_count,
