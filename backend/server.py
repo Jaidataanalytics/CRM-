@@ -632,40 +632,48 @@ async def migrate_lost_leads_field_mapping():
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
     
-    # Run database migrations first
-    await migrate_metric_settings()
+    # Test database connection first
+    try:
+        # Try to ping the database to verify connection
+        await client.admin.command('ping')
+        logger.info("Successfully connected to MongoDB")
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {str(e)}")
+        logger.error("Server will start but database operations may fail")
+        # Don't raise - let the server start anyway
+        # Individual endpoints will handle connection errors
+        return
     
-    # Run data normalization migration
-    await migrate_normalize_duplicates()
-    
-    # Run duplicate lead detection migration
-    await migrate_detect_duplicates()
-    
-    # Run lost leads enquiry_date migration
-    await migrate_lost_leads_enquiry_date()
-    
-    # Run lost leads field mapping migration (name, location)
-    await migrate_lost_leads_field_mapping()
-    
-    # Create indexes for better query performance
-    await db.leads.create_index("lead_id", unique=True)
-    await db.leads.create_index("enquiry_no")
-    await db.leads.create_index("state")
-    await db.leads.create_index("dealer")
-    await db.leads.create_index("employee_name")
-    await db.leads.create_index("segment")
-    await db.leads.create_index("enquiry_status")
-    await db.leads.create_index("enquiry_date")
-    await db.leads.create_index("is_duplicate")  # Index for duplicate filtering
-    await db.leads.create_index("phone_number")  # Index for duplicate detection
-    await db.leads.create_index("location")  # Index for location queries
-    await db.users.create_index("user_id", unique=True)
-    await db.users.create_index("email", unique=True)
-    await db.user_sessions.create_index("session_token", unique=True)
-    await db.user_sessions.create_index("user_id")
-    await db.activity_logs.create_index("user_id")
-    await db.activity_logs.create_index("created_at")
-    logger.info("Database indexes created successfully")
+    try:
+        # Run database migrations
+        await migrate_metric_settings()
+        await migrate_normalize_duplicates()
+        await migrate_detect_duplicates()
+        await migrate_lost_leads_enquiry_date()
+        await migrate_lost_leads_field_mapping()
+        
+        # Create indexes for better query performance
+        await db.leads.create_index("lead_id", unique=True)
+        await db.leads.create_index("enquiry_no")
+        await db.leads.create_index("state")
+        await db.leads.create_index("dealer")
+        await db.leads.create_index("employee_name")
+        await db.leads.create_index("segment")
+        await db.leads.create_index("enquiry_status")
+        await db.leads.create_index("enquiry_date")
+        await db.leads.create_index("is_duplicate")
+        await db.leads.create_index("phone_number")
+        await db.leads.create_index("location")
+        await db.users.create_index("user_id", unique=True)
+        await db.users.create_index("email", unique=True)
+        await db.user_sessions.create_index("session_token", unique=True)
+        await db.user_sessions.create_index("user_id")
+        await db.activity_logs.create_index("user_id")
+        await db.activity_logs.create_index("created_at")
+        logger.info("Database indexes created successfully")
+    except Exception as e:
+        logger.error(f"Error during startup migrations: {str(e)}")
+        # Don't raise - let the server start anyway
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
