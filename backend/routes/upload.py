@@ -715,49 +715,83 @@ async def upload_lost_leads(
                         if existing:
                             logger.debug(f"Found duplicate by enquiry_no: {enquiry_str}")
                 
-                # Auto-set lost status fields
-                lead_data['enquiry_stage'] = 'Closed-Lost'
-                lead_data['enquiry_status'] = 'Closed'
-                lead_data['closure_type'] = 'lost'
-                
-                # IMPORTANT: Lost leads from upload do NOT require closure questions
-                # Closure questions are only for leads that become lost through normal workflow
-                lead_data['needs_closure_questions'] = False
-                
                 # Set lost_date to today if not provided
                 if not lead_data.get('lost_date'):
                     lead_data['lost_date'] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 
-                # For lost leads: use enquiry_date from file if present, otherwise use lost_date
-                # This ensures lost leads are properly included in date-based filters and KPIs
-                if not lead_data.get('enquiry_date'):
-                    lead_data['enquiry_date'] = lead_data.get('lost_date')
+                # Define stage categories
+                won_stages = ['closed-won', 'order booked']
+                lost_stages = ['closed-lost', 'lost']
                 
                 if existing:
-                    # Check if already Lost - skip if so
                     existing_stage = existing.get('enquiry_stage', '').lower()
-                    if existing_stage in ['closed-lost', 'lost']:
+                    
+                    # Skip if already Lost
+                    if existing_stage in lost_stages:
                         skipped_count += 1
                         continue
                     
-                    # UPDATE existing lead to Lost status
-                    lead_data['updated_at'] = datetime.now(timezone.utc).isoformat()
-                    lead_data['lost_upload_batch_id'] = upload_batch_id  # Track this update
+                    # Skip if Won - leave Won leads as is
+                    if existing_stage in won_stages:
+                        skipped_count += 1
+                        continue
+                    
+                    # For all other stages (Prospecting, Closed-Dropped, Faulty, etc.)
+                    # -> Update to Lost and add lost info (competitor, lost_reason, lost_remarks)
+                    
+                    # Build update data - only update lost-related fields, don't overwrite everything
+                    update_data = {
+                        'enquiry_stage': 'Closed-Lost',
+                        'enquiry_status': 'Closed',
+                        'closure_type': 'lost',
+                        'lost_date': lead_data.get('lost_date'),
+                        'updated_at': datetime.now(timezone.utc).isoformat(),
+                        'lost_upload_batch_id': upload_batch_id
+                    }
+                    
+                    # Add lost-specific fields if provided in file
+                    if lead_data.get('competitor'):
+                        update_data['competitor'] = lead_data['competitor']
+                    if lead_data.get('lost_reason'):
+                        update_data['lost_reason'] = lead_data['lost_reason']
+                    if lead_data.get('lost_remarks'):
+                        update_data['lost_remarks'] = lead_data['lost_remarks']
+                    
+                    # If we have any of competitor/lost_reason/lost_remarks, no closure questions needed
+                    if update_data.get('competitor') or update_data.get('lost_reason') or update_data.get('lost_remarks'):
+                        update_data['needs_closure_questions'] = False
+                    else:
+                        # No lost info provided - may need closure questions
+                        update_data['needs_closure_questions'] = True
                     
                     await db.leads.update_one(
                         {"lead_id": existing["lead_id"]},
-                        {"$set": lead_data}
+                        {"$set": update_data}
                     )
                     updated_count += 1
-                    logger.info(f"Updated lead {existing['lead_id']} to Lost status")
+                    logger.info(f"Updated lead {existing['lead_id']} from '{existing_stage}' to Lost status")
                 else:
-                    # Create new lead
+                    # Create new lead - set all lost status fields
+                    lead_data['enquiry_stage'] = 'Closed-Lost'
+                    lead_data['enquiry_status'] = 'Closed'
+                    lead_data['closure_type'] = 'lost'
+                    
+                    # If we have any of competitor/lost_reason/lost_remarks, no closure questions needed
+                    if lead_data.get('competitor') or lead_data.get('lost_reason') or lead_data.get('lost_remarks'):
+                        lead_data['needs_closure_questions'] = False
+                    else:
+                        lead_data['needs_closure_questions'] = True
+                    
+                    # For new lost leads: use enquiry_date from file if present, otherwise use lost_date
+                    if not lead_data.get('enquiry_date'):
+                        lead_data['enquiry_date'] = lead_data.get('lost_date')
+                    
                     uploader_name = current_user.name or current_user.email or "Unknown User"
                     lead_doc = {
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                         **lead_data,
                         "added_by": f"Lost Lead Import - {uploader_name}",
-                        "upload_batch_id": upload_batch_id,  # Track which upload this came from
+                        "upload_batch_id": upload_batch_id,
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
