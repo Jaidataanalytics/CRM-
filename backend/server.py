@@ -458,6 +458,7 @@ async def migrate_detect_duplicates():
     all older matching leads are flagged as duplicates.
     """
     from utils.duplicate_detector import run_duplicate_detection_migration
+    from datetime import datetime, timezone, timedelta
     
     logger.info("Running duplicate lead detection migration...")
     
@@ -469,7 +470,6 @@ async def migrate_detect_duplicates():
         if last_detection:
             last_run = last_detection.get("last_run")
             if last_run:
-                from datetime import datetime, timezone, timedelta
                 if isinstance(last_run, str):
                     last_run = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
                 
