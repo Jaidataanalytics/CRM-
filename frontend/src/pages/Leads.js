@@ -155,6 +155,10 @@ const Leads = () => {
   const [closureAnswers, setClosureAnswers] = useState({});
   const [pendingClosureCount, setPendingClosureCount] = useState(0);
 
+  // Lost leads upload summary modal state
+  const [isUploadSummaryOpen, setIsUploadSummaryOpen] = useState(false);
+  const [uploadSummaryData, setUploadSummaryData] = useState(null);
+
   useEffect(() => {
     loadLeads();
   }, [buildQueryParams, searchQuery, searchField, page, pageSize, selectedLeadTypes, followupFilter, customFollowupStart, customFollowupEnd]);
