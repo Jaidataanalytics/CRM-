@@ -606,24 +606,20 @@ async def get_call_remarks(
 
 
 
-# BDM Transfer Endpoints
+# Lead Transfer Endpoints
 @router.post("/{lead_id}/transfer")
 async def transfer_lead_to_dealer(
     request: Request,
     lead_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Transfer a BDM lead to dealer (mark as transferred)"""
+    """Transfer any lead to dealer (mark as transferred)"""
     db = await get_db(request)
     
     # Find the lead
     lead = await db.leads.find_one({"lead_id": lead_id}, {"_id": 0})
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-    
-    # Check if lead belongs to BDM dealer
-    if lead.get("dealer", "").upper() != "BDM":
-        raise HTTPException(status_code=400, detail="Only BDM leads can be transferred")
     
     # Check if already transferred
     if lead.get("is_transferred"):
