@@ -728,15 +728,33 @@ async def upload_lost_leads(
                 
                 if existing:
                     existing_stage = existing.get('enquiry_stage', '').lower()
+                    lead_name = lead_data.get('name') or existing.get('name') or existing.get('corporate_name') or 'Unknown'
+                    lead_phone = normalized_phone or phone_number
                     
                     # Skip if already Lost
                     if existing_stage in lost_stages:
-                        skipped_count += 1
+                        skipped_lost_count += 1
+                        if len(skipped_details) < 50:  # Limit to first 50 for response size
+                            skipped_details.append({
+                                "row": idx + 2,
+                                "name": lead_name,
+                                "phone": str(lead_phone),
+                                "reason": "Already Lost",
+                                "current_stage": existing.get('enquiry_stage', '')
+                            })
                         continue
                     
                     # Skip if Won - leave Won leads as is
                     if existing_stage in won_stages:
-                        skipped_count += 1
+                        skipped_won_count += 1
+                        if len(skipped_details) < 50:
+                            skipped_details.append({
+                                "row": idx + 2,
+                                "name": lead_name,
+                                "phone": str(lead_phone),
+                                "reason": "Won - Preserved",
+                                "current_stage": existing.get('enquiry_stage', '')
+                            })
                         continue
                     
                     # For all other stages (Prospecting, Closed-Dropped, Faulty, etc.)
@@ -772,6 +790,14 @@ async def upload_lost_leads(
                         {"$set": update_data}
                     )
                     updated_count += 1
+                    if len(updated_details) < 50:
+                        updated_details.append({
+                            "row": idx + 2,
+                            "name": lead_name,
+                            "phone": str(lead_phone),
+                            "previous_stage": existing.get('enquiry_stage', ''),
+                            "has_lost_info": bool(update_data.get('competitor') or update_data.get('lost_reason') or update_data.get('lost_remarks'))
+                        })
                     logger.info(f"Updated lead {existing['lead_id']} from '{existing_stage}' to Lost status")
                 else:
                     # Create new lead - set all lost status fields
