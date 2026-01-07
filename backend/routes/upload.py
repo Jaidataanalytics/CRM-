@@ -631,6 +631,10 @@ async def upload_lost_leads(
                 lead_data['enquiry_status'] = 'Closed'
                 lead_data['closure_type'] = 'lost'
                 
+                # IMPORTANT: Lost leads from upload do NOT require closure questions
+                # Closure questions are only for leads that become lost through normal workflow
+                lead_data['needs_closure_questions'] = False
+                
                 # Set lost_date to today if not provided
                 if not lead_data.get('lost_date'):
                     lead_data['lost_date'] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
