@@ -1326,6 +1326,11 @@ class LeadManagementTester:
         self.test_duplicate_detection_apis()
         self.test_duplicate_filtering_logic()
         
+        # Run NEW batch management tests
+        self.test_recent_uploads_api()
+        self.test_upload_batch_deletion_and_restore()
+        self.test_lost_leads_duplicate_detection()
+        
         # Print summary
         print("\n" + "=" * 60)
         print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
