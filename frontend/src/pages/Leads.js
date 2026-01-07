@@ -1172,7 +1172,7 @@ const Leads = () => {
                 <div>
                   <h4 className="font-medium text-sm mb-1">Lost Leads Upload</h4>
                   <p className="text-xs text-muted-foreground">
-                    Upload historical lost leads. Duplicates (by phone or enquiry no) will be skipped.
+                    Upload lost leads. Existing leads will be updated to Lost status. Already-lost leads will be skipped.
                   </p>
                 </div>
                 <div className="space-y-2">
