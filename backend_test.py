@@ -795,7 +795,7 @@ class LeadManagementTester:
                 success, response = self.run_test(
                     "Verify Duplicates Excluded from Main List",
                     "GET",
-                    f"leads?phone_number=9999999998",
+                    f"leads?search=9999999998&search_field=phone_number",
                     200,
                     token=self.admin_token
                 )
