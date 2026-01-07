@@ -1993,6 +1993,28 @@ const Leads = () => {
                   </div>
                 </TabsContent>
 
+                {/* Lost Info Tab */}
+                <TabsContent value="lost" className="mt-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs text-muted-foreground">Lost Date</Label><p className="text-sm">{selectedLead.lost_date || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Competitor</Label><p className="text-sm font-medium text-red-600">{selectedLead.competitor || '-'}</p></div>
+                    <div className="col-span-2">
+                      <Label className="text-xs text-muted-foreground">Lost Reason</Label>
+                      <p className="text-sm p-2 bg-red-50 dark:bg-red-900/20 rounded mt-1 border border-red-200 dark:border-red-800">
+                        {selectedLead.lost_reason || '-'}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs text-muted-foreground">Lost Remarks</Label>
+                      <p className="text-sm p-2 bg-muted rounded mt-1">
+                        {selectedLead.lost_remarks || '-'}
+                      </p>
+                    </div>
+                    <div><Label className="text-xs text-muted-foreground">Closure Type</Label><p className="text-sm">{selectedLead.closure_type || '-'}</p></div>
+                    <div><Label className="text-xs text-muted-foreground">Needs Closure Questions</Label><p className="text-sm">{selectedLead.needs_closure_questions === true ? 'Yes' : selectedLead.needs_closure_questions === false ? 'No' : '-'}</p></div>
+                  </div>
+                </TabsContent>
+
                 {/* Other Tab */}
                 <TabsContent value="other" className="mt-4">
                   <div className="grid grid-cols-2 gap-3">
