@@ -366,6 +366,125 @@ async def download_template(
     )
 
 
+# Duplicate Leads Endpoints - MUST be before /{lead_id} route
+@router.get("/duplicates/count")
+async def get_duplicate_leads_count(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get count of duplicate leads"""
+    db = await get_db(request)
+    
+    count = await db.leads.count_documents({
+        "is_duplicate": True,
+        "deleted_at": {"$exists": False}
+    })
+    
+    return {"count": count}
+
+
+@router.get("/duplicates")
+async def get_duplicate_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    search: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500)
+):
+    """Get all leads flagged as duplicates"""
+    db = await get_db(request)
+    
+    query = {
+        "is_duplicate": True,
+        "deleted_at": {"$exists": False}
+    }
+    
+    # Search functionality
+    if search and search.strip():
+        search_term = search.strip()
+        query["$or"] = [
+            {"name": {"$regex": search_term, "$options": "i"}},
+            {"phone_number": {"$regex": search_term, "$options": "i"}},
+            {"enquiry_no": {"$regex": search_term, "$options": "i"}},
+            {"employee_name": {"$regex": search_term, "$options": "i"}},
+            {"corporate_name": {"$regex": search_term, "$options": "i"}}
+        ]
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("duplicate_detected_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "pages": (total + limit - 1) // limit
+    }
+
+
+@router.post("/duplicates/{lead_id}/unflag")
+async def unflag_duplicate(
+    lead_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Remove duplicate flag from a lead (manual override)"""
+    from models.user import UserRole
+    
+    # Only admin/manager can unflag duplicates
+    if current_user.role not in [UserRole.ADMIN, UserRole.MANAGER]:
+        raise HTTPException(status_code=403, detail="Only Admin or Manager can unflag duplicates")
+    
+    db = await get_db(request)
+    
+    result = await db.leads.update_one(
+        {"lead_id": lead_id},
+        {
+            "$set": {
+                "is_duplicate": False,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            },
+            "$unset": {
+                "original_lead_id": "",
+                "duplicate_detected_at": ""
+            }
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    
+    return {"message": "Duplicate flag removed", "lead_id": lead_id}
+
+
+@router.post("/duplicates/run-detection")
+async def run_duplicate_detection(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Manually trigger duplicate detection on all leads"""
+    from models.user import UserRole
+    from utils.duplicate_detector import run_duplicate_detection_migration
+    
+    # Only admin can run detection
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only Admin can run duplicate detection")
+    
+    db = await get_db(request)
+    
+    try:
+        result = await run_duplicate_detection_migration(db)
+        return {
+            "success": True,
+            "message": f"Duplicate detection complete",
+            **result
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to run duplicate detection: {str(e)}")
+
+
 # Closure Questions Endpoints - MUST be before /{lead_id} route
 @router.get("/pending-closure-questions/count")
 async def get_pending_closure_questions_count(
