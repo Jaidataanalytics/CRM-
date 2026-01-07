@@ -2224,6 +2224,106 @@ const Admin = () => {
             </CardContent>
           </Card>
 
+          {/* Recent Uploads Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Recent Uploads (Last 7 Days)
+              </CardTitle>
+              <CardDescription>
+                View and manage recently uploaded data files. You can delete entire upload batches if needed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingUploads ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : recentUploads.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Upload className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No uploads in the last 7 days</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {recentUploads.map((upload) => (
+                    <div
+                      key={upload.activity_id}
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{upload.filename}</span>
+                          <Badge variant={
+                            upload.action === 'lost_leads_upload' ? 'destructive' :
+                            upload.action === 'historical_data_upload' ? 'secondary' : 'outline'
+                          }>
+                            {upload.action === 'lost_leads_upload' ? 'Lost Leads' :
+                             upload.action === 'historical_data_upload' ? 'Historical' : 'Regular'}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          <span>Uploaded: {new Date(upload.created_at).toLocaleString()}</span>
+                          <span className="mx-2">•</span>
+                          <span>Created: {upload.created_count}</span>
+                          {upload.skipped_count > 0 && (
+                            <>
+                              <span className="mx-2">•</span>
+                              <span>Skipped: {upload.skipped_count}</span>
+                            </>
+                          )}
+                          {upload.updated_count > 0 && (
+                            <>
+                              <span className="mx-2">•</span>
+                              <span>Updated: {upload.updated_count}</span>
+                            </>
+                          )}
+                          <span className="mx-2">•</span>
+                          <span className="font-medium">
+                            Current: {upload.current_lead_count} leads
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {upload.can_delete ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUploadBatch(upload.upload_batch_id)}
+                            disabled={deletingBatch === upload.upload_batch_id}
+                          >
+                            {deletingBatch === upload.upload_batch_id ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            <span className="ml-1">Delete</span>
+                          </Button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            {upload.upload_batch_id ? 'No leads remaining' : 'Legacy upload (no batch ID)'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadRecentUploads}
+                    className="w-full mt-2"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Delete Leads Card */}
           <Card className="border-red-200">
             <CardHeader>
