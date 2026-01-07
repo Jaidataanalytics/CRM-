@@ -1613,11 +1613,11 @@ class LeadManagementTester:
                 created_leads.append(response.get('lead_id'))
 
         if len(created_leads) == 2:
-            # Now test competitor analysis with our test data
+            # Now test competitor analysis with our test data (use custom date range to include our test data)
             success, response = self.run_test(
                 "Competitor Analysis with Test Data",
                 "GET",
-                "insights/competitor-analysis?dimension=competitor",
+                "insights/competitor-analysis?dimension=competitor&start_date=2025-01-01&end_date=2025-12-31",
                 200,
                 token=self.admin_token
             )
