@@ -240,19 +240,25 @@ class HoltWintersForecaster(BaseForecaster):
             return ExponentialSmoothing(self.data).predict(periods)
         
         try:
-            # Ensure no zeros for multiplicative seasonality
-            values = [max(1, v) for v in self.values]
-            
-            model = HoltWinters(
-                values,
-                seasonal_periods=self.seasonal_periods,
-                trend='add',
-                seasonal='add',
-                damped_trend=True
-            )
-            fitted = model.fit(optimized=True)
-            forecast = fitted.forecast(periods)
-            return [max(0, f) for f in forecast]
+            import warnings
+            # Suppress convergence warnings - they're not critical for our use case
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=UserWarning)
+                warnings.filterwarnings('ignore', message='.*convergence.*', category=Warning)
+                
+                # Ensure no zeros for multiplicative seasonality
+                values = [max(1, v) for v in self.values]
+                
+                model = HoltWinters(
+                    values,
+                    seasonal_periods=self.seasonal_periods,
+                    trend='add',
+                    seasonal='add',
+                    damped_trend=True
+                )
+                fitted = model.fit(optimized=True)
+                forecast = fitted.forecast(periods)
+                return [max(0, f) for f in forecast]
         except:
             return ExponentialSmoothing(self.data).predict(periods)
 
@@ -270,10 +276,16 @@ class ARIMAForecaster(BaseForecaster):
             return ExponentialSmoothing(self.data).predict(periods)
         
         try:
-            model = ARIMA(self.values, order=self.order)
-            fitted = model.fit()
-            forecast = fitted.forecast(steps=periods)
-            return [max(0, f) for f in forecast]
+            import warnings
+            # Suppress convergence warnings - they're not critical for our use case
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=UserWarning)
+                warnings.filterwarnings('ignore', message='.*convergence.*', category=Warning)
+                
+                model = ARIMA(self.values, order=self.order)
+                fitted = model.fit()
+                forecast = fitted.forecast(steps=periods)
+                return [max(0, f) for f in forecast]
         except:
             return ExponentialSmoothing(self.data).predict(periods)
 
