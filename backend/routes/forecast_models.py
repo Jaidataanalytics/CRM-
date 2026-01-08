@@ -10,7 +10,13 @@ from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 import warnings
+
+# Suppress all warnings globally, especially statsmodels convergence warnings
 warnings.filterwarnings('ignore')
+warnings.filterwarnings('ignore', category=UserWarning)
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings('ignore', message='.*convergence.*')
+warnings.filterwarnings('ignore', message='.*Maximum Likelihood.*')
 
 
 def convert_numpy_types(obj):
