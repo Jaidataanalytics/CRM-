@@ -46,6 +46,9 @@ try:
     from statsmodels.tsa.arima.model import ARIMA
     from statsmodels.tsa.holtwinters import ExponentialSmoothing as HoltWinters
     HAS_STATSMODELS = True
+    # Also suppress statsmodels specific warnings
+    import statsmodels.tools.sm_exceptions as sm_exceptions
+    warnings.filterwarnings('ignore', category=sm_exceptions.ConvergenceWarning)
 except ImportError:
     HAS_STATSMODELS = False
 
