@@ -18,7 +18,7 @@ async def get_db(request: Request):
 async def get_top_performers(
     request: Request,
     current_user: User = Depends(get_current_user),
-    by: str = Query("employee", enum=["employee", "dealer", "state", "area"]),
+    by: str = Query("employee", enum=["employee", "dealer", "state", "area", "source"]),
     metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva", "open", "lost", "calls_placed", "quotations_sent", "call_to_quotation_rate"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -40,7 +40,8 @@ async def get_top_performers(
         "employee": "$employee_name",
         "dealer": "$dealer",
         "state": "$state",
-        "area": "$area"
+        "area": "$area",
+        "source": "$source"
     }.get(by, "$employee_name")
     
     # Open stages - leads still being worked on
