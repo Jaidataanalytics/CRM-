@@ -218,6 +218,7 @@ const Insights = () => {
                 <SelectItem value="employee">By Employee</SelectItem>
                 <SelectItem value="dealer">By Dealer</SelectItem>
                 <SelectItem value="state">By State</SelectItem>
+                <SelectItem value="source">By Source</SelectItem>
               </SelectContent>
             </Select>
             <Select value={metric} onValueChange={setMetric}>
