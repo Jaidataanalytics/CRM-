@@ -175,7 +175,8 @@ const Comparison = () => {
           states: filtersRes.value.data.states || [],
           dealers: filtersRes.value.data.dealers || [],
           areas: filtersRes.value.data.areas || [],
-          employees: filtersRes.value.data.employees || []
+          employees: filtersRes.value.data.employees || [],
+          sources: filtersRes.value.data.sources || []
         });
       }
     } catch (error) {
