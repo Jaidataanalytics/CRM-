@@ -279,7 +279,7 @@ const Comparison = () => {
   };
 
   const getCategoryLabel = (cat) => {
-    const labels = { states: 'State', dealers: 'Dealer', areas: 'Area', employees: 'Employee' };
+    const labels = { states: 'State', dealers: 'Dealer', areas: 'Area', employees: 'Employee', sources: 'Source' };
     return labels[cat] || cat;
   };
 
