@@ -109,13 +109,15 @@ const Comparison = () => {
     states: [],
     dealers: [],
     areas: [],
-    employees: []
+    employees: [],
+    sources: []
   });
   const [availableFilters, setAvailableFilters] = useState({
     states: [],
     dealers: [],
     areas: [],
-    employees: []
+    employees: [],
+    sources: []
   });
   
   // Session-based market data
@@ -123,7 +125,8 @@ const Comparison = () => {
     states: {},
     dealers: {},
     areas: {},
-    employees: {}
+    employees: {},
+    sources: {}
   });
   
   // New entry form
@@ -150,11 +153,12 @@ const Comparison = () => {
       const queryParams = buildQueryParams();
       
       // Load data in parallel but handle individual failures
-      const [statesRes, dealersRes, areasRes, employeesRes, filtersRes] = await Promise.allSettled([
+      const [statesRes, dealersRes, areasRes, employeesRes, sourcesRes, filtersRes] = await Promise.allSettled([
         axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=area&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=employee&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=source&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/filters/all`, { withCredentials: true })
       ]);
       
@@ -162,7 +166,8 @@ const Comparison = () => {
         states: statesRes.status === 'fulfilled' ? statesRes.value.data.performers || [] : [],
         dealers: dealersRes.status === 'fulfilled' ? dealersRes.value.data.performers || [] : [],
         areas: areasRes.status === 'fulfilled' ? areasRes.value.data.performers || [] : [],
-        employees: employeesRes.status === 'fulfilled' ? employeesRes.value.data.performers || [] : []
+        employees: employeesRes.status === 'fulfilled' ? employeesRes.value.data.performers || [] : [],
+        sources: sourcesRes.status === 'fulfilled' ? sourcesRes.value.data.performers || [] : []
       });
       
       if (filtersRes.status === 'fulfilled') {
