@@ -168,11 +168,13 @@ async def get_all_filters(
     areas = await db.leads.distinct("area")
     employees = await db.leads.distinct("employee_name")
     segments = await db.leads.distinct("segment")
+    sources = await db.leads.distinct("source")
     
     return {
         "states": sorted([s for s in states if s]),
         "dealers": sorted([d for d in dealers if d]),
         "areas": sorted([a for a in areas if a]),
         "employees": sorted([e for e in employees if e]),
-        "segments": sorted([s for s in segments if s])
+        "segments": sorted([s for s in segments if s]),
+        "sources": sorted([s for s in sources if s])
     }
