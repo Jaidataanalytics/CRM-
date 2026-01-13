@@ -89,6 +89,29 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ## Completed Work
 
+### Session 7 - Jan 13, 2026 (COMPLETED)
+1. ✅ **Summary Builder / Pivot Table Feature (P0)**:
+   - New "Summary Builder" tab in Insights page
+   - Dynamic pivot table with:
+     - Metric selector (Total Leads, Total Qty, Won Leads, Lost Leads, Conversion %)
+     - Time frame selector (Monthly, Quarterly, Yearly)
+     - Dimension selector (Employee, Dealer, State, Location, Segment, Source)
+   - Pivot table shows all rows with period columns and totals
+   - Insight cards: Top Performer (trophy), Trend analysis, Best Period
+   - Export to CSV functionality
+   - Backend: `/api/insights/summary-builder` endpoint
+
+2. ✅ **Area → Location Rename**:
+   - Changed "Area Comparison" tab to "Location Comparison" in Comparison page
+   - Updated backend `/api/insights/top-performers` to support `by=location`
+   - Updated `/api/filters/all` to return `locations` instead of `areas`
+   - Added new `/api/filters/locations` endpoint
+
+3. ✅ **Bug Fix**: Fixed KeyError in summary-builder when data is empty
+   - Added null checks for r.get('_id') and nested dimension/time_period
+
+4. ✅ All tests passed (12/12 backend, frontend verified)
+
 ### Session 6 - Jan 13, 2026 (COMPLETED)
 1. ✅ **"Old Enquiries Closed" KPI**: New KPI card on Dashboard showing leads won in date range but with older enquiry_date
 
