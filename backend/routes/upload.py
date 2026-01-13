@@ -368,20 +368,44 @@ async def upload_leads(
                 # Normalize the lead data using fuzzy matching
                 lead_data = normalize_lead_data(lead_data, upload_leads._existing_values)
                 
-                # Build unique identifier query using enquiry_no + phone_number combination
+                # ============================================
+                # PHONE-BASED DUPLICATE DETECTION & MERGE
+                # ============================================
+                # PRIMARY: Match by phone number (normalized)
+                # SECONDARY: Match by enquiry_no if phone doesn't match
                 existing = None
-                if enquiry_no and phone_number:
-                    # Check by both enquiry_no AND phone_number
+                match_type = None
+                
+                if phone_number:
+                    # Normalize phone number for matching
+                    normalized_phone = duplicate_detector.normalize_phone(phone_number)
+                    if normalized_phone:
+                        # Try exact match first, then regex for partial match
+                        existing = await db.leads.find_one({
+                            "$or": [
+                                {"phone_number": normalized_phone},
+                                {"phone_number": str(phone_number).strip()},
+                                {"phone_number": {"$regex": f"{normalized_phone}$"}}
+                            ],
+                            "deleted_at": {"$exists": False},
+                            "$and": [
+                                {"$or": [
+                                    {"is_duplicate": {"$exists": False}},
+                                    {"is_duplicate": False}
+                                ]}
+                            ]
+                        }, {"_id": 0})
+                        if existing:
+                            match_type = "phone"
+                
+                # Fallback: Try enquiry_no if no phone match
+                if not existing and enquiry_no:
                     existing = await db.leads.find_one({
-                        "enquiry_no": str(enquiry_no),
-                        "phone_number": str(phone_number)
-                    })
-                elif enquiry_no:
-                    # Fallback: check by enquiry_no only
-                    existing = await db.leads.find_one({"enquiry_no": str(enquiry_no)})
-                elif phone_number:
-                    # Fallback: check by phone_number only
-                    existing = await db.leads.find_one({"phone_number": str(phone_number)})
+                        "enquiry_no": str(enquiry_no).strip(),
+                        "deleted_at": {"$exists": False}
+                    }, {"_id": 0})
+                    if existing:
+                        match_type = "enquiry_no"
                 
                 # Check if this is a lost/closure update that needs questions
                 # Won stages: Closed-Won, Order Booked
@@ -411,8 +435,9 @@ async def upload_leads(
                     lead_data['closure_type'] = 'lost'
                 
                 if existing:
-                    # Update existing lead
-                    lead_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+                    # MERGE existing lead with incoming data using duplicate_detector logic
+                    merge_updates = duplicate_detector.merge_leads(existing, lead_data)
+                    merge_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
                     
                     # Check if this update is changing status to Lost (was not lost before)
                     old_stage = existing.get('enquiry_stage', '')
@@ -423,20 +448,35 @@ async def upload_leads(
                     was_lost = was_closed and not was_won and not was_faulty
                     
                     if is_lost_closure and not was_lost:
-                        lead_data['needs_closure_questions'] = True
-                        lead_data['closure_type'] = 'lost'
+                        merge_updates['needs_closure_questions'] = True
+                        merge_updates['closure_type'] = 'lost'
+                    
+                    # Preserve or update stage if provided
+                    if lead_data.get('enquiry_stage'):
+                        merge_updates['enquiry_stage'] = lead_data['enquiry_stage']
+                    if lead_data.get('enquiry_status'):
+                        merge_updates['enquiry_status'] = lead_data['enquiry_status']
+                    
+                    # Update qualified status based on merged data
+                    merged_lead = {**existing, **merge_updates}
+                    merge_updates['is_qualified'] = calculate_qualified_status(merged_lead)
                     
                     await db.leads.update_one(
                         {"lead_id": existing["lead_id"]},
-                        {"$set": lead_data}
+                        {"$set": merge_updates}
                     )
                     updated_count += 1
                 else:
                     # Create new lead
                     uploader_name = current_user.name or current_user.email or "Unknown User"
+                    
+                    # Calculate qualified status for new lead
+                    is_qualified = calculate_qualified_status(lead_data)
+                    
                     lead_doc = {
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                         **lead_data,
+                        "is_qualified": is_qualified,
                         "added_by": uploader_name,
                         "upload_batch_id": upload_batch_id,  # Track which upload this came from
                         "created_at": datetime.now(timezone.utc).isoformat(),
