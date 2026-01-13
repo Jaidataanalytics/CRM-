@@ -1205,7 +1205,7 @@ async def upload_sales_order(
                             "so_no": so_no,
                             "name": lead_data.get('name') or existing.get('name'),
                             "phone": phone,
-                            "qty": final_qty,
+                            "qty": int(final_qty),
                             "action": "updated",
                             "match_type": match_type,
                             "dispatch_status": merge_updates.get('dispatch_status', 'pending')
@@ -1216,6 +1216,9 @@ async def upload_sales_order(
                     
                     # Ensure phone is stored
                     lead_data['phone_number'] = phone
+                    
+                    # Convert all numpy types to native Python types
+                    lead_data = convert_numpy_types(lead_data)
                     
                     # Calculate qualified status
                     lead_data['is_qualified'] = calculate_qualified_status(lead_data)
@@ -1229,6 +1232,9 @@ async def upload_sales_order(
                         "created_at": now,
                         "updated_at": now
                     }
+                    
+                    # Final clean to ensure no numpy types
+                    lead_doc = convert_numpy_types(lead_doc)
                     
                     await db.leads.insert_one(lead_doc)
                     created_count += 1
