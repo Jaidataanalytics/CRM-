@@ -249,7 +249,7 @@ async def get_kpis(
     
     # Pending dispatch qty - same logic
     pending_dispatch_qty_pipeline = [
-        {"$match": {**won_base_query, "dispatch_status": "pending"}},
+        {"$match": {**qty_won_base_query, "dispatch_status": "pending"}},
         {"$group": {"_id": None, "pending_qty": {"$sum": {
             "$cond": [
                 {"$and": [
