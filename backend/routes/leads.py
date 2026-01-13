@@ -639,7 +639,7 @@ async def get_quotations(
     search: Optional[str] = None
 ):
     """Get leads with quotations sent"""
-    from utils.indian_fy import get_indian_fy_dates
+    from routes.kpis import get_indian_fy_dates
     db = await get_db(request)
     start_date, end_date = get_indian_fy_dates()
     
