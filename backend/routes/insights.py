@@ -244,7 +244,14 @@ async def get_closure_analysis(
     question_stats = {}
     
     for lead in leads_with_answers:
-        for answer in lead.get("closure_answers", []):
+        closure_answers = lead.get("closure_answers")
+        # Handle None or non-list values
+        if not closure_answers or not isinstance(closure_answers, list):
+            continue
+            
+        for answer in closure_answers:
+            if not answer or not isinstance(answer, dict):
+                continue
             q_id = answer.get("question_id")
             question = answer.get("question", question_map.get(q_id, "Unknown Question"))
             ans_value = answer.get("answer", "Not Answered")
