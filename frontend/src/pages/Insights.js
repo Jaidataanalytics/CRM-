@@ -612,7 +612,7 @@ const Insights = () => {
           ) : closureAnalysis ? (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -631,26 +631,9 @@ const Insights = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">With Lost Data</p>
-                        <p className="text-2xl font-bold text-blue-600">
-                          {(closureAnalysis.summary.leads_with_lost_data || 0).toLocaleString()}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {closureAnalysis.summary.lost_data_rate || 0}%
-                        </p>
-                      </div>
-                      <Users className="h-8 w-8 text-blue-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">With Closure Answers</p>
+                        <p className="text-sm text-muted-foreground">With Closure Data</p>
                         <p className="text-2xl font-bold text-green-600">
-                          {closureAnalysis.summary.leads_with_closure_answers.toLocaleString()}
+                          {(closureAnalysis.summary.leads_with_closure_data || 0).toLocaleString()}
                         </p>
                       </div>
                       <CheckCircle2 className="h-8 w-8 text-green-500" />
@@ -662,9 +645,9 @@ const Insights = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">Pending Answers</p>
+                        <p className="text-sm text-muted-foreground">Pending Closure</p>
                         <p className="text-2xl font-bold text-orange-600">
-                          {closureAnalysis.summary.pending_closure_questions.toLocaleString()}
+                          {(closureAnalysis.summary.pending_closure || 0).toLocaleString()}
                         </p>
                       </div>
                       <AlertTriangle className="h-8 w-8 text-orange-500" />
@@ -677,7 +660,7 @@ const Insights = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-muted-foreground">Completion Rate</p>
-                        <p className={`text-2xl font-bold ${closureAnalysis.summary.completion_rate >= 70 ? 'text-green-600' : 'text-orange-600'}`}>
+                        <p className={`text-2xl font-bold ${closureAnalysis.summary.completion_rate >= 50 ? 'text-green-600' : 'text-orange-600'}`}>
                           {closureAnalysis.summary.completion_rate}%
                         </p>
                       </div>
@@ -690,14 +673,53 @@ const Insights = () => {
                 </Card>
               </div>
 
-              {/* Question Analysis */}
-              {closureAnalysis.question_analysis.length > 0 ? (
+              {/* Closure Questions Analysis (Competitor, Lost Reason, Lost Remarks) */}
+              {closureAnalysis.question_analysis?.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {closureAnalysis.question_analysis.map((q, idx) => (
                     <Card key={idx}>
                       <CardHeader className="pb-3">
                         <CardTitle className="text-base flex items-center gap-2">
                           <HelpCircle className="h-4 w-4 text-primary" />
+                          {q.question}
+                        </CardTitle>
+                        <CardDescription>
+                          {q.total_responses} responses
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {q.top_answers?.slice(0, 10).map((ans, ansIdx) => (
+                            <div key={ansIdx} className="space-y-1">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="truncate max-w-[200px]" title={ans.answer}>
+                                  {ans.answer || 'Not Answered'}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {ans.count} ({ans.percentage}%)
+                                </span>
+                              </div>
+                              <Progress value={ans.percentage} className="h-2" />
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8 text-muted-foreground">
+                      <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <h3 className="font-medium mb-2">No Closure Data Yet</h3>
+                      <p className="text-sm">
+                        Upload Lost Leads with Competitor and Lost Reason data to see analysis here.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
                           {q.question}
                         </CardTitle>
                         <CardDescription>
