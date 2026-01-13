@@ -648,6 +648,38 @@ const Leads = () => {
     }
   };
 
+  // Sales Order upload handler
+  const handleSalesOrderUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingSalesOrder(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      console.log('Starting sales order upload...');
+      const res = await axios.post(`${API}/upload/sales-order`, formData, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      console.log('Sales order upload response:', res.data);
+      
+      // Show summary modal with detailed results
+      setSoUploadSummaryData(res.data);
+      setSoUploadSummaryOpen(true);
+      
+      loadLeads();
+    } catch (error) {
+      console.error('Sales order upload error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to upload sales order file');
+    } finally {
+      setUploadingSalesOrder(false);
+      if (salesOrderFileInputRef.current) salesOrderFileInputRef.current.value = '';
+    }
+  };
+
   // Bulk delete functions
   const toggleLeadSelection = (leadId) => {
     setSelectedLeads(prev => {
