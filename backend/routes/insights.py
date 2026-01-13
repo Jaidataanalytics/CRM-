@@ -359,14 +359,83 @@ async def get_closure_analysis(
     
     by_dealer = await db.leads.aggregate(dealer_pipeline).to_list(15)
     
+    # ============ COMPETITOR ANALYSIS ============
+    # Get competitor distribution from lost leads (Win Reason → competitor field)
+    competitor_pipeline = [
+        {
+            "$match": {
+                **lost_stages_query,
+                "competitor": {"$exists": True, "$ne": None, "$ne": ""},
+                "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$competitor",
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    competitor_data = await db.leads.aggregate(competitor_pipeline).to_list(15)
+    
+    # ============ LOST REASON ANALYSIS ============
+    # Get lost reason distribution (Win Remarks → lost_reason field)
+    lost_reason_pipeline = [
+        {
+            "$match": {
+                **lost_stages_query,
+                "lost_reason": {"$exists": True, "$ne": None, "$ne": ""},
+                "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {
+            "$group": {
+                "_id": "$lost_reason",
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    lost_reason_data = await db.leads.aggregate(lost_reason_pipeline).to_list(15)
+    
+    # ============ LOST REMARKS SUMMARY ============
+    # Count leads with lost remarks
+    leads_with_lost_data = await db.leads.count_documents({
+        **lost_stages_query,
+        "$or": [
+            {"competitor": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"lost_reason": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"lost_remarks": {"$exists": True, "$ne": None, "$ne": ""}}
+        ],
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    })
+    
     return {
         "summary": {
             "total_lost_leads": total_lost_leads,
             "leads_with_closure_answers": leads_with_closure_answers,
+            "leads_with_lost_data": leads_with_lost_data,
             "pending_closure_questions": pending_closure_questions,
-            "completion_rate": round((leads_with_closure_answers / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0
+            "completion_rate": round((leads_with_closure_answers / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0,
+            "lost_data_rate": round((leads_with_lost_data / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0
         },
         "question_analysis": sorted(question_analysis, key=lambda x: x["total_responses"], reverse=True),
+        "competitor_analysis": [
+            {"competitor": c["_id"] or "Unknown", "count": c["count"], "kva_lost": round(c["total_kva"])}
+            for c in competitor_data if c["_id"]
+        ],
+        "lost_reason_analysis": [
+            {"reason": r["_id"] or "Unknown", "count": r["count"], "kva_lost": round(r["total_kva"])}
+            for r in lost_reason_data if r["_id"]
+        ],
         "by_state": [
             {"state": s["_id"] or "Unknown", "count": s["count"], "kva_lost": round(s["total_kva"])}
             for s in by_state if s["_id"]
