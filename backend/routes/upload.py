@@ -918,6 +918,331 @@ async def get_lost_leads_template(
     )
 
 
+# Sales Order column mapping
+SALES_ORDER_COLUMN_MAPPING = {
+    # Zone/Location
+    "Zone": "zone",
+    "State": "state",
+    "Dealer": "dealer",
+    "Branch": "branch",
+    # Employee
+    "Employee Code": "employee_code",
+    "Employee Name": "employee_name",
+    "Employee Status": "employee_status",
+    # Sales Order fields
+    "Sales Order Number": "sales_order_no",
+    "Sales Order Date": "sales_order_date",
+    "Sales Order Cancellation Date": "sales_order_cancellation_date",
+    "Sales Order Status": "sales_order_status",
+    "Sales Order Ageing": "sales_order_ageing",
+    # Product
+    "Model": "model",
+    "KVA": "kva",
+    "Phase": "phase",
+    "Qty": "qty",
+    "Model Description": "model_description",
+    # Customer
+    "Customer Code": "customer_code",
+    "Customer Name": "name",
+    "Phone/Mobile Number": "phone_number",
+    "Customer Address": "address",
+    "Tehsil": "tehsil",
+    "District": "district",
+    "Pincode": "pincode",
+    # PO fields
+    "PO Number": "po_number",
+    "PO Date": "po_date",
+    "Installation in Scope": "installation_in_scope",
+    # Enquiry reference
+    "Enquiry no": "enquiry_no",
+    "Enquiry Date": "enquiry_date",
+    # Quotation
+    "Quotation reference No": "quotation_no",
+    "Quotation Date": "quotation_date",
+    "Quotation Amount": "quotation_amount",
+    # Allocation/Dispatch
+    "Stock Allocation Status": "stock_allocation_status",
+    "Promise Delivery Date": "promise_delivery_date",
+    "Invoice No": "invoice_no",
+    "Invoice Date": "invoice_date",
+    "Ageing": "ageing",
+    "OEM Order Date": "oem_order_date",
+    "DispatchDate": "dispatch_date",
+}
+
+
+@router.post("/sales-order")
+async def upload_sales_order(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload Sales Order data from Excel file.
+    
+    Key behavior:
+    1. Ignore rows with Stock Allocation Status = "Unallotted"
+    2. Match by Enquiry No first, then by Phone Number
+    3. Group by Sales Order Number + Phone to calculate qty
+    4. Multiple entries = multiple qty (gensets)
+    5. Mark matched leads as "Closed-Won"
+    6. Auto-mark dispatched if has DispatchDate or status indicates shipped
+    """
+    db = await get_db(request)
+    
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) are supported")
+    
+    upload_batch_id = f"so_upload_{uuid.uuid4().hex[:8]}"
+    
+    try:
+        import pandas as pd
+        from utils.duplicate_detector import duplicate_detector, calculate_qualified_status
+        
+        content = await file.read()
+        df = pd.read_excel(io.BytesIO(content))
+        
+        if df.empty:
+            raise HTTPException(status_code=400, detail="The uploaded file is empty")
+        
+        # Filter out Unallotted rows
+        if 'Stock Allocation Status' in df.columns:
+            original_count = len(df)
+            df = df[df['Stock Allocation Status'].str.lower() != 'unallotted']
+            filtered_count = original_count - len(df)
+            logger.info(f"Filtered out {filtered_count} unallotted rows")
+        
+        created_count = 0
+        updated_count = 0
+        skipped_count = 0
+        errors = []
+        processed_details = []
+        
+        # Group by Sales Order Number + Phone to calculate qty
+        # First, normalize phone numbers
+        df['_normalized_phone'] = df.apply(
+            lambda row: duplicate_detector.normalize_phone(
+                row.get('Phone/Mobile Number') or row.get('phone_number')
+            ), axis=1
+        )
+        
+        # Group by SO Number + Phone
+        so_groups = df.groupby(['Sales Order Number', '_normalized_phone'])
+        
+        now = datetime.now(timezone.utc).isoformat()
+        
+        for (so_no, phone), group in so_groups:
+            try:
+                if not so_no or not phone:
+                    errors.append({"so_no": str(so_no), "error": "Missing SO Number or Phone"})
+                    continue
+                
+                # Calculate qty: MAX(row_count, sum of Qty column)
+                row_count = len(group)
+                qty_sum = group['Qty'].sum() if 'Qty' in group.columns else row_count
+                final_qty = max(row_count, int(qty_sum) if pd.notna(qty_sum) else row_count)
+                
+                # Collect engine numbers (Invoice No can serve as unique identifier)
+                engine_numbers = []
+                if 'Invoice No' in group.columns:
+                    engine_numbers = [str(inv) for inv in group['Invoice No'].dropna().unique() if inv]
+                
+                # Get first row for other data (they should be same for same SO+Phone)
+                first_row = group.iloc[0]
+                
+                # Map columns to lead data
+                lead_data = {}
+                for excel_col, db_field in SALES_ORDER_COLUMN_MAPPING.items():
+                    if excel_col in group.columns:
+                        val = first_row.get(excel_col)
+                        if db_field in ['sales_order_date', 'enquiry_date', 'po_date', 
+                                       'quotation_date', 'invoice_date', 'promise_delivery_date',
+                                       'oem_order_date', 'dispatch_date', 'sales_order_cancellation_date']:
+                            lead_data[db_field] = parse_date(val)
+                        elif db_field in ['kva', 'quotation_amount']:
+                            if pd.notna(val):
+                                try:
+                                    lead_data[db_field] = float(val)
+                                except (ValueError, TypeError):
+                                    lead_data[db_field] = None
+                        else:
+                            lead_data[db_field] = clean_value(val)
+                
+                # Set won qty and engine numbers
+                lead_data['won_qty'] = final_qty
+                if engine_numbers:
+                    lead_data['engine_numbers'] = engine_numbers
+                
+                # Set enquiry stage to Closed-Won
+                lead_data['enquiry_stage'] = 'Closed-Won'
+                lead_data['enquiry_status'] = 'Closed'
+                lead_data['closure_type'] = 'won'
+                
+                # Check dispatch status
+                so_status = str(first_row.get('Sales Order Status', '')).lower()
+                dispatch_date = parse_date(first_row.get('DispatchDate'))
+                
+                if dispatch_date or 'ship' in so_status or 'invoice' in so_status:
+                    lead_data['dispatch_status'] = 'dispatched'
+                    if dispatch_date:
+                        lead_data['dispatch_date'] = dispatch_date
+                else:
+                    lead_data['dispatch_status'] = 'pending'
+                
+                # Won date = Invoice Date
+                if lead_data.get('invoice_date'):
+                    lead_data['enquiry_closure_date'] = lead_data['invoice_date']
+                
+                # Try to match existing lead
+                enquiry_no = lead_data.get('enquiry_no')
+                existing = None
+                match_type = None
+                
+                # First try by Enquiry No
+                if enquiry_no:
+                    existing = await db.leads.find_one({
+                        "enquiry_no": enquiry_no.strip(),
+                        "deleted_at": {"$exists": False}
+                    }, {"_id": 0})
+                    if existing:
+                        match_type = "enquiry_no"
+                
+                # Then try by Phone
+                if not existing and phone:
+                    existing = await db.leads.find_one({
+                        "$or": [
+                            {"phone_number": phone},
+                            {"phone_number": {"$regex": f"{phone}$"}}
+                        ],
+                        "deleted_at": {"$exists": False},
+                        "$or": [
+                            {"is_duplicate": {"$exists": False}},
+                            {"is_duplicate": False}
+                        ]
+                    }, {"_id": 0})
+                    if existing:
+                        match_type = "phone"
+                
+                if existing:
+                    # Merge data into existing lead
+                    merge_updates = duplicate_detector.merge_leads(existing, lead_data)
+                    
+                    # Always update these fields for SO
+                    merge_updates['enquiry_stage'] = 'Closed-Won'
+                    merge_updates['enquiry_status'] = 'Closed'
+                    merge_updates['closure_type'] = 'won'
+                    merge_updates['won_qty'] = final_qty
+                    merge_updates['sales_order_no'] = so_no
+                    merge_updates['so_upload_batch_id'] = upload_batch_id
+                    merge_updates['updated_at'] = now
+                    
+                    if dispatch_date or 'ship' in so_status or 'invoice' in so_status:
+                        merge_updates['dispatch_status'] = 'dispatched'
+                        if dispatch_date:
+                            merge_updates['dispatch_date'] = dispatch_date
+                    
+                    if engine_numbers:
+                        existing_engines = existing.get('engine_numbers', [])
+                        combined_engines = list(set(existing_engines + engine_numbers))
+                        merge_updates['engine_numbers'] = combined_engines
+                    
+                    # Calculate qualified status
+                    merged_lead = {**existing, **merge_updates}
+                    merge_updates['is_qualified'] = calculate_qualified_status(merged_lead)
+                    
+                    await db.leads.update_one(
+                        {"lead_id": existing["lead_id"]},
+                        {"$set": merge_updates}
+                    )
+                    updated_count += 1
+                    
+                    if len(processed_details) < 50:
+                        processed_details.append({
+                            "so_no": so_no,
+                            "name": lead_data.get('name') or existing.get('name'),
+                            "phone": phone,
+                            "qty": final_qty,
+                            "action": "updated",
+                            "match_type": match_type,
+                            "dispatch_status": merge_updates.get('dispatch_status', 'pending')
+                        })
+                else:
+                    # Create new lead
+                    uploader_name = current_user.name or current_user.email or "Unknown User"
+                    
+                    # Ensure phone is stored
+                    lead_data['phone_number'] = phone
+                    
+                    # Calculate qualified status
+                    lead_data['is_qualified'] = calculate_qualified_status(lead_data)
+                    
+                    lead_doc = {
+                        "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
+                        **lead_data,
+                        "added_by": f"Sales Order Import - {uploader_name}",
+                        "upload_batch_id": upload_batch_id,
+                        "so_upload_batch_id": upload_batch_id,
+                        "created_at": now,
+                        "updated_at": now
+                    }
+                    
+                    await db.leads.insert_one(lead_doc)
+                    created_count += 1
+                    
+                    if len(processed_details) < 50:
+                        processed_details.append({
+                            "so_no": so_no,
+                            "name": lead_data.get('name'),
+                            "phone": phone,
+                            "qty": final_qty,
+                            "action": "created",
+                            "dispatch_status": lead_data.get('dispatch_status', 'pending')
+                        })
+                    
+            except Exception as e:
+                logger.error(f"SO row error for {so_no}: {e}")
+                errors.append({"so_no": str(so_no), "error": str(e)})
+                continue
+        
+        # Log activity
+        activity = ActivityLog(
+            user_id=current_user.user_id,
+            action="sales_order_upload",
+            resource_type="lead",
+            details={
+                "upload_batch_id": upload_batch_id,
+                "filename": file.filename,
+                "created": created_count,
+                "updated": updated_count,
+                "errors": len(errors)
+            }
+        )
+        activity_doc = activity.model_dump()
+        activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+        await db.activity_logs.insert_one(activity_doc)
+        
+        total_qty = sum(d.get('qty', 0) for d in processed_details)
+        
+        return {
+            "success": True,
+            "created": created_count,
+            "updated": updated_count,
+            "total_qty": total_qty,
+            "processed_details": processed_details,
+            "errors": errors[:10] if errors else [],
+            "total_errors": len(errors),
+            "message": f"Sales Orders processed: {created_count} new leads, {updated_count} updated to Won, Total Qty: {total_qty}"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Sales order upload error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process file: {str(e)}")
+
+
+
+
 @router.get("/template")
 async def get_upload_template(
     current_user: User = Depends(get_current_user)
