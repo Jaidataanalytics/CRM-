@@ -22,7 +22,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Users, Building, MapPin, XCircle, AlertTriangle, CheckCircle2, HelpCircle, RefreshCw } from 'lucide-react';
+import { Trophy, Users, Building, MapPin, XCircle, AlertTriangle, CheckCircle2, HelpCircle, RefreshCw, LayoutGrid, TrendingUp, TrendingDown, Lightbulb, Download } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
