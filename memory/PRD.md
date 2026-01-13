@@ -89,6 +89,22 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ## Completed Work
 
+### Session 6 - Jan 13, 2026 (COMPLETED)
+1. ✅ **"Old Enquiries Closed" KPI**:
+   - New KPI card on Dashboard showing leads won in selected date range but with `enquiry_date` from before the range
+   - Displays both Qty and Lead count (e.g., "78 Qty (75 Leads)")
+   - Helps track sales closing from older pipeline leads
+   - Backend: `/api/kpis` now returns `old_enquiries_closed` and `old_enquiries_closed_qty`
+   - Frontend: New KPI card with History icon in purple color
+
+2. ✅ **Phone-Based Duplicate Detection & Merge for Enquiry Upload**:
+   - Updated `/api/upload/leads` endpoint to use phone number as PRIMARY identifier
+   - Uses `DuplicateDetector.merge_leads()` for intelligent data merging
+   - Merge rules: empty fields filled from incoming data, text fields concatenated, lists combined
+   - Preserves original `enquiry_no`, stores duplicates in `duplicate_enquiry_nos` array
+   - Auto-calculates `is_qualified` status on merge
+   - Fallback to `enquiry_no` matching if phone doesn't match
+
 ### Session 5 - Jan 5, 2026 (COMPLETED)
 1. ✅ **Compare Forecasts Page**:
    - New page at /compare-forecasts
@@ -127,9 +143,16 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Closure consistency fix
 - Save/View projections
 
+## Upcoming Tasks
+- **Update Lost Leads Upload with new merge logic (P1)**: Ensure Lost Leads upload uses the same phone-based merge pattern
+- **Map Quotation/Dispatch data to respective pages (P1)**: Connect SO file data to dedicated pages
+- **Verify Dispatch page integration (P1)**: Ensure dispatch data displays correctly
+
 ## Future/Backlog Tasks
+- Manual 'Qualified' Toggle (P2)
 - Detailed audit logs (P2)
 - Refactor Forecast.js into smaller components (P2)
+- Refactor `upload.py` and `Leads.js` (growing too large)
 
 ## Credentials
 - **Admin**: admin / admin123
