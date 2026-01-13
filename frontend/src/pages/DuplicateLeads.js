@@ -219,7 +219,7 @@ const DuplicateLeads = () => {
     }
   };
 
-  if (loading && leads.length === 0) {
+  if (loading && leads.length === 0 && activeTab === 'duplicates') {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
@@ -233,31 +233,60 @@ const DuplicateLeads = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Copy className="h-8 w-8 text-orange-500" />
-            Duplicate Leads
+            <Database className="h-8 w-8 text-orange-500" />
+            Data Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Leads identified as potential duplicates based on Phone + Employee Name + Corporate Name
+            Manage duplicate leads and view data consolidation history
           </p>
         </div>
-        <div className="flex gap-2">
-          {/* Search */}
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search duplicates..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-48"
-              />
-              {searchQuery && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
-                  onClick={clearSearch}
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="duplicates" className="flex items-center gap-2">
+            <Copy className="h-4 w-4" />
+            Duplicate Leads ({totalDuplicates})
+          </TabsTrigger>
+          <TabsTrigger value="merge-history" className="flex items-center gap-2">
+            <GitMerge className="h-4 w-4" />
+            Merge History ({totalMerged})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Duplicates Tab */}
+        <TabsContent value="duplicates" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Leads identified as potential duplicates based on Phone + Employee Name + Corporate Name
+            </p>
+            <div className="flex gap-2">
+              {/* Search */}
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search duplicates..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 w-48"
+                  />
+                  {searchQuery && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={clearSearch}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <Button type="submit" variant="secondary" size="sm">
+                  Search
+                </Button>
+              </form>
                 >
                   <X className="h-3 w-3" />
                 </Button>
