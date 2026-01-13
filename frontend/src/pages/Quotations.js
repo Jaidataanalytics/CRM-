@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Quotations = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('all');
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
