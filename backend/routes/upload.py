@@ -1119,14 +1119,16 @@ async def upload_sales_order(
                 # Then try by Phone
                 if not existing and phone:
                     existing = await db.leads.find_one({
-                        "$or": [
-                            {"phone_number": phone},
-                            {"phone_number": {"$regex": f"{phone}$"}}
-                        ],
-                        "deleted_at": {"$exists": False},
-                        "$or": [
-                            {"is_duplicate": {"$exists": False}},
-                            {"is_duplicate": False}
+                        "$and": [
+                            {"$or": [
+                                {"phone_number": phone},
+                                {"phone_number": {"$regex": f"{phone}$"}}
+                            ]},
+                            {"deleted_at": {"$exists": False}},
+                            {"$or": [
+                                {"is_duplicate": {"$exists": False}},
+                                {"is_duplicate": False}
+                            ]}
                         ]
                     }, {"_id": 0})
                     if existing:
