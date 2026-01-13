@@ -138,7 +138,7 @@ const Insights = () => {
     try {
       const queryParams = buildQueryParams();
       const res = await axios.get(
-        `${API}/insights/summary-builder?metric=${summaryMetric}&time_frame=${summaryTimeFrame}&dimension=${summaryDimension}&${queryParams}`,
+        `${API}/insights/summary-builder?metric=${summaryMetric}&time_frame=${summaryTimeFrame}&dimension=${summaryDimension}&compare_historical=${compareHistorical}&${queryParams}`,
         { withCredentials: true }
       );
       setSummaryData(res.data);
@@ -152,7 +152,7 @@ const Insights = () => {
   // Load summary builder when params change
   useEffect(() => {
     loadSummaryBuilder();
-  }, [buildQueryParams, summaryMetric, summaryTimeFrame, summaryDimension]);
+  }, [buildQueryParams, summaryMetric, summaryTimeFrame, summaryDimension, compareHistorical]);
 
   const exportSummaryToCSV = () => {
     if (!summaryData?.pivot_table) return;
