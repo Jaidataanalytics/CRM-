@@ -88,8 +88,13 @@ const DuplicateLeads = () => {
   const isManager = user?.role === 'manager';
 
   useEffect(() => {
-    loadDuplicates();
-  }, [page, searchQuery]);
+    if (activeTab === 'duplicates') {
+      loadDuplicates();
+    } else if (activeTab === 'merge-history') {
+      loadMergeHistory();
+      loadMergeSummary();
+    }
+  }, [activeTab, page, searchQuery, mergePage, mergeSearchQuery]);
 
   const loadDuplicates = async () => {
     setLoading(true);
@@ -108,6 +113,35 @@ const DuplicateLeads = () => {
       toast.error('Failed to load duplicate leads');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMergeHistory = async () => {
+    setMergeLoading(true);
+    try {
+      let url = `${API}/leads/merge-history?page=${mergePage}&limit=50`;
+      if (mergeSearchQuery.trim()) {
+        url += `&search=${encodeURIComponent(mergeSearchQuery.trim())}`;
+      }
+      
+      const res = await axios.get(url, { withCredentials: true });
+      setMergedLeads(res.data.leads || []);
+      setTotalMerged(res.data.total || 0);
+      setMergeTotalPages(res.data.pages || 1);
+    } catch (error) {
+      console.error('Error loading merge history:', error);
+      toast.error('Failed to load merge history');
+    } finally {
+      setMergeLoading(false);
+    }
+  };
+
+  const loadMergeSummary = async () => {
+    try {
+      const res = await axios.get(`${API}/leads/merge-history/summary`, { withCredentials: true });
+      setMergeSummary(res.data);
+    } catch (error) {
+      console.error('Error loading merge summary:', error);
     }
   };
 
