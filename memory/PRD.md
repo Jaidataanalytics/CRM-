@@ -96,6 +96,24 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ## Completed Work
 
+### Session 8 - Jan 13, 2026 (COMPLETED)
+1. ✅ **YoY Historical Comparison Toggle in Summary Builder (P0)**:
+   - New toggle "YoY Comparison" with History icon
+   - When enabled, table shows: Current | Prev | YoY% columns for each period
+   - YoY insight card shows growth/decline percentage
+   - Green up arrows for positive YoY, red down arrows for negative
+   - Works with all metrics, time frames, and dimensions
+   - CSV export includes YoY data when toggle is on
+   - Backend: `compare_historical=true` parameter on `/api/insights/summary-builder`
+
+2. ✅ **Quotations Linked to Leads (P0)**:
+   - Added "View Lead" button with Eye icon in Quotations table
+   - Shows Enquiry No column for reference
+   - Clicking navigates to Leads page with search prefilled
+   - Entire row is clickable for navigation
+
+3. ✅ All 15 tests passed (15/15 backend, frontend verified)
+
 ### Session 7 - Jan 13, 2026 (COMPLETED)
 1. ✅ **Summary Builder / Pivot Table Feature (P0)**:
    - New "Summary Builder" tab in Insights page
