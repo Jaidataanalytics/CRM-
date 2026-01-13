@@ -374,7 +374,6 @@ async def upload_leads(
                 # PRIMARY: Match by phone number (normalized)
                 # SECONDARY: Match by enquiry_no if phone doesn't match
                 existing = None
-                match_type = None
                 
                 if phone_number:
                     # Normalize phone number for matching
@@ -395,8 +394,6 @@ async def upload_leads(
                                 ]}
                             ]
                         }, {"_id": 0})
-                        if existing:
-                            match_type = "phone"
                 
                 # Fallback: Try enquiry_no if no phone match
                 if not existing and enquiry_no:
@@ -404,8 +401,6 @@ async def upload_leads(
                         "enquiry_no": str(enquiry_no).strip(),
                         "deleted_at": {"$exists": False}
                     }, {"_id": 0})
-                    if existing:
-                        match_type = "enquiry_no"
                 
                 # Check if this is a lost/closure update that needs questions
                 # Won stages: Closed-Won, Order Booked
