@@ -50,7 +50,7 @@ import {
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const KPICard = ({ title, value, icon: Icon, color, onClick, onDoubleClick, active, trend, unit }) => {
+const KPICard = ({ title, value, qty, icon: Icon, color, onClick, onDoubleClick, active, trend, unit }) => {
   const formatValue = (val) => {
     if (typeof val === 'string') return val;
     if (typeof val === 'number') {
@@ -76,8 +76,18 @@ const KPICard = ({ title, value, icon: Icon, color, onClick, onDoubleClick, acti
       </CardHeader>
       <CardContent>
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold font-heading">{formatValue(value)}</span>
-          {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+          {qty !== undefined && qty > 0 ? (
+            <>
+              <span className="text-2xl font-bold font-heading">{formatValue(qty)}</span>
+              <span className="text-sm text-muted-foreground">Qty</span>
+              <span className="text-sm text-muted-foreground ml-1">({formatValue(value)} Leads)</span>
+            </>
+          ) : (
+            <>
+              <span className="text-2xl font-bold font-heading">{formatValue(value)}</span>
+              {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+            </>
+          )}
         </div>
         {trend !== undefined && (
           <div className={`flex items-center gap-1 mt-1 text-xs ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
