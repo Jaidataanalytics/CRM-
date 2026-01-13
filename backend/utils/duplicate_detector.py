@@ -359,12 +359,26 @@ def calculate_qualified_status(lead: Dict) -> bool:
     Determine if a lead is qualified based on field fill percentage.
     A lead is qualified if 50% or more of key fields are filled.
     """
+    import pandas as pd
+    
     filled_count = 0
     
     for field in QUALIFIED_FIELDS:
         value = lead.get(field)
-        if value is not None and value != '' and value != []:
-            filled_count += 1
+        # Check for various empty/null conditions
+        if value is None:
+            continue
+        if isinstance(value, str) and value.strip() == '':
+            continue
+        if isinstance(value, list) and len(value) == 0:
+            continue
+        # Check for pandas NaN
+        try:
+            if pd.isna(value):
+                continue
+        except (TypeError, ValueError):
+            pass
+        filled_count += 1
     
     fill_percentage = (filled_count / len(QUALIFIED_FIELDS)) * 100
     return fill_percentage >= 50
