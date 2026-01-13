@@ -108,14 +108,14 @@ const Comparison = () => {
   const [performanceData, setPerformanceData] = useState({
     states: [],
     dealers: [],
-    areas: [],
+    locations: [],
     employees: [],
     sources: []
   });
   const [availableFilters, setAvailableFilters] = useState({
     states: [],
     dealers: [],
-    areas: [],
+    locations: [],
     employees: [],
     sources: []
   });
@@ -124,7 +124,7 @@ const Comparison = () => {
   const [marketData, setMarketData] = useState({
     states: {},
     dealers: {},
-    areas: {},
+    locations: {},
     employees: {},
     sources: {}
   });
@@ -153,10 +153,10 @@ const Comparison = () => {
       const queryParams = buildQueryParams();
       
       // Load data in parallel but handle individual failures
-      const [statesRes, dealersRes, areasRes, employeesRes, sourcesRes, filtersRes] = await Promise.allSettled([
+      const [statesRes, dealersRes, locationsRes, employeesRes, sourcesRes, filtersRes] = await Promise.allSettled([
         axios.get(`${API}/insights/top-performers?by=state&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=dealer&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
-        axios.get(`${API}/insights/top-performers?by=area&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
+        axios.get(`${API}/insights/top-performers?by=location&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=employee&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/top-performers?by=source&metric=total&limit=50&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/filters/all`, { withCredentials: true })
@@ -165,7 +165,7 @@ const Comparison = () => {
       setPerformanceData({
         states: statesRes.status === 'fulfilled' ? statesRes.value.data.performers || [] : [],
         dealers: dealersRes.status === 'fulfilled' ? dealersRes.value.data.performers || [] : [],
-        areas: areasRes.status === 'fulfilled' ? areasRes.value.data.performers || [] : [],
+        locations: locationsRes.status === 'fulfilled' ? locationsRes.value.data.performers || [] : [],
         employees: employeesRes.status === 'fulfilled' ? employeesRes.value.data.performers || [] : [],
         sources: sourcesRes.status === 'fulfilled' ? sourcesRes.value.data.performers || [] : []
       });
@@ -174,7 +174,7 @@ const Comparison = () => {
         setAvailableFilters({
           states: filtersRes.value.data.states || [],
           dealers: filtersRes.value.data.dealers || [],
-          areas: filtersRes.value.data.areas || [],
+          locations: filtersRes.value.data.locations || [],
           employees: filtersRes.value.data.employees || [],
           sources: filtersRes.value.data.sources || []
         });
@@ -219,7 +219,7 @@ const Comparison = () => {
 
   const clearAllMarketData = () => {
     if (window.confirm('Clear all market data?')) {
-      setMarketData({ states: {}, dealers: {}, areas: {}, employees: {} });
+      setMarketData({ states: {}, dealers: {}, locations: {}, employees: {} });
       toast.success('Market data cleared');
     }
   };
@@ -279,7 +279,7 @@ const Comparison = () => {
   };
 
   const getCategoryLabel = (cat) => {
-    const labels = { states: 'State', dealers: 'Dealer', areas: 'Area', employees: 'Employee', sources: 'Source' };
+    const labels = { states: 'State', dealers: 'Dealer', locations: 'Location', employees: 'Employee', sources: 'Source' };
     return labels[cat] || cat;
   };
 
@@ -392,7 +392,7 @@ const Comparison = () => {
                 <SelectContent>
                   <SelectItem value="states">State</SelectItem>
                   <SelectItem value="dealers">Dealer</SelectItem>
-                  <SelectItem value="areas">Area</SelectItem>
+                  <SelectItem value="locations">Location</SelectItem>
                   <SelectItem value="employees">Employee</SelectItem>
                   <SelectItem value="sources">Source</SelectItem>
                 </SelectContent>
@@ -487,9 +487,9 @@ const Comparison = () => {
             <Building className="h-4 w-4 mr-2" />
             Dealer Comparison
           </TabsTrigger>
-          <TabsTrigger value="areas">
+          <TabsTrigger value="locations">
             <MapPin className="h-4 w-4 mr-2" />
-            Area Comparison
+            Location Comparison
           </TabsTrigger>
           <TabsTrigger value="employees">
             <Users className="h-4 w-4 mr-2" />
@@ -704,7 +704,7 @@ const Comparison = () => {
           </div>
         </TabsContent>
 
-        {['states', 'dealers', 'areas', 'employees'].map(category => (
+        {['states', 'dealers', 'locations', 'employees'].map(category => (
           <TabsContent key={category} value={category} className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Chart */}
@@ -867,7 +867,7 @@ const Comparison = () => {
         <CardContent className="pt-6">
           <h4 className="font-medium mb-2">How to use:</h4>
           <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-            <li>Select a category (State/Dealer/Area/Employee) and choose an entity</li>
+            <li>Select a category (State/Dealer/Location/Employee) and choose an entity</li>
             <li>Enter the total market size (how many leads exist in that market)</li>
             <li>Enter the industry average share percentage</li>
             <li>Optionally set your target number of leads</li>
