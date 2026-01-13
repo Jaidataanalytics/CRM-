@@ -577,7 +577,17 @@ const Leads = () => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      toast.success(`Upload complete: ${res.data.created} created, ${res.data.updated} updated`);
+      // Show merge summary modal if there were merged leads
+      if (res.data.merged > 0 && res.data.merge_details?.length > 0) {
+        setUploadSummaryData({
+          ...res.data,
+          upload_type: 'enquiry'
+        });
+        setIsUploadSummaryOpen(true);
+      } else {
+        toast.success(`Upload complete: ${res.data.created} created, ${res.data.updated} merged/updated`);
+      }
+      
       if (res.data.total_errors > 0) {
         toast.warning(`${res.data.total_errors} rows had errors`);
       }
