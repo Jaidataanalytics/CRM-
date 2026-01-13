@@ -266,6 +266,67 @@ async def get_kpis(
     
     # ============ END QTY CALCULATIONS ============
     
+    # ============ OLD ENQUIRIES CLOSED KPI ============
+    # This KPI shows leads that were WON within the selected date range
+    # but their original enquiry_date is from BEFORE the selected start_date
+    # This helps track sales from older pipeline leads
+    
+    old_enquiries_closed_query = {
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False},
+                {"is_duplicate": None}
+            ]}
+        ],
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        # Enquiry date is BEFORE the selected start_date
+        "enquiry_date": {"$lt": start_date},
+        # Won/closed within the selected date range (using invoice_date or sales_order_date)
+        "$or": [
+            {"invoice_date": {"$gte": start_date, "$lte": end_date}},
+            {"sales_order_date": {"$gte": start_date, "$lte": end_date}}
+        ]
+    }
+    
+    # Apply same filters as base query
+    if state:
+        old_enquiries_closed_query["state"] = state
+    if dealer:
+        old_enquiries_closed_query["dealer"] = dealer
+    if employee_name:
+        old_enquiries_closed_query["employee_name"] = employee_name
+    if segment:
+        old_enquiries_closed_query["segment"] = segment
+    
+    old_enquiries_closed_count = await db.leads.count_documents(old_enquiries_closed_query)
+    
+    # Qty for old enquiries closed
+    old_enquiries_closed_qty_pipeline = [
+        {"$match": old_enquiries_closed_query},
+        {"$group": {"_id": None, "total_qty": {"$sum": {
+            "$cond": [
+                {"$and": [
+                    {"$ne": ["$won_qty", None]},
+                    {"$gt": ["$won_qty", 0]}
+                ]},
+                "$won_qty",
+                1  # Default to 1 if won_qty not set
+            ]
+        }}}}
+    ]
+    old_enquiries_closed_qty_result = await db.leads.aggregate(old_enquiries_closed_qty_pipeline).to_list(1)
+    old_enquiries_closed_qty = old_enquiries_closed_qty_result[0]["total_qty"] if old_enquiries_closed_qty_result else 0
+    
+    # ============ END OLD ENQUIRIES CLOSED KPI ============
+    
     # Get conversion rate config (can be customized by admin)
     conversion_config = await get_metric_config(db, "conversion_rate")
     
