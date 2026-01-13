@@ -118,12 +118,28 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
    - Works for both Enquiry and Lost Leads uploads
    - Provides visibility into data consolidation during uploads
 
-5. ✅ **Dispatch Page Verified**:
-   - Showing SO data correctly: 570 Total Won, 2 Pending, 536 Dispatched
-   - Tabs for Pending/Dispatched/All working
-   - Data table showing enquiry details
+5. ✅ **Closure Analysis - Competitor & Lost Reason Charts**:
+   - Fixed TypeError in closure analysis endpoint
+   - Added new competitor_analysis and lost_reason_analysis to API response
+   - Frontend: Pie charts for "Lost to Competitors" and "Lost Reasons"
+   - Summary cards show: Total Lost, With Lost Data (16.1%), Closure Answers, Pending, Completion Rate
+   - Data from uploads: Kirloskar (66), Eicher (37), Pricing (94), Brand Image (45), etc.
 
-6. ✅ All tests passed (10/10 backend, frontend verified)
+6. ✅ **Data Management Page with Merge History Tab**:
+   - Renamed "Duplicate Leads" page to "Data Management"
+   - Added tabs: "Duplicate Leads (2560)" and "Merge History (1474)"
+   - Merge History shows consolidated leads from multiple uploads
+   - Summary: 1,474 consolidated leads, 2,659 alt. enquiry numbers, 2.8 avg sources per lead
+   - Table shows: Enquiry No, Name, Phone, Stage, Alternative Enquiry Nos, Sources count
+   - Backend: New `/api/leads/merge-history` and `/api/leads/merge-history/summary` endpoints
+
+7. ✅ **Dispatch Page Verified**: Showing SO data correctly (570 Total Won, 2 Pending, 536 Dispatched)
+
+8. ✅ **File Upload Testing**: Successfully tested with real data files:
+   - Enquiry Dump: 4785 rows → 1463 created, 3322 merged
+   - Lost Dump: 698 rows → 23 updated to Lost, 654 already Lost, 21 Won preserved
+
+9. ✅ All features tested and verified
 
 ### Session 5 - Jan 5, 2026 (COMPLETED)
 1. ✅ **Compare Forecasts Page**:
