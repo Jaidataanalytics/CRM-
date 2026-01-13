@@ -205,16 +205,9 @@ async def get_kpis(
     faulty_leads = await db.leads.count_documents(faulty_query)
     
     # ============ QTY CALCULATIONS ============
-    # Qty is from won_qty field (from Sales Order upload)
-    # Total qty across all leads
-    total_qty_pipeline = [
-        {"$match": base_query},
-        {"$group": {"_id": None, "total_qty": {"$sum": {"$ifNull": ["$won_qty", 0]}}}}
-    ]
-    total_qty_result = await db.leads.aggregate(total_qty_pipeline).to_list(1)
-    total_qty = total_qty_result[0]["total_qty"] if total_qty_result else 0
+    # Qty tracks gensets sold - only applicable to Won leads
+    # For won leads without explicit won_qty, assume 1 (at minimum 1 genset sold per won deal)
     
-    # Won qty (only from Closed-Won leads)
     # Won qty - for won leads, if won_qty not set, assume 1 (at minimum 1 genset sold)
     won_qty_pipeline = [
         {"$match": {**base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
