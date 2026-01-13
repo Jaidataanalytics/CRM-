@@ -612,7 +612,7 @@ const Insights = () => {
           ) : closureAnalysis ? (
             <>
               {/* Summary Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card>
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
@@ -631,7 +631,24 @@ const Insights = () => {
                   <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-muted-foreground">With Closure Data</p>
+                        <p className="text-sm text-muted-foreground">With Lost Data</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {(closureAnalysis.summary.leads_with_lost_data || 0).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {closureAnalysis.summary.lost_data_rate || 0}%
+                        </p>
+                      </div>
+                      <Users className="h-8 w-8 text-blue-500" />
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">With Closure Answers</p>
                         <p className="text-2xl font-bold text-green-600">
                           {closureAnalysis.summary.leads_with_closure_answers.toLocaleString()}
                         </p>
