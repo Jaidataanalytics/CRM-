@@ -247,22 +247,31 @@ const Quotations = () => {
                         <TableHead>Quotation No</TableHead>
                         <TableHead>Lead Name</TableHead>
                         <TableHead>Phone</TableHead>
+                        <TableHead>Enquiry No</TableHead>
                         <TableHead>Date Sent</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Stage</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {quotations.map((q) => (
-                        <TableRow key={q.lead_id} className="hover:bg-muted/50">
+                        <TableRow 
+                          key={q.lead_id} 
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => navigate(`/leads?search=${encodeURIComponent(q.phone_number || q.enquiry_no || '')}`)}
+                        >
                           <TableCell className="font-mono text-sm">
-                            {q.quotation_no || q.enquiry_no || '-'}
+                            {q.quotation_no || '-'}
                           </TableCell>
                           <TableCell className="font-medium">
                             {q.name || q.corporate_name || '-'}
                           </TableCell>
                           <TableCell>{q.phone_number || '-'}</TableCell>
+                          <TableCell className="font-mono text-sm text-muted-foreground">
+                            {q.enquiry_no || '-'}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 text-sm">
                               <Calendar className="h-3 w-3" />
@@ -282,6 +291,20 @@ const Quotations = () => {
                           </TableCell>
                           <TableCell>
                             {getStatusBadge(q.quotation_status)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/leads?search=${encodeURIComponent(q.phone_number || q.enquiry_no || '')}`);
+                              }}
+                              data-testid={`view-lead-${q.lead_id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Lead
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
