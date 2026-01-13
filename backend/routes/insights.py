@@ -204,90 +204,189 @@ async def get_closure_analysis(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ):
-    """Get analysis of closure questions for lost leads"""
+    """
+    Get analysis of closure data for lost leads.
+    Closure questions are: Competitor, Lost Reason, Lost Remarks
+    """
     db = await get_db(request)
     
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
-    # Get closure questions configuration
-    questions = await db.closure_questions.find({}).to_list(100)
-    question_map = {q.get("question_id"): q.get("question") for q in questions}
-    
-    # Get all leads with closure answers
-    pipeline = [
-        {
-            "$match": {
-                "closure_answers": {"$exists": True, "$ne": []},
-                "enquiry_date": {"$gte": start_date, "$lte": end_date},
-                "deleted_at": {"$exists": False}
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "lead_id": 1,
-                "closure_answers": 1,
-                "closure_type": 1,
-                "enquiry_stage": 1,
-                "kva": 1,
-                "state": 1,
-                "dealer": 1,
-                "employee_name": 1
-            }
-        }
-    ]
-    
-    leads_with_answers = await db.leads.aggregate(pipeline).to_list(1000)
-    
-    # Aggregate answers by question
-    question_stats = {}
-    
-    for lead in leads_with_answers:
-        closure_answers = lead.get("closure_answers")
-        # Handle None or non-list values
-        if not closure_answers or not isinstance(closure_answers, list):
-            continue
-            
-        for answer in closure_answers:
-            if not answer or not isinstance(answer, dict):
-                continue
-            q_id = answer.get("question_id")
-            question = answer.get("question", question_map.get(q_id, "Unknown Question"))
-            ans_value = answer.get("answer", "Not Answered")
-            
-            if question not in question_stats:
-                question_stats[question] = {
-                    "question": question,
-                    "question_id": q_id,
-                    "total_responses": 0,
-                    "answers": {}
-                }
-            
-            question_stats[question]["total_responses"] += 1
-            
-            if ans_value not in question_stats[question]["answers"]:
-                question_stats[question]["answers"][ans_value] = 0
-            question_stats[question]["answers"][ans_value] += 1
-    
-    # Convert to list format for frontend
-    question_analysis = []
-    for q_key, stats in question_stats.items():
-        answers_list = [
-            {"answer": ans, "count": count, "percentage": round((count / stats["total_responses"]) * 100, 1) if stats["total_responses"] > 0 else 0}
-            for ans, count in sorted(stats["answers"].items(), key=lambda x: x[1], reverse=True)
-        ]
-        question_analysis.append({
-            "question": stats["question"],
-            "question_id": stats["question_id"],
-            "total_responses": stats["total_responses"],
-            "top_answers": answers_list[:10]  # Top 10 answers
-        })
-    
-    # Get summary stats
-    # Lost stages = any "closed" stage except Closed-Won, Order Booked, and Closed-Faulty
-    # Using regex to match Closed-* stages that are not won/faulty
+    # Lost stages query
     lost_stages_query = {
+        "$and": [
+            {"$or": [
+                {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
+                {"enquiry_stage": {"$regex": "^Lost$", "$options": "i"}}
+            ]},
+            {"enquiry_stage": {"$nin": ["Closed-Won", "Order Booked", "Closed-Faulty"]}}
+        ]
+    }
+    
+    base_query = {
+        **lost_stages_query,
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    }
+    
+    # Total lost leads
+    total_lost_leads = await db.leads.count_documents(base_query)
+    
+    # Leads with closure data (competitor OR lost_reason OR lost_remarks)
+    leads_with_closure_data = await db.leads.count_documents({
+        **base_query,
+        "$or": [
+            {"competitor": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"lost_reason": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"lost_remarks": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]
+    })
+    
+    # Leads pending closure questions
+    pending_closure = await db.leads.count_documents({
+        **base_query,
+        "$and": [
+            {"$or": [
+                {"competitor": {"$exists": False}},
+                {"competitor": None},
+                {"competitor": ""}
+            ]},
+            {"$or": [
+                {"lost_reason": {"$exists": False}},
+                {"lost_reason": None},
+                {"lost_reason": ""}
+            ]}
+        ]
+    })
+    
+    # ============ COMPETITOR ANALYSIS (Question 1) ============
+    competitor_pipeline = [
+        {"$match": {
+            **base_query,
+            "competitor": {"$exists": True, "$ne": None, "$ne": ""}
+        }},
+        {"$group": {
+            "_id": "$competitor",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    competitor_results = await db.leads.aggregate(competitor_pipeline).to_list(15)
+    competitor_total = sum(r["count"] for r in competitor_results)
+    
+    competitor_analysis = {
+        "question": "Which competitor won?",
+        "question_id": "competitor",
+        "total_responses": competitor_total,
+        "top_answers": [
+            {
+                "answer": r["_id"],
+                "count": r["count"],
+                "percentage": round((r["count"] / competitor_total) * 100, 1) if competitor_total > 0 else 0
+            }
+            for r in competitor_results if r["_id"]
+        ]
+    }
+    
+    # ============ LOST REASON ANALYSIS (Question 2) ============
+    lost_reason_pipeline = [
+        {"$match": {
+            **base_query,
+            "lost_reason": {"$exists": True, "$ne": None, "$ne": ""}
+        }},
+        {"$group": {
+            "_id": "$lost_reason",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    lost_reason_results = await db.leads.aggregate(lost_reason_pipeline).to_list(15)
+    lost_reason_total = sum(r["count"] for r in lost_reason_results)
+    
+    lost_reason_analysis = {
+        "question": "Why was the lead lost?",
+        "question_id": "lost_reason",
+        "total_responses": lost_reason_total,
+        "top_answers": [
+            {
+                "answer": r["_id"],
+                "count": r["count"],
+                "percentage": round((r["count"] / lost_reason_total) * 100, 1) if lost_reason_total > 0 else 0
+            }
+            for r in lost_reason_results if r["_id"]
+        ]
+    }
+    
+    # ============ LOST REMARKS ANALYSIS (Question 3) ============
+    # For remarks, just count how many have remarks
+    leads_with_remarks = await db.leads.count_documents({
+        **base_query,
+        "lost_remarks": {"$exists": True, "$ne": None, "$ne": ""}
+    })
+    
+    lost_remarks_analysis = {
+        "question": "Additional remarks",
+        "question_id": "lost_remarks",
+        "total_responses": leads_with_remarks,
+        "top_answers": [
+            {"answer": "Has Remarks", "count": leads_with_remarks, "percentage": 100.0}
+        ] if leads_with_remarks > 0 else []
+    }
+    
+    # Combine question analyses
+    question_analysis = []
+    if competitor_analysis["total_responses"] > 0:
+        question_analysis.append(competitor_analysis)
+    if lost_reason_analysis["total_responses"] > 0:
+        question_analysis.append(lost_reason_analysis)
+    if lost_remarks_analysis["total_responses"] > 0:
+        question_analysis.append(lost_remarks_analysis)
+    
+    # Get closure reasons by state
+    state_pipeline = [
+        {"$match": base_query},
+        {"$group": {
+            "_id": "$state",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    by_state = await db.leads.aggregate(state_pipeline).to_list(15)
+    
+    # Get closure reasons by dealer
+    dealer_pipeline = [
+        {"$match": base_query},
+        {"$group": {
+            "_id": "$dealer",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 15}
+    ]
+    by_dealer = await db.leads.aggregate(dealer_pipeline).to_list(15)
+    
+    return {
+        "summary": {
+            "total_lost_leads": total_lost_leads,
+            "leads_with_closure_data": leads_with_closure_data,
+            "pending_closure": pending_closure,
+            "completion_rate": round((leads_with_closure_data / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0
+        },
+        "question_analysis": question_analysis,
+        "by_state": [
+            {"state": s["_id"] or "Unknown", "count": s["count"]}
+            for s in by_state if s["_id"]
+        ],
+        "by_dealer": [
+            {"dealer": d["_id"] or "Unknown", "count": d["count"]}
+            for d in by_dealer if d["_id"]
+        ],
+        "date_range": {"start_date": start_date, "end_date": end_date}
+    }
         "$and": [
             {"$or": [
                 {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
