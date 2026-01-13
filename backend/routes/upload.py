@@ -169,6 +169,7 @@ COLUMN_MAPPING = {
 def clean_value(val):
     """Clean and convert value"""
     import pandas as pd
+    import numpy as np
     if val is None or pd.isna(val):
         return None
     if isinstance(val, float) and str(val) == 'nan':
@@ -177,7 +178,39 @@ def clean_value(val):
         val = val.strip()
         if val == '' or val.lower() == 'nan':
             return None
+    # Convert numpy types to native Python types
+    if isinstance(val, (np.integer, np.int64, np.int32)):
+        return int(val)
+    if isinstance(val, (np.floating, np.float64, np.float32)):
+        return float(val)
+    if isinstance(val, np.bool_):
+        return bool(val)
+    if isinstance(val, np.ndarray):
+        return val.tolist()
     return val
+
+
+def convert_numpy_types(data):
+    """Recursively convert all numpy types in a dict to native Python types"""
+    import numpy as np
+    import pandas as pd
+    
+    if isinstance(data, dict):
+        return {k: convert_numpy_types(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [convert_numpy_types(i) for i in data]
+    elif isinstance(data, (np.integer, np.int64, np.int32)):
+        return int(data)
+    elif isinstance(data, (np.floating, np.float64, np.float32)):
+        return float(data)
+    elif isinstance(data, np.bool_):
+        return bool(data)
+    elif isinstance(data, np.ndarray):
+        return data.tolist()
+    elif pd.isna(data):
+        return None
+    else:
+        return data
 
 
 def parse_date(val):
