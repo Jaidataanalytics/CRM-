@@ -215,25 +215,53 @@ async def get_kpis(
     total_qty = total_qty_result[0]["total_qty"] if total_qty_result else 0
     
     # Won qty (only from Closed-Won leads)
+    # Won qty - for won leads, if won_qty not set, assume 1 (at minimum 1 genset sold)
     won_qty_pipeline = [
         {"$match": {**base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
-        {"$group": {"_id": None, "won_qty": {"$sum": {"$ifNull": ["$won_qty", 0]}}}}
+        {"$group": {"_id": None, "won_qty": {"$sum": {
+            "$cond": [
+                {"$and": [
+                    {"$ne": ["$won_qty", None]},
+                    {"$gt": ["$won_qty", 0]}
+                ]},
+                "$won_qty",
+                1  # Default to 1 if won_qty not set
+            ]
+        }}}}
     ]
     won_qty_result = await db.leads.aggregate(won_qty_pipeline).to_list(1)
     won_qty = won_qty_result[0]["won_qty"] if won_qty_result else 0
     
-    # Dispatched qty
+    # Dispatched qty - same logic: if won_qty not set, assume 1
     dispatched_qty_pipeline = [
         {"$match": {**won_base_query, "dispatch_status": "dispatched"}},
-        {"$group": {"_id": None, "dispatched_qty": {"$sum": {"$ifNull": ["$won_qty", 0]}}}}
+        {"$group": {"_id": None, "dispatched_qty": {"$sum": {
+            "$cond": [
+                {"$and": [
+                    {"$ne": ["$won_qty", None]},
+                    {"$gt": ["$won_qty", 0]}
+                ]},
+                "$won_qty",
+                1
+            ]
+        }}}}
     ]
     dispatched_qty_result = await db.leads.aggregate(dispatched_qty_pipeline).to_list(1)
     dispatched_qty = dispatched_qty_result[0]["dispatched_qty"] if dispatched_qty_result else 0
     
-    # Pending dispatch qty
+    # Pending dispatch qty - same logic
     pending_dispatch_qty_pipeline = [
         {"$match": {**won_base_query, "dispatch_status": "pending"}},
-        {"$group": {"_id": None, "pending_qty": {"$sum": {"$ifNull": ["$won_qty", 0]}}}}
+        {"$group": {"_id": None, "pending_qty": {"$sum": {
+            "$cond": [
+                {"$and": [
+                    {"$ne": ["$won_qty", None]},
+                    {"$gt": ["$won_qty", 0]}
+                ]},
+                "$won_qty",
+                1
+            ]
+        }}}}
     ]
     pending_dispatch_qty_result = await db.leads.aggregate(pending_dispatch_qty_pipeline).to_list(1)
     pending_dispatch_qty = pending_dispatch_qty_result[0]["pending_qty"] if pending_dispatch_qty_result else 0
