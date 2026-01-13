@@ -117,6 +117,19 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 7. ✅ All features tested and verified
 
+8. ✅ **Quotations Page Created (P1)**:
+   - New dedicated Quotations page at `/quotations`
+   - Summary cards: Total (1,001), Pending (64), Won (912), Conversion Rate (91.1%)
+   - Tabs: All, Pending, Won, Lost
+   - Table with: Quotation No, Lead Name, Phone, Date Sent, Amount, Stage, Status
+   - Search functionality
+   - Backend: `/api/leads/quotations` and `/api/leads/quotations/summary` endpoints
+
+9. ✅ **Per-Dimension Analytics Verified (P1)**:
+   - Insights page: Top Performers, Conversion Analysis, Segment Analysis, Competitor Analysis, Closure Analysis
+   - Comparison page: Geographic Map, State, Dealer, Area, Employee comparisons
+   - All dropdowns (By Employee, By State, By Dealer, By Segment, By Source) working correctly
+
 ### Session 5 - Jan 5, 2026 (COMPLETED)
 1. ✅ **Compare Forecasts Page**:
    - New page at /compare-forecasts
