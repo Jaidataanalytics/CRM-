@@ -827,36 +827,44 @@ async def upload_lost_leads(
                         continue
                     
                     # For all other stages (Prospecting, Closed-Dropped, Faulty, etc.)
-                    # -> Update to Lost and add lost info (competitor, lost_reason, lost_remarks)
+                    # -> Update to Lost and MERGE data from incoming record
                     
-                    # Build update data - only update lost-related fields, don't overwrite everything
-                    update_data = {
-                        'enquiry_stage': 'Closed-Lost',
-                        'enquiry_status': 'Closed',
-                        'closure_type': 'lost',
-                        'lost_date': lead_data.get('lost_date'),
-                        'updated_at': datetime.now(timezone.utc).isoformat(),
-                        'lost_upload_batch_id': upload_batch_id
-                    }
+                    # Use duplicate_detector merge logic to fill empty fields
+                    merge_updates = duplicate_detector.merge_leads(existing, lead_data)
                     
-                    # Add lost-specific fields if provided in file
+                    # Override with lost status fields
+                    merge_updates['enquiry_stage'] = 'Closed-Lost'
+                    merge_updates['enquiry_status'] = 'Closed'
+                    merge_updates['closure_type'] = 'lost'
+                    merge_updates['lost_date'] = lead_data.get('lost_date')
+                    merge_updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+                    merge_updates['lost_upload_batch_id'] = upload_batch_id
+                    
+                    # Ensure lost-specific fields are set if provided
                     if lead_data.get('competitor'):
-                        update_data['competitor'] = lead_data['competitor']
+                        merge_updates['competitor'] = lead_data['competitor']
                     if lead_data.get('lost_reason'):
-                        update_data['lost_reason'] = lead_data['lost_reason']
+                        merge_updates['lost_reason'] = lead_data['lost_reason']
                     if lead_data.get('lost_remarks'):
-                        update_data['lost_remarks'] = lead_data['lost_remarks']
+                        merge_updates['lost_remarks'] = lead_data['lost_remarks']
                     
                     # If we have any of competitor/lost_reason/lost_remarks, no closure questions needed
-                    if update_data.get('competitor') or update_data.get('lost_reason') or update_data.get('lost_remarks'):
-                        update_data['needs_closure_questions'] = False
+                    if merge_updates.get('competitor') or merge_updates.get('lost_reason') or merge_updates.get('lost_remarks'):
+                        merge_updates['needs_closure_questions'] = False
                     else:
                         # No lost info provided - may need closure questions
-                        update_data['needs_closure_questions'] = True
+                        merge_updates['needs_closure_questions'] = True
+                    
+                    # Update qualified status based on merged data
+                    merged_lead = {**existing, **merge_updates}
+                    merge_updates['is_qualified'] = calculate_qualified_status(merged_lead)
+                    
+                    # Track which fields were merged for the summary
+                    merged_fields = [k for k in merge_updates.keys() if k not in ['updated_at', 'lost_upload_batch_id', 'enquiry_stage', 'enquiry_status', 'closure_type', 'needs_closure_questions', 'is_qualified']]
                     
                     await db.leads.update_one(
                         {"lead_id": existing["lead_id"]},
-                        {"$set": update_data}
+                        {"$set": merge_updates}
                     )
                     updated_count += 1
                     if len(updated_details) < 50:
@@ -865,9 +873,10 @@ async def upload_lost_leads(
                             "name": lead_name,
                             "phone": str(lead_phone),
                             "previous_stage": existing.get('enquiry_stage', ''),
-                            "has_lost_info": bool(update_data.get('competitor') or update_data.get('lost_reason') or update_data.get('lost_remarks'))
+                            "has_lost_info": bool(merge_updates.get('competitor') or merge_updates.get('lost_reason') or merge_updates.get('lost_remarks')),
+                            "merged_fields": merged_fields[:10]  # Limit fields shown
                         })
-                    logger.info(f"Updated lead {existing['lead_id']} from '{existing_stage}' to Lost status")
+                    logger.info(f"Updated lead {existing['lead_id']} from '{existing_stage}' to Lost status with {len(merged_fields)} merged fields")
                 else:
                     # Create new lead - set all lost status fields
                     lead_data['enquiry_stage'] = 'Closed-Lost'
