@@ -65,6 +65,13 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ## Key API Endpoints
 
+### Summary Builder / Pivot Table (NEW - Jan 13, 2026)
+- `GET /api/insights/summary-builder` - Dynamic pivot table with metric, time_frame, dimension params
+  - metrics: leads, qty, won_leads, lost_leads, conversion_rate
+  - time_frames: monthly, quarterly, yearly
+  - dimensions: employee, dealer, state, location, segment, source
+- `GET /api/filters/locations` - Get unique locations for filtering
+
 ### Dispatch Module
 - `GET /api/dispatch/summary` - Get pending/dispatched counts
 - `GET /api/dispatch/list` - List won orders with dispatch status
