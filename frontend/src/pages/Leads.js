@@ -2735,6 +2735,106 @@ const Leads = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Sales Order Upload Summary Modal */}
+      <Dialog open={soUploadSummaryOpen} onOpenChange={setSoUploadSummaryOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Sales Order Upload Summary</DialogTitle>
+            <DialogDescription>
+              {soUploadSummaryData?.processed_details?.length || 0} sales orders processed
+            </DialogDescription>
+          </DialogHeader>
+          
+          {soUploadSummaryData && (
+            <div className="flex-1 overflow-auto space-y-4">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-green-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-green-600">{soUploadSummaryData.created}</div>
+                  <div className="text-xs text-green-700">New Won Leads</div>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-blue-600">{soUploadSummaryData.updated}</div>
+                  <div className="text-xs text-blue-700">Updated to Won</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-purple-600">{soUploadSummaryData.total_qty}</div>
+                  <div className="text-xs text-purple-700">Total Qty (Gensets)</div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg text-center">
+                  <div className="text-2xl font-bold text-gray-600">{soUploadSummaryData.total_errors}</div>
+                  <div className="text-xs text-gray-700">Errors</div>
+                </div>
+              </div>
+
+              {/* Processed Details */}
+              {soUploadSummaryData.processed_details?.length > 0 && (
+                <div className="border rounded-lg">
+                  <div className="bg-green-50 px-3 py-2 border-b">
+                    <h4 className="font-medium text-sm text-green-800">Processed Sales Orders</h4>
+                  </div>
+                  <ScrollArea className="h-[200px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">SO Number</TableHead>
+                          <TableHead className="text-xs">Name</TableHead>
+                          <TableHead className="text-xs">Phone</TableHead>
+                          <TableHead className="text-xs">Qty</TableHead>
+                          <TableHead className="text-xs">Action</TableHead>
+                          <TableHead className="text-xs">Dispatch</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {soUploadSummaryData.processed_details.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="text-xs font-mono">{item.so_no}</TableCell>
+                            <TableCell className="text-xs">{item.name}</TableCell>
+                            <TableCell className="text-xs">{item.phone}</TableCell>
+                            <TableCell className="text-xs font-bold">{item.qty}</TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant={item.action === 'created' ? 'default' : 'secondary'} className="text-xs">
+                                {item.action}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <Badge 
+                                variant="outline" 
+                                className={item.dispatch_status === 'dispatched' ? 'bg-green-50 text-green-700' : 'bg-yellow-50 text-yellow-700'}
+                              >
+                                {item.dispatch_status}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Errors */}
+              {soUploadSummaryData.errors?.length > 0 && (
+                <div className="border rounded-lg border-red-200">
+                  <div className="bg-red-50 px-3 py-2 border-b border-red-200">
+                    <h4 className="font-medium text-sm text-red-800">Errors ({soUploadSummaryData.total_errors})</h4>
+                  </div>
+                  <div className="p-3 max-h-[100px] overflow-auto">
+                    {soUploadSummaryData.errors.map((err, idx) => (
+                      <p key={idx} className="text-xs text-red-600">SO {err.so_no}: {err.error}</p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setSoUploadSummaryOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
