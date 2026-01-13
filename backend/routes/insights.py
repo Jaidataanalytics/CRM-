@@ -391,49 +391,6 @@ async def get_closure_analysis(
 
 @router.get("/segment-analysis")
 async def get_segment_analysis(
-    leads_with_lost_data = await db.leads.count_documents({
-        **lost_stages_query,
-        "$or": [
-            {"competitor": {"$exists": True, "$ne": None, "$ne": ""}},
-            {"lost_reason": {"$exists": True, "$ne": None, "$ne": ""}},
-            {"lost_remarks": {"$exists": True, "$ne": None, "$ne": ""}}
-        ],
-        "enquiry_date": {"$gte": start_date, "$lte": end_date},
-        "deleted_at": {"$exists": False}
-    })
-    
-    return {
-        "summary": {
-            "total_lost_leads": total_lost_leads,
-            "leads_with_closure_answers": leads_with_closure_answers,
-            "leads_with_lost_data": leads_with_lost_data,
-            "pending_closure_questions": pending_closure_questions,
-            "completion_rate": round((leads_with_closure_answers / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0,
-            "lost_data_rate": round((leads_with_lost_data / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0
-        },
-        "question_analysis": sorted(question_analysis, key=lambda x: x["total_responses"], reverse=True),
-        "competitor_analysis": [
-            {"competitor": c["_id"] or "Unknown", "count": c["count"], "kva_lost": round(c["total_kva"])}
-            for c in competitor_data if c["_id"]
-        ],
-        "lost_reason_analysis": [
-            {"reason": r["_id"] or "Unknown", "count": r["count"], "kva_lost": round(r["total_kva"])}
-            for r in lost_reason_data if r["_id"]
-        ],
-        "by_state": [
-            {"state": s["_id"] or "Unknown", "count": s["count"], "kva_lost": round(s["total_kva"])}
-            for s in by_state if s["_id"]
-        ],
-        "by_dealer": [
-            {"dealer": d["_id"] or "Unknown", "count": d["count"], "kva_lost": round(d["total_kva"])}
-            for d in by_dealer if d["_id"]
-        ],
-        "date_range": {"start_date": start_date, "end_date": end_date}
-    }
-
-
-@router.get("/segment-analysis")
-async def get_segment_analysis(
     request: Request,
     current_user: User = Depends(get_current_user),
     start_date: Optional[str] = None,
