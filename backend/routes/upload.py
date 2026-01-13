@@ -304,6 +304,7 @@ async def upload_leads(
         created_count = 0
         updated_count = 0
         errors = []
+        merge_details = []  # Track details of merged leads for summary
         
         for idx, row in df.iterrows():
             try:
