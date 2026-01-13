@@ -952,6 +952,21 @@ const Insights = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Historical Comparison Toggle */}
+              <div className="flex items-center space-x-2 mt-5 px-3 py-2 bg-muted/50 rounded-lg">
+                <Switch
+                  id="compare-historical"
+                  checked={compareHistorical}
+                  onCheckedChange={setCompareHistorical}
+                  data-testid="historical-comparison-toggle"
+                />
+                <Label htmlFor="compare-historical" className="text-sm flex items-center gap-1.5 cursor-pointer">
+                  <History className="h-4 w-4" />
+                  YoY Comparison
+                </Label>
+              </div>
+              
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -986,7 +1001,7 @@ const Insights = () => {
             <>
               {/* Insights Cards */}
               {summaryData.insights?.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {summaryData.insights.map((insight, idx) => (
                     <Card key={idx} className={`
                       ${insight.type === 'top_performer' ? 'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-900/10' : ''}
