@@ -1034,6 +1034,249 @@ async def get_summary_builder(
             "message": f"Best period: {best_period} with {column_totals[best_period]:.0f} {metric.replace('_', ' ')}"
         })
     
+    # ============ HISTORICAL COMPARISON ============
+    historical_data = None
+    if compare_historical:
+        # Run the same aggregation for historical period
+        hist_pipeline = [
+            {"$match": hist_query},
+            {
+                "$addFields": {
+                    "time_period": time_extraction
+                }
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "dimension": dimension_field,
+                        "time_period": "$time_period"
+                    },
+                    "total_leads": {"$sum": 1},
+                    "total_qty": {"$sum": {"$ifNull": ["$qty", 0]}},
+                    "won_leads": {
+                        "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}
+                    },
+                    "lost_leads": {
+                        "$sum": {"$cond": [{"$in": ["$enquiry_stage", LOST_STAGES]}, 1, 0]}
+                    },
+                    "won_qty": {
+                        "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, {"$ifNull": ["$qty", 0]}, 0]}
+                    }
+                }
+            },
+            {
+                "$addFields": {
+                    "conversion_rate": {
+                        "$cond": [
+                            {"$eq": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                            0,
+                            {
+                                "$multiply": [
+                                    {"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]},
+                                    100
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            {"$sort": {"_id.time_period": 1, "_id.dimension": 1}}
+        ]
+        
+        hist_results = await db.leads.aggregate(hist_pipeline).to_list(1000)
+        
+        # Process historical results
+        hist_time_periods = sorted(list(set(
+            r["_id"]["time_period"] for r in hist_results 
+            if r.get("_id") and r["_id"].get("time_period")
+        )))
+        
+        hist_lookup = {}
+        for r in hist_results:
+            if not r.get("_id"):
+                continue
+            dim = r["_id"].get("dimension")
+            period = r["_id"].get("time_period")
+            if dim and period:
+                if dim not in hist_lookup:
+                    hist_lookup[dim] = {}
+                hist_lookup[dim][period] = {
+                    "leads": r["total_leads"],
+                    "qty": r["total_qty"],
+                    "won_leads": r["won_leads"],
+                    "lost_leads": r["lost_leads"],
+                    "won_qty": r["won_qty"],
+                    "conversion_rate": round(r["conversion_rate"], 1)
+                }
+        
+        # Build interleaved columns: F26Q1, F25Q1, F26Q2, F25Q2...
+        # Map current periods to historical periods
+        def get_historical_period(current_period):
+            """Convert 2025-Q1 to 2024-Q1 or 2025-01 to 2024-01"""
+            if not current_period:
+                return None
+            try:
+                if '-Q' in current_period:
+                    # Quarterly: 2025-Q1 -> 2024-Q1
+                    year, q = current_period.split('-Q')
+                    return f"{int(year) - 1}-Q{q}"
+                elif len(current_period) == 7:
+                    # Monthly: 2025-01 -> 2024-01
+                    year, month = current_period.split('-')
+                    return f"{int(year) - 1}-{month}"
+                elif len(current_period) == 4:
+                    # Yearly: 2025 -> 2024
+                    return str(int(current_period) - 1)
+            except:
+                pass
+            return None
+        
+        # Create interleaved columns with YoY data
+        interleaved_columns = []
+        for period in time_periods:
+            hist_period = get_historical_period(period)
+            interleaved_columns.append({
+                "current": period,
+                "historical": hist_period
+            })
+        
+        # Build historical pivot rows with YoY comparison
+        hist_pivot_rows = []
+        for dim in dimensions:
+            row = {
+                "dimension": dim or "Unknown",
+                "periods": {},
+                "total": 0,
+                "hist_total": 0,
+                "yoy_change": 0
+            }
+            total_current = 0
+            total_hist = 0
+            
+            for period in time_periods:
+                hist_period = get_historical_period(period)
+                
+                # Current period data
+                cell = data_lookup.get(dim, {}).get(period, {
+                    "leads": 0, "qty": 0, "won_leads": 0, "lost_leads": 0, "won_qty": 0, "conversion_rate": 0
+                })
+                
+                # Historical period data
+                hist_cell = hist_lookup.get(dim, {}).get(hist_period, {
+                    "leads": 0, "qty": 0, "won_leads": 0, "lost_leads": 0, "won_qty": 0, "conversion_rate": 0
+                }) if hist_period else {"leads": 0, "qty": 0, "won_leads": 0, "lost_leads": 0, "won_qty": 0, "conversion_rate": 0}
+                
+                # Select the metric value
+                if metric == "leads":
+                    current_val = cell["leads"]
+                    hist_val = hist_cell["leads"]
+                elif metric == "qty":
+                    current_val = cell["qty"]
+                    hist_val = hist_cell["qty"]
+                elif metric == "won_leads":
+                    current_val = cell["won_leads"]
+                    hist_val = hist_cell["won_leads"]
+                elif metric == "lost_leads":
+                    current_val = cell["lost_leads"]
+                    hist_val = hist_cell["lost_leads"]
+                elif metric == "conversion_rate":
+                    current_val = cell["conversion_rate"]
+                    hist_val = hist_cell["conversion_rate"]
+                else:
+                    current_val = cell["leads"]
+                    hist_val = hist_cell["leads"]
+                
+                # Calculate YoY change for this cell
+                if hist_val > 0:
+                    yoy_pct = round(((current_val - hist_val) / hist_val) * 100, 1)
+                else:
+                    yoy_pct = 100 if current_val > 0 else 0
+                
+                row["periods"][period] = {
+                    "current": current_val,
+                    "historical": hist_val,
+                    "yoy_change": yoy_pct
+                }
+                
+                if metric != "conversion_rate":
+                    total_current += current_val
+                    total_hist += hist_val
+            
+            # Calculate totals
+            if metric == "conversion_rate":
+                total_won_curr = sum(data_lookup.get(dim, {}).get(p, {}).get("won_leads", 0) for p in time_periods)
+                total_lost_curr = sum(data_lookup.get(dim, {}).get(p, {}).get("lost_leads", 0) for p in time_periods)
+                total_won_hist = sum(hist_lookup.get(dim, {}).get(get_historical_period(p), {}).get("won_leads", 0) for p in time_periods)
+                total_lost_hist = sum(hist_lookup.get(dim, {}).get(get_historical_period(p), {}).get("lost_leads", 0) for p in time_periods)
+                
+                row["total"] = round((total_won_curr / (total_won_curr + total_lost_curr) * 100), 1) if (total_won_curr + total_lost_curr) > 0 else 0
+                row["hist_total"] = round((total_won_hist / (total_won_hist + total_lost_hist) * 100), 1) if (total_won_hist + total_lost_hist) > 0 else 0
+            else:
+                row["total"] = total_current
+                row["hist_total"] = total_hist
+            
+            # Overall YoY change
+            if row["hist_total"] > 0:
+                row["yoy_change"] = round(((row["total"] - row["hist_total"]) / row["hist_total"]) * 100, 1)
+            else:
+                row["yoy_change"] = 100 if row["total"] > 0 else 0
+            
+            hist_pivot_rows.append(row)
+        
+        # Sort by current total
+        hist_pivot_rows.sort(key=lambda x: x["total"], reverse=True)
+        
+        # Calculate column totals with historical
+        hist_column_totals = {}
+        for period in time_periods:
+            hist_period = get_historical_period(period)
+            
+            if metric == "conversion_rate":
+                total_won_curr = sum(data_lookup.get(dim, {}).get(period, {}).get("won_leads", 0) for dim in dimensions)
+                total_lost_curr = sum(data_lookup.get(dim, {}).get(period, {}).get("lost_leads", 0) for dim in dimensions)
+                total_won_hist = sum(hist_lookup.get(dim, {}).get(hist_period, {}).get("won_leads", 0) for dim in dimensions)
+                total_lost_hist = sum(hist_lookup.get(dim, {}).get(hist_period, {}).get("lost_leads", 0) for dim in dimensions)
+                
+                curr_total = round((total_won_curr / (total_won_curr + total_lost_curr) * 100), 1) if (total_won_curr + total_lost_curr) > 0 else 0
+                hist_total_val = round((total_won_hist / (total_won_hist + total_lost_hist) * 100), 1) if (total_won_hist + total_lost_hist) > 0 else 0
+            else:
+                curr_total = sum(r["periods"].get(period, {}).get("current", 0) for r in hist_pivot_rows)
+                hist_total_val = sum(r["periods"].get(period, {}).get("historical", 0) for r in hist_pivot_rows)
+            
+            yoy_pct = round(((curr_total - hist_total_val) / hist_total_val) * 100, 1) if hist_total_val > 0 else (100 if curr_total > 0 else 0)
+            
+            hist_column_totals[period] = {
+                "current": curr_total,
+                "historical": hist_total_val,
+                "yoy_change": yoy_pct
+            }
+        
+        # Grand totals
+        hist_grand_current = sum(r["total"] for r in hist_pivot_rows)
+        hist_grand_historical = sum(r["hist_total"] for r in hist_pivot_rows)
+        hist_grand_yoy = round(((hist_grand_current - hist_grand_historical) / hist_grand_historical) * 100, 1) if hist_grand_historical > 0 else (100 if hist_grand_current > 0 else 0)
+        
+        historical_data = {
+            "columns": interleaved_columns,
+            "rows": hist_pivot_rows,
+            "column_totals": hist_column_totals,
+            "grand_total": {
+                "current": hist_grand_current if metric != "conversion_rate" else grand_total,
+                "historical": hist_grand_historical if metric != "conversion_rate" else (round((sum(r["hist_total"] for r in hist_pivot_rows) / len(hist_pivot_rows)), 1) if hist_pivot_rows else 0),
+                "yoy_change": hist_grand_yoy
+            },
+            "hist_date_range": {"start_date": hist_start, "end_date": hist_end}
+        }
+        
+        # Add YoY insight
+        if hist_grand_historical > 0:
+            yoy_direction = "up" if hist_grand_yoy > 0 else "down" if hist_grand_yoy < 0 else "flat"
+            insights.append({
+                "type": "yoy_comparison",
+                "message": f"Year-over-Year: {metric.replace('_', ' ')} is {yoy_direction} {abs(hist_grand_yoy):.1f}% compared to previous year",
+                "growth": hist_grand_yoy
+            })
+    
     return {
         "pivot_table": {
             "columns": time_periods,
@@ -1041,11 +1284,13 @@ async def get_summary_builder(
             "column_totals": column_totals,
             "grand_total": grand_total
         },
+        "historical_comparison": historical_data,
         "meta": {
             "metric": metric,
             "time_frame": time_frame,
             "dimension": dimension,
-            "date_range": {"start_date": start_date, "end_date": end_date}
+            "date_range": {"start_date": start_date, "end_date": end_date},
+            "compare_historical": compare_historical
         },
         "insights": insights
     }
