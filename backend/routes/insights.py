@@ -390,64 +390,7 @@ async def get_closure_analysis(
 
 
 @router.get("/segment-analysis")
-                "count": {"$sum": 1},
-                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
-            }
-        },
-        {"$sort": {"count": -1}},
-        {"$limit": 15}
-    ]
-    
-    by_dealer = await db.leads.aggregate(dealer_pipeline).to_list(15)
-    
-    # ============ COMPETITOR ANALYSIS ============
-    # Get competitor distribution from lost leads (Win Reason → competitor field)
-    competitor_pipeline = [
-        {
-            "$match": {
-                **lost_stages_query,
-                "competitor": {"$exists": True, "$ne": None, "$ne": ""},
-                "enquiry_date": {"$gte": start_date, "$lte": end_date},
-                "deleted_at": {"$exists": False}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$competitor",
-                "count": {"$sum": 1},
-                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
-            }
-        },
-        {"$sort": {"count": -1}},
-        {"$limit": 15}
-    ]
-    competitor_data = await db.leads.aggregate(competitor_pipeline).to_list(15)
-    
-    # ============ LOST REASON ANALYSIS ============
-    # Get lost reason distribution (Win Remarks → lost_reason field)
-    lost_reason_pipeline = [
-        {
-            "$match": {
-                **lost_stages_query,
-                "lost_reason": {"$exists": True, "$ne": None, "$ne": ""},
-                "enquiry_date": {"$gte": start_date, "$lte": end_date},
-                "deleted_at": {"$exists": False}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$lost_reason",
-                "count": {"$sum": 1},
-                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
-            }
-        },
-        {"$sort": {"count": -1}},
-        {"$limit": 15}
-    ]
-    lost_reason_data = await db.leads.aggregate(lost_reason_pipeline).to_list(15)
-    
-    # ============ LOST REMARKS SUMMARY ============
-    # Count leads with lost remarks
+async def get_segment_analysis(
     leads_with_lost_data = await db.leads.count_documents({
         **lost_stages_query,
         "$or": [
