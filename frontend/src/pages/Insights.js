@@ -1032,85 +1032,241 @@ const Insights = () => {
                 </div>
               )}
 
-              {/* Pivot Table */}
+              {/* Pivot Table - Standard or YoY Comparison */}
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2">
                     <LayoutGrid className="h-5 w-5 text-primary" />
                     {summaryMetric.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} by {summaryDimension.charAt(0).toUpperCase() + summaryDimension.slice(1)}
+                    {compareHistorical && (
+                      <Badge variant="outline" className="ml-2 text-xs font-normal">
+                        <History className="h-3 w-3 mr-1" />
+                        YoY Comparison
+                      </Badge>
+                    )}
                   </CardTitle>
                   <CardDescription>
                     {summaryTimeFrame.charAt(0).toUpperCase() + summaryTimeFrame.slice(1)} breakdown • {summaryData.meta?.date_range?.start_date} to {summaryData.meta?.date_range?.end_date}
+                    {compareHistorical && summaryData.historical_comparison?.hist_date_range && (
+                      <span className="ml-2 text-muted-foreground">
+                        vs {summaryData.historical_comparison.hist_date_range.start_date} to {summaryData.historical_comparison.hist_date_range.end_date}
+                      </span>
+                    )}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="font-semibold sticky left-0 bg-muted/50">
-                            {summaryDimension.charAt(0).toUpperCase() + summaryDimension.slice(1)}
-                          </TableHead>
-                          {summaryData.pivot_table.columns.map(col => (
-                            <TableHead key={col} className="text-right font-medium whitespace-nowrap">
-                              {col}
+                    {compareHistorical && summaryData.historical_comparison ? (
+                      /* YoY Comparison Table */
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="font-semibold sticky left-0 bg-muted/50" rowSpan={2}>
+                              {summaryDimension.charAt(0).toUpperCase() + summaryDimension.slice(1)}
                             </TableHead>
+                            {summaryData.historical_comparison.columns.map((col, idx) => (
+                              <TableHead key={idx} colSpan={3} className="text-center font-medium border-l whitespace-nowrap">
+                                {col.current}
+                              </TableHead>
+                            ))}
+                            <TableHead colSpan={3} className="text-center font-semibold bg-muted/80 border-l">Total</TableHead>
+                          </TableRow>
+                          <TableRow className="bg-muted/30">
+                            {summaryData.historical_comparison.columns.map((col, idx) => (
+                              <>
+                                <TableHead key={`${idx}-curr`} className="text-right text-xs whitespace-nowrap border-l">Current</TableHead>
+                                <TableHead key={`${idx}-prev`} className="text-right text-xs whitespace-nowrap">Prev</TableHead>
+                                <TableHead key={`${idx}-yoy`} className="text-right text-xs whitespace-nowrap">YoY</TableHead>
+                              </>
+                            ))}
+                            <TableHead className="text-right text-xs border-l bg-muted/60">Current</TableHead>
+                            <TableHead className="text-right text-xs bg-muted/60">Prev</TableHead>
+                            <TableHead className="text-right text-xs bg-muted/60">YoY</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {summaryData.historical_comparison.rows.slice(0, 20).map((row, idx) => (
+                            <TableRow key={idx} className={idx === 0 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : ''}>
+                              <TableCell className="font-medium sticky left-0 bg-background max-w-[150px] truncate" title={row.dimension}>
+                                <div className="flex items-center gap-2">
+                                  {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                                  {row.dimension}
+                                </div>
+                              </TableCell>
+                              {summaryData.historical_comparison.columns.map((col, colIdx) => {
+                                const periodData = row.periods[col.current] || { current: 0, historical: 0, yoy_change: 0 };
+                                return (
+                                  <>
+                                    <TableCell key={`${colIdx}-curr`} className="text-right tabular-nums border-l">
+                                      {summaryMetric === 'conversion_rate' 
+                                        ? `${periodData.current}%`
+                                        : periodData.current.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell key={`${colIdx}-prev`} className="text-right tabular-nums text-muted-foreground">
+                                      {summaryMetric === 'conversion_rate' 
+                                        ? `${periodData.historical}%`
+                                        : periodData.historical.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell key={`${colIdx}-yoy`} className="text-right tabular-nums">
+                                      <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+                                        periodData.yoy_change > 0 ? 'text-green-600' : 
+                                        periodData.yoy_change < 0 ? 'text-red-600' : 'text-muted-foreground'
+                                      }`}>
+                                        {periodData.yoy_change > 0 ? <ArrowUpRight className="h-3 w-3" /> : 
+                                         periodData.yoy_change < 0 ? <ArrowDownRight className="h-3 w-3" /> : 
+                                         <Minus className="h-3 w-3" />}
+                                        {Math.abs(periodData.yoy_change)}%
+                                      </span>
+                                    </TableCell>
+                                  </>
+                                );
+                              })}
+                              <TableCell className="text-right font-semibold bg-muted/20 tabular-nums border-l">
+                                {summaryMetric === 'conversion_rate' ? `${row.total}%` : row.total.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums text-muted-foreground bg-muted/20">
+                                {summaryMetric === 'conversion_rate' ? `${row.hist_total}%` : row.hist_total.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums bg-muted/20">
+                                <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+                                  row.yoy_change > 0 ? 'text-green-600' : 
+                                  row.yoy_change < 0 ? 'text-red-600' : 'text-muted-foreground'
+                                }`}>
+                                  {row.yoy_change > 0 ? <ArrowUpRight className="h-3 w-3" /> : 
+                                   row.yoy_change < 0 ? <ArrowDownRight className="h-3 w-3" /> : 
+                                   <Minus className="h-3 w-3" />}
+                                  {Math.abs(row.yoy_change)}%
+                                </span>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                          <TableHead className="text-right font-semibold bg-muted/80">Total</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {summaryData.pivot_table.rows.slice(0, 25).map((row, idx) => (
-                          <TableRow key={idx} className={idx === 0 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : ''}>
-                            <TableCell className="font-medium sticky left-0 bg-background max-w-[200px] truncate" title={row.dimension}>
-                              <div className="flex items-center gap-2">
-                                {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
-                                {row.dimension}
-                              </div>
+                          {summaryData.historical_comparison.rows.length > 20 && (
+                            <TableRow>
+                              <TableCell colSpan={summaryData.historical_comparison.columns.length * 3 + 4} className="text-center text-muted-foreground text-sm">
+                                ... and {summaryData.historical_comparison.rows.length - 20} more rows (export to CSV for full data)
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {/* Column Totals Row */}
+                          <TableRow className="bg-muted/50 font-semibold border-t-2">
+                            <TableCell className="sticky left-0 bg-muted/50">Total</TableCell>
+                            {summaryData.historical_comparison.columns.map((col, colIdx) => {
+                              const totals = summaryData.historical_comparison.column_totals[col.current] || { current: 0, historical: 0, yoy_change: 0 };
+                              return (
+                                <>
+                                  <TableCell key={`${colIdx}-curr`} className="text-right tabular-nums border-l">
+                                    {summaryMetric === 'conversion_rate' ? `${totals.current}%` : totals.current.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell key={`${colIdx}-prev`} className="text-right tabular-nums text-muted-foreground">
+                                    {summaryMetric === 'conversion_rate' ? `${totals.historical}%` : totals.historical.toLocaleString()}
+                                  </TableCell>
+                                  <TableCell key={`${colIdx}-yoy`} className="text-right tabular-nums">
+                                    <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${
+                                      totals.yoy_change > 0 ? 'text-green-600' : 
+                                      totals.yoy_change < 0 ? 'text-red-600' : 'text-muted-foreground'
+                                    }`}>
+                                      {totals.yoy_change > 0 ? <ArrowUpRight className="h-3 w-3" /> : 
+                                       totals.yoy_change < 0 ? <ArrowDownRight className="h-3 w-3" /> : 
+                                       <Minus className="h-3 w-3" />}
+                                      {Math.abs(totals.yoy_change)}%
+                                    </span>
+                                  </TableCell>
+                                </>
+                              );
+                            })}
+                            <TableCell className="text-right bg-primary/10 tabular-nums border-l">
+                              {summaryMetric === 'conversion_rate' 
+                                ? `${summaryData.historical_comparison.grand_total.current}%` 
+                                : summaryData.historical_comparison.grand_total.current.toLocaleString()}
                             </TableCell>
+                            <TableCell className="text-right tabular-nums text-muted-foreground bg-primary/10">
+                              {summaryMetric === 'conversion_rate' 
+                                ? `${summaryData.historical_comparison.grand_total.historical}%` 
+                                : summaryData.historical_comparison.grand_total.historical.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums bg-primary/10">
+                              <span className={`inline-flex items-center gap-0.5 text-sm font-bold ${
+                                summaryData.historical_comparison.grand_total.yoy_change > 0 ? 'text-green-600' : 
+                                summaryData.historical_comparison.grand_total.yoy_change < 0 ? 'text-red-600' : 'text-muted-foreground'
+                              }`}>
+                                {summaryData.historical_comparison.grand_total.yoy_change > 0 ? <ArrowUpRight className="h-4 w-4" /> : 
+                                 summaryData.historical_comparison.grand_total.yoy_change < 0 ? <ArrowDownRight className="h-4 w-4" /> : 
+                                 <Minus className="h-4 w-4" />}
+                                {Math.abs(summaryData.historical_comparison.grand_total.yoy_change)}%
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        </TableBody>
+                      </Table>
+                    ) : (
+                      /* Standard Pivot Table */
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-muted/50">
+                            <TableHead className="font-semibold sticky left-0 bg-muted/50">
+                              {summaryDimension.charAt(0).toUpperCase() + summaryDimension.slice(1)}
+                            </TableHead>
+                            {summaryData.pivot_table.columns.map(col => (
+                              <TableHead key={col} className="text-right font-medium whitespace-nowrap">
+                                {col}
+                              </TableHead>
+                            ))}
+                            <TableHead className="text-right font-semibold bg-muted/80">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {summaryData.pivot_table.rows.slice(0, 25).map((row, idx) => (
+                            <TableRow key={idx} className={idx === 0 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : ''}>
+                              <TableCell className="font-medium sticky left-0 bg-background max-w-[200px] truncate" title={row.dimension}>
+                                <div className="flex items-center gap-2">
+                                  {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                                  {row.dimension}
+                                </div>
+                              </TableCell>
+                              {summaryData.pivot_table.columns.map(col => (
+                                <TableCell key={col} className="text-right tabular-nums">
+                                  {summaryMetric === 'conversion_rate' 
+                                    ? `${row.periods[col] || 0}%`
+                                    : (row.periods[col] || 0).toLocaleString()
+                                  }
+                                </TableCell>
+                              ))}
+                              <TableCell className="text-right font-semibold bg-muted/30 tabular-nums">
+                                {summaryMetric === 'conversion_rate'
+                                  ? `${row.total}%`
+                                  : row.total.toLocaleString()
+                                }
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {summaryData.pivot_table.rows.length > 25 && (
+                            <TableRow>
+                              <TableCell colSpan={summaryData.pivot_table.columns.length + 2} className="text-center text-muted-foreground text-sm">
+                                ... and {summaryData.pivot_table.rows.length - 25} more rows (export to CSV for full data)
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {/* Column Totals Row */}
+                          <TableRow className="bg-muted/50 font-semibold border-t-2">
+                            <TableCell className="sticky left-0 bg-muted/50">Total</TableCell>
                             {summaryData.pivot_table.columns.map(col => (
                               <TableCell key={col} className="text-right tabular-nums">
-                                {summaryMetric === 'conversion_rate' 
-                                  ? `${row.periods[col] || 0}%`
-                                  : (row.periods[col] || 0).toLocaleString()
+                                {summaryMetric === 'conversion_rate'
+                                  ? `${summaryData.pivot_table.column_totals[col] || 0}%`
+                                  : (summaryData.pivot_table.column_totals[col] || 0).toLocaleString()
                                 }
                               </TableCell>
                             ))}
-                            <TableCell className="text-right font-semibold bg-muted/30 tabular-nums">
+                            <TableCell className="text-right bg-primary/10 tabular-nums">
                               {summaryMetric === 'conversion_rate'
-                                ? `${row.total}%`
-                                : row.total.toLocaleString()
+                                ? `${summaryData.pivot_table.grand_total}%`
+                                : summaryData.pivot_table.grand_total.toLocaleString()
                               }
                             </TableCell>
                           </TableRow>
-                        ))}
-                        {summaryData.pivot_table.rows.length > 25 && (
-                          <TableRow>
-                            <TableCell colSpan={summaryData.pivot_table.columns.length + 2} className="text-center text-muted-foreground text-sm">
-                              ... and {summaryData.pivot_table.rows.length - 25} more rows (export to CSV for full data)
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        {/* Column Totals Row */}
-                        <TableRow className="bg-muted/50 font-semibold border-t-2">
-                          <TableCell className="sticky left-0 bg-muted/50">Total</TableCell>
-                          {summaryData.pivot_table.columns.map(col => (
-                            <TableCell key={col} className="text-right tabular-nums">
-                              {summaryMetric === 'conversion_rate'
-                                ? `${summaryData.pivot_table.column_totals[col] || 0}%`
-                                : (summaryData.pivot_table.column_totals[col] || 0).toLocaleString()
-                              }
-                            </TableCell>
-                          ))}
-                          <TableCell className="text-right bg-primary/10 tabular-nums">
-                            {summaryMetric === 'conversion_rate'
-                              ? `${summaryData.pivot_table.grand_total}%`
-                              : summaryData.pivot_table.grand_total.toLocaleString()
-                            }
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
+                        </TableBody>
+                      </Table>
+                    )}
                   </div>
                 </CardContent>
               </Card>
