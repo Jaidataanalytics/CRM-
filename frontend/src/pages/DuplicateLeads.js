@@ -287,29 +287,20 @@ const DuplicateLeads = () => {
                   Search
                 </Button>
               </form>
+          
+              {isAdmin && (
+                <Button
+                  onClick={handleRunDetection}
+                  disabled={runningDetection}
+                  variant="outline"
+                  className="gap-2"
                 >
-                  <X className="h-3 w-3" />
+                  <RefreshCw className={`h-4 w-4 ${runningDetection ? 'animate-spin' : ''}`} />
+                  {runningDetection ? 'Running...' : 'Run Detection'}
                 </Button>
               )}
             </div>
-            <Button type="submit" variant="secondary" size="sm">
-              Search
-            </Button>
-          </form>
-          
-          {isAdmin && (
-            <Button
-              onClick={handleRunDetection}
-              disabled={runningDetection}
-              variant="outline"
-              className="gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${runningDetection ? 'animate-spin' : ''}`} />
-              {runningDetection ? 'Running...' : 'Run Detection'}
-            </Button>
-          )}
-        </div>
-      </div>
+          </div>
 
       {/* Summary Card */}
       <Card>
