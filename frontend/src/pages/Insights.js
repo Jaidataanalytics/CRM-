@@ -66,6 +66,13 @@ const Insights = () => {
   const [competitorDimension, setCompetitorDimension] = useState('competitor');
   const [competitorAnalysis, setCompetitorAnalysis] = useState(null);
   const [competitorLoading, setCompetitorLoading] = useState(false);
+  
+  // Summary Builder state
+  const [summaryMetric, setSummaryMetric] = useState('leads');
+  const [summaryTimeFrame, setSummaryTimeFrame] = useState('monthly');
+  const [summaryDimension, setSummaryDimension] = useState('employee');
+  const [summaryData, setSummaryData] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   useEffect(() => {
     loadData();
