@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,9 @@ import {
   RefreshCw,
   Calendar,
   IndianRupee,
-  TrendingUp
+  TrendingUp,
+  ExternalLink,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 
