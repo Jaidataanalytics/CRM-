@@ -893,10 +893,14 @@ async def upload_lost_leads(
                     if not lead_data.get('enquiry_date'):
                         lead_data['enquiry_date'] = lead_data.get('lost_date')
                     
+                    # Calculate qualified status
+                    is_qualified = calculate_qualified_status(lead_data)
+                    
                     uploader_name = current_user.name or current_user.email or "Unknown User"
                     lead_doc = {
                         "lead_id": f"lead_{uuid.uuid4().hex[:12]}",
                         **lead_data,
+                        "is_qualified": is_qualified,
                         "added_by": f"Lost Lead Import - {uploader_name}",
                         "upload_batch_id": upload_batch_id,
                         "created_at": datetime.now(timezone.utc).isoformat(),
