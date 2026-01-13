@@ -651,6 +651,7 @@ async def startup_db_client():
         await migrate_detect_duplicates()
         await migrate_lost_leads_enquiry_date()
         await migrate_lost_leads_field_mapping()
+        await migrate_qualified_status()
         
         # Create indexes for better query performance
         await db.leads.create_index("lead_id", unique=True)
