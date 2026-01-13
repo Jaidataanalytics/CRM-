@@ -634,12 +634,14 @@ const Dashboard = () => {
         <KPICard
           title="Pending Dispatch"
           value={kpis?.pending_dispatch || 0}
+          qty={kpis?.pending_dispatch_qty || 0}
           icon={Clock}
           color="text-amber-600"
         />
         <KPICard
           title="Dispatched"
           value={kpis?.dispatched || 0}
+          qty={kpis?.dispatched_qty || 0}
           icon={Truck}
           color="text-blue-600"
         />
