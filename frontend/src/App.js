@@ -113,6 +113,7 @@ const AppRouter = () => {
             <DuplicateLeads />
           </ProtectedRoute>
         } />
+        <Route path="/quotations" element={<Quotations />} />
         
         {/* Manager+ only */}
         <Route path="/forecast" element={
