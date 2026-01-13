@@ -387,67 +387,9 @@ async def get_closure_analysis(
         ],
         "date_range": {"start_date": start_date, "end_date": end_date}
     }
-        "$and": [
-            {"$or": [
-                {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
-                {"enquiry_stage": {"$regex": "^Lost$", "$options": "i"}}
-            ]},
-            {"enquiry_stage": {"$nin": ["Closed-Won", "Order Booked", "Closed-Faulty"]}}
-        ]
-    }
-    
-    total_lost_leads = await db.leads.count_documents({
-        **lost_stages_query,
-        "enquiry_date": {"$gte": start_date, "$lte": end_date},
-        "deleted_at": {"$exists": False}
-    })
-    
-    leads_with_closure_answers = await db.leads.count_documents({
-        "closure_answers": {"$exists": True, "$ne": []},
-        "enquiry_date": {"$gte": start_date, "$lte": end_date},
-        "deleted_at": {"$exists": False}
-    })
-    
-    pending_closure_questions = await db.leads.count_documents({
-        "needs_closure_questions": True,
-        "enquiry_date": {"$gte": start_date, "$lte": end_date},
-        "deleted_at": {"$exists": False}
-    })
-    
-    # Get closure reasons by state
-    state_pipeline = [
-        {
-            "$match": {
-                "closure_answers": {"$exists": True, "$ne": []},
-                "enquiry_date": {"$gte": start_date, "$lte": end_date},
-                "deleted_at": {"$exists": False}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$state",
-                "count": {"$sum": 1},
-                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
-            }
-        },
-        {"$sort": {"count": -1}},
-        {"$limit": 15}
-    ]
-    
-    by_state = await db.leads.aggregate(state_pipeline).to_list(15)
-    
-    # Get closure reasons by dealer
-    dealer_pipeline = [
-        {
-            "$match": {
-                "closure_answers": {"$exists": True, "$ne": []},
-                "enquiry_date": {"$gte": start_date, "$lte": end_date},
-                "deleted_at": {"$exists": False}
-            }
-        },
-        {
-            "$group": {
-                "_id": "$dealer",
+
+
+@router.get("/segment-analysis")
                 "count": {"$sum": 1},
                 "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
             }
