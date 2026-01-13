@@ -56,6 +56,22 @@ async def get_areas(
     return {"areas": sorted([a for a in areas if a])}
 
 
+@router.get("/locations")
+async def get_locations(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    state: Optional[str] = None
+):
+    """Get locations, optionally filtered by state"""
+    db = await get_db(request)
+    query = {}
+    if state:
+        query["state"] = state
+    
+    locations = await db.leads.distinct("location", query)
+    return {"locations": sorted([loc for loc in locations if loc])}
+
+
 @router.get("/dealers")
 async def get_dealers(
     request: Request,
