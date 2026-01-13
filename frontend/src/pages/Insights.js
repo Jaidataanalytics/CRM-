@@ -720,93 +720,29 @@ const Insights = () => {
                   </CardContent>
                 </Card>
               )}
-                          {q.question}
-                        </CardTitle>
-                        <CardDescription>
-                          {q.total_responses} responses
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-3">
-                          {q.top_answers.map((ans, ansIdx) => (
-                            <div key={ansIdx} className="space-y-1">
-                              <div className="flex items-center justify-between text-sm">
-                                <span className="truncate max-w-[200px]" title={ans.answer}>
-                                  {ans.answer || 'Not Answered'}
-                                </span>
-                                <span className="text-muted-foreground">
-                                  {ans.count} ({ans.percentage}%)
-                                </span>
-                              </div>
-                              <Progress value={ans.percentage} className="h-2" />
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : null}
 
-              {/* Competitor & Lost Reason Analysis Charts */}
-              {(closureAnalysis.competitor_analysis?.length > 0 || closureAnalysis.lost_reason_analysis?.length > 0) && (
+              {/* Lost by State & Dealer Tables */}
+              {(closureAnalysis.by_state?.length > 0 || closureAnalysis.by_dealer?.length > 0) && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Competitor Chart */}
-                  {closureAnalysis.competitor_analysis?.length > 0 && (
+                  {/* By State */}
+                  {closureAnalysis.by_state?.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Users className="h-5 w-5 text-red-500" />
-                          Lost to Competitors
-                        </CardTitle>
-                        <CardDescription>Which competitors are winning deals</CardDescription>
+                        <CardTitle>Lost by State</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-[280px]">
-                          <Pie
-                            data={{
-                              labels: closureAnalysis.competitor_analysis.slice(0, 8).map(c => c.competitor),
-                              datasets: [{
-                                data: closureAnalysis.competitor_analysis.slice(0, 8).map(c => c.count),
-                                backgroundColor: [
-                                  'hsl(0, 84%, 60%)',
-                                  'hsl(30, 84%, 60%)',
-                                  'hsl(60, 84%, 50%)',
-                                  'hsl(120, 60%, 50%)',
-                                  'hsl(180, 60%, 50%)',
-                                  'hsl(210, 84%, 60%)',
-                                  'hsl(270, 60%, 60%)',
-                                  'hsl(330, 60%, 60%)'
-                                ],
-                                borderWidth: 1
-                              }]
-                            }}
-                            options={{
-                              responsive: true,
-                              maintainAspectRatio: false,
-                              plugins: {
-                                legend: {
-                                  position: 'right',
-                                  labels: { boxWidth: 12, font: { size: 10 } }
-                                }
-                              }
-                            }}
-                          />
-                        </div>
-                        <Table className="mt-4">
+                        <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Competitor</TableHead>
-                              <TableHead className="text-right">Lost</TableHead>
-                              <TableHead className="text-right">KVA</TableHead>
+                              <TableHead>State</TableHead>
+                              <TableHead className="text-right">Count</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {closureAnalysis.competitor_analysis.slice(0, 6).map((c, idx) => (
+                            {closureAnalysis.by_state.slice(0, 10).map((s, idx) => (
                               <TableRow key={idx}>
-                                <TableCell className="font-medium">{c.competitor}</TableCell>
-                                <TableCell className="text-right text-red-600">{c.count}</TableCell>
-                                <TableCell className="text-right">{c.kva_lost?.toLocaleString() || 0}</TableCell>
+                                <TableCell>{s.state}</TableCell>
+                                <TableCell className="text-right">{s.count}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -815,39 +751,47 @@ const Insights = () => {
                     </Card>
                   )}
 
-                  {/* Lost Reason Chart */}
-                  {closureAnalysis.lost_reason_analysis?.length > 0 && (
+                  {/* By Dealer */}
+                  {closureAnalysis.by_dealer?.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <AlertTriangle className="h-5 w-5 text-orange-500" />
-                          Lost Reasons
-                        </CardTitle>
-                        <CardDescription>Why leads are being lost</CardDescription>
+                        <CardTitle>Lost by Dealer</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="h-[280px]">
-                          <Pie
-                            data={{
-                              labels: closureAnalysis.lost_reason_analysis.slice(0, 8).map(r => r.reason),
-                              datasets: [{
-                                data: closureAnalysis.lost_reason_analysis.slice(0, 8).map(r => r.count),
-                                backgroundColor: [
-                                  'hsl(30, 84%, 55%)',
-                                  'hsl(45, 84%, 55%)',
-                                  'hsl(60, 70%, 50%)',
-                                  'hsl(90, 60%, 50%)',
-                                  'hsl(150, 60%, 50%)',
-                                  'hsl(200, 70%, 55%)',
-                                  'hsl(250, 60%, 55%)',
-                                  'hsl(300, 50%, 55%)'
-                                ],
-                                borderWidth: 1
-                              }]
-                            }}
-                            options={{
-                              responsive: true,
-                              maintainAspectRatio: false,
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Dealer</TableHead>
+                              <TableHead className="text-right">Count</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {closureAnalysis.by_dealer.slice(0, 10).map((d, idx) => (
+                              <TableRow key={idx}>
+                                <TableCell>{d.dealer}</TableCell>
+                                <TableCell className="text-right">{d.count}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <h3 className="font-medium mb-2">Failed to Load Closure Analysis</h3>
+                  <p className="text-sm">Please try refreshing the page.</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
                               plugins: {
                                 legend: {
                                   position: 'right',
