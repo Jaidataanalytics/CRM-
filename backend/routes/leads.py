@@ -709,7 +709,7 @@ async def get_quotations_summary(
     current_user: User = Depends(get_current_user)
 ):
     """Get quotation summary statistics"""
-    from utils.indian_fy import get_indian_fy_dates
+    from routes.kpis import get_indian_fy_dates
     db = await get_db(request)
     start_date, end_date = get_indian_fy_dates()
     
