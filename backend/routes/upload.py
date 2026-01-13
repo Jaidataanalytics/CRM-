@@ -1078,7 +1078,7 @@ async def upload_sales_order(
                             lead_data[db_field] = clean_value(val)
                 
                 # Set won qty and engine numbers
-                lead_data['won_qty'] = final_qty
+                lead_data['won_qty'] = int(final_qty)  # Convert numpy int to Python int
                 if engine_numbers:
                     lead_data['engine_numbers'] = engine_numbers
                 
