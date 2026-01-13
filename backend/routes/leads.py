@@ -628,6 +628,139 @@ async def get_merge_history_summary(
     }
 
 
+# ============ QUOTATIONS ENDPOINTS ============
+@router.get("/quotations")
+async def get_quotations(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500),
+    status: str = Query("all", enum=["all", "pending", "won", "lost"]),
+    search: Optional[str] = None
+):
+    """Get leads with quotations sent"""
+    from utils.indian_fy import get_indian_fy_dates
+    db = await get_db(request)
+    start_date, end_date = get_indian_fy_dates()
+    
+    # Base query - leads with quotation_sent=True OR quotation_no exists OR quotation_date exists
+    query = {
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"quotation_sent": True},
+            {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]
+    }
+    
+    # Filter by status
+    if status == "pending":
+        query["enquiry_stage"] = {"$nin": ["Closed-Won", "Order Booked", "Closed-Lost", "Lost"]}
+    elif status == "won":
+        query["enquiry_stage"] = {"$in": ["Closed-Won", "Order Booked"]}
+    elif status == "lost":
+        query["$and"] = query.get("$and", []) + [{
+            "$or": [
+                {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
+                {"enquiry_stage": {"$regex": "^Lost$", "$options": "i"}}
+            ]
+        }]
+        query["enquiry_stage"] = {"$nin": ["Closed-Won", "Order Booked"]}
+    
+    # Add search filter
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query["$and"] = query.get("$and", []) + [{
+            "$or": [
+                {"name": search_regex},
+                {"phone_number": search_regex},
+                {"quotation_no": search_regex},
+                {"enquiry_no": search_regex},
+                {"corporate_name": search_regex}
+            ]
+        }]
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("quotation_date", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Add quotation_status field based on enquiry_stage
+    for lead in leads:
+        stage = lead.get("enquiry_stage", "").lower()
+        if stage in ["closed-won", "order booked"]:
+            lead["quotation_status"] = "won"
+        elif stage.startswith("closed-") or stage == "lost":
+            lead["quotation_status"] = "lost"
+        else:
+            lead["quotation_status"] = "pending"
+    
+    return {
+        "quotations": leads,
+        "total": total,
+        "pages": (total + limit - 1) // limit,
+        "page": page
+    }
+
+
+@router.get("/quotations/summary")
+async def get_quotations_summary(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get quotation summary statistics"""
+    from utils.indian_fy import get_indian_fy_dates
+    db = await get_db(request)
+    start_date, end_date = get_indian_fy_dates()
+    
+    # Base query for quotations
+    base_query = {
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"quotation_sent": True},
+            {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]
+    }
+    
+    total = await db.leads.count_documents(base_query)
+    
+    # Won quotations
+    won = await db.leads.count_documents({
+        **base_query,
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}
+    })
+    
+    # Lost quotations (Closed-* except Won, or Lost)
+    lost_query = {
+        **base_query,
+        "$and": [
+            {"$or": [
+                {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
+                {"enquiry_stage": {"$regex": "^Lost$", "$options": "i"}}
+            ]},
+            {"enquiry_stage": {"$nin": ["Closed-Won", "Order Booked"]}}
+        ]
+    }
+    lost = await db.leads.count_documents(lost_query)
+    
+    # Pending = Total - Won - Lost
+    pending = total - won - lost
+    if pending < 0:
+        pending = 0
+    
+    # Conversion rate
+    conversion_rate = round((won / total) * 100, 1) if total > 0 else 0
+    
+    return {
+        "total": total,
+        "pending": pending,
+        "won": won,
+        "lost": lost,
+        "conversion_rate": conversion_rate
+    }
+
+
 # Closure Questions Endpoints - MUST be before /{lead_id} route
 @router.get("/pending-closure-questions/count")
 async def get_pending_closure_questions_count(
