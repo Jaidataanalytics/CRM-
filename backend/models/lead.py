@@ -97,6 +97,30 @@ class Lead(BaseModel):
     transporter_details: Optional[str] = None  # Transporter info
     dispatch_status_history: Optional[List[dict]] = None  # Track status changes with reasons
     
+    # Sales Order fields (from SO upload)
+    sales_order_no: Optional[str] = None
+    sales_order_date: Optional[str] = None
+    sales_order_status: Optional[str] = None
+    sales_order_cancellation_date: Optional[str] = None
+    quotation_no: Optional[str] = None
+    quotation_amount: Optional[float] = None
+    invoice_no: Optional[str] = None
+    invoice_date: Optional[str] = None  # Also serves as won_date
+    po_number: Optional[str] = None
+    po_date: Optional[str] = None
+    promise_delivery_date: Optional[str] = None
+    oem_order_date: Optional[str] = None
+    engine_numbers: Optional[List[str]] = None  # Array of allocated engine numbers
+    customer_code: Optional[str] = None
+    
+    # Qty tracking (from Sales Order - gensets sold)
+    won_qty: Optional[int] = None  # Total qty from SO (each engine = 1 qty)
+    
+    # Qualified lead status
+    is_qualified: Optional[bool] = None  # Auto-set if 50%+ fields filled
+    qualified_changed_by: Optional[str] = None  # If manually changed
+    qualified_changed_at: Optional[str] = None
+    
     # Closure questions fields (for lost leads)
     needs_closure_questions: Optional[bool] = None  # Flag to show closure questions modal
     closure_type: Optional[str] = None  # "won" or "lost"
