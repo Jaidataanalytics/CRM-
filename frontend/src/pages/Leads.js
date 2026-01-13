@@ -1251,6 +1251,57 @@ const Leads = () => {
               </div>
             </PopoverContent>
           </Popover>
+          
+          {/* Sales Order Upload */}
+          <input
+            type="file"
+            ref={salesOrderFileInputRef}
+            className="hidden"
+            accept=".xlsx,.xls"
+            onChange={handleSalesOrderUpload}
+          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 border-green-300 text-green-700 hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950"
+                title="Upload sales orders from Excel"
+              >
+                <FileDown className="h-4 w-4" />
+                Sales Orders
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 p-4" align="end">
+              <div className="space-y-3">
+                <div>
+                  <h4 className="font-medium text-sm mb-1">Sales Order Upload</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Upload sales orders to mark leads as Won and track quantity (gensets sold).
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full justify-start gap-2 bg-green-600 hover:bg-green-700"
+                    onClick={() => salesOrderFileInputRef.current?.click()}
+                    disabled={uploadingSalesOrder}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadingSalesOrder ? 'Uploading...' : 'Upload Sales Orders'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Key columns:</strong><br/>
+                  Sales Order Number, Phone, Qty<br/>
+                  Invoice No, Dispatch Date<br/>
+                  <br/>
+                  <strong>Note:</strong> "Unallotted" rows will be skipped.
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           <Button
             variant="outline"
             onClick={handleExport}
