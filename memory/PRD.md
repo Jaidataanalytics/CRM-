@@ -105,6 +105,26 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
    - Auto-calculates `is_qualified` status on merge
    - Fallback to `enquiry_no` matching if phone doesn't match
 
+3. ✅ **Lost Leads Upload with Merge Logic**:
+   - Updated `/api/upload/lost-leads` to use the same phone-based merge pattern
+   - Merges data from incoming records before updating to Lost status
+   - Tracks merged fields for reporting
+   - Calculates `is_qualified` status for new and merged leads
+
+4. ✅ **Upload Merge Summary Modal (Enhancement)**:
+   - New modal showing detailed merge summary after uploads
+   - Displays: Row, Name, Phone, Match By (phone/enquiry_no), Fields Merged
+   - Shows created vs merged counts
+   - Works for both Enquiry and Lost Leads uploads
+   - Provides visibility into data consolidation during uploads
+
+5. ✅ **Dispatch Page Verified**:
+   - Showing SO data correctly: 570 Total Won, 2 Pending, 536 Dispatched
+   - Tabs for Pending/Dispatched/All working
+   - Data table showing enquiry details
+
+6. ✅ All tests passed (10/10 backend, frontend verified)
+
 ### Session 5 - Jan 5, 2026 (COMPLETED)
 1. ✅ **Compare Forecasts Page**:
    - New page at /compare-forecasts
