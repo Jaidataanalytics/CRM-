@@ -199,7 +199,8 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Save/View projections
 
 ## Upcoming Tasks
-- Manual 'Qualified' Toggle (P2) - Add UI element to toggle qualified status
+- Manual 'Qualified' Toggle (P1) - Add UI element to toggle qualified status on lead detail
+- Verify per-dimension forecast accuracy (P2)
 - Detailed audit logs (P2)
 - Refactor large files (`upload.py`, `Leads.js`, `Forecast.js`)
 
