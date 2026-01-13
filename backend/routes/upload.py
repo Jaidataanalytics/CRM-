@@ -1142,8 +1142,8 @@ async def upload_sales_order(
                     merge_updates['enquiry_stage'] = 'Closed-Won'
                     merge_updates['enquiry_status'] = 'Closed'
                     merge_updates['closure_type'] = 'won'
-                    merge_updates['won_qty'] = final_qty
-                    merge_updates['sales_order_no'] = so_no
+                    merge_updates['won_qty'] = int(final_qty)  # Convert numpy int
+                    merge_updates['sales_order_no'] = str(so_no)
                     merge_updates['so_upload_batch_id'] = upload_batch_id
                     merge_updates['updated_at'] = now
                     
