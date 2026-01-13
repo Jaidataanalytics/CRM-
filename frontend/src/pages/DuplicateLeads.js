@@ -441,6 +441,197 @@ const DuplicateLeads = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* Merge History Tab */}
+        <TabsContent value="merge-history" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Leads that have been consolidated from multiple data sources (uploads with same phone number)
+            </p>
+            <div className="flex gap-2">
+              {/* Merge Search */}
+              <form onSubmit={(e) => { e.preventDefault(); setMergePage(1); loadMergeHistory(); }} className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search merged leads..."
+                    value={mergeSearchQuery}
+                    onChange={(e) => setMergeSearchQuery(e.target.value)}
+                    className="pl-9 w-48"
+                  />
+                  {mergeSearchQuery && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => { setMergeSearchQuery(''); setMergePage(1); }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <Button type="submit" variant="secondary" size="sm">
+                  Search
+                </Button>
+              </form>
+              <Button
+                onClick={() => { loadMergeHistory(); loadMergeSummary(); }}
+                disabled={mergeLoading}
+                variant="outline"
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${mergeLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          {/* Merge Summary Card */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
+                    <GitMerge className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Consolidated Leads</p>
+                    <p className="text-3xl font-bold">{mergeSummary?.total_merged_leads?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full">
+                    <Database className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Alt. Enquiry Numbers</p>
+                    <p className="text-3xl font-bold">{mergeSummary?.total_alternative_enquiry_nos?.toLocaleString() || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-full">
+                    <CheckCircle className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Avg Sources per Lead</p>
+                    <p className="text-3xl font-bold">{(mergeSummary?.consolidation_ratio + 1)?.toFixed(1) || '-'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Merged Leads Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Consolidated Lead Records</CardTitle>
+              <CardDescription>
+                These leads have been merged from multiple uploads (matched by phone number)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {mergeLoading ? (
+                <div className="space-y-4">
+                  {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-12" />)}
+                </div>
+              ) : mergedLeads.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <GitMerge className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <h3 className="font-medium text-lg mb-2">No Merged Leads</h3>
+                  <p className="text-sm">
+                    {mergeSearchQuery 
+                      ? 'No merged leads match your search criteria.' 
+                      : 'No leads have been consolidated from multiple uploads yet.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Enquiry No</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Stage</TableHead>
+                        <TableHead>Alternative Enquiry Nos</TableHead>
+                        <TableHead className="text-right">Sources</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {mergedLeads.map((lead) => (
+                        <TableRow key={lead.lead_id} className="hover:bg-muted/50">
+                          <TableCell className="font-mono text-sm">{lead.enquiry_no || '-'}</TableCell>
+                          <TableCell className="font-medium">{lead.name || lead.corporate_name || '-'}</TableCell>
+                          <TableCell>{lead.phone_number || '-'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{lead.enquiry_stage || '-'}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {(lead.alternative_enquiry_nos || []).slice(0, 3).map((enq, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs">
+                                  {enq}
+                                </Badge>
+                              ))}
+                              {(lead.alternative_enquiry_nos || []).length > 3 && (
+                                <Badge variant="secondary" className="text-xs">
+                                  +{lead.alternative_enquiry_nos.length - 3} more
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+                              {(lead.merge_count || 0) + 1}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Merge Pagination */}
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((mergePage - 1) * 50) + 1} - {Math.min(mergePage * 50, totalMerged)} of {totalMerged}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMergePage(p => Math.max(1, p - 1))}
+                        disabled={mergePage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setMergePage(p => Math.min(mergeTotalPages, p + 1))}
+                        disabled={mergePage >= mergeTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Lead Detail Sheet */}
       <Sheet open={showLeadDetail} onOpenChange={setShowLeadDetail}>
