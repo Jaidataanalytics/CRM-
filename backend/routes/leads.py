@@ -519,6 +519,115 @@ async def run_duplicate_detection(
         raise HTTPException(status_code=500, detail=f"Failed to run duplicate detection: {str(e)}")
 
 
+@router.get("/merge-history")
+async def get_merge_history(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500),
+    search: Optional[str] = None
+):
+    """
+    Get leads that have been merged/consolidated from multiple sources.
+    These are leads that have duplicate_enquiry_nos (alternative enquiry numbers from merged records)
+    or have been updated from multiple upload batches.
+    """
+    db = await get_db(request)
+    
+    # Build query for merged leads - leads with alternative enquiry numbers
+    query = {
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}},
+            {"merged_from": {"$exists": True, "$ne": [], "$ne": None}}
+        ]
+    }
+    
+    # Add search filter
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query["$and"] = query.get("$and", []) + [{
+            "$or": [
+                {"name": search_regex},
+                {"phone_number": search_regex},
+                {"enquiry_no": search_regex},
+                {"corporate_name": search_regex}
+            ]
+        }]
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(query, {"_id": 0}).sort("updated_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Format response with merge info
+    formatted_leads = []
+    for lead in leads:
+        duplicate_enquiry_nos = lead.get("duplicate_enquiry_nos", []) or []
+        merged_from = lead.get("merged_from", []) or []
+        
+        formatted_leads.append({
+            **lead,
+            "merge_count": len(duplicate_enquiry_nos) + len(merged_from),
+            "alternative_enquiry_nos": duplicate_enquiry_nos,
+            "has_merged_data": bool(duplicate_enquiry_nos or merged_from)
+        })
+    
+    return {
+        "leads": formatted_leads,
+        "total": total,
+        "pages": (total + limit - 1) // limit,
+        "page": page
+    }
+
+
+@router.get("/merge-history/summary")
+async def get_merge_history_summary(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get summary statistics for merged/consolidated leads"""
+    db = await get_db(request)
+    
+    # Count leads with merged data
+    total_merged = await db.leads.count_documents({
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}},
+            {"merged_from": {"$exists": True, "$ne": [], "$ne": None}}
+        ]
+    })
+    
+    # Aggregate to count total alternative enquiry numbers
+    pipeline = [
+        {
+            "$match": {
+                "deleted_at": {"$exists": False},
+                "duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}
+            }
+        },
+        {
+            "$project": {
+                "alt_count": {"$size": {"$ifNull": ["$duplicate_enquiry_nos", []]}}
+            }
+        },
+        {
+            "$group": {
+                "_id": None,
+                "total_alternatives": {"$sum": "$alt_count"}
+            }
+        }
+    ]
+    result = await db.leads.aggregate(pipeline).to_list(1)
+    total_alternatives = result[0]["total_alternatives"] if result else 0
+    
+    return {
+        "total_merged_leads": total_merged,
+        "total_alternative_enquiry_nos": total_alternatives,
+        "consolidation_ratio": round(total_alternatives / total_merged, 2) if total_merged > 0 else 0
+    }
+
+
 # Closure Questions Endpoints - MUST be before /{lead_id} route
 @router.get("/pending-closure-questions/count")
 async def get_pending_closure_questions_count(
