@@ -73,6 +73,7 @@ const Insights = () => {
   const [summaryDimension, setSummaryDimension] = useState('employee');
   const [summaryData, setSummaryData] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [compareHistorical, setCompareHistorical] = useState(false);
 
   useEffect(() => {
     loadData();
