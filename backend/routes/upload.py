@@ -1033,9 +1033,13 @@ async def upload_sales_order(
         
         for (so_no, phone), group in so_groups:
             try:
-                if not so_no or not phone:
+                # Check for valid SO Number and Phone
+                if pd.isna(so_no) or str(so_no).strip() == '' or pd.isna(phone) or str(phone).strip() == '':
                     errors.append({"so_no": str(so_no), "error": "Missing SO Number or Phone"})
                     continue
+                
+                so_no = str(so_no).strip()
+                phone = str(phone).strip()
                 
                 # Calculate qty: MAX(row_count, sum of Qty column)
                 row_count = len(group)
@@ -1045,7 +1049,9 @@ async def upload_sales_order(
                 # Collect engine numbers (Invoice No can serve as unique identifier)
                 engine_numbers = []
                 if 'Invoice No' in group.columns:
-                    engine_numbers = [str(inv) for inv in group['Invoice No'].dropna().unique() if inv]
+                    invoices = group['Invoice No'].dropna()
+                    if len(invoices) > 0:
+                        engine_numbers = [str(inv) for inv in invoices.unique() if pd.notna(inv) and str(inv).strip()]
                 
                 # Get first row for other data (they should be same for same SO+Phone)
                 first_row = group.iloc[0]
@@ -1055,6 +1061,9 @@ async def upload_sales_order(
                 for excel_col, db_field in SALES_ORDER_COLUMN_MAPPING.items():
                     if excel_col in group.columns:
                         val = first_row.get(excel_col)
+                        # Skip NaN values
+                        if pd.isna(val):
+                            continue
                         if db_field in ['sales_order_date', 'enquiry_date', 'po_date', 
                                        'quotation_date', 'invoice_date', 'promise_delivery_date',
                                        'oem_order_date', 'dispatch_date', 'sales_order_cancellation_date']:
