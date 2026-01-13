@@ -466,7 +466,9 @@ async def get_kpis(
     
     return {
         "total_leads": total_leads,
+        "total_qty": total_qty,
         "won_leads": won_leads,
+        "won_qty": won_qty,
         "lost_leads": lost_leads,
         "open_leads": open_leads,
         "closed_leads": closed_leads,
@@ -484,7 +486,9 @@ async def get_kpis(
         "call_to_quotation_rate": round(call_to_quotation_rate, 2),
         "transferred_leads": transferred_leads,
         "pending_dispatch": pending_dispatch,
+        "pending_dispatch_qty": pending_dispatch_qty,
         "dispatched": dispatched_count,
+        "dispatched_qty": dispatched_qty,
         "needs_dispatch_migration": no_dispatch_status,
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
