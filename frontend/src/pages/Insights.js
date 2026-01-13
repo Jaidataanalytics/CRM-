@@ -132,6 +132,55 @@ const Insights = () => {
     }
   };
 
+  const loadSummaryBuilder = async () => {
+    setSummaryLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(
+        `${API}/insights/summary-builder?metric=${summaryMetric}&time_frame=${summaryTimeFrame}&dimension=${summaryDimension}&${queryParams}`,
+        { withCredentials: true }
+      );
+      setSummaryData(res.data);
+    } catch (error) {
+      console.error('Error loading summary builder:', error);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  // Load summary builder when params change
+  useEffect(() => {
+    loadSummaryBuilder();
+  }, [buildQueryParams, summaryMetric, summaryTimeFrame, summaryDimension]);
+
+  const exportSummaryToCSV = () => {
+    if (!summaryData?.pivot_table) return;
+    
+    const { columns, rows, column_totals, grand_total } = summaryData.pivot_table;
+    const dimension = summaryData.meta.dimension;
+    
+    // Build CSV content
+    let csv = `${dimension.charAt(0).toUpperCase() + dimension.slice(1)},${columns.join(',')},Total\n`;
+    
+    rows.forEach(row => {
+      const values = columns.map(col => row.periods[col] || 0);
+      csv += `"${row.dimension}",${values.join(',')},${row.total}\n`;
+    });
+    
+    // Add totals row
+    const totalValues = columns.map(col => column_totals[col] || 0);
+    csv += `Total,${totalValues.join(',')},${grand_total}\n`;
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `summary_${summaryDimension}_${summaryMetric}_${summaryTimeFrame}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   const conversionChartData = {
     labels: conversionData.map(d => `${d.followups} follow-ups`),
     datasets: [
