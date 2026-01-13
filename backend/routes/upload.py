@@ -457,11 +457,28 @@ async def upload_leads(
                     merged_lead = {**existing, **merge_updates}
                     merge_updates['is_qualified'] = calculate_qualified_status(merged_lead)
                     
+                    # Track merged fields for summary (exclude system fields)
+                    system_fields = ['updated_at', 'is_qualified', 'needs_closure_questions', 'closure_type']
+                    merged_fields = [k for k in merge_updates.keys() if k not in system_fields and merge_updates[k] != existing.get(k)]
+                    
                     await db.leads.update_one(
                         {"lead_id": existing["lead_id"]},
                         {"$set": merge_updates}
                     )
                     updated_count += 1
+                    
+                    # Track merge details for summary (limit to first 100)
+                    if len(merge_details) < 100:
+                        merge_details.append({
+                            "row": idx + 2,
+                            "lead_id": existing["lead_id"],
+                            "name": existing.get('name') or existing.get('corporate_name') or 'Unknown',
+                            "phone": existing.get('phone_number'),
+                            "enquiry_no": existing.get('enquiry_no'),
+                            "matched_by": "phone" if phone_number else "enquiry_no",
+                            "merged_fields": merged_fields[:15],  # Limit fields shown
+                            "field_count": len(merged_fields)
+                        })
                 else:
                     # Create new lead
                     uploader_name = current_user.name or current_user.email or "Unknown User"
