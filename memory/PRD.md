@@ -164,9 +164,8 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Save/View projections
 
 ## Upcoming Tasks
-- **Update Lost Leads Upload with new merge logic (P1)**: Ensure Lost Leads upload uses the same phone-based merge pattern
-- **Map Quotation/Dispatch data to respective pages (P1)**: Connect SO file data to dedicated pages
-- **Verify Dispatch page integration (P1)**: Ensure dispatch data displays correctly
+- **Map Quotation data to dedicated page (P1)**: Create or enhance Quotation tracking page with data from SO uploads
+- **Verify and enhance per-dimension analytics (P1)**: Ensure all analytics pages work with new data model
 
 ## Future/Backlog Tasks
 - Manual 'Qualified' Toggle (P2)
