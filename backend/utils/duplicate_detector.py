@@ -332,3 +332,79 @@ async def find_by_enquiry_no(db, enquiry_no: str) -> Optional[Dict]:
     }, {"_id": 0})
     
     return existing
+
+
+# Key fields to check for qualified status (50%+ should be filled)
+QUALIFIED_FIELDS = [
+    'name', 'phone_number', 'enquiry_no', 'enquiry_date', 'state', 'dealer',
+    'employee_name', 'kva', 'segment', 'source', 'enquiry_stage', 'enquiry_status',
+    'customer_type', 'district', 'address', 'email_address', 'remarks', 'phase', 'qty'
+]
+
+
+def calculate_qualified_status(lead: Dict) -> bool:
+    """
+    Determine if a lead is qualified based on field fill percentage.
+    A lead is qualified if 50% or more of key fields are filled.
+    """
+    filled_count = 0
+    
+    for field in QUALIFIED_FIELDS:
+        value = lead.get(field)
+        if value is not None and value != '' and value != []:
+            filled_count += 1
+    
+    fill_percentage = (filled_count / len(QUALIFIED_FIELDS)) * 100
+    return fill_percentage >= 50
+
+
+async def update_qualified_status_migration(db):
+    """
+    Run qualified status calculation on all existing leads.
+    """
+    logger.info("Starting qualified status migration...")
+    
+    try:
+        # Get all non-deleted leads
+        leads = await db.leads.find(
+            {"deleted_at": {"$exists": False}},
+            {"_id": 0}
+        ).to_list(100000)
+        
+        logger.info(f"Calculating qualified status for {len(leads)} leads...")
+        
+        qualified_count = 0
+        not_qualified_count = 0
+        now = datetime.now(timezone.utc).isoformat()
+        
+        for lead in leads:
+            # Skip if manually changed
+            if lead.get('qualified_changed_by'):
+                continue
+            
+            is_qualified = calculate_qualified_status(lead)
+            current_status = lead.get('is_qualified')
+            
+            # Only update if status changed or not set
+            if current_status != is_qualified:
+                await db.leads.update_one(
+                    {"lead_id": lead.get('lead_id')},
+                    {"$set": {"is_qualified": is_qualified, "updated_at": now}}
+                )
+                
+                if is_qualified:
+                    qualified_count += 1
+                else:
+                    not_qualified_count += 1
+        
+        logger.info(f"Qualified status migration complete. Qualified: {qualified_count}, Not qualified: {not_qualified_count}")
+        
+        return {
+            "qualified": qualified_count,
+            "not_qualified": not_qualified_count,
+            "total_processed": len(leads)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error during qualified status migration: {e}")
+        raise
