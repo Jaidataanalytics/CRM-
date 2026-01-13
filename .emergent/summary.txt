@@ -1,166 +1,140 @@
 <analysis>**original_problem_statement:**
-The user wants to build a comprehensive lead management and forecasting dashboard named Sharda.
-
-The user requested the following features and fixes during this session:
-1.  **Duplicate Lead Detection**: Implement a system to flag duplicate leads based on fuzzy-matched , , and . This logic should run automatically on application startup to process the production database.
-2.  **Lost Leads Upload**: Create a separate file upload for lost leads. This upload should skip rows if the  or  already exists. It requires specific column mappings ( -> ,  -> ,  -> , etc.) and should set the lead's status to 'Lost'.
-3.  **Data Management**: Add a feature in the Data Management section of the Admin panel to view recent file uploads and allow for the deletion of leads from a specific upload batch.
-4.  **Date Logic for Lost Leads**: For leads uploaded via the Lost Leads feature, the  should also be used as the . This logic should be applied to newly uploaded leads and migrated for existing lost leads.
-5.  **Bulk Lead Deletion**: Implement a bulk delete feature on the Manage Leads page. This should allow Admins and Managers to select multiple leads (via checkboxes, select all on page, select all matching filters) and soft-delete them (move to Trash) after a preview confirmation step.
-6.  **UI Enhancements**:
-    *   Display lost lead-specific fields (, , ) in the lead detail view.
-    *   Add a Competitor Analysis section to the Insights page to visualize data for , , and .
-    *   Make KPI cards on the dashboard navigate to the filtered Leads page on double-click.
-7.  **Bug Fixes**:
-    *   The Lost Leads Upload was not detecting duplicates from the user-provided  file due to incorrect column name mappings.
-    *   The Bulk Delete button was not showing for the 'Admin' role due to a case-sensitivity issue ( vs ).
-    *   A deployment failure occurred due to a , preventing the backend from connecting to the MongoDB Atlas cluster.
+The user wants to overhaul their lead management system. Key requirements include:
+1.  **Duplicate Logic Change**: Use  as the primary identifier for duplicate leads and merge new data into existing records.
+2.  **Unified Data Upload**: Consolidate and merge data from three Excel files (, , ) into a single lead record.
+3.  **Quantity (Qty) Tracking**: Introduce  as a core metric alongside lead counts for all KPIs.
+4.  **New Features & Fixes**:
+    *   Add a new Old Enquiries Closed KPI.
+    *   Implement an  lead status.
+    *   Fix and enhance the Closure/Lost Analysis page to correctly process and visualize data from the , including competitor names and lost reasons.
+    *   Enhance the Duplicate Leads page to also serve as a Merge History viewer.
+    *   Create a dedicated Quotations page.
+    *   Remove the Total KVA metric from all analytics.
+    *   Build a new Summary Builder (pivot table) feature in the  page.
+    *   Review and refactor the data model to eliminate redundant fields and improve data consistency.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A full-stack lead management application with a React frontend and FastAPI backend. All features requested in this session have been implemented in the preview environment, including duplicate detection, lost leads upload, bulk delete, competitor insights, and clickable KPI cards. The application's backend startup sequence now includes several data migration and cleaning tasks, such as flagging duplicates and correcting historical data mappings. The preview environment is functional, but the application is currently failing to deploy to production due to a database connection issue.
+The application is a full-stack lead management dashboard. The agent has successfully implemented most of the user's requirements. The data import process for all three source files now uses a unified phone-based duplicate detection and data merge logic. Key features like the Old Enquiries Closed KPI, quantity tracking, the enhanced Closure/Lost Analysis page, a new Quotations page, and a Data Management page (evolved from the old duplicates page) are complete and functional. The application has been tested with user-provided data files. The current focus is on a major new feature and a data model refactoring task.
 
 **Last working item**:
-*   **Last item agent was working**: The agent was troubleshooting a critical deployment failure. The deployed application's backend was unable to start due to a , indicating a failure to connect to the MongoDB Atlas cluster, likely from a DNS resolution issue. The agent attempted to make the application more resilient by adding connection retries and wrapping the startup migrations in a try-except block within .
-*   **Status**: IN PROGRESS
-*   **Agent Testing Done**: N (The fix has been applied but not verified in a deployment).
-*   **Which testing method agent to use?**: The agent should first attempt to restart the backend to see if the changes introduced any local regressions. The ultimate test will be deploying the application, which can be initiated by the user. If it fails again, the  should be used.
+*   **Last item agent was working**: The user requested a comprehensive review of the entire application for data model improvements and the creation of a new Summary Builder (pivot table) feature. The agent began by analyzing the existing  model and  to plan the next steps.
+*   **Status**: NOT STARTED
+*   **Agent Testing Done**: N
+*   **Which testing method agent to use?**: After implementing the Summary Builder, use both the backend testing agent (to verify the dynamic aggregation API) and the frontend testing agent (to test the pivot table UI, interactions, and data accuracy). For the data model refactoring, a full regression test using both testing agents is recommended.
 *   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Deployment Failure: MongoDB Connection Timeout (P0)**
-    *   **Description**: The application fails to start in the deployed environment, throwing a  because it cannot resolve the MongoDB Atlas hostnames. This is a hard blocker preventing the user from accessing any of the newly implemented features in their production environment.
-    *   **Attempted fixes**: The agent modified  to add a connection check with retries within the  function and wrapped the calls to migration functions in a  block to prevent a connection failure from crashing the entire application startup.
-    *   **Next debug checklist**:
-        1.  Verify the attempted fix in  doesn't break the local preview environment. Restart the backend service.
-        2.  Inform the user about the attempted fix and ask them to try deploying again.
-        3.  If deployment fails again with the same error, the issue is likely related to the deployment environment's networking/DNS configuration, not the application code itself. Call the  to investigate environmental factors.
-    *   **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker. Fixing it will allow the application to run in the user's production environment, making all the recently completed features available to them.
-    *   **Status**: IN PROGRESS
-    *   **Is recurring issue?**: N
-    *   **Should Test frontend/backend/both after fix?**: Both (A successful deployment needs full verification).
-    *   **Blocked on other issue**: No.
+*   No outstanding bugs. All work is related to new feature development and planned refactoring.
 
 **In progress Task List**:
-*   None. All development tasks are complete. The current focus is on resolving the deployment blocker.
+*   **Task 1: Data Model & Dashboard Review and Refactoring (P0)**
+    *   **Description**: Review the data model to identify and consolidate redundant fields (e.g., //, /) to improve data integrity.
+    *   **Where to resume**: Formulate a migration plan. This involves creating a one-time migration script in  to merge data into canonical fields, and then updating all backend routes and frontend components to use only the consolidated fields.
+    *   **What will be achieved with this?**: A cleaner, more consistent data model that prevents data fragmentation and simplifies future development.
+    *   **Status**: IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?**: Both.
+    *   **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
-    *   **Task 1: Verify Per-Dimension Forecast Accuracy (P2)**: A core requirement for >75% forecast accuracy for *every* dimension breakdown was implemented in a previous job but never fully verified with the testing agent.
+    *   **Task 1: Implement Summary Builder (Pivot Table) Feature (P0)**: Create a new tab in the  page that allows users to build dynamic reports.
+        *   **Functionality**: Users should be able to select a metric (e.g., total leads), a time frame (monthly, quarterly), and a dimension (e.g., employee, dealer, state) to generate a pivot table with totals. The feature should also provide high-level insights like trends and comparisons.
+        *   **Files**:  (new dynamic aggregation endpoint),  (new UI component).
+    *   **Task 2: Implement Manual 'Qualified' Toggle (P1)**: Add a UI element on the lead detail view to allow users to manually set a lead's  status.
+        *   **Files**:  or a lead detail component, .
 *   **Future Tasks**:
-    *   **Task 2: Detailed Audit Logs (P2)**.
-    *   **Task 3: Refactor Forecast Page (P2)**: Refactor  into smaller, more manageable components.
+    *   **Task 3: Verify Per-Dimension Forecast Accuracy (P2)**.
+    *   **Task 4: Detailed Audit Logs (P2)**.
+    *   **Task 5: Refactor Forecast Page (P2)**: Break down  into smaller components.
 
 **Completed work in this session**
-- **Duplicate Lead Detection (DONE)**: Implemented backend logic () and a new frontend page () to display flagged duplicates.
-- **Startup Migrations (DONE)**: Added several migrations to  that run on application startup to:
-    - Automatically detect and flag duplicate leads.
-    - Update existing lost leads to use  as .
-    - Fix historical data by mapping  to  and / to .
-- **Lost Leads Upload (DONE)**:
-    - Created a new endpoint  with custom duplicate-skipping logic.
-    - Added a UI popover on the Leads page for the upload.
-    - Fixed column mapping to support user's file format ().
-- **Bulk Delete Feature (DONE)**:
-    - Added backend endpoints (, ) for soft-deleting leads.
-    - Implemented a Bulk Delete mode in the frontend on  with checkboxes, selection controls, and a confirmation dialog.
-- **Data Management (DONE)**:
-    - Implemented tracking of  for all lead upload types.
-    - Added endpoints (, ) and a UI section in the Admin panel to list and delete uploads.
-- **Insights & UI Enhancements (DONE)**:
-    - Created a Competitor Analysis tab on the Insights page with a new backend endpoint .
-    - Made Dashboard KPI cards navigate to the filtered Leads page on double-click.
-    - Added a Lost Info tab to the lead detail panel to display , , and .
-
-**Earlier issues found/mentioned but not fixed**
--   **Issue 1: Forecast Generation Failing in Deployed Environment (USER VERIFICATION PENDING)**: Fixes for this were implemented in a previous job, but they are blocked by the current deployment issue.
--   **Issue 2: Data Normalization Not Live in Production (USER VERIFICATION PENDING)**: The startup migration for data normalization exists but is blocked from running in production by the current deployment issue.
+- **Old Enquiries Closed KPI (DONE)**: Implemented on the backend () and frontend ().
+- **Unified Upload Logic (DONE)**: Refactored all upload endpoints () to use a consistent phone-based duplicate detection and merge strategy. This includes fixing the  upload to merge data for all leads, not just new ones.
+- **Enhanced Upload Summary (DONE)**: Added a summary modal () to show users which fields were merged during an upload.
+- **Closure Analysis Overhaul (DONE)**: Fixed a critical bug in  and completely redesigned the feature to use , , and  as the primary data sources, with new UI charts and tables in .
+- **Total KVA Metric Removed (DONE)**: Scrubbed the KVA metric from all relevant backend calculations and frontend displays.
+- **Data Management Page (DONE)**: Transformed the  page into a tabbed view with the original duplicate finder and a new Merge History tab, powered by a new  endpoint.
+- **New Quotations Page (DONE)**: Created a new page () and corresponding backend endpoints () to track the quotation pipeline.
+- **User File Testing (DONE)**: Successfully processed user-provided  and  dump files, validating all new logic.
 
 **Known issue recurrence from previous fork**
-- **Production environment divergence**: Issues that do not occur in the local preview environment (like the current MongoDB connection timeout) manifest upon deployment. This highlights a persistent discrepancy between the two environments.
+- **Production environment divergence**: A known potential risk where issues might appear in deployment that are not present in the local preview. The application has been stable, but this remains a point of awareness.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-*   **FastAPI Startup Events**: Heavily used in  to run data migrations (duplicate detection, data correction) automatically when the application starts. This is a critical mechanism for ensuring data integrity in the production environment.
-*   **Fuzzy String Matching**: The  library is used in  to identify non-exact matches for lead names and corporate names.
-*   **Soft Deletion**: The bulk delete feature moves leads to a Trash status instead of permanently deleting them, allowing for potential recovery.
+*   **Data Unification**: The central theme of the session, focused on merging multiple data sources into a single source of truth using  as the key.
+*   **Dynamic Aggregation**: The core concept for the upcoming Summary Builder feature, which will require building flexible MongoDB aggregation pipelines based on user input.
 
 **key DB schema**
 *   **leads**:
-    *   : (Boolean, default: ) - Flags if a lead is a duplicate.
-    *   : (String, nullable) - Stores the ID of the original lead if  is true.
-    *   : (String, nullable) - UUID to group leads from the same file upload.
-    *   : (String)
-    *   : (String)
-    *   : (String)
-    *   : (String)
-*   **activity_logs**:
-    *   Used to track file uploads, storing metadata like , , , , and the .
+    *   : (Array of Strings) Stores alternate enquiry numbers from merged records.
+    *   , , : (String) Fields populated from the Lost dump, now used for Closure Analysis.
+    *   , , : Fields for the new Quotations page.
 
 **changes in tech stack**
--   None.
+- None.
 
 **All files of reference**
--    (Crucial for the deployment fix and migrations)
--    (Bulk delete implementation)
--    (Lost leads upload implementation)
--    (Data management endpoints)
--    (Core duplicate logic)
--    (Major UI changes for bulk delete and lost leads)
--    (UI for data management)
--    (New UI page)
--    (Competitor analysis UI)
--    (KPI card enhancement)
+*    (For Summary Builder backend)
+*    (For Summary Builder frontend)
+*    (For data model refactoring)
+*    (For data migration scripts)
+*   
+*   
+*   
 
 **Areas that need refactoring**:
-*    is large and could be broken down into smaller components.
+*   **Data Model**: The top priority for refactoring is to consolidate redundant location and name fields within the  model, as requested by the user.
 
 **key api endpoints**
-*   : For uploading the special lost leads file.
-*   : To fetch the list of flagged duplicate leads.
-*   : To move a list of selected leads to the trash.
-*   : To list file uploads from the last 7 days.
-*   : To delete all leads associated with a specific upload.
-*   : To get data for the new analysis charts on the Insights page.
+*   : Uploads and merges enquiry data.
+*   : Uploads and merges lost lead data.
+*   : Uploads and merges sales order data.
+*   : Retrieves dashboard KPIs.
+*   : Retrieves data for the enhanced Closure Analysis page.
+*   : Retrieves consolidated leads for the Data Management page.
+*    & : Retrieves data for the new Quotations page.
 
 **Critical Info for New Agent**
-1.  **Deployment is Blocked**: Your absolute first priority is to resolve the . The previous agent added resiliency code to , but this is unverified. You must confirm this fix or find the root cause. Do not proceed with any other tasks until the application can be successfully deployed.
-2.  **User is Waiting for Production Features**: The user is aware that features like Bulk Delete are complete but not visible in their deployed app. Your main goal is to get the production environment working so they can see and use all the work from this session.
-3.  **Confirm the Fix**: After ensuring the local environment works, communicate the attempted fix to the user and guide them to try deploying again. Be prepared to use the  if the problem persists, as it may be an issue with the underlying infrastructure.
+1.  **Prioritize Summary Builder & Data Model Refactor**: The user's latest request is to build the Summary Builder (pivot table) and clean up the data model. It's recommended to start with the data model refactoring to create a stable foundation before building the new feature.
+2.  **Data is Live**: The database is populated with data from user-provided files (, ). All new features and tests should be validated against this real-world dataset.
+3.  **KVA is Forbidden**: The Total KVA metric has been explicitly removed at the user's request. Do not re-introduce it in any form.
 
 **documents and test reports created in this job**
-*   The agent updated  multiple times to add test cases for the new features.
+*   
+*   User-provided data files are available at  and .
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Reports  during deployment. (PENDING RESOLUTION)
-2.  **User**: Reports bulk delete function not showing for deployed version. (Agent explained it requires deployment).
-3.  **User**: Uploaded  and reported that the lost leads upload feature was not finding duplicates. (RESOLVED - Agent fixed column mappings).
-4.  **User**: Requested that  and  mappings also be applied to existing historical data, especially for the deployed version. (RESOLVED - Agent added a startup migration).
-5.  **User**: Provided preferences for the bulk delete feature (checkboxes, soft delete, Admin+Manager access, preview confirmation, role-based limits). (IMPLEMENTED).
-6.  **User**: Reported that , ,  columns were not being shown in the lead data view. (IMPLEMENTED).
-7.  **User**: Clarified requirements for handling  vs  and confirmed new column mappings (, ). (IMPLEMENTED).
-8.  **User**: Asked to add a feature to  to bulk delete leads. (IMPLEMENTED).
-9.  **User**: Asked for  to be considered as  for filtering and reporting purposes for leads from the Lost Leads Upload. (IMPLEMENTED).
-10. **User**: Reported that the  is not finding duplicates when they are sure duplicates exist. (RESOLVED - fixed with correct column mappings).
+1.  **User**: Requested a review of the dashboard for data linking improvements, fixing data redundancy, and building a new Summary Builder feature. (PENDING)
+2.  **User**: Pointed out that already lost and won leads were being skipped during upload and should be merged. Redefined closure questions and asked to remove Total KVA. (RESOLVED)
+3.  **User**: Asked agent to verify closure/lost analysis with new data and provided feedback on an enhancement idea. Uploaded two files for testing. (RESOLVED)
+4.  **User**: Approved the agent's plan and asked to proceed. (DONE)
+5.  **Agent**: Completed a major set of features and fixes. (DONE)
+6.  **Agent**: Finished implementing the unified Enquiry Dump upload. (DONE)
+7.  **User**: Responded yes to a confirmation prompt. (DONE)
+8.  **Agent**: Proposed a plan to implement the Old Enquiries Closed KPI and unify the remaining upload flows. (USER AGREED)
+9.  **User**: Provided multiple rounds of clarification on the new requirements. (DONE)
+10. **User**: Submitted the major feature request to overhaul the entire system. (IN PROGRESS)
 
 **Project Health Check:**
-*   **Broken**: The application is **not deployable** due to a critical MongoDB connection error () in the production environment. The local preview environment is functional, but this does not help the user.
+*   **Functional**: The application is stable and working in the preview environment. All known bugs have been addressed, and the project is in a state of active feature development and enhancement.
 
 **3rd Party Integrations**
-*   **OpenAI GPT-4o**: Used for qualitative trend analysis in forecasts. Uses the Emergent LLM Key.
-*   **rapidfuzz**: Python library for fuzzy string matching.
+*   **OpenAI GPT-4o**: Used for generating qualitative trend analysis in forecasts. Relies on the Emergent LLM Key.
+*   **rapidfuzz**: A Python library used for fuzzy string matching.
 
 **Testing status**
-*   **Testing agent used after significant changes**: YES. The agent ran the testing subagent multiple times to verify the new features (duplicate detection, lost leads upload, data management APIs).
-*   **Troubleshoot agent used after agent stuck in loop**: NO. The agent was in the process of debugging a deployment issue when the session ended.
-*   **Test files created**: None.  was updated.
-*   **Known regressions**: None in the preview environment. The production environment is down.
+*   **Testing agent used after significant changes**: YES, successfully verified a large batch of features and fixes.
+*   **Troubleshoot agent used after agent stuck in loop**: NO.
+*   **Test files created**: Yes, temporary files were used for unit testing merge logic. The primary test data is now from the user-provided Excel files.
+*   **Known regressions**: None.
 
 **Credentials to test flow:**
 *   **Admin**:  / 
 
 **What agent forgot to execute**
--   The final end-to-end verification of the **per-dimension forecast accuracy** feature, which was a pending item from the previous fork, was not addressed in this session. This remains an outstanding task.</analysis>
+*   The agent has a clear plan and has not forgotten any outstanding tasks. The current work is aligned with the user's latest and highest-priority requests.</analysis>
