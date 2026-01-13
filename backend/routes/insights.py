@@ -781,3 +781,244 @@ async def get_lost_leads_breakdown(
             "lost_reason": lost_reason
         }
     }
+
+
+@router.get("/summary-builder")
+async def get_summary_builder(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    metric: str = Query("leads", enum=["leads", "qty", "won_leads", "lost_leads", "conversion_rate"]),
+    time_frame: str = Query("monthly", enum=["monthly", "quarterly", "yearly"]),
+    dimension: str = Query("employee", enum=["employee", "dealer", "state", "location", "segment", "source"]),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Dynamic Summary Builder / Pivot Table endpoint.
+    Allows users to create custom reports by selecting metric, time frame, and dimension.
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build base query - exclude soft-deleted leads
+    base_query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    }
+    
+    # Dimension field mapping
+    dimension_field_map = {
+        "employee": "$employee_name",
+        "dealer": "$dealer",
+        "state": "$state",
+        "location": "$location",
+        "segment": "$segment",
+        "source": "$source"
+    }
+    dimension_field = dimension_field_map.get(dimension, "$employee_name")
+    
+    # Time frame extraction
+    time_frame_map = {
+        "monthly": {"$substr": ["$enquiry_date", 0, 7]},  # YYYY-MM
+        "quarterly": {
+            "$concat": [
+                {"$substr": ["$enquiry_date", 0, 4]},  # Year
+                "-Q",
+                {
+                    "$switch": {
+                        "branches": [
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]}, "then": "1"},
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["04", "05", "06"]]}, "then": "2"},
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["07", "08", "09"]]}, "then": "3"},
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["10", "11", "12"]]}, "then": "4"}
+                        ],
+                        "default": "1"
+                    }
+                }
+            ]
+        },
+        "yearly": {"$substr": ["$enquiry_date", 0, 4]}  # YYYY
+    }
+    time_extraction = time_frame_map.get(time_frame, time_frame_map["monthly"])
+    
+    # Define won/lost stages
+    WON_STAGES = ["Closed-Won", "Order Booked"]
+    LOST_STAGES = ["Closed-Lost", "Closed-Dropped"]
+    
+    # Build aggregation pipeline
+    pipeline = [
+        {"$match": base_query},
+        {
+            "$addFields": {
+                "time_period": time_extraction
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "dimension": dimension_field,
+                    "time_period": "$time_period"
+                },
+                "total_leads": {"$sum": 1},
+                "total_qty": {"$sum": {"$ifNull": ["$qty", 0]}},
+                "won_leads": {
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}
+                },
+                "lost_leads": {
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", LOST_STAGES]}, 1, 0]}
+                },
+                "won_qty": {
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, {"$ifNull": ["$qty", 0]}, 0]}
+                }
+            }
+        },
+        {
+            "$addFields": {
+                "conversion_rate": {
+                    "$cond": [
+                        {"$eq": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                        0,
+                        {
+                            "$multiply": [
+                                {"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]},
+                                100
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        {"$sort": {"_id.time_period": 1, "_id.dimension": 1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(1000)
+    
+    # Process results into pivot table format
+    # Collect all unique time periods and dimensions
+    time_periods = sorted(list(set(r["_id"]["time_period"] for r in results if r["_id"]["time_period"])))
+    dimensions = sorted(list(set(r["_id"]["dimension"] for r in results if r["_id"]["dimension"])))
+    
+    # Create a lookup for quick access
+    data_lookup = {}
+    for r in results:
+        dim = r["_id"]["dimension"]
+        period = r["_id"]["time_period"]
+        if dim and period:
+            if dim not in data_lookup:
+                data_lookup[dim] = {}
+            data_lookup[dim][period] = {
+                "leads": r["total_leads"],
+                "qty": r["total_qty"],
+                "won_leads": r["won_leads"],
+                "lost_leads": r["lost_leads"],
+                "won_qty": r["won_qty"],
+                "conversion_rate": round(r["conversion_rate"], 1)
+            }
+    
+    # Build pivot table rows
+    pivot_rows = []
+    for dim in dimensions:
+        row = {
+            "dimension": dim or "Unknown",
+            "periods": {},
+            "total": 0
+        }
+        for period in time_periods:
+            cell = data_lookup.get(dim, {}).get(period, {
+                "leads": 0, "qty": 0, "won_leads": 0, "lost_leads": 0, "won_qty": 0, "conversion_rate": 0
+            })
+            
+            # Select the metric value
+            if metric == "leads":
+                value = cell["leads"]
+            elif metric == "qty":
+                value = cell["qty"]
+            elif metric == "won_leads":
+                value = cell["won_leads"]
+            elif metric == "lost_leads":
+                value = cell["lost_leads"]
+            elif metric == "conversion_rate":
+                value = cell["conversion_rate"]
+            else:
+                value = cell["leads"]
+            
+            row["periods"][period] = value
+            row["total"] += value if metric != "conversion_rate" else 0
+        
+        # For conversion rate, calculate the total differently
+        if metric == "conversion_rate":
+            total_won = sum(data_lookup.get(dim, {}).get(p, {}).get("won_leads", 0) for p in time_periods)
+            total_lost = sum(data_lookup.get(dim, {}).get(p, {}).get("lost_leads", 0) for p in time_periods)
+            row["total"] = round((total_won / (total_won + total_lost) * 100), 1) if (total_won + total_lost) > 0 else 0
+        
+        pivot_rows.append(row)
+    
+    # Sort rows by total (descending)
+    pivot_rows.sort(key=lambda x: x["total"], reverse=True)
+    
+    # Calculate column totals
+    column_totals = {}
+    for period in time_periods:
+        if metric == "conversion_rate":
+            total_won = sum(data_lookup.get(dim, {}).get(period, {}).get("won_leads", 0) for dim in dimensions)
+            total_lost = sum(data_lookup.get(dim, {}).get(period, {}).get("lost_leads", 0) for dim in dimensions)
+            column_totals[period] = round((total_won / (total_won + total_lost) * 100), 1) if (total_won + total_lost) > 0 else 0
+        else:
+            column_totals[period] = sum(row["periods"].get(period, 0) for row in pivot_rows)
+    
+    # Grand total
+    if metric == "conversion_rate":
+        total_won_all = sum(r["won_leads"] for r in results)
+        total_lost_all = sum(r["lost_leads"] for r in results)
+        grand_total = round((total_won_all / (total_won_all + total_lost_all) * 100), 1) if (total_won_all + total_lost_all) > 0 else 0
+    else:
+        grand_total = sum(row["total"] for row in pivot_rows)
+    
+    # Generate insights
+    insights = []
+    
+    if len(pivot_rows) > 0:
+        top_performer = pivot_rows[0]
+        insights.append({
+            "type": "top_performer",
+            "message": f"Top {dimension}: {top_performer['dimension']} with {top_performer['total']:.0f} total {metric.replace('_', ' ')}"
+        })
+    
+    # Trend analysis (if monthly or quarterly)
+    if len(time_periods) >= 2 and metric != "conversion_rate":
+        first_period_total = column_totals.get(time_periods[0], 0)
+        last_period_total = column_totals.get(time_periods[-1], 0)
+        if first_period_total > 0:
+            growth = ((last_period_total - first_period_total) / first_period_total) * 100
+            trend_direction = "up" if growth > 0 else "down" if growth < 0 else "stable"
+            insights.append({
+                "type": "trend",
+                "message": f"Overall {metric.replace('_', ' ')} is {trend_direction} {abs(growth):.1f}% from {time_periods[0]} to {time_periods[-1]}",
+                "growth": round(growth, 1)
+            })
+    
+    # Find best performing period
+    if column_totals:
+        best_period = max(column_totals, key=column_totals.get)
+        insights.append({
+            "type": "best_period",
+            "message": f"Best period: {best_period} with {column_totals[best_period]:.0f} {metric.replace('_', ' ')}"
+        })
+    
+    return {
+        "pivot_table": {
+            "columns": time_periods,
+            "rows": pivot_rows,
+            "column_totals": column_totals,
+            "grand_total": grand_total
+        },
+        "meta": {
+            "metric": metric,
+            "time_frame": time_frame,
+            "dimension": dimension,
+            "date_range": {"start_date": start_date, "end_date": end_date}
+        },
+        "insights": insights
+    }
