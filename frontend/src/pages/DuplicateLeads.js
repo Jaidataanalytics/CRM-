@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Search, 
   X, 
@@ -25,7 +26,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Eye,
-  Trash2
+  Trash2,
+  GitMerge,
+  Database
 } from 'lucide-react';
 import {
   Dialog,
@@ -52,6 +55,9 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const DuplicateLeads = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('duplicates');
+  
+  // Duplicates state
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -59,6 +65,15 @@ const DuplicateLeads = () => {
   const [totalDuplicates, setTotalDuplicates] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [runningDetection, setRunningDetection] = useState(false);
+  
+  // Merge History state
+  const [mergedLeads, setMergedLeads] = useState([]);
+  const [mergeLoading, setMergeLoading] = useState(false);
+  const [mergePage, setMergePage] = useState(1);
+  const [mergeTotalPages, setMergeTotalPages] = useState(1);
+  const [totalMerged, setTotalMerged] = useState(0);
+  const [mergeSearchQuery, setMergeSearchQuery] = useState('');
+  const [mergeSummary, setMergeSummary] = useState(null);
   
   // Lead detail panel
   const [selectedLead, setSelectedLead] = useState(null);
