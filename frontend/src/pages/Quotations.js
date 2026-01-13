@@ -50,7 +50,7 @@ const Quotations = () => {
   const loadQuotations = async () => {
     setLoading(true);
     try {
-      let url = `${API}/quotations?page=${page}&limit=50&status=${activeTab}`;
+      let url = `${API}/leads/quotations?page=${page}&limit=50&status=${activeTab}`;
       if (searchQuery.trim()) {
         url += `&search=${encodeURIComponent(searchQuery.trim())}`;
       }
@@ -69,7 +69,7 @@ const Quotations = () => {
 
   const loadSummary = async () => {
     try {
-      const res = await axios.get(`${API}/quotations/summary`, { withCredentials: true });
+      const res = await axios.get(`${API}/leads/quotations/summary`, { withCredentials: true });
       setSummary(res.data);
     } catch (error) {
       console.error('Error loading summary:', error);
