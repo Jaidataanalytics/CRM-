@@ -228,9 +228,6 @@ const Insights = () => {
       window.URL.revokeObjectURL(url);
     }
   };
-    a.click();
-    window.URL.revokeObjectURL(url);
-  };
 
   const conversionChartData = {
     labels: conversionData.map(d => `${d.followups} follow-ups`),
