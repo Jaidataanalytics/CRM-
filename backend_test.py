@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 
 class LeadManagementTester:
-    def __init__(self, base_url="https://sharda-leads.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://smart-leadsuite.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.admin_token = None
         self.employee_token = None
