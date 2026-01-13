@@ -93,6 +93,12 @@ const Leads = () => {
   const [uploadingLostLeads, setUploadingLostLeads] = useState(false);
   const lostLeadsFileInputRef = useRef(null);
   
+  // Sales Order upload state
+  const [uploadingSalesOrder, setUploadingSalesOrder] = useState(false);
+  const salesOrderFileInputRef = useRef(null);
+  const [soUploadSummaryOpen, setSoUploadSummaryOpen] = useState(false);
+  const [soUploadSummaryData, setSoUploadSummaryData] = useState(null);
+  
   // Bulk delete state
   const [selectedLeads, setSelectedLeads] = useState(new Set());
   const [selectAllOnPage, setSelectAllOnPage] = useState(false);
