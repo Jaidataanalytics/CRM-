@@ -2625,11 +2625,13 @@ const Leads = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Lost Leads Upload Summary Modal */}
+      {/* Upload Summary Modal - Handles both Enquiry and Lost Leads uploads */}
       <Dialog open={isUploadSummaryOpen} onOpenChange={setIsUploadSummaryOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Lost Leads Upload Summary</DialogTitle>
+            <DialogTitle>
+              {uploadSummaryData?.upload_type === 'enquiry' ? 'Enquiry Upload Summary' : 'Lost Leads Upload Summary'}
+            </DialogTitle>
             <DialogDescription>
               {uploadSummaryData?.total_rows} rows processed
             </DialogDescription>
@@ -2644,17 +2646,23 @@ const Leads = () => {
                   <div className="text-xs text-green-700">New Created</div>
                 </div>
                 <div className="bg-blue-50 p-3 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">{uploadSummaryData.updated}</div>
-                  <div className="text-xs text-blue-700">Updated to Lost</div>
+                  <div className="text-2xl font-bold text-blue-600">{uploadSummaryData.updated || uploadSummaryData.merged || 0}</div>
+                  <div className="text-xs text-blue-700">
+                    {uploadSummaryData.upload_type === 'enquiry' ? 'Merged/Updated' : 'Updated to Lost'}
+                  </div>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-gray-600">{uploadSummaryData.skipped_lost}</div>
-                  <div className="text-xs text-gray-700">Already Lost</div>
-                </div>
-                <div className="bg-amber-50 p-3 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-amber-600">{uploadSummaryData.skipped_won}</div>
-                  <div className="text-xs text-amber-700">Won (Preserved)</div>
-                </div>
+                {uploadSummaryData.upload_type === 'lost' && (
+                  <>
+                    <div className="bg-gray-50 p-3 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-gray-600">{uploadSummaryData.skipped_lost || 0}</div>
+                      <div className="text-xs text-gray-700">Already Lost</div>
+                    </div>
+                    <div className="bg-amber-50 p-3 rounded-lg text-center">
+                      <div className="text-2xl font-bold text-amber-600">{uploadSummaryData.skipped_won || 0}</div>
+                      <div className="text-xs text-amber-700">Won (Preserved)</div>
+                    </div>
+                  </>
+                )}
               </div>
               
               {uploadSummaryData.total_errors > 0 && (
@@ -2665,8 +2673,63 @@ const Leads = () => {
                 </div>
               )}
 
-              {/* Updated Leads Details */}
-              {uploadSummaryData.updated_details?.length > 0 && (
+              {/* Merge Details for Enquiry Upload */}
+              {uploadSummaryData.upload_type === 'enquiry' && uploadSummaryData.merge_details?.length > 0 && (
+                <div className="border rounded-lg">
+                  <div className="bg-blue-50 px-3 py-2 border-b">
+                    <h4 className="font-medium text-sm text-blue-800">
+                      Merged Leads ({uploadSummaryData.merge_details.length})
+                    </h4>
+                    <p className="text-xs text-blue-600 mt-1">
+                      Data from uploaded file was merged into existing leads
+                    </p>
+                  </div>
+                  <ScrollArea className="h-[200px]">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Row</TableHead>
+                          <TableHead className="text-xs">Name</TableHead>
+                          <TableHead className="text-xs">Phone</TableHead>
+                          <TableHead className="text-xs">Match By</TableHead>
+                          <TableHead className="text-xs">Fields Merged</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {uploadSummaryData.merge_details.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="text-xs">{item.row}</TableCell>
+                            <TableCell className="text-xs font-medium">{item.name}</TableCell>
+                            <TableCell className="text-xs">{item.phone}</TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant="outline" className={item.matched_by === 'phone' ? 'bg-green-50' : 'bg-blue-50'}>
+                                {item.matched_by}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              <div className="flex flex-wrap gap-1">
+                                {item.merged_fields?.slice(0, 5).map((field, fidx) => (
+                                  <Badge key={fidx} variant="secondary" className="text-[10px] px-1">
+                                    {field}
+                                  </Badge>
+                                ))}
+                                {item.field_count > 5 && (
+                                  <Badge variant="secondary" className="text-[10px] px-1">
+                                    +{item.field_count - 5} more
+                                  </Badge>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Updated Leads Details for Lost Upload */}
+              {uploadSummaryData.upload_type === 'lost' && uploadSummaryData.updated_details?.length > 0 && (
                 <div className="border rounded-lg">
                   <div className="bg-blue-50 px-3 py-2 border-b">
                     <h4 className="font-medium text-sm text-blue-800">Updated to Lost ({uploadSummaryData.updated})</h4>
