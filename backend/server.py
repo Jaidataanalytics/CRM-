@@ -628,6 +628,53 @@ async def migrate_lost_leads_field_mapping():
         # Don't raise - allow server to start even if migration fails
 
 
+
+async def migrate_qualified_status():
+    """
+    Migration to calculate and set is_qualified for all leads.
+    A lead is qualified if 50% or more of key fields are filled.
+    """
+    logger.info("Running qualified status migration...")
+    
+    try:
+        from utils.duplicate_detector import update_qualified_status_migration
+        
+        # Check if we recently ran this migration
+        migration_record = await db.migration_status.find_one({"migration": "qualified_status"})
+        if migration_record:
+            last_run = migration_record.get("last_run")
+            if last_run:
+                if isinstance(last_run, str):
+                    last_run = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
+                
+                # Skip if ran within last day
+                if datetime.now(timezone.utc) - last_run < timedelta(days=1):
+                    logger.info("Qualified status migration already ran recently, skipping...")
+                    return
+        
+        result = await update_qualified_status_migration(db)
+        
+        # Record that we ran the migration
+        await db.migration_status.update_one(
+            {"migration": "qualified_status"},
+            {
+                "$set": {
+                    "migration": "qualified_status",
+                    "last_run": datetime.now(timezone.utc).isoformat(),
+                    "result": result
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Qualified status migration complete: {result.get('qualified', 0)} qualified, {result.get('not_qualified', 0)} not qualified")
+        
+    except Exception as e:
+        logger.error(f"Qualified status migration failed: {str(e)}")
+        # Don't raise - allow server to start even if migration fails
+
+
+
 @app.on_event("startup")
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
