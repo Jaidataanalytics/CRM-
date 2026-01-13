@@ -93,8 +93,20 @@ class DuplicateDetector:
             if key in skip_fields:
                 continue
             
-            if incoming_value is None or incoming_value == '' or incoming_value == []:
+            # Check for empty/null values - handle numpy arrays properly
+            if incoming_value is None:
                 continue
+            if isinstance(incoming_value, str) and incoming_value == '':
+                continue
+            if isinstance(incoming_value, list) and len(incoming_value) == 0:
+                continue
+            # Check for numpy/pandas NaN
+            try:
+                import pandas as pd
+                if pd.isna(incoming_value):
+                    continue
+            except (TypeError, ValueError):
+                pass
             
             original_value = original.get(key)
             
