@@ -791,20 +791,39 @@ async def get_summary_builder(
     time_frame: str = Query("monthly", enum=["monthly", "quarterly", "yearly"]),
     dimension: str = Query("employee", enum=["employee", "dealer", "state", "location", "segment", "source"]),
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    compare_historical: bool = Query(False, description="Show YoY comparison side by side")
 ):
     """
     Dynamic Summary Builder / Pivot Table endpoint.
     Allows users to create custom reports by selecting metric, time frame, and dimension.
+    When compare_historical=True, shows current period alongside previous year data.
     """
     db = await get_db(request)
     
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
+    # Calculate historical date range (1 year earlier)
+    from datetime import datetime as dt
+    try:
+        start_dt = dt.strptime(start_date, "%Y-%m-%d")
+        end_dt = dt.strptime(end_date, "%Y-%m-%d")
+        hist_start = start_dt.replace(year=start_dt.year - 1).strftime("%Y-%m-%d")
+        hist_end = end_dt.replace(year=end_dt.year - 1).strftime("%Y-%m-%d")
+    except:
+        hist_start = start_date
+        hist_end = end_date
+    
     # Build base query - exclude soft-deleted leads
     base_query = {
         "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    }
+    
+    # Historical query for comparison
+    hist_query = {
+        "enquiry_date": {"$gte": hist_start, "$lte": hist_end},
         "deleted_at": {"$exists": False}
     }
     
