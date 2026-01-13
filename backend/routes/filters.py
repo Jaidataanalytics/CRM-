@@ -165,7 +165,7 @@ async def get_all_filters(
     
     states = await db.leads.distinct("state")
     dealers = await db.leads.distinct("dealer")
-    areas = await db.leads.distinct("area")
+    locations = await db.leads.distinct("location")
     employees = await db.leads.distinct("employee_name")
     segments = await db.leads.distinct("segment")
     sources = await db.leads.distinct("source")
@@ -173,7 +173,7 @@ async def get_all_filters(
     return {
         "states": sorted([s for s in states if s]),
         "dealers": sorted([d for d in dealers if d]),
-        "areas": sorted([a for a in areas if a]),
+        "locations": sorted([loc for loc in locations if loc]),
         "employees": sorted([e for e in employees if e]),
         "segments": sorted([s for s in segments if s]),
         "sources": sorted([s for s in sources if s])
