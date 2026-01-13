@@ -262,6 +262,10 @@ const Insights = () => {
             <XCircle className="h-4 w-4" />
             Closure Analysis
           </TabsTrigger>
+          <TabsTrigger value="summary" className="flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4" />
+            Summary Builder
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="performers" className="space-y-4">
