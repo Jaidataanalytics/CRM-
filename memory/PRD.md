@@ -90,56 +90,32 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ## Completed Work
 
 ### Session 6 - Jan 13, 2026 (COMPLETED)
-1. ✅ **"Old Enquiries Closed" KPI**:
-   - New KPI card on Dashboard showing leads won in selected date range but with `enquiry_date` from before the range
-   - Displays both Qty and Lead count (e.g., "78 Qty (75 Leads)")
-   - Helps track sales closing from older pipeline leads
-   - Backend: `/api/kpis` now returns `old_enquiries_closed` and `old_enquiries_closed_qty`
-   - Frontend: New KPI card with History icon in purple color
+1. ✅ **"Old Enquiries Closed" KPI**: New KPI card on Dashboard showing leads won in date range but with older enquiry_date
 
-2. ✅ **Phone-Based Duplicate Detection & Merge for Enquiry Upload**:
-   - Updated `/api/upload/leads` endpoint to use phone number as PRIMARY identifier
-   - Uses `DuplicateDetector.merge_leads()` for intelligent data merging
-   - Merge rules: empty fields filled from incoming data, text fields concatenated, lists combined
-   - Preserves original `enquiry_no`, stores duplicates in `duplicate_enquiry_nos` array
-   - Auto-calculates `is_qualified` status on merge
-   - Fallback to `enquiry_no` matching if phone doesn't match
+2. ✅ **Phone-Based Duplicate Detection & Merge for All Uploads**:
+   - Enquiry Upload: Phone as PRIMARY identifier, enquiry_no as fallback
+   - Lost Leads Upload: Now merges data for ALL leads including "Already Lost" and "Won"
+   - Preserves Won/Lost stages while filling missing fields from incoming data
 
-3. ✅ **Lost Leads Upload with Merge Logic**:
-   - Updated `/api/upload/lost-leads` to use the same phone-based merge pattern
-   - Merges data from incoming records before updating to Lost status
-   - Tracks merged fields for reporting
-   - Calculates `is_qualified` status for new and merged leads
+3. ✅ **Closure Analysis Refactored**:
+   - Closure Questions are now: Competitor, Lost Reason, Lost Remarks (from uploads)
+   - Summary: 1,312 Lost, 254 with closure data, 19.4% completion rate
+   - Competitor breakdown: Kirloskar (80), Eicher (48), Others (34), TATA (25)
+   - Lost Reasons: Pricing (116), Brand Image (56), Purchased Old Dg (24)
+   - Removed KVA from all closure analysis displays
 
-4. ✅ **Upload Merge Summary Modal (Enhancement)**:
-   - New modal showing detailed merge summary after uploads
-   - Displays: Row, Name, Phone, Match By (phone/enquiry_no), Fields Merged
-   - Shows created vs merged counts
-   - Works for both Enquiry and Lost Leads uploads
-   - Provides visibility into data consolidation during uploads
+4. ✅ **Upload Merge Summary Modal**: Shows merged leads and fields after uploads
 
-5. ✅ **Closure Analysis - Competitor & Lost Reason Charts**:
-   - Fixed TypeError in closure analysis endpoint
-   - Added new competitor_analysis and lost_reason_analysis to API response
-   - Frontend: Pie charts for "Lost to Competitors" and "Lost Reasons"
-   - Summary cards show: Total Lost, With Lost Data (16.1%), Closure Answers, Pending, Completion Rate
-   - Data from uploads: Kirloskar (66), Eicher (37), Pricing (94), Brand Image (45), etc.
+5. ✅ **Data Management Page with Merge History Tab**:
+   - Renamed "Duplicate Leads" → "Data Management"
+   - Added "Merge History" tab showing consolidated leads
+   - Stats: 1,474 consolidated leads, 2,659 alt. enquiry numbers
 
-6. ✅ **Data Management Page with Merge History Tab**:
-   - Renamed "Duplicate Leads" page to "Data Management"
-   - Added tabs: "Duplicate Leads (2560)" and "Merge History (1474)"
-   - Merge History shows consolidated leads from multiple uploads
-   - Summary: 1,474 consolidated leads, 2,659 alt. enquiry numbers, 2.8 avg sources per lead
-   - Table shows: Enquiry No, Name, Phone, Stage, Alternative Enquiry Nos, Sources count
-   - Backend: New `/api/leads/merge-history` and `/api/leads/merge-history/summary` endpoints
+6. ✅ **File Upload Testing with Real Data**:
+   - Enquiry Dump (4785 rows): 1,463 created, 3,322 merged
+   - Lost Dump (698 rows): 677 Already Lost (data merged), 21 Won (data merged), 0 updated to Lost
 
-7. ✅ **Dispatch Page Verified**: Showing SO data correctly (570 Total Won, 2 Pending, 536 Dispatched)
-
-8. ✅ **File Upload Testing**: Successfully tested with real data files:
-   - Enquiry Dump: 4785 rows → 1463 created, 3322 merged
-   - Lost Dump: 698 rows → 23 updated to Lost, 654 already Lost, 21 Won preserved
-
-9. ✅ All features tested and verified
+7. ✅ All features tested and verified
 
 ### Session 5 - Jan 5, 2026 (COMPLETED)
 1. ✅ **Compare Forecasts Page**:
