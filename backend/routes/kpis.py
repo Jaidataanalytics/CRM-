@@ -577,6 +577,8 @@ async def get_kpis(
         "dispatched": dispatched_count,
         "dispatched_qty": dispatched_qty,
         "needs_dispatch_migration": no_dispatch_status,
+        "old_enquiries_closed": old_enquiries_closed_count,
+        "old_enquiries_closed_qty": old_enquiries_closed_qty,
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
             for s in segment_distribution
