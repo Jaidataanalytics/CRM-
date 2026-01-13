@@ -620,7 +620,10 @@ const Leads = () => {
       console.log('Lost leads upload response:', res.data);
       
       // Show summary modal with detailed results
-      setUploadSummaryData(res.data);
+      setUploadSummaryData({
+        ...res.data,
+        upload_type: 'lost'
+      });
       setIsUploadSummaryOpen(true);
       console.log('Modal should be open now');
       
