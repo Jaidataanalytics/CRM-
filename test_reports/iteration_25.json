@@ -1,0 +1,104 @@
+{
+  "summary": "Completed testing of Old Enquiries Closed KPI, phone-based duplicate detection, and upload merge functionality. All 10 backend tests passed. Frontend verified - Dashboard shows Old Enquiries Closed KPI with qty and lead count (78 Qty, 75 Leads). Upload popovers for Lost Leads and Sales Orders working correctly with column mapping info. Dispatch page showing SO data correctly.",
+  
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  
+  "passed_tests": [
+    "GET /api/kpis - returns old_enquiries_closed and old_enquiries_closed_qty fields",
+    "GET /api/kpis - date range filtering works for old enquiries KPI",
+    "GET /api/leads/template - returns Excel template for upload",
+    "GET /api/upload/template - returns column info for upload",
+    "GET /api/upload/lost-leads/template - returns lost leads template",
+    "GET /api/dispatch/summary - returns total_won, pending_dispatch, dispatched",
+    "GET /api/dispatch/list - returns paginated dispatch list",
+    "GET /api/leads - returns paginated leads list",
+    "GET /api/leads/dropdown-options - returns dropdown options",
+    "GET /api/kpis - all KPI fields present including old_enquiries_closed",
+    "Frontend: Dashboard shows Old Enquiries Closed KPI card with 78 Qty (75 Leads)",
+    "Frontend: KPI cards show qty and lead count format correctly",
+    "Frontend: Leads page has Upload, Template, Lost Leads, Sales Orders, Export buttons",
+    "Frontend: Lost Leads popover shows Download Template, Upload Lost Leads, column mapping",
+    "Frontend: Sales Orders popover shows Upload Sales Orders, key columns info",
+    "Frontend: Dispatch page shows Total Won Orders, Pending Dispatch, Dispatched summary",
+    "Frontend: Dispatch page has Pending/Dispatched/All tabs with data table"
+  ],
+  
+  "test_report_links": [
+    "/app/tests/test_old_enquiries_kpi.py",
+    "/app/test_reports/pytest/pytest_results_old_enquiries.xml"
+  ],
+  
+  "action_items": [],
+  
+  "critical_code_review_comments": [],
+  
+  "updated_files": [],
+  
+  "success_rate": {
+    "backend": "100% (10/10 tests passed)",
+    "frontend": "100% (all features verified)"
+  },
+  
+  "features_verified": {
+    "old_enquiries_closed_kpi": {
+      "backend_returns_field": true,
+      "frontend_displays_card": true,
+      "shows_qty_and_lead_count": true,
+      "current_values": "78 Qty (75 Leads)",
+      "description": "Shows leads won in date range but with enquiry_date before the range"
+    },
+    "phone_based_duplicate_detection": {
+      "upload_endpoint_exists": true,
+      "template_download_works": true,
+      "merge_logic_in_upload_py": "Lines 371-405 - PRIMARY: Match by phone number, SECONDARY: Match by enquiry_no",
+      "duplicate_detector_merge_leads": "Merges incoming data into existing lead, fills empty fields, concatenates text fields"
+    },
+    "upload_merge_summary_modal": {
+      "frontend_component_exists": true,
+      "shows_created_merged_counts": true,
+      "shows_merge_details_table": true,
+      "columns": ["Row", "Name", "Phone", "Match By", "Fields Merged"]
+    },
+    "lost_leads_upload": {
+      "popover_works": true,
+      "download_template_button": true,
+      "upload_button": true,
+      "column_mapping_shown": "Win Reason → Competitor, Win Remarks → Lost Reason, Lost Remarks → Lost Remarks"
+    },
+    "dispatch_page": {
+      "summary_cards": ["Total Won Orders: 570", "Pending Dispatch: 2", "Dispatched: 536", "Needs Migration: 32"],
+      "tabs": ["Pending", "Dispatched", "All"],
+      "table_columns": ["Enquiry No", "Customer", "KVA", "Won Date", "Dispatch Status", "Dispatch Date", "Actions"]
+    }
+  },
+  
+  "kpi_values_verified": {
+    "old_enquiries_closed": 75,
+    "old_enquiries_closed_qty": 78,
+    "won_leads": 648,
+    "won_qty": 656,
+    "pending_dispatch": 3,
+    "dispatched": 3195,
+    "total_leads": 3619
+  },
+  
+  "test_credentials": {
+    "admin": "username: admin, password: admin123"
+  },
+  
+  "seed_data_creation": "None - used existing data",
+  
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  
+  "context_for_next_testing_agent": "Tested new features: 1) Old Enquiries Closed KPI showing 78 Qty (75 Leads) - leads won in date range but with older enquiry_date. 2) Phone-based duplicate detection in upload.py (lines 371-405) - matches by phone first, then enquiry_no. 3) Upload merge summary modal in Leads.js (lines 2628-2790) - shows merged leads and fields. 4) Lost Leads upload with column mapping. 5) Dispatch page showing SO data correctly. All features working as expected."
+}
