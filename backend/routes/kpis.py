@@ -487,7 +487,7 @@ async def get_kpis(
     
     return {
         "total_leads": total_leads,
-        "total_qty": total_qty,
+        "total_qty": won_qty,  # Total qty sold = won qty
         "won_leads": won_leads,
         "won_qty": won_qty,
         "lost_leads": lost_leads,
