@@ -524,9 +524,12 @@ async def upload_leads(
             "success": True,
             "created": created_count,
             "updated": updated_count,
+            "merged": updated_count,  # Alias for clarity
+            "merge_details": merge_details,  # Details of merged leads
+            "total_rows": len(df),
             "errors": errors[:10] if errors else [],
             "total_errors": len(errors),
-            "message": f"Successfully processed: {created_count} created, {updated_count} updated"
+            "message": f"Successfully processed: {created_count} created, {updated_count} merged/updated"
         }
         
     except HTTPException:
