@@ -1001,12 +1001,13 @@ const Insights = () => {
             <>
               {/* Insights Cards */}
               {summaryData.insights?.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {summaryData.insights.map((insight, idx) => (
                     <Card key={idx} className={`
                       ${insight.type === 'top_performer' ? 'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-900/10' : ''}
                       ${insight.type === 'trend' ? (insight.growth >= 0 ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-red-500/50 bg-red-50/50 dark:bg-red-900/10') : ''}
                       ${insight.type === 'best_period' ? 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-900/10' : ''}
+                      ${insight.type === 'yoy_comparison' ? (insight.growth >= 0 ? 'border-emerald-500/50 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-orange-500/50 bg-orange-50/50 dark:bg-orange-900/10') : ''}
                     `}>
                       <CardContent className="pt-4 pb-4">
                         <div className="flex items-start gap-3">
@@ -1017,11 +1018,17 @@ const Insights = () => {
                               : <TrendingDown className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                           )}
                           {insight.type === 'best_period' && <Lightbulb className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />}
+                          {insight.type === 'yoy_comparison' && (
+                            insight.growth >= 0 
+                              ? <ArrowUpRight className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                              : <ArrowDownRight className="h-5 w-5 text-orange-500 shrink-0 mt-0.5" />
+                          )}
                           <div>
                             <p className="text-sm font-medium">
                               {insight.type === 'top_performer' && 'Top Performer'}
                               {insight.type === 'trend' && 'Trend'}
                               {insight.type === 'best_period' && 'Best Period'}
+                              {insight.type === 'yoy_comparison' && 'Year-over-Year'}
                             </p>
                             <p className="text-sm text-muted-foreground">{insight.message}</p>
                           </div>
