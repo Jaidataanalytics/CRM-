@@ -852,6 +852,277 @@ const Insights = () => {
             </Card>
           )}
         </TabsContent>
+
+        {/* Summary Builder Tab */}
+        <TabsContent value="summary" className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Metric</label>
+                <Select value={summaryMetric} onValueChange={setSummaryMetric}>
+                  <SelectTrigger className="w-36" data-testid="summary-metric-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="leads">Total Leads</SelectItem>
+                    <SelectItem value="qty">Total Qty</SelectItem>
+                    <SelectItem value="won_leads">Won Leads</SelectItem>
+                    <SelectItem value="lost_leads">Lost Leads</SelectItem>
+                    <SelectItem value="conversion_rate">Conversion %</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Time Frame</label>
+                <Select value={summaryTimeFrame} onValueChange={setSummaryTimeFrame}>
+                  <SelectTrigger className="w-32" data-testid="summary-timeframe-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="quarterly">Quarterly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Dimension</label>
+                <Select value={summaryDimension} onValueChange={setSummaryDimension}>
+                  <SelectTrigger className="w-32" data-testid="summary-dimension-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="dealer">Dealer</SelectItem>
+                    <SelectItem value="state">State</SelectItem>
+                    <SelectItem value="location">Location</SelectItem>
+                    <SelectItem value="segment">Segment</SelectItem>
+                    <SelectItem value="source">Source</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={loadSummaryBuilder}
+                disabled={summaryLoading}
+                className="mt-5"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${summaryLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={exportSummaryToCSV}
+              disabled={!summaryData?.pivot_table?.rows?.length}
+              className="mt-5"
+              data-testid="export-summary-csv"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
+          </div>
+
+          {summaryLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          ) : summaryData?.pivot_table ? (
+            <>
+              {/* Insights Cards */}
+              {summaryData.insights?.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {summaryData.insights.map((insight, idx) => (
+                    <Card key={idx} className={`
+                      ${insight.type === 'top_performer' ? 'border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-900/10' : ''}
+                      ${insight.type === 'trend' ? (insight.growth >= 0 ? 'border-green-500/50 bg-green-50/50 dark:bg-green-900/10' : 'border-red-500/50 bg-red-50/50 dark:bg-red-900/10') : ''}
+                      ${insight.type === 'best_period' ? 'border-blue-500/50 bg-blue-50/50 dark:bg-blue-900/10' : ''}
+                    `}>
+                      <CardContent className="pt-4 pb-4">
+                        <div className="flex items-start gap-3">
+                          {insight.type === 'top_performer' && <Trophy className="h-5 w-5 text-yellow-500 shrink-0 mt-0.5" />}
+                          {insight.type === 'trend' && (
+                            insight.growth >= 0 
+                              ? <TrendingUp className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />
+                              : <TrendingDown className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                          )}
+                          {insight.type === 'best_period' && <Lightbulb className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />}
+                          <div>
+                            <p className="text-sm font-medium">
+                              {insight.type === 'top_performer' && 'Top Performer'}
+                              {insight.type === 'trend' && 'Trend'}
+                              {insight.type === 'best_period' && 'Best Period'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">{insight.message}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* Pivot Table */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <LayoutGrid className="h-5 w-5 text-primary" />
+                    {summaryMetric.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} by {summaryDimension.charAt(0).toUpperCase() + summaryDimension.slice(1)}
+                  </CardTitle>
+                  <CardDescription>
+                    {summaryTimeFrame.charAt(0).toUpperCase() + summaryTimeFrame.slice(1)} breakdown • {summaryData.meta?.date_range?.start_date} to {summaryData.meta?.date_range?.end_date}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="font-semibold sticky left-0 bg-muted/50">
+                            {summaryDimension.charAt(0).toUpperCase() + summaryDimension.slice(1)}
+                          </TableHead>
+                          {summaryData.pivot_table.columns.map(col => (
+                            <TableHead key={col} className="text-right font-medium whitespace-nowrap">
+                              {col}
+                            </TableHead>
+                          ))}
+                          <TableHead className="text-right font-semibold bg-muted/80">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {summaryData.pivot_table.rows.slice(0, 25).map((row, idx) => (
+                          <TableRow key={idx} className={idx === 0 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : ''}>
+                            <TableCell className="font-medium sticky left-0 bg-background max-w-[200px] truncate" title={row.dimension}>
+                              <div className="flex items-center gap-2">
+                                {idx === 0 && <Trophy className="h-4 w-4 text-yellow-500" />}
+                                {row.dimension}
+                              </div>
+                            </TableCell>
+                            {summaryData.pivot_table.columns.map(col => (
+                              <TableCell key={col} className="text-right tabular-nums">
+                                {summaryMetric === 'conversion_rate' 
+                                  ? `${row.periods[col] || 0}%`
+                                  : (row.periods[col] || 0).toLocaleString()
+                                }
+                              </TableCell>
+                            ))}
+                            <TableCell className="text-right font-semibold bg-muted/30 tabular-nums">
+                              {summaryMetric === 'conversion_rate'
+                                ? `${row.total}%`
+                                : row.total.toLocaleString()
+                              }
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {summaryData.pivot_table.rows.length > 25 && (
+                          <TableRow>
+                            <TableCell colSpan={summaryData.pivot_table.columns.length + 2} className="text-center text-muted-foreground text-sm">
+                              ... and {summaryData.pivot_table.rows.length - 25} more rows (export to CSV for full data)
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {/* Column Totals Row */}
+                        <TableRow className="bg-muted/50 font-semibold border-t-2">
+                          <TableCell className="sticky left-0 bg-muted/50">Total</TableCell>
+                          {summaryData.pivot_table.columns.map(col => (
+                            <TableCell key={col} className="text-right tabular-nums">
+                              {summaryMetric === 'conversion_rate'
+                                ? `${summaryData.pivot_table.column_totals[col] || 0}%`
+                                : (summaryData.pivot_table.column_totals[col] || 0).toLocaleString()
+                              }
+                            </TableCell>
+                          ))}
+                          <TableCell className="text-right bg-primary/10 tabular-nums">
+                            {summaryMetric === 'conversion_rate'
+                              ? `${summaryData.pivot_table.grand_total}%`
+                              : summaryData.pivot_table.grand_total.toLocaleString()
+                            }
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Bar Chart Visualization */}
+              {summaryData.pivot_table.rows.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Visual Breakdown</CardTitle>
+                    <CardDescription>Top 10 {summaryDimension}s by {summaryMetric.replace('_', ' ')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <Bar
+                        data={{
+                          labels: summaryData.pivot_table.rows.slice(0, 10).map(r => 
+                            r.dimension?.length > 15 ? r.dimension.substring(0, 15) + '...' : r.dimension
+                          ),
+                          datasets: [{
+                            label: summaryMetric.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                            data: summaryData.pivot_table.rows.slice(0, 10).map(r => r.total),
+                            backgroundColor: [
+                              'rgba(99, 102, 241, 0.8)',
+                              'rgba(34, 197, 94, 0.8)',
+                              'rgba(249, 115, 22, 0.8)',
+                              'rgba(236, 72, 153, 0.8)',
+                              'rgba(139, 92, 246, 0.8)',
+                              'rgba(6, 182, 212, 0.8)',
+                              'rgba(245, 158, 11, 0.8)',
+                              'rgba(239, 68, 68, 0.8)',
+                              'rgba(20, 184, 166, 0.8)',
+                              'rgba(168, 85, 247, 0.8)'
+                            ],
+                            borderWidth: 0
+                          }]
+                        }}
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          indexAxis: 'y',
+                          plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                              callbacks: {
+                                label: (context) => {
+                                  const value = context.raw;
+                                  return summaryMetric === 'conversion_rate' 
+                                    ? `${value}%`
+                                    : value.toLocaleString();
+                                }
+                              }
+                            }
+                          },
+                          scales: {
+                            x: { 
+                              beginAtZero: true,
+                              ticks: {
+                                callback: (value) => summaryMetric === 'conversion_rate' ? `${value}%` : value.toLocaleString()
+                              }
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <LayoutGrid className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>No data available for the selected filters</p>
+                <p className="text-sm">Try adjusting your date range or filters</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
