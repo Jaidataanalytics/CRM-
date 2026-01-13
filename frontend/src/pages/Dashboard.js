@@ -646,6 +646,13 @@ const Dashboard = () => {
           icon={Truck}
           color="text-blue-600"
         />
+        <KPICard
+          title="Old Enquiries Closed"
+          value={kpis?.old_enquiries_closed || 0}
+          qty={kpis?.old_enquiries_closed_qty || 0}
+          icon={History}
+          color="text-purple-600"
+        />
         
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
