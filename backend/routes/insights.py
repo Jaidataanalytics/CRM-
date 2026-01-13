@@ -896,15 +896,23 @@ async def get_summary_builder(
     results = await db.leads.aggregate(pipeline).to_list(1000)
     
     # Process results into pivot table format
-    # Collect all unique time periods and dimensions
-    time_periods = sorted(list(set(r["_id"]["time_period"] for r in results if r["_id"]["time_period"])))
-    dimensions = sorted(list(set(r["_id"]["dimension"] for r in results if r["_id"]["dimension"])))
+    # Collect all unique time periods and dimensions - handle empty results and null _id
+    time_periods = sorted(list(set(
+        r["_id"]["time_period"] for r in results 
+        if r.get("_id") and r["_id"].get("time_period")
+    )))
+    dimensions = sorted(list(set(
+        r["_id"]["dimension"] for r in results 
+        if r.get("_id") and r["_id"].get("dimension")
+    )))
     
     # Create a lookup for quick access
     data_lookup = {}
     for r in results:
-        dim = r["_id"]["dimension"]
-        period = r["_id"]["time_period"]
+        if not r.get("_id"):
+            continue
+        dim = r["_id"].get("dimension")
+        period = r["_id"].get("time_period")
         if dim and period:
             if dim not in data_lookup:
                 data_lookup[dim] = {}
