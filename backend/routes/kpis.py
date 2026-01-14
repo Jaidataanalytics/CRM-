@@ -42,6 +42,7 @@ async def get_metric_config(db, metric_id: str) -> dict:
 
 async def count_by_metric(db, base_query: dict, metric_config: dict) -> int:
     """Count leads matching a metric configuration"""
+    import copy
     if not metric_config or not metric_config.get("is_active", True):
         return 0
     
@@ -51,11 +52,14 @@ async def count_by_metric(db, base_query: dict, metric_config: dict) -> int:
     if not field_name or not field_values:
         return 0
     
+    # Deep copy base_query to avoid mutating the original
+    query = copy.deepcopy(base_query)
+    
     # Handle boolean fields (like quotation_sent)
     if len(field_values) == 1 and isinstance(field_values[0], bool):
-        query = {**base_query, field_name: field_values[0]}
+        query[field_name] = field_values[0]
     else:
-        query = {**base_query, field_name: {"$in": field_values}}
+        query[field_name] = {"$in": field_values}
     
     # Exclude soft-deleted leads
     query["deleted_at"] = {"$exists": False}
