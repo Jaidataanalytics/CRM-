@@ -293,9 +293,18 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ## Data Quality Notes
 - **Data Refresh (Jan 14, 2026)**: Uploaded fresh 4-year data from FY23-FY26
   - Enquiry Dump: 26,697 rows → 26,690 unique leads
-  - Lost Dump: 4,057 rows → 4,012 updated to Lost, 2 already Won
-  - Sales Dump: 5,091 rows → 1,328 matched & updated, 3,761 new leads created
-  - Total Leads: 30,451 | Won: 9,448 | Lost: 3,539 | Duplicates: 1,139
+  - Lost Dump: 4,057 rows → 3,961 updated to Lost
+  - SO Register: 5,205 rows → 5,150 matched & updated, 55 new leads created
+  - Total Leads: 26,745 | Won: 5,761 | Lost: 3,533 | Duplicates: 1,125
+
+- **Duplicate Detection Logic**:
+  - A lead is flagged as duplicate ONLY if:
+    1. Same phone number exists in another lead
+    2. The ORIGINAL (earlier) lead is still OPEN (not Won/Lost)
+    3. The time gap between enquiries is < 1 year
+  - If original is CLOSED (Won/Lost) → New enquiry = REPEAT CUSTOMER (not duplicate)
+  - If time gap > 1 year → RETURNING CUSTOMER (not duplicate)
+  - This explains why 4,775 leads with repeated phones are NOT flagged (they're repeat/returning customers)
 
 ## Credentials
 - **Admin**: admin / admin123
