@@ -502,7 +502,6 @@ const Dashboard = () => {
         <KPICard
           title="Total Leads"
           value={kpis?.total_leads || 0}
-          qty={kpis?.total_qty || 0}
           icon={Users}
           color="text-primary"
           onClick={() => handleKPIClick('all')}
