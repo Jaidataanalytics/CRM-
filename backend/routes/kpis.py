@@ -188,8 +188,12 @@ async def get_kpis(
     not_called = await db.leads.count_documents(not_called_query)
     
     # Quotations sent - includes manual quotation_sent OR has quotation data
+    # NOTE: Uses won_base_query (no duplicate filter) because:
+    # 1. Each quotation sent is real, even to repeat customers
+    # 2. Quotations Sent must be >= Won Leads (can't win without a quote)
     quotations_sent_query = {
-        **base_query, 
+        **won_base_query,
+        "deleted_at": {"$exists": False},
         "$or": [
             {"quotation_sent": True},
             {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
