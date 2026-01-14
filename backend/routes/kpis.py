@@ -134,10 +134,6 @@ async def get_kpis(
     base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     won_base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
-    # DEBUG: Log won_base_query after setup
-    import logging
-    logging.getLogger("server").info(f"DEBUG won_base_query BEFORE count_by_metric: {won_base_query}")
-    
     # Total leads (excluding transferred and duplicates) - for pipeline counting
     total_leads = await db.leads.count_documents(base_query)
     
