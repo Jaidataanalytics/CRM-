@@ -648,6 +648,41 @@ async def migrate_qualified_status():
                     last_run = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
                 
                 # Skip if ran within last day
+
+
+async def migrate_quotation_sent_flag():
+    """
+    Migration to auto-mark quotation_sent=True for leads that have quotation data.
+    If a lead has quotation_no or quotation_date, it means a quotation was sent.
+    """
+    logger.info("Running quotation_sent flag migration...")
+    
+    try:
+        # Update leads that have quotation data but quotation_sent is not True
+        result = await db.leads.update_many(
+            {
+                "$and": [
+                    {"$or": [
+                        {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+                        {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+                    ]},
+                    {"$or": [
+                        {"quotation_sent": {"$exists": False}},
+                        {"quotation_sent": False},
+                        {"quotation_sent": None}
+                    ]}
+                ]
+            },
+            {"$set": {"quotation_sent": True}}
+        )
+        
+        if result.modified_count > 0:
+            logger.info(f"Quotation sent flag migration: Auto-marked {result.modified_count} leads with quotation_sent=True")
+        else:
+            logger.info("Quotation sent flag migration: No updates needed")
+            
+    except Exception as e:
+        logger.error(f"Quotation sent flag migration failed: {str(e)}")
                 if datetime.now(timezone.utc) - last_run < timedelta(days=1):
                     logger.info("Qualified status migration already ran recently, skipping...")
                     return
