@@ -679,9 +679,9 @@ async def run_duplicate_detection(
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
-    """Manually trigger duplicate detection on all leads"""
+    """Manually trigger chunk-based duplicate detection on all leads"""
     from models.user import UserRole
-    from utils.duplicate_detector import run_duplicate_detection_migration
+    from utils.duplicate_detector import run_chunk_based_duplicate_migration
     
     # Only admin can run detection
     if current_user.role != UserRole.ADMIN:
@@ -690,10 +690,10 @@ async def run_duplicate_detection(
     db = await get_db(request)
     
     try:
-        result = await run_duplicate_detection_migration(db)
+        result = await run_chunk_based_duplicate_migration(db)
         return {
             "success": True,
-            "message": "Duplicate detection complete",
+            "message": "Chunk-based duplicate detection complete",
             **result
         }
     except Exception as e:
