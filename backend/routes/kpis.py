@@ -243,6 +243,10 @@ async def get_kpis(
     # Add deleted_at check for won qty calculations
     qty_won_base_query = {**won_base_query, "deleted_at": {"$exists": False}}
     
+    # DEBUG: Log the query
+    import logging
+    logging.getLogger("server").info(f"DEBUG qty_won_base_query: {qty_won_base_query}")
+    
     # Won qty - for won leads, use won_qty if set, else qty if set, else default to 1
     won_qty_pipeline = [
         {"$match": {**qty_won_base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
