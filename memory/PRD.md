@@ -96,6 +96,37 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ## Completed Work
 
+### Session 9 - Jan 14, 2026 (COMPLETED)
+**CRITICAL BUG FIX: Won Leads now include duplicate/repeat customer purchases**
+
+1. ✅ **Won Leads Include Duplicates Fix (CRITICAL)**:
+   - **Root Cause Found**: Won leads from repeat customers (same phone number) were being filtered out as "duplicates"
+   - **Impact**: 185 won leads (189 qty) were being excluded from KPIs
+   - **Fix**: Won leads now use separate `won_base_query` that doesn't exclude duplicates
+   - Each won lead = real sale, even from repeat customers
+   - **Fixed numbers**: 866 leads, 878 qty (previously 681 leads, 689 qty)
+
+2. ✅ **Bug Fix: Variable Shadowing in kpis.py**:
+   - `won_base_query` was being redefined at line 217 for dispatch tracking
+   - This overwrote the original query used for qty calculations
+   - Renamed to `dispatch_base_query` to prevent shadowing
+
+3. ✅ **Quotations Page Now Respects Date Filters**:
+   - Added filter parameters to `/api/leads/quotations` and `/api/leads/quotations/summary`
+   - Quotations page now uses FilterContext like other pages
+   - Both KPIs and Quotations page now show same totals (680)
+
+4. ✅ **Quotations Sent KPI Now Includes All Quotation Data**:
+   - Changed from only counting `quotation_sent: True` (was 2)
+   - Now counts leads with quotation_no OR quotation_date OR quotation_sent (680)
+
+5. ✅ **Auto-Mark quotation_sent Migration**:
+   - Migration script to auto-set `quotation_sent=True` for leads with quotation data
+   - Runs on server startup
+
+6. ✅ **Deep Copy Fix for Query Mutations**:
+   - `count_by_metric()` now uses `copy.deepcopy()` to prevent query mutations
+
 ### Session 8 - Jan 13, 2026 (COMPLETED)
 1. ✅ **YoY Historical Comparison Toggle in Summary Builder (P0)**:
    - New toggle "YoY Comparison" with History icon
