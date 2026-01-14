@@ -712,23 +712,30 @@ async def get_merge_history(
     current_user: User = Depends(get_current_user),
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=500),
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
 ):
     """
     Get leads that have been merged/consolidated from multiple sources.
-    These are leads that have duplicate_enquiry_nos (alternative enquiry numbers from merged records)
-    or have been updated from multiple upload batches.
+    These are leads that have merged_enquiries (from chunk-based duplicate detection)
+    or duplicate_enquiry_nos (from previous upload merging).
     """
     db = await get_db(request)
     
-    # Build query for merged leads - leads with alternative enquiry numbers
+    # Build query for merged leads
     query = {
         "deleted_at": {"$exists": False},
         "$or": [
+            {"merged_enquiries": {"$exists": True, "$ne": [], "$ne": None}},
             {"duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}},
             {"merged_from": {"$exists": True, "$ne": [], "$ne": None}}
         ]
     }
+    
+    # Date filter
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
     # Add search filter
     if search:
@@ -750,14 +757,14 @@ async def get_merge_history(
     # Format response with merge info
     formatted_leads = []
     for lead in leads:
+        merged_enquiries = lead.get("merged_enquiries", []) or []
         duplicate_enquiry_nos = lead.get("duplicate_enquiry_nos", []) or []
         merged_from = lead.get("merged_from", []) or []
         
         formatted_leads.append({
             **lead,
-            "merge_count": len(duplicate_enquiry_nos) + len(merged_from),
-            "alternative_enquiry_nos": duplicate_enquiry_nos,
-            "has_merged_data": bool(duplicate_enquiry_nos or merged_from)
+            "merge_count": len(merged_enquiries) + len(duplicate_enquiry_nos) + len(merged_from),
+            "has_merged_data": bool(merged_enquiries or duplicate_enquiry_nos or merged_from)
         })
     
     return {
