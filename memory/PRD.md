@@ -291,7 +291,11 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - UI for Data Quality Report (show won leads without quotation data)
 
 ## Data Quality Notes
-- **50 Won leads missing quotation data**: These leads appear in the data quality report at `/api/leads/data-quality/won-without-quotation`. The source Excel files should be updated to include quotation_no/quotation_date for these leads.
+- **Data Refresh (Jan 14, 2026)**: Uploaded fresh 4-year data from FY23-FY26
+  - Enquiry Dump: 26,697 rows → 26,690 unique leads
+  - Lost Dump: 4,057 rows → 4,012 updated to Lost, 2 already Won
+  - Sales Dump: 5,091 rows → 1,328 matched & updated, 3,761 new leads created
+  - Total Leads: 30,451 | Won: 9,448 | Lost: 3,539 | Duplicates: 1,139
 
 ## Credentials
 - **Admin**: admin / admin123
