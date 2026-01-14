@@ -209,7 +209,12 @@ class DuplicateDetector:
         leads: List[Dict]
     ) -> Tuple[List[Dict], Dict[str, str]]:
         """
-        Detect duplicates across all leads based on phone number.
+        Detect duplicates across all leads based on phone number with smart logic.
+        
+        Smart Logic:
+        - Same phone + previous lead OPEN = DUPLICATE (merge into previous)
+        - Same phone + previous lead CLOSED = NEW LEAD (repeat customer)
+        - Same phone + gap > 1 year = NEW LEAD (returning customer)
         
         Returns:
             - List of leads that should be flagged as duplicates
@@ -227,23 +232,37 @@ class DuplicateDetector:
             if len(group) < 2:
                 continue
             
-            # Sort by enquiry_date ascending - OLDEST first (becomes original)
+            # Sort by enquiry_date ascending - OLDEST first
             def get_enquiry_date(lead_item):
                 date = self.parse_date(lead_item.get('enquiry_date'))
                 return date if date else datetime.max
             
             group.sort(key=get_enquiry_date)
             
-            # The oldest (first) is the original
-            original = group[0]
-            original_id = original.get('lead_id')
+            # Process leads in chronological order
+            # Track the "current original" - changes when we hit a closed lead
+            current_original = group[0]
+            original_id = current_original.get('lead_id')
             
-            # All others are duplicates
-            for dup in group[1:]:
-                dup_id = dup.get('lead_id')
-                if dup_id and dup_id != original_id:
-                    duplicates_to_flag.append(dup)
-                    duplicate_mapping[dup_id] = original_id
+            for i, lead in enumerate(group[1:], 1):
+                lead_id = lead.get('lead_id')
+                if not lead_id or lead_id == original_id:
+                    continue
+                
+                # Check if this should be a duplicate using smart logic
+                is_dup, reason = self.should_be_duplicate(current_original, lead)
+                
+                if is_dup:
+                    # This is a duplicate - flag it
+                    duplicates_to_flag.append(lead)
+                    duplicate_mapping[lead_id] = original_id
+                    logger.debug(f"Lead {lead_id} is duplicate of {original_id}: {reason}")
+                else:
+                    # This is a NEW lead (repeat/returning customer)
+                    # It becomes the new "original" for subsequent leads
+                    logger.debug(f"Lead {lead_id} is NEW (not duplicate): {reason}")
+                    current_original = lead
+                    original_id = lead_id
         
         return duplicates_to_flag, duplicate_mapping
 
