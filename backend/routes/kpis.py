@@ -159,8 +159,15 @@ async def get_kpis(
     ]}
     not_called = await db.leads.count_documents(not_called_query)
     
-    # Quotations sent
-    quotations_sent_query = {**base_query, "quotation_sent": True}
+    # Quotations sent - includes manual quotation_sent OR has quotation data
+    quotations_sent_query = {
+        **base_query, 
+        "$or": [
+            {"quotation_sent": True},
+            {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]
+    }
     quotations_sent = await db.leads.count_documents(quotations_sent_query)
     
     # Call to Quotation rate
