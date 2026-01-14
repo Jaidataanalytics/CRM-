@@ -93,8 +93,37 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ### Insights Module (NEW)
 - `GET /api/insights/closure-analysis` - Get closure questions analysis for lost leads
+- `GET /api/leads/data-quality/won-without-quotation` - Returns Won leads missing quotation data (data quality report)
 
 ## Completed Work
+
+### Session 10 - Jan 14, 2026 (COMPLETED)
+**KPI Data Integrity and Duplicate Detection Fixes**
+
+1. ✅ **Quotations Sent KPI Query Fix (P0)**:
+   - Fixed `quotations_sent_query` to properly use `copy.deepcopy()` to avoid query mutation issues
+   - Query now correctly appends quotation filter to `$and` array instead of overwriting `$or`
+   - Moved `import copy` to module level for consistency
+
+2. ✅ **Duplicate Detection Logic Enhancement**:
+   - Updated `find_and_merge_by_phone()` in duplicate_detector.py to use smart duplicate logic
+   - Now checks if existing lead is CLOSED before marking as duplicate
+   - Returns `is_duplicate: False` with reason for repeat/returning customers
+
+3. ✅ **Data Quality Report Endpoint (NEW)**:
+   - Created `/api/leads/data-quality/won-without-quotation` endpoint
+   - Returns list of Won leads missing quotation data (currently 50 leads)
+   - Helps identify data quality issues in source files
+   - Supports filters: state, dealer, employee_name, segment, date range
+
+4. ✅ **Verified KPI Values**:
+   - Won Leads: 866 (correct)
+   - Quotations Sent: 853 (correct)
+   - Difference (13) is due to 50 won leads missing quotation data (data quality issue, not a bug)
+
+5. ✅ **All 14 Tests Passed**:
+   - Backend: 14/14 pytest tests passed
+   - Frontend: Dashboard verified with all KPI cards displaying correctly
 
 ### Session 9 - Jan 14, 2026 (COMPLETED)
 **CRITICAL BUG FIX: Won Leads now include duplicate/repeat customer purchases**
