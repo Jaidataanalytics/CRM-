@@ -791,23 +791,76 @@ async def get_quotations_summary(
     
     total = await db.leads.count_documents(base_query)
     
-    # Won quotations
-    won = await db.leads.count_documents({
-        **base_query,
-        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}
-    })
+    # Won quotations - add enquiry_stage to the existing query
+    won_query = {
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False},
+                {"is_duplicate": None}
+            ]},
+            {"$or": [
+                {"quotation_sent": True},
+                {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+                {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+            ]}
+        ]
+    }
+    if state:
+        won_query["state"] = state
+    if dealer:
+        won_query["dealer"] = dealer
+    if employee_name:
+        won_query["employee_name"] = employee_name
+    if segment:
+        won_query["segment"] = segment
+    won = await db.leads.count_documents(won_query)
     
     # Lost quotations (Closed-* except Won, or Lost)
     lost_query = {
-        **base_query,
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "enquiry_stage": {"$nin": ["Closed-Won", "Order Booked"]},
         "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False},
+                {"is_duplicate": None}
+            ]},
+            {"$or": [
+                {"quotation_sent": True},
+                {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+                {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+            ]},
             {"$or": [
                 {"enquiry_stage": {"$regex": "^Closed-", "$options": "i"}},
                 {"enquiry_stage": {"$regex": "^Lost$", "$options": "i"}}
-            ]},
-            {"enquiry_stage": {"$nin": ["Closed-Won", "Order Booked"]}}
+            ]}
         ]
     }
+    if state:
+        lost_query["state"] = state
+    if dealer:
+        lost_query["dealer"] = dealer
+    if employee_name:
+        lost_query["employee_name"] = employee_name
+    if segment:
+        lost_query["segment"] = segment
     lost = await db.leads.count_documents(lost_query)
     
     # Pending = Total - Won - Lost
