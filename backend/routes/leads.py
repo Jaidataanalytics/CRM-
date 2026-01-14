@@ -644,7 +644,7 @@ async def get_quotations(
     employee_name: Optional[str] = None,
     segment: Optional[str] = None
 ):
-    """Get leads with quotations sent - respects date and other filters"""
+    """Get leads with quotations sent - respects date and other filters, excludes transferred/duplicates"""
     from routes.kpis import get_indian_fy_dates
     db = await get_db(request)
     
@@ -652,15 +652,27 @@ async def get_quotations(
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
-    # Base query - leads with quotation_sent=True OR quotation_no exists OR quotation_date exists
-    # Also filter by enquiry_date within range
+    # Base query - matches KPIs logic: excludes transferred and duplicate leads
     query = {
+        "is_deleted": {"$ne": True},
         "deleted_at": {"$exists": False},
         "enquiry_date": {"$gte": start_date, "$lte": end_date},
-        "$or": [
-            {"quotation_sent": True},
-            {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
-            {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False},
+                {"is_duplicate": None}
+            ]},
+            {"$or": [
+                {"quotation_sent": True},
+                {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+                {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+            ]}
         ]
     }
     
