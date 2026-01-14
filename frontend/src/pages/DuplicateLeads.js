@@ -28,7 +28,9 @@ import {
   Eye,
   Trash2,
   GitMerge,
-  Database
+  Database,
+  Zap,
+  Timer
 } from 'lucide-react';
 import {
   Dialog,
