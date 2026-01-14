@@ -253,7 +253,6 @@ async def get_kpis(
     
     # Add deleted_at check for won qty calculations
     # Use deepcopy to avoid mutation issues
-    import copy
     qty_won_base_query = copy.deepcopy(won_base_query)
     qty_won_base_query["deleted_at"] = {"$exists": False}
     
