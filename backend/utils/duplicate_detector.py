@@ -361,37 +361,64 @@ async def run_duplicate_detection_migration(db):
 
 async def find_and_merge_by_phone(db, phone: str, incoming_lead: Dict) -> Optional[Dict]:
     """
-    Find existing lead by phone number and merge incoming data.
+    Find existing lead by phone number and determine if it should be merged.
     
-    Returns the merged lead if found, None if no match.
+    Uses SMART duplicate logic:
+    - If existing lead is CLOSED (won/lost) → NOT a duplicate (repeat customer)
+    - If time gap > 1 year → NOT a duplicate (returning customer)  
+    - If existing lead is OPEN and gap < 1 year → IS a duplicate (merge)
+    
+    Returns:
+        - {"existing_lead": ..., "merge_updates": ..., "is_duplicate": True} if should merge as duplicate
+        - {"existing_lead": ..., "is_duplicate": False, "reason": ...} if NOT a duplicate (repeat/returning customer)
+        - None if no match found
     """
     normalized_phone = duplicate_detector.normalize_phone(phone)
     if not normalized_phone:
         return None
     
-    # Find existing leads with this phone (non-deleted, non-duplicate)
-    existing = await db.leads.find_one({
-        "$or": [
-            {"phone_number": normalized_phone},
-            {"phone_number": {"$regex": f"{normalized_phone}$"}}
-        ],
-        "deleted_at": {"$exists": False},
-        "$or": [
-            {"is_duplicate": {"$exists": False}},
-            {"is_duplicate": False}
+    # Find existing leads with this phone (non-deleted, non-duplicate, sorted by enquiry_date DESC)
+    # We want the most recent lead for comparison
+    existing_leads = await db.leads.find({
+        "$and": [
+            {"$or": [
+                {"phone_number": normalized_phone},
+                {"phone_number": {"$regex": f"{normalized_phone}$"}}
+            ]},
+            {"deleted_at": {"$exists": False}},
+            {"$or": [
+                {"is_duplicate": {"$exists": False}},
+                {"is_duplicate": False}
+            ]}
         ]
-    }, {"_id": 0})
+    }, {"_id": 0}).sort("enquiry_date", -1).to_list(10)
     
-    if not existing:
+    if not existing_leads:
         return None
     
-    # Merge data
-    merge_updates = duplicate_detector.merge_leads(existing, incoming_lead)
+    # Get the most recent non-duplicate lead
+    existing = existing_leads[0]
     
-    return {
-        "existing_lead": existing,
-        "merge_updates": merge_updates
-    }
+    # Apply SMART duplicate logic
+    is_dup, reason = duplicate_detector.should_be_duplicate(existing, incoming_lead)
+    
+    if is_dup:
+        # This IS a duplicate - merge data into existing lead
+        merge_updates = duplicate_detector.merge_leads(existing, incoming_lead)
+        return {
+            "existing_lead": existing,
+            "merge_updates": merge_updates,
+            "is_duplicate": True,
+            "reason": reason
+        }
+    else:
+        # This is NOT a duplicate - it's a repeat/returning customer
+        # Return existing lead info but flag that this should be a NEW lead
+        return {
+            "existing_lead": existing,
+            "is_duplicate": False,
+            "reason": reason
+        }
 
 
 async def find_by_enquiry_no(db, enquiry_no: str) -> Optional[Dict]:
