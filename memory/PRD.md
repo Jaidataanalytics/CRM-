@@ -98,32 +98,27 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ## Completed Work
 
 ### Session 10 - Jan 14, 2026 (COMPLETED)
-**KPI Data Integrity and Duplicate Detection Fixes**
+**Data Re-Upload and Order Time Punch Feature**
 
-1. ✅ **Quotations Sent KPI Query Fix (P0)**:
-   - Fixed `quotations_sent_query` to properly use `copy.deepcopy()` to avoid query mutation issues
-   - Query now correctly appends quotation filter to `$and` array instead of overwriting `$or`
-   - Moved `import copy` to module level for consistency
+1. ✅ **Complete Data Re-Upload**:
+   - Cleared all existing data and re-uploaded fresh files
+   - Enquiry Dump (26,697 rows) → 26,690 unique leads
+   - Lost Dump (4,057 rows) → 3,961 updated to Lost
+   - SO Register (5,205 rows) → 5,150 matched with enquiries (98.9% match rate!)
 
-2. ✅ **Duplicate Detection Logic Enhancement**:
-   - Updated `find_and_merge_by_phone()` in duplicate_detector.py to use smart duplicate logic
-   - Now checks if existing lead is CLOSED before marking as duplicate
-   - Returns `is_duplicate: False` with reason for repeat/returning customers
+2. ✅ **Removed Qty from Total Leads KPI**:
+   - Qty now only shows for Won Leads (genset count)
+   - Total Leads shows count only
 
-3. ✅ **Data Quality Report Endpoint (NEW)**:
-   - Created `/api/leads/data-quality/won-without-quotation` endpoint
-   - Returns list of Won leads missing quotation data (currently 50 leads)
-   - Helps identify data quality issues in source files
-   - Supports filters: state, dealer, employee_name, segment, date range
+3. ✅ **Added "Order Time Punch" Tab** in Data Management:
+   - Shows leads closed within 2 days of creation
+   - Summary cards: Total Orders, Total Qty, Same Day, 1 Day, 2 Days
+   - Currently shows 2,583 quick wins (1,564 same-day closures!)
+   - Backend endpoints: `/api/leads/order-time-punch` and `/api/leads/order-time-punch/summary`
 
-4. ✅ **Verified KPI Values**:
-   - Won Leads: 866 (correct)
-   - Quotations Sent: 853 (correct)
-   - Difference (13) is due to 50 won leads missing quotation data (data quality issue, not a bug)
-
-5. ✅ **All 14 Tests Passed**:
-   - Backend: 14/14 pytest tests passed
-   - Frontend: Dashboard verified with all KPI cards displaying correctly
+4. ✅ **Documented Duplicate Detection Logic**:
+   - Explained why 4,775 leads with repeated phones are NOT flagged as duplicates
+   - These are legitimate repeat/returning customers per business rules
 
 ### Session 9 - Jan 14, 2026 (COMPLETED)
 **CRITICAL BUG FIX: Won Leads now include duplicate/repeat customer purchases**
