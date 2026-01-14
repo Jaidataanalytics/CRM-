@@ -275,10 +275,6 @@ async def get_kpis(
     won_qty_result = await db.leads.aggregate(won_qty_pipeline).to_list(1)
     won_qty = won_qty_result[0]["won_qty"] if won_qty_result else 0
     
-    # DEBUG: Log won_qty calculation
-    import logging
-    logging.getLogger("server").info(f"DEBUG won_qty: {won_qty}, result: {won_qty_result}")
-    
     # Dispatched qty - use won_qty if set, else qty, else 1
     dispatched_qty_pipeline = [
         {"$match": {**qty_won_base_query, "dispatch_status": "dispatched"}},
