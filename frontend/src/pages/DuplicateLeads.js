@@ -104,8 +104,11 @@ const DuplicateLeads = () => {
     } else if (activeTab === 'merge-history') {
       loadMergeHistory();
       loadMergeSummary();
+    } else if (activeTab === 'time-punch') {
+      loadTimePunchLeads();
+      loadTimePunchSummary();
     }
-  }, [activeTab, page, searchQuery, mergePage, mergeSearchQuery]);
+  }, [activeTab, page, searchQuery, mergePage, mergeSearchQuery, timePunchPage, timePunchSearchQuery]);
 
   const loadDuplicates = async () => {
     setLoading(true);
