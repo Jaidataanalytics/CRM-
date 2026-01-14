@@ -43,7 +43,6 @@ async def get_metric_config(db, metric_id: str) -> dict:
 
 async def count_by_metric(db, base_query: dict, metric_config: dict) -> int:
     """Count leads matching a metric configuration"""
-    import copy
     if not metric_config or not metric_config.get("is_active", True):
         return 0
     
