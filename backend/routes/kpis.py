@@ -101,12 +101,15 @@ async def get_kpis(
     
     # Build won query - for won leads, DON'T exclude duplicates!
     # Each won lead represents a real sale, even from repeat customers
+    # Use $and to properly group the is_transferred condition
     won_base_query = {
         "is_deleted": {"$ne": True},
-        "$or": [
-            {"is_transferred": {"$exists": False}},
-            {"is_transferred": False},
-            {"is_transferred": None}
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]}
         ]
         # NOTE: No is_duplicate filter for won leads - repeat purchases count!
     }
