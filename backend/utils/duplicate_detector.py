@@ -1,26 +1,38 @@
 """
 Duplicate Lead Detection and Merge Utility
-Identifies duplicate leads based on phone number only.
+Identifies duplicate leads based on phone number with smart logic.
 Provides merge logic to combine duplicate leads.
 """
 from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
 
+# Closed stages - if previous lead has any of these, new lead is NOT a duplicate
+CLOSED_STAGES = [
+    "Closed-Won", "Order Booked", 
+    "Closed-Lost", "Closed-Dropped", "Lost",
+    "Closed-Not Interested", "Closed-Budget Issue", "Closed-Competitor"
+]
+
+# Time gap threshold for considering it a new enquiry (1 year)
+NEW_ENQUIRY_TIME_GAP_DAYS = 365
+
 
 class DuplicateDetector:
     """
-    Detects duplicate leads using phone number matching.
+    Detects duplicate leads using phone number matching with smart logic.
     
-    Criteria for duplicates:
+    A lead is considered a DUPLICATE only if:
     - Same phone_number (exact match after normalization)
+    - AND the previous enquiry is still OPEN (not closed)
+    - AND the time gap is less than 1 year
     
-    Merge Logic:
-    - The OLDEST lead (by enquiry_date) is considered the "original" (main)
-    - All newer leads are merged INTO the original
-    - Data is combined: empty fields filled, text fields concatenated
+    A lead is considered NEW (not duplicate) if:
+    - Different phone number
+    - OR previous enquiry is CLOSED (won/lost) - this is a repeat customer
+    - OR time gap > 1 year - this is a returning customer
     """
     
     def __init__(self):
@@ -64,6 +76,36 @@ class DuplicateDetector:
             except ValueError:
                 pass
         return None
+    
+    def is_lead_closed(self, lead: Dict) -> bool:
+        """Check if a lead is in a closed state"""
+        stage = lead.get('enquiry_stage', '').strip()
+        return stage in CLOSED_STAGES or stage.lower().startswith('closed')
+    
+    def should_be_duplicate(self, existing_lead: Dict, new_lead: Dict) -> Tuple[bool, str]:
+        """
+        Determine if new_lead should be marked as duplicate of existing_lead.
+        
+        Returns:
+            - (True, reason) if it should be a duplicate
+            - (False, reason) if it should be a new lead
+        """
+        # Rule 1: If existing lead is CLOSED, new lead is NOT a duplicate
+        # This is a repeat/returning customer
+        if self.is_lead_closed(existing_lead):
+            return False, "Previous enquiry is closed - this is a repeat customer"
+        
+        # Rule 2: If time gap > 1 year, new lead is NOT a duplicate
+        existing_date = self.parse_date(existing_lead.get('enquiry_date'))
+        new_date = self.parse_date(new_lead.get('enquiry_date'))
+        
+        if existing_date and new_date:
+            time_gap = abs((new_date - existing_date).days)
+            if time_gap > NEW_ENQUIRY_TIME_GAP_DAYS:
+                return False, f"Time gap of {time_gap} days exceeds {NEW_ENQUIRY_TIME_GAP_DAYS} days - this is a returning customer"
+        
+        # Rule 3: If existing lead is OPEN, new lead IS a duplicate
+        return True, "Previous enquiry is still open - this is a duplicate entry"
     
     def merge_leads(self, original: Dict, incoming: Dict) -> Dict:
         """
