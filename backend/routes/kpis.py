@@ -245,7 +245,10 @@ async def get_kpis(
     # IMPORTANT: Use won_base_query for qty calculations (includes duplicate won leads)
     
     # Add deleted_at check for won qty calculations
-    qty_won_base_query = {**won_base_query, "deleted_at": {"$exists": False}}
+    # Use deepcopy to avoid mutation issues
+    import copy
+    qty_won_base_query = copy.deepcopy(won_base_query)
+    qty_won_base_query["deleted_at"] = {"$exists": False}
     
     # DEBUG: Log the query
     import logging
