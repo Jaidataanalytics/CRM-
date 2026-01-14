@@ -323,7 +323,7 @@ async def get_kpis(
     
     old_enquiries_closed_count = await db.leads.count_documents(old_enquiries_closed_query)
     
-    # Qty for old enquiries closed
+    # Qty for old enquiries closed - use won_qty if set, else qty, else 1
     old_enquiries_closed_qty_pipeline = [
         {"$match": old_enquiries_closed_query},
         {"$group": {"_id": None, "total_qty": {"$sum": {
@@ -333,7 +333,14 @@ async def get_kpis(
                     {"$gt": ["$won_qty", 0]}
                 ]},
                 "$won_qty",
-                1  # Default to 1 if won_qty not set
+                {"$cond": [
+                    {"$and": [
+                        {"$ne": ["$qty", None]},
+                        {"$gt": ["$qty", 0]}
+                    ]},
+                    "$qty",
+                    1
+                ]}
             ]
         }}}}
     ]
