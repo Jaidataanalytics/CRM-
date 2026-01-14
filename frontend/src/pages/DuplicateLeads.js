@@ -86,6 +86,29 @@ const DuplicateLeads = () => {
   const [timePunchSearchQuery, setTimePunchSearchQuery] = useState('');
   const [timePunchSummary, setTimePunchSummary] = useState(null);
   
+  // Load all counts on mount
+  useEffect(() => {
+    loadAllCounts();
+  }, []);
+  
+  const loadAllCounts = async () => {
+    try {
+      // Load duplicate count
+      const dupRes = await axios.get(`${API}/leads/duplicates?limit=1`, { withCredentials: true });
+      setTotalDuplicates(dupRes.data.total || 0);
+      
+      // Load merge count
+      const mergeRes = await axios.get(`${API}/leads/merge-history?limit=1`, { withCredentials: true });
+      setTotalMerged(mergeRes.data.total || 0);
+      
+      // Load time punch count
+      const tpRes = await axios.get(`${API}/leads/order-time-punch?limit=1`, { withCredentials: true });
+      setTotalTimePunch(tpRes.data.total || 0);
+    } catch (error) {
+      console.error('Error loading counts:', error);
+    }
+  };
+  
   // Lead detail panel
   const [selectedLead, setSelectedLead] = useState(null);
   const [showLeadDetail, setShowLeadDetail] = useState(false);
