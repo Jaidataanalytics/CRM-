@@ -1,140 +1,156 @@
 <analysis>**original_problem_statement:**
 The user wants to overhaul their lead management system. Key requirements include:
-1.  **Duplicate Logic Change**: Use  as the primary identifier for duplicate leads and merge new data into existing records.
-2.  **Unified Data Upload**: Consolidate and merge data from three Excel files (, , ) into a single lead record.
-3.  **Quantity (Qty) Tracking**: Introduce  as a core metric alongside lead counts for all KPIs.
-4.  **New Features & Fixes**:
-    *   Add a new Old Enquiries Closed KPI.
-    *   Implement an  lead status.
-    *   Fix and enhance the Closure/Lost Analysis page to correctly process and visualize data from the , including competitor names and lost reasons.
-    *   Enhance the Duplicate Leads page to also serve as a Merge History viewer.
-    *   Create a dedicated Quotations page.
-    *   Remove the Total KVA metric from all analytics.
-    *   Build a new Summary Builder (pivot table) feature in the  page.
-    *   Review and refactor the data model to eliminate redundant fields and improve data consistency.
+1.  **Duplicate Logic Change**: Use  as the primary identifier. A new lead is a duplicate ONLY if a previous enquiry from the same phone number is currently **OPEN** and the time gap is **less than 1 year**. A previous closed (won/lost) enquiry from the same customer should be treated as a new lead (repeat business).
+2.  **Data Integrity**: Ensure KPI metrics on the dashboard (e.g., Won Leads, Quotations Sent) are consistent with the data shown on detailed pages. Won leads should never be filtered out as duplicates. The Quotations Sent count must be at least equal to the Won Leads count.
+3.  **Unified Data Upload**: Consolidate and merge data from three Excel files (, , ).
+4.  **Quantity (Qty) Tracking**: Introduce  as a core metric.
+5.  **New Features & Fixes**:
+    *   Build a Summary Builder (pivot table) with historical comparison.
+    *   Link quotations to their corresponding leads.
+    *   When quotation data is present in an upload, the  flag should be automatically marked as true.
+    *   Review the entire dashboard for data linking improvements and suggest enhancements.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack lead management dashboard. The agent has successfully implemented most of the user's requirements. The data import process for all three source files now uses a unified phone-based duplicate detection and data merge logic. Key features like the Old Enquiries Closed KPI, quantity tracking, the enhanced Closure/Lost Analysis page, a new Quotations page, and a Data Management page (evolved from the old duplicates page) are complete and functional. The application has been tested with user-provided data files. The current focus is on a major new feature and a data model refactoring task.
+The application is a full-stack lead management dashboard. The agent has implemented several major features, including a unified data upload process, new KPIs, and enhanced analytics pages (Closure Analysis, Quotations). A new Summary Builder (pivot table) feature was built on the  page, complete with a Year-over-Year historical comparison toggle.
+
+Most recently, the agent addressed critical data integrity bugs, ensuring that Won Leads KPIs correctly include repeat customer sales (which were previously being filtered as duplicates). The agent also fixed KPI calculation mismatches and began implementing a more sophisticated duplicate detection logic as requested by the user.
 
 **Last working item**:
-*   **Last item agent was working**: The user requested a comprehensive review of the entire application for data model improvements and the creation of a new Summary Builder (pivot table) feature. The agent began by analyzing the existing  model and  to plan the next steps.
-*   **Status**: NOT STARTED
+*   **Last item agent was working**: The agent was in the process of implementing a new, more nuanced duplicate detection logic and fixing the Quotations Sent KPI to align with the user's requirements. The root causes for data discrepancies were identified, but the implementation was interrupted.
+*   **Status**: IN PROGRESS
 *   **Agent Testing Done**: N
-*   **Which testing method agent to use?**: After implementing the Summary Builder, use both the backend testing agent (to verify the dynamic aggregation API) and the frontend testing agent (to test the pivot table UI, interactions, and data accuracy). For the data model refactoring, a full regression test using both testing agents is recommended.
+*   **Which testing method agent to use?**: both. The backend testing agent is needed to verify the new duplicate detection logic in  and the updated KPI calculations in . The frontend testing agent is needed to confirm the dashboard and all related pages display the corrected, consistent data.
 *   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-*   No outstanding bugs. All work is related to new feature development and planned refactoring.
+*   **Issue 1: Incorrect Quotations Sent KPI Calculation (P0)**
+    *   **Description**: The Quotations Sent KPI is currently excluding leads that are marked as duplicates, resulting in a lower count than expected. The count should include all leads that have quotation data, regardless of their duplicate status, to ensure it's at least equal to the Won Leads count.
+    *   **Attempted fixes**: The agent identified that the KPI query was using , which filters out duplicates.
+    *   **Next debug checklist**: Modify the  in  to use a base query that does *not* exclude duplicates, similar to how the  count was fixed.
+    *   **Why fix this issue and what will be achieved with the fix?**: This will fix the data discrepancy where the number of quotations was less than the number of won deals, which is logically impossible. It ensures dashboard metrics are accurate.
+    *   **Status**: IN PROGRESS
+    *   **Is recurring issue?**: N
+    *   **Should Test frontend/backend/both after fix?**: Both.
+*   **Issue 2: Data Quality Issue: Won Leads Missing Quotation Data (P1)**
+    *   **Description**: Analysis revealed that ~50 Won leads in the database are missing  or . This is a source data quality problem.
+    *   **Attempted fixes**: The issue has been identified and communicated.
+    *   **Next debug checklist**: This is not a code bug. The agent should inform the user that this requires a manual data fix in their source Excel files and cannot be resolved through code. The agent could potentially build a report to list these faulty leads for easy review.
+    *   **Why fix this issue and what will be achieved with the fix?**: Improves overall data integrity and trust in the system.
+    *   **Status**: NOT STARTED
+    *   **Is recurring issue?**: Y (data quality)
+    *   **Should Test frontend/backend/both after fix?**: Backend (for the report, if built).
 
 **In progress Task List**:
-*   **Task 1: Data Model & Dashboard Review and Refactoring (P0)**
-    *   **Description**: Review the data model to identify and consolidate redundant fields (e.g., //, /) to improve data integrity.
-    *   **Where to resume**: Formulate a migration plan. This involves creating a one-time migration script in  to merge data into canonical fields, and then updating all backend routes and frontend components to use only the consolidated fields.
-    *   **What will be achieved with this?**: A cleaner, more consistent data model that prevents data fragmentation and simplifies future development.
+*   **Task 1: Implement New Duplicate Detection Logic (P0)**
+    *   **Description**: Refactor the duplicate detection logic to align with the user's new rules: a lead is only a duplicate if a previous enquiry from the same phone number is still **OPEN** and was created **within the last year**.
+    *   **Where to resume**: The agent was about to modify the  function in . The new implementation needs to check the  of the existing lead and its .
+    *   **What will be achieved with this?**: This will correctly differentiate between a genuine duplicate entry and a repeat customer, ensuring sales from returning customers are not lost in the data.
     *   **Status**: IN PROGRESS
     *   **Should Test frontend/backend/both after fix?**: Both.
     *   **Blocked on something**: No.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
-    *   **Task 1: Implement Summary Builder (Pivot Table) Feature (P0)**: Create a new tab in the  page that allows users to build dynamic reports.
-        *   **Functionality**: Users should be able to select a metric (e.g., total leads), a time frame (monthly, quarterly), and a dimension (e.g., employee, dealer, state) to generate a pivot table with totals. The feature should also provide high-level insights like trends and comparisons.
-        *   **Files**:  (new dynamic aggregation endpoint),  (new UI component).
-    *   **Task 2: Implement Manual 'Qualified' Toggle (P1)**: Add a UI element on the lead detail view to allow users to manually set a lead's  status.
-        *   **Files**:  or a lead detail component, .
+    *   **Funnel Analysis (P1)**: Create a new visualization to track conversion rates at each stage (Enquiry → Quotation → Won).
+    *   **Manual 'Qualified' Toggle (P1)**: Add a UI element on the lead detail view to allow users to manually set a lead's  status.
+    *   **Lead Velocity & ROI Analysis (P2)**: Suggest and potentially implement new analytics for how fast leads move through stages and which sources provide the best return.
 *   **Future Tasks**:
-    *   **Task 3: Verify Per-Dimension Forecast Accuracy (P2)**.
-    *   **Task 4: Detailed Audit Logs (P2)**.
-    *   **Task 5: Refactor Forecast Page (P2)**: Break down  into smaller components.
+    *   Verify Per-Dimension Forecast Accuracy.
+    *   Detailed Audit Logs.
+    *   Refactor Forecast Page.
 
 **Completed work in this session**
-- **Old Enquiries Closed KPI (DONE)**: Implemented on the backend () and frontend ().
-- **Unified Upload Logic (DONE)**: Refactored all upload endpoints () to use a consistent phone-based duplicate detection and merge strategy. This includes fixing the  upload to merge data for all leads, not just new ones.
-- **Enhanced Upload Summary (DONE)**: Added a summary modal () to show users which fields were merged during an upload.
-- **Closure Analysis Overhaul (DONE)**: Fixed a critical bug in  and completely redesigned the feature to use , , and  as the primary data sources, with new UI charts and tables in .
-- **Total KVA Metric Removed (DONE)**: Scrubbed the KVA metric from all relevant backend calculations and frontend displays.
-- **Data Management Page (DONE)**: Transformed the  page into a tabbed view with the original duplicate finder and a new Merge History tab, powered by a new  endpoint.
-- **New Quotations Page (DONE)**: Created a new page () and corresponding backend endpoints () to track the quotation pipeline.
-- **User File Testing (DONE)**: Successfully processed user-provided  and  dump files, validating all new logic.
+- **Summary Builder & Historical Comparison (DONE)**: Implemented a full-featured pivot table in the  page with a YoY comparison toggle.
+- **Area → Location Rename (DONE)**: Renamed all instances of Area to Location across the UI and backend.
+- **Quotation-Lead Linking (DONE)**: Added a View Lead link to the  page.
+- **Critical KPI Bug Fixes (DONE)**:
+    - **Won Leads Count**: Fixed the  KPI to correctly include sales from repeat customers, which were previously excluded as duplicates. The count now reflects the true number of won deals.
+    - **Won Qty Calculation**: Corrected the logic to use , then , then  as a fallback, ensuring accurate quantity tracking.
+    - **Data Migration**: Implemented a one-time startup script in  to auto-mark the  flag for all leads with existing quotation data.
+- **Dashboard/Quotations Page Sync (DONE)**: Fixed data discrepancies between the main dashboard KPIs and the Quotations page by applying consistent filtering logic (date filters, duplicate exclusion).
+- **Environment Fix (DONE)**: Resolved a Preview not working issue by rebuilding the frontend after an environment reset had deleted the  folder.
 
 **Known issue recurrence from previous fork**
-- **Production environment divergence**: A known potential risk where issues might appear in deployment that are not present in the local preview. The application has been stable, but this remains a point of awareness.
+- **Shallow Copy Bugs**: A bug where a Python dictionary query was being mutated due to shallow copying () was found and fixed by using . The next agent should be mindful of this pattern, especially when reusing query objects.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-*   **Data Unification**: The central theme of the session, focused on merging multiple data sources into a single source of truth using  as the key.
-*   **Dynamic Aggregation**: The core concept for the upcoming Summary Builder feature, which will require building flexible MongoDB aggregation pipelines based on user input.
+*   **Stateful Duplicate Detection**: The required logic is no longer static. It depends on the *state* (open/closed) and *age* of existing records.
+*   **Data Integrity and Reconciliation**: A major theme. All KPIs must be consistent with detailed views. This involves applying identical filtering logic (date ranges, exclusion rules) across different endpoints.
+*   **Dynamic Aggregation**: The backend for the Summary Builder uses flexible MongoDB aggregation pipelines based on user-selected dimensions and metrics.
+*   **Defensive Copying**: Using  is crucial when reusing and modifying complex dictionary-based queries to prevent unintended side effects (mutations).
 
 **key DB schema**
 *   **leads**:
-    *   : (Array of Strings) Stores alternate enquiry numbers from merged records.
-    *   , , : (String) Fields populated from the Lost dump, now used for Closure Analysis.
-    *   , , : Fields for the new Quotations page.
+    *   : (Boolean) Flag indicating a duplicate. The logic for setting this is the focus of the current task.
+    *   : (Boolean) Flag indicating a quotation was sent. Now automatically set via migration if  or  exists.
+    *   : (String) Used to determine if a lead is Open or Closed for the new duplicate logic.
 
 **changes in tech stack**
 - None.
 
 **All files of reference**
-*    (For Summary Builder backend)
-*    (For Summary Builder frontend)
-*    (For data model refactoring)
-*    (For data migration scripts)
+*    (Primary file for the next task)
+*    (Contains the KPI logic to be fixed)
+*   
+*   
 *   
 *   
 *   
 
 **Areas that need refactoring**:
-*   **Data Model**: The top priority for refactoring is to consolidate redundant location and name fields within the  model, as requested by the user.
+*   : Needs to be refactored to implement the new, more complex duplicate detection rules.
 
 **key api endpoints**
-*   : Uploads and merges enquiry data.
-*   : Uploads and merges lost lead data.
-*   : Uploads and merges sales order data.
-*   : Retrieves dashboard KPIs.
-*   : Retrieves data for the enhanced Closure Analysis page.
-*   : Retrieves consolidated leads for the Data Management page.
-*    & : Retrieves data for the new Quotations page.
+*   : Heavily modified to fix data integrity issues with Won Leads and Quotations Sent.
+*   : New endpoint for the pivot table feature, including historical comparison.
+*    & : Modified to respect global date filters and apply consistent duplicate exclusion logic.
 
 **Critical Info for New Agent**
-1.  **Prioritize Summary Builder & Data Model Refactor**: The user's latest request is to build the Summary Builder (pivot table) and clean up the data model. It's recommended to start with the data model refactoring to create a stable foundation before building the new feature.
-2.  **Data is Live**: The database is populated with data from user-provided files (, ). All new features and tests should be validated against this real-world dataset.
-3.  **KVA is Forbidden**: The Total KVA metric has been explicitly removed at the user's request. Do not re-introduce it in any form.
+1.  **Prioritize Duplicate Logic**: The most urgent task is to implement the new duplicate detection rules in . This is a core business logic change requested by the user to correctly track repeat customers.
+2.  **Fix Quotation KPI**: Immediately after, fix the Quotations Sent KPI in  to ensure its count is not artificially low due to the duplicate filter. It must include all leads with quotation data.
+3.  **Won Leads are Sacred**: A key principle established is that a Won lead should never be filtered out as a duplicate. Each represents a sale. The KPI logic was fixed to reflect this; ensure this principle is maintained.
+4.  **Test for Consistency**: After making changes, always test that the numbers on the main dashboard KPIs match the totals shown on the corresponding detailed pages (e.g., Quotations page). The user is highly sensitive to these mismatches.
 
 **documents and test reports created in this job**
 *   
-*   User-provided data files are available at  and .
+*   
+*    (Updated with completed tasks)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Requested a review of the dashboard for data linking improvements, fixing data redundancy, and building a new Summary Builder feature. (PENDING)
-2.  **User**: Pointed out that already lost and won leads were being skipped during upload and should be merged. Redefined closure questions and asked to remove Total KVA. (RESOLVED)
-3.  **User**: Asked agent to verify closure/lost analysis with new data and provided feedback on an enhancement idea. Uploaded two files for testing. (RESOLVED)
-4.  **User**: Approved the agent's plan and asked to proceed. (DONE)
-5.  **Agent**: Completed a major set of features and fixes. (DONE)
-6.  **Agent**: Finished implementing the unified Enquiry Dump upload. (DONE)
-7.  **User**: Responded yes to a confirmation prompt. (DONE)
-8.  **Agent**: Proposed a plan to implement the Old Enquiries Closed KPI and unify the remaining upload flows. (USER AGREED)
-9.  **User**: Provided multiple rounds of clarification on the new requirements. (DONE)
-10. **User**: Submitted the major feature request to overhaul the entire system. (IN PROGRESS)
+1.  **User**: Confirmed the new duplicate logic: a lead is a duplicate only if the previous enquiry from the same customer is still open and less than a year old.
+2.  **User**: Confirmed that if quotation data exists, it means a quote was sent. The Quotation Sent count should reflect this.
+3.  **User**: Expressed concern that the Quotation Sent KPI count is lower than the Won Leads count, which is incorrect.
+4.  **User**: Pointed out that Won leads should not have duplicates and asked for an investigation into why 185 won leads were being filtered out.
+5.  **User**: Requested that the  checkbox be automatically marked if quotation data is present.
+6.  **User**: Reported several data discrepancies via screenshot (KPIs not matching Quotations page, incorrect Old Enquiries Closed definition) and asked for them to be fixed.
+7.  **User**: Confirmed the logic for Old Enquiries Closed:  is before the selected range, but  is within it.
+8.  **User**: Reported that the preview was not working. (RESOLVED)
+9.  **User**: Requested a comprehensive review of the entire dashboard for data linking improvements and suggested adding a historical comparison toggle to the Summary Builder. (IN PROGRESS/DONE)
+10. **User**: Confirmed that quotations should be linked to their leads and approved moving forward with the historical comparison toggle.
 
 **Project Health Check:**
-*   **Functional**: The application is stable and working in the preview environment. All known bugs have been addressed, and the project is in a state of active feature development and enhancement.
+*   **Functional**: The application is running.
+*   **Broken**: The core business logic for duplicate detection is incorrect and is the highest priority to fix. The Quotations Sent KPI is also providing inaccurate numbers due to this faulty logic.
 
 **3rd Party Integrations**
 *   **OpenAI GPT-4o**: Used for generating qualitative trend analysis in forecasts. Relies on the Emergent LLM Key.
 *   **rapidfuzz**: A Python library used for fuzzy string matching.
 
 **Testing status**
-*   **Testing agent used after significant changes**: YES, successfully verified a large batch of features and fixes.
+*   **Testing agent used after significant changes**: YES, for the Summary Builder and YoY features.
 *   **Troubleshoot agent used after agent stuck in loop**: NO.
-*   **Test files created**: Yes, temporary files were used for unit testing merge logic. The primary test data is now from the user-provided Excel files.
+*   **Test files created**: No new persistent test files were created.
 *   **Known regressions**: None.
 
 **Credentials to test flow:**
 *   **Admin**:  / 
 
 **What agent forgot to execute**
-*   The agent has a clear plan and has not forgotten any outstanding tasks. The current work is aligned with the user's latest and highest-priority requests.</analysis>
+The agent was in the middle of a multi-step fix. It correctly identified the root causes but did not complete the implementation for:
+1.  Refactoring  in  with the new logic (checking stage and date).
+2.  Fixing the  in  to stop excluding duplicates.</analysis>
