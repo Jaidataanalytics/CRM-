@@ -648,6 +648,30 @@ async def migrate_qualified_status():
                     last_run = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
                 
                 # Skip if ran within last day
+                if datetime.now(timezone.utc) - last_run < timedelta(days=1):
+                    logger.info("Qualified status migration already ran recently, skipping...")
+                    return
+        
+        result = await update_qualified_status_migration(db)
+        
+        # Record that we ran the migration
+        await db.migration_status.update_one(
+            {"migration": "qualified_status"},
+            {
+                "$set": {
+                    "migration": "qualified_status",
+                    "last_run": datetime.now(timezone.utc).isoformat(),
+                    "result": result
+                }
+            },
+            upsert=True
+        )
+        
+        logger.info(f"Qualified status migration complete: {result.get('qualified', 0)} qualified, {result.get('not_qualified', 0)} not qualified")
+        
+    except Exception as e:
+        logger.error(f"Qualified status migration failed: {str(e)}")
+        # Don't raise - allow server to start even if migration fails
 
 
 async def migrate_quotation_sent_flag():
@@ -683,31 +707,6 @@ async def migrate_quotation_sent_flag():
             
     except Exception as e:
         logger.error(f"Quotation sent flag migration failed: {str(e)}")
-                if datetime.now(timezone.utc) - last_run < timedelta(days=1):
-                    logger.info("Qualified status migration already ran recently, skipping...")
-                    return
-        
-        result = await update_qualified_status_migration(db)
-        
-        # Record that we ran the migration
-        await db.migration_status.update_one(
-            {"migration": "qualified_status"},
-            {
-                "$set": {
-                    "migration": "qualified_status",
-                    "last_run": datetime.now(timezone.utc).isoformat(),
-                    "result": result
-                }
-            },
-            upsert=True
-        )
-        
-        logger.info(f"Qualified status migration complete: {result.get('qualified', 0)} qualified, {result.get('not_qualified', 0)} not qualified")
-        
-    except Exception as e:
-        logger.error(f"Qualified status migration failed: {str(e)}")
-        # Don't raise - allow server to start even if migration fails
-
 
 
 @app.on_event("startup")
