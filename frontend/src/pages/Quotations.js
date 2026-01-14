@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useFilters } from '@/context/FilterContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,7 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Quotations = () => {
   const navigate = useNavigate();
+  const { buildQueryParams } = useFilters();
   const [activeTab, setActiveTab] = useState('all');
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,12 +51,13 @@ const Quotations = () => {
   useEffect(() => {
     loadQuotations();
     loadSummary();
-  }, [activeTab, page, searchQuery]);
+  }, [activeTab, page, searchQuery, buildQueryParams]);
 
   const loadQuotations = async () => {
     setLoading(true);
     try {
-      let url = `${API}/leads/quotations?page=${page}&limit=50&status=${activeTab}`;
+      const queryParams = buildQueryParams();
+      let url = `${API}/leads/quotations?page=${page}&limit=50&status=${activeTab}&${queryParams}`;
       if (searchQuery.trim()) {
         url += `&search=${encodeURIComponent(searchQuery.trim())}`;
       }
@@ -73,7 +76,8 @@ const Quotations = () => {
 
   const loadSummary = async () => {
     try {
-      const res = await axios.get(`${API}/leads/quotations/summary`, { withCredentials: true });
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/leads/quotations/summary?${queryParams}`, { withCredentials: true });
       setSummary(res.data);
     } catch (error) {
       console.error('Error loading summary:', error);
