@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Depends, Query
 from typing import Optional, List
 from datetime import datetime
 import logging
+import copy
 
 from models.user import User
 from models.metric_settings import DEFAULT_METRICS
