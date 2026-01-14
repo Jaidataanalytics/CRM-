@@ -82,6 +82,7 @@ async def get_kpis(
         start_date, end_date = get_indian_fy_dates()
     
     # Build base query - exclude soft-deleted, transferred leads, AND duplicates
+    # This is used for counting leads in pipeline (enquiries, open, hot, etc.)
     base_query = {
         "is_deleted": {"$ne": True},
         "$and": [
@@ -97,31 +98,51 @@ async def get_kpis(
             ]}
         ]
     }
+    
+    # Build won query - for won leads, DON'T exclude duplicates!
+    # Each won lead represents a real sale, even from repeat customers
+    won_base_query = {
+        "is_deleted": {"$ne": True},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+        # NOTE: No is_duplicate filter for won leads - repeat purchases count!
+    }
+    
     if state:
         base_query["state"] = state
+        won_base_query["state"] = state
     if dealer:
         base_query["dealer"] = dealer
+        won_base_query["dealer"] = dealer
     if employee_name:
         base_query["employee_name"] = employee_name
+        won_base_query["employee_name"] = employee_name
     if segment:
         base_query["segment"] = segment
+        won_base_query["segment"] = segment
     
     base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    won_base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
-    # Total leads (excluding transferred and duplicates)
+    # Total leads (excluding transferred and duplicates) - for pipeline counting
     total_leads = await db.leads.count_documents(base_query)
     
     # Get configurable metrics
     won_config = await get_metric_config(db, "won_leads")
     lost_config = await get_metric_config(db, "lost_leads")
-    closed_config = await get_metric_config(db, "closed_leads")
+    closed_config = await get_metric_config(db, "closed_config")
     open_config = await get_metric_config(db, "open_leads")
     hot_config = await get_metric_config(db, "hot_leads")
     warm_config = await get_metric_config(db, "warm_leads")
     cold_config = await get_metric_config(db, "cold_leads")
     
-    # Count using configurable metrics
-    won_leads = await count_by_metric(db, base_query, won_config)
+    # Count Won leads using won_base_query (includes duplicates)
+    won_leads = await count_by_metric(db, won_base_query, won_config)
+    
+    # Count other metrics using base_query (excludes duplicates)
     lost_leads = await count_by_metric(db, base_query, lost_config)
     closed_leads = await count_by_metric(db, base_query, closed_config)
     
