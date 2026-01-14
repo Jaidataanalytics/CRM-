@@ -522,3 +522,143 @@ async def update_qualified_status_migration(db):
     except Exception as e:
         logger.error(f"Error during qualified status migration: {e}")
         raise
+
+
+async def run_chunk_based_duplicate_migration(db):
+    """
+    Run chunk-based duplicate detection and merging.
+    
+    Logic:
+    - Group leads by phone number
+    - Sort by enquiry_date
+    - Find "closure" points (Closed-Won, Closed-Lost, etc.)
+    - Merge all leads BEFORE a closure INTO that closed lead
+    - Open leads at the end remain separate until closed
+    
+    Example: For leads [E1(Open), E2(Hot), E3(Won), E4(Open), E5(Lost), E6(Open)]
+    - E1, E2 merge INTO E3 (first closure)
+    - E4 merges INTO E5 (second closure)
+    - E6 stays separate (no closure yet)
+    """
+    logger.info("Starting chunk-based duplicate detection migration...")
+    
+    try:
+        # Get all leads that are not soft-deleted
+        leads = await db.leads.find(
+            {"deleted_at": {"$exists": False}},
+            {"_id": 0}
+        ).to_list(100000)
+        
+        logger.info(f"Processing {len(leads)} leads for chunk-based duplicate detection...")
+        
+        # Reset all duplicate flags and merged_enquiries for fresh detection
+        await db.leads.update_many(
+            {"deleted_at": {"$exists": False}},
+            {
+                "$set": {"is_duplicate": False, "original_lead_id": None},
+                "$unset": {"merged_enquiries": ""}
+            }
+        )
+        
+        # Group leads by normalized phone
+        phone_groups = duplicate_detector.find_duplicates_by_phone(leads)
+        
+        now = datetime.now(timezone.utc).isoformat()
+        flagged_count = 0
+        merged_count = 0
+        
+        for phone, group in phone_groups.items():
+            if len(group) < 2:
+                continue
+            
+            # Sort by enquiry_date ascending (oldest first)
+            def get_date(lead):
+                d = duplicate_detector.parse_date(lead.get('enquiry_date'))
+                return d if d else datetime.max
+            
+            group.sort(key=get_date)
+            
+            # Process in chunks - each chunk ends with a CLOSED lead
+            chunk = []
+            
+            for lead in group:
+                stage = lead.get('enquiry_stage', '')
+                is_closed = stage in CLOSED_STAGES
+                
+                if is_closed:
+                    # This lead is the "closure" - merge all previous chunk leads into it
+                    if chunk:
+                        # Prepare merged_enquiries data
+                        merged_enquiries = []
+                        for dup_lead in chunk:
+                            merged_enquiries.append({
+                                "enquiry_no": dup_lead.get('enquiry_no'),
+                                "enquiry_date": dup_lead.get('enquiry_date'),
+                                "enquiry_stage": dup_lead.get('enquiry_stage'),
+                                "enquiry_type": dup_lead.get('enquiry_type'),
+                                "name": dup_lead.get('name'),
+                                "kva": dup_lead.get('kva'),
+                                "qty": dup_lead.get('qty'),
+                                "remarks": dup_lead.get('remarks'),
+                                "lead_id": dup_lead.get('lead_id')
+                            })
+                        
+                        # Merge data from chunk leads into the closed lead
+                        merged_data = {}
+                        for dup_lead in chunk:
+                            field_updates = duplicate_detector.merge_leads(lead, dup_lead)
+                            for k, v in field_updates.items():
+                                if k not in merged_data:
+                                    merged_data[k] = v
+                        
+                        # Update the closed lead with merged enquiries
+                        main_lead_id = lead.get('lead_id')
+                        update_fields = {
+                            "merged_enquiries": merged_enquiries,
+                            "updated_at": now
+                        }
+                        update_fields.update(merged_data)
+                        
+                        await db.leads.update_one(
+                            {"lead_id": main_lead_id},
+                            {"$set": update_fields}
+                        )
+                        merged_count += 1
+                        
+                        # Flag chunk leads as duplicates
+                        for dup_lead in chunk:
+                            dup_id = dup_lead.get('lead_id')
+                            await db.leads.update_one(
+                                {"lead_id": dup_id},
+                                {
+                                    "$set": {
+                                        "is_duplicate": True,
+                                        "original_lead_id": main_lead_id,
+                                        "duplicate_detected_at": now,
+                                        "updated_at": now
+                                    }
+                                }
+                            )
+                            flagged_count += 1
+                    
+                    # Reset chunk for next closure
+                    chunk = []
+                else:
+                    # This lead is OPEN - add to current chunk
+                    chunk.append(lead)
+            
+            # Any remaining open leads in chunk stay as-is (not duplicates)
+            # They're waiting for a future closure
+        
+        logger.info(f"Chunk-based migration complete. Flagged {flagged_count} duplicates, {merged_count} leads received merged data.")
+        
+        return {
+            "duplicates_flagged": flagged_count,
+            "leads_with_merged_data": merged_count,
+            "total_processed": len(leads)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error during chunk-based duplicate migration: {e}")
+        raise
+
