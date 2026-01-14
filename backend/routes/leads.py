@@ -636,22 +636,43 @@ async def get_quotations(
     page: int = Query(1, ge=1),
     limit: int = Query(50, ge=1, le=500),
     status: str = Query("all", enum=["all", "pending", "won", "lost"]),
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    employee_name: Optional[str] = None,
+    segment: Optional[str] = None
 ):
-    """Get leads with quotations sent"""
+    """Get leads with quotations sent - respects date and other filters"""
     from routes.kpis import get_indian_fy_dates
     db = await get_db(request)
-    start_date, end_date = get_indian_fy_dates()
+    
+    # Use FY dates if not provided
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
     
     # Base query - leads with quotation_sent=True OR quotation_no exists OR quotation_date exists
+    # Also filter by enquiry_date within range
     query = {
         "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
         "$or": [
             {"quotation_sent": True},
             {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
             {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
         ]
     }
+    
+    # Apply additional filters
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if employee_name:
+        query["employee_name"] = employee_name
+    if segment:
+        query["segment"] = segment
     
     # Filter by status
     if status == "pending":
