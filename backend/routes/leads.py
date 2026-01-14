@@ -727,22 +727,42 @@ async def get_quotations(
 @router.get("/quotations/summary")
 async def get_quotations_summary(
     request: Request,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    employee_name: Optional[str] = None,
+    segment: Optional[str] = None
 ):
-    """Get quotation summary statistics"""
+    """Get quotation summary statistics - respects date and other filters"""
     from routes.kpis import get_indian_fy_dates
     db = await get_db(request)
-    start_date, end_date = get_indian_fy_dates()
     
-    # Base query for quotations
+    # Use FY dates if not provided
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Base query for quotations - filter by date range
     base_query = {
         "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
         "$or": [
             {"quotation_sent": True},
             {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
             {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
         ]
     }
+    
+    # Apply additional filters
+    if state:
+        base_query["state"] = state
+    if dealer:
+        base_query["dealer"] = dealer
+    if employee_name:
+        base_query["employee_name"] = employee_name
+    if segment:
+        base_query["segment"] = segment
     
     total = await db.leads.count_documents(base_query)
     
