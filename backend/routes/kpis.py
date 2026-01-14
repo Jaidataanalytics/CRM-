@@ -235,13 +235,14 @@ async def get_kpis(
     # ============ QTY CALCULATIONS ============
     # Qty tracks gensets sold - only applicable to Won leads
     # Priority: won_qty > qty > 1 (default)
+    # IMPORTANT: Use won_base_query for qty calculations (includes duplicate won leads)
     
-    # Add deleted_at check to be consistent with count_by_metric
-    qty_base_query = {**base_query, "deleted_at": {"$exists": False}}
+    # Add deleted_at check for won qty calculations
+    qty_won_base_query = {**won_base_query, "deleted_at": {"$exists": False}}
     
     # Won qty - for won leads, use won_qty if set, else qty if set, else default to 1
     won_qty_pipeline = [
-        {"$match": {**qty_base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
+        {"$match": {**qty_won_base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
         {"$group": {"_id": None, "won_qty": {"$sum": {
             "$cond": [
                 {"$and": [
@@ -264,8 +265,6 @@ async def get_kpis(
     won_qty = won_qty_result[0]["won_qty"] if won_qty_result else 0
     
     # Dispatched qty - use won_qty if set, else qty, else 1
-    # Use won_base_query with deleted_at check
-    qty_won_base_query = {**won_base_query, "deleted_at": {"$exists": False}}
     dispatched_qty_pipeline = [
         {"$match": {**qty_won_base_query, "dispatch_status": "dispatched"}},
         {"$group": {"_id": None, "dispatched_qty": {"$sum": {
