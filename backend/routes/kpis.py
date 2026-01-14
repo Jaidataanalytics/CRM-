@@ -213,12 +213,12 @@ async def get_kpis(
     
     # ============ QTY CALCULATIONS ============
     # Qty tracks gensets sold - only applicable to Won leads
-    # For won leads without explicit won_qty, assume 1 (at minimum 1 genset sold per won deal)
+    # Priority: won_qty > qty > 1 (default)
     
     # Add deleted_at check to be consistent with count_by_metric
     qty_base_query = {**base_query, "deleted_at": {"$exists": False}}
     
-    # Won qty - for won leads, if won_qty not set, assume 1 (at minimum 1 genset sold)
+    # Won qty - for won leads, use won_qty if set, else qty if set, else default to 1
     won_qty_pipeline = [
         {"$match": {**qty_base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
         {"$group": {"_id": None, "won_qty": {"$sum": {
@@ -227,8 +227,15 @@ async def get_kpis(
                     {"$ne": ["$won_qty", None]},
                     {"$gt": ["$won_qty", 0]}
                 ]},
-                "$won_qty",
-                1  # Default to 1 if won_qty not set
+                "$won_qty",  # Use won_qty if set
+                {"$cond": [
+                    {"$and": [
+                        {"$ne": ["$qty", None]},
+                        {"$gt": ["$qty", 0]}
+                    ]},
+                    "$qty",  # Use qty as fallback
+                    1  # Default to 1 if neither is set
+                ]}
             ]
         }}}}
     ]
