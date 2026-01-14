@@ -367,6 +367,10 @@ const DuplicateLeads = () => {
             <Zap className="h-4 w-4" />
             Order Time Punch ({totalTimePunch})
           </TabsTrigger>
+          <TabsTrigger value="won-no-so" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Won Without SO ({totalWonNoSo})
+          </TabsTrigger>
         </TabsList>
 
         {/* Duplicates Tab */}
