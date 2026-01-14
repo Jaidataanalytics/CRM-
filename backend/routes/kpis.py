@@ -242,7 +242,7 @@ async def get_kpis(
     won_qty_result = await db.leads.aggregate(won_qty_pipeline).to_list(1)
     won_qty = won_qty_result[0]["won_qty"] if won_qty_result else 0
     
-    # Dispatched qty - same logic: if won_qty not set, assume 1
+    # Dispatched qty - use won_qty if set, else qty, else 1
     # Use won_base_query with deleted_at check
     qty_won_base_query = {**won_base_query, "deleted_at": {"$exists": False}}
     dispatched_qty_pipeline = [
@@ -254,14 +254,21 @@ async def get_kpis(
                     {"$gt": ["$won_qty", 0]}
                 ]},
                 "$won_qty",
-                1
+                {"$cond": [
+                    {"$and": [
+                        {"$ne": ["$qty", None]},
+                        {"$gt": ["$qty", 0]}
+                    ]},
+                    "$qty",
+                    1
+                ]}
             ]
         }}}}
     ]
     dispatched_qty_result = await db.leads.aggregate(dispatched_qty_pipeline).to_list(1)
     dispatched_qty = dispatched_qty_result[0]["dispatched_qty"] if dispatched_qty_result else 0
     
-    # Pending dispatch qty - same logic
+    # Pending dispatch qty - use won_qty if set, else qty, else 1
     pending_dispatch_qty_pipeline = [
         {"$match": {**qty_won_base_query, "dispatch_status": "pending"}},
         {"$group": {"_id": None, "pending_qty": {"$sum": {
@@ -271,7 +278,14 @@ async def get_kpis(
                     {"$gt": ["$won_qty", 0]}
                 ]},
                 "$won_qty",
-                1
+                {"$cond": [
+                    {"$and": [
+                        {"$ne": ["$qty", None]},
+                        {"$gt": ["$qty", 0]}
+                    ]},
+                    "$qty",
+                    1
+                ]}
             ]
         }}}}
     ]
