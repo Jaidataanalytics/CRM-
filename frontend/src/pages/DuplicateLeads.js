@@ -86,6 +86,15 @@ const DuplicateLeads = () => {
   const [timePunchSearchQuery, setTimePunchSearchQuery] = useState('');
   const [timePunchSummary, setTimePunchSummary] = useState(null);
   
+  // Won Without SO state
+  const [wonNoSoLeads, setWonNoSoLeads] = useState([]);
+  const [wonNoSoLoading, setWonNoSoLoading] = useState(false);
+  const [wonNoSoPage, setWonNoSoPage] = useState(1);
+  const [wonNoSoTotalPages, setWonNoSoTotalPages] = useState(1);
+  const [totalWonNoSo, setTotalWonNoSo] = useState(0);
+  const [wonNoSoSearchQuery, setWonNoSoSearchQuery] = useState('');
+  const [wonNoSoSummary, setWonNoSoSummary] = useState(null);
+  
   // Load all counts on mount
   useEffect(() => {
     loadAllCounts();
@@ -104,6 +113,10 @@ const DuplicateLeads = () => {
       // Load time punch count
       const tpRes = await axios.get(`${API}/leads/order-time-punch?limit=1`, { withCredentials: true });
       setTotalTimePunch(tpRes.data.total || 0);
+      
+      // Load won without SO count
+      const wonNoSoRes = await axios.get(`${API}/leads/won-without-so?limit=1`, { withCredentials: true });
+      setTotalWonNoSo(wonNoSoRes.data.total || 0);
     } catch (error) {
       console.error('Error loading counts:', error);
     }
