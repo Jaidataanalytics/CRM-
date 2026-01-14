@@ -909,6 +909,149 @@ const DuplicateLeads = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Won Without SO Tab */}
+        <TabsContent value="won-no-so" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Leads marked as Won in Enquiry Dump but without a corresponding Sales Order record
+            </p>
+            <div className="flex gap-2">
+              {/* Search */}
+              <form onSubmit={(e) => { e.preventDefault(); setWonNoSoPage(1); }} className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search leads..."
+                    value={wonNoSoSearchQuery}
+                    onChange={(e) => setWonNoSoSearchQuery(e.target.value)}
+                    className="pl-9 w-48"
+                  />
+                  {wonNoSoSearchQuery && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => { setWonNoSoSearchQuery(''); setWonNoSoPage(1); }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <Button type="submit" variant="secondary" size="sm">
+                  Search
+                </Button>
+              </form>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
+          {wonNoSoSummary && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-orange-600">{wonNoSoSummary.total || 0}</div>
+                  <p className="text-xs text-muted-foreground">Total Missing SO</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold">{wonNoSoSummary.closed_won || 0}</div>
+                  <p className="text-xs text-muted-foreground">Closed-Won</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold">{wonNoSoSummary.order_booked || 0}</div>
+                  <p className="text-xs text-muted-foreground">Order Booked</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Won Without SO Table */}
+          <Card>
+            <CardContent className="p-0">
+              {wonNoSoLoading ? (
+                <div className="p-4 space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : wonNoSoLeads.length === 0 ? (
+                <div className="p-8 text-center">
+                  <CheckCircle className="h-12 w-12 mx-auto text-green-500" />
+                  <p className="mt-4 text-muted-foreground">All Won leads have corresponding SO records!</p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Enquiry No</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Dealer</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Stage</TableHead>
+                        <TableHead>KVA</TableHead>
+                        <TableHead>FY</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {wonNoSoLeads.map((lead) => (
+                        <TableRow key={lead.lead_id}>
+                          <TableCell className="font-mono text-xs">{lead.enquiry_no}</TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{lead.name}</div>
+                              <div className="text-xs text-muted-foreground">{lead.phone_number}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{lead.dealer}</TableCell>
+                          <TableCell>{lead.enquiry_date}</TableCell>
+                          <TableCell>
+                            <Badge variant="warning">{lead.enquiry_stage}</Badge>
+                          </TableCell>
+                          <TableCell>{lead.kva}</TableCell>
+                          <TableCell>{lead.fy}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((wonNoSoPage - 1) * 50) + 1} - {Math.min(wonNoSoPage * 50, totalWonNoSo)} of {totalWonNoSo}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWonNoSoPage(p => Math.max(1, p - 1))}
+                        disabled={wonNoSoPage <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="flex items-center px-2 text-sm">
+                        {wonNoSoPage} / {wonNoSoTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setWonNoSoPage(p => Math.min(wonNoSoTotalPages, p + 1))}
+                        disabled={wonNoSoPage >= wonNoSoTotalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Lead Detail Sheet */}
