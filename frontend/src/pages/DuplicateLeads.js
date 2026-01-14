@@ -159,6 +159,35 @@ const DuplicateLeads = () => {
     }
   };
 
+  const loadTimePunchLeads = async () => {
+    setTimePunchLoading(true);
+    try {
+      let url = `${API}/leads/order-time-punch?page=${timePunchPage}&limit=50`;
+      if (timePunchSearchQuery.trim()) {
+        url += `&search=${encodeURIComponent(timePunchSearchQuery.trim())}`;
+      }
+      
+      const res = await axios.get(url, { withCredentials: true });
+      setTimePunchLeads(res.data.leads || []);
+      setTotalTimePunch(res.data.total || 0);
+      setTimePunchTotalPages(res.data.pages || 1);
+    } catch (error) {
+      console.error('Error loading order time punch leads:', error);
+      toast.error('Failed to load order time punch leads');
+    } finally {
+      setTimePunchLoading(false);
+    }
+  };
+
+  const loadTimePunchSummary = async () => {
+    try {
+      const res = await axios.get(`${API}/leads/order-time-punch/summary`, { withCredentials: true });
+      setTimePunchSummary(res.data);
+    } catch (error) {
+      console.error('Error loading time punch summary:', error);
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
