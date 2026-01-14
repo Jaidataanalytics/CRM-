@@ -296,8 +296,9 @@ async def get_kpis(
         "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
         # Enquiry date is BEFORE the selected start_date
         "enquiry_date": {"$lt": start_date},
-        # Won/closed within the selected date range (using invoice_date or sales_order_date)
+        # Won/closed within the selected date range (using won_date, invoice_date or sales_order_date)
         "$or": [
+            {"won_date": {"$gte": start_date, "$lte": end_date}},
             {"invoice_date": {"$gte": start_date, "$lte": end_date}},
             {"sales_order_date": {"$gte": start_date, "$lte": end_date}}
         ]
