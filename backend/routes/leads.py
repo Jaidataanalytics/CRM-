@@ -423,7 +423,9 @@ async def get_duplicate_leads(
     current_user: User = Depends(get_current_user),
     search: Optional[str] = None,
     page: int = Query(1, ge=1),
-    limit: int = Query(50, ge=1, le=500)
+    limit: int = Query(50, ge=1, le=500),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
 ):
     """Get all leads flagged as duplicates"""
     db = await get_db(request)
@@ -432,6 +434,10 @@ async def get_duplicate_leads(
         "is_duplicate": True,
         "deleted_at": {"$exists": False}
     }
+    
+    # Date filter
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
     # Search functionality
     if search and search.strip():
