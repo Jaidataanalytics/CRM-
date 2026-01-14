@@ -77,6 +77,15 @@ const DuplicateLeads = () => {
   const [mergeSearchQuery, setMergeSearchQuery] = useState('');
   const [mergeSummary, setMergeSummary] = useState(null);
   
+  // Order Time Punch state
+  const [timePunchLeads, setTimePunchLeads] = useState([]);
+  const [timePunchLoading, setTimePunchLoading] = useState(false);
+  const [timePunchPage, setTimePunchPage] = useState(1);
+  const [timePunchTotalPages, setTimePunchTotalPages] = useState(1);
+  const [totalTimePunch, setTotalTimePunch] = useState(0);
+  const [timePunchSearchQuery, setTimePunchSearchQuery] = useState('');
+  const [timePunchSummary, setTimePunchSummary] = useState(null);
+  
   // Lead detail panel
   const [selectedLead, setSelectedLead] = useState(null);
   const [showLeadDetail, setShowLeadDetail] = useState(false);
