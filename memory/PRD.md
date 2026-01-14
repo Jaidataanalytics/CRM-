@@ -277,7 +277,9 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Save/View projections
 
 ## Upcoming Tasks
+- Funnel Analysis (P1) - Create visualization to track conversion rates at each stage (Enquiry → Quotation → Won)
 - Manual 'Qualified' Toggle (P1) - Add UI element to toggle qualified status on lead detail
+- Lead Velocity & ROI Analysis (P2) - Analytics for how fast leads move through stages and which sources provide best return
 - Verify per-dimension forecast accuracy (P2)
 - Detailed audit logs (P2)
 - Refactor large files (`upload.py`, `Leads.js`, `Forecast.js`)
@@ -286,6 +288,10 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Dashboard customization
 - Export to Excel for all pages
 - Email notifications for lead status changes
+- UI for Data Quality Report (show won leads without quotation data)
+
+## Data Quality Notes
+- **50 Won leads missing quotation data**: These leads appear in the data quality report at `/api/leads/data-quality/won-without-quotation`. The source Excel files should be updated to include quotation_no/quotation_date for these leads.
 
 ## Credentials
 - **Admin**: admin / admin123
