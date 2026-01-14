@@ -191,15 +191,17 @@ async def get_kpis(
     # NOTE: Uses won_base_query (no duplicate filter) because:
     # 1. Each quotation sent is real, even to repeat customers
     # 2. Quotations Sent must be >= Won Leads (can't win without a quote)
-    quotations_sent_query = {
-        **won_base_query,
-        "deleted_at": {"$exists": False},
+    # Use deepcopy to avoid mutation and properly add $or condition
+    quotations_sent_query = copy.deepcopy(won_base_query)
+    quotations_sent_query["deleted_at"] = {"$exists": False}
+    # Add the quotation condition to the existing $and array
+    quotations_sent_query["$and"].append({
         "$or": [
             {"quotation_sent": True},
             {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
             {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
         ]
-    }
+    })
     quotations_sent = await db.leads.count_documents(quotations_sent_query)
     
     # Call to Quotation rate
