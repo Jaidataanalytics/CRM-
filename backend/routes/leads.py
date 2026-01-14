@@ -499,6 +499,102 @@ async def unflag_duplicate(
     return {"message": "Duplicate flag removed", "lead_id": lead_id}
 
 
+@router.get("/won-without-so")
+async def get_won_without_so_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500),
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Get leads marked as Won (Closed-Won/Order Booked) but WITHOUT a matching SO record.
+    These are discrepancies that need verification - the Enquiry Dump says they're Won
+    but there's no corresponding entry in the SO Register.
+    """
+    db = await get_db(request)
+    
+    query = {
+        "deleted_at": {"$exists": False},
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        "$or": [
+            {"has_so_record": {"$exists": False}},
+            {"has_so_record": False},
+            {"has_so_record": None}
+        ]
+    }
+    
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query["$and"] = query.get("$and", []) + [{
+            "$or": [
+                {"name": search_regex},
+                {"phone_number": search_regex},
+                {"enquiry_no": search_regex},
+                {"dealer": search_regex}
+            ]
+        }]
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(
+        query,
+        {"_id": 0, "lead_id": 1, "enquiry_no": 1, "name": 1, "phone_number": 1,
+         "dealer": 1, "state": 1, "employee_name": 1, "enquiry_date": 1,
+         "enquiry_stage": 1, "kva": 1, "qty": 1, "segment": 1, "fy": 1}
+    ).sort("enquiry_date", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit if total > 0 else 1,
+        "description": "Won leads without corresponding SO record - needs verification"
+    }
+
+
+@router.get("/won-without-so/summary")
+async def get_won_without_so_summary(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """Get summary of Won leads without SO record"""
+    db = await get_db(request)
+    
+    query = {
+        "deleted_at": {"$exists": False},
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        "$or": [
+            {"has_so_record": {"$exists": False}},
+            {"has_so_record": False},
+            {"has_so_record": None}
+        ]
+    }
+    
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    total = await db.leads.count_documents(query)
+    
+    # By stage breakdown
+    closed_won = await db.leads.count_documents({**query, "enquiry_stage": "Closed-Won"})
+    order_booked = await db.leads.count_documents({**query, "enquiry_stage": "Order Booked"})
+    
+    return {
+        "total": total,
+        "closed_won": closed_won,
+        "order_booked": order_booked
+    }
+
+
 @router.get("/order-time-punch")
 async def get_order_time_punch_leads(
     request: Request,
