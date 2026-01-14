@@ -143,8 +143,11 @@ const DuplicateLeads = () => {
     } else if (activeTab === 'time-punch') {
       loadTimePunchLeads();
       loadTimePunchSummary();
+    } else if (activeTab === 'won-no-so') {
+      loadWonNoSoLeads();
+      loadWonNoSoSummary();
     }
-  }, [activeTab, page, searchQuery, mergePage, mergeSearchQuery, timePunchPage, timePunchSearchQuery]);
+  }, [activeTab, page, searchQuery, mergePage, mergeSearchQuery, timePunchPage, timePunchSearchQuery, wonNoSoPage, wonNoSoSearchQuery]);
 
   const loadDuplicates = async () => {
     setLoading(true);
