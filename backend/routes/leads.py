@@ -493,6 +493,187 @@ async def unflag_duplicate(
     return {"message": "Duplicate flag removed", "lead_id": lead_id}
 
 
+@router.get("/order-time-punch")
+async def get_order_time_punch_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500),
+    search: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Get leads that were closed within 2 days of creation (Order Time Punch).
+    These are leads where the gap between enquiry_date and won_date is <= 2 days.
+    """
+    db = await get_db(request)
+    
+    # Build query for Order Time Punch leads
+    query = {
+        "deleted_at": {"$exists": False},
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        "enquiry_date": {"$exists": True, "$ne": None, "$ne": ""},
+        "won_date": {"$exists": True, "$ne": None, "$ne": ""}
+    }
+    
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    if search:
+        search_regex = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"name": search_regex},
+            {"phone_number": search_regex},
+            {"enquiry_no": search_regex},
+            {"dealer": search_regex}
+        ]
+    
+    skip = (page - 1) * limit
+    
+    # Use aggregation to calculate date difference
+    pipeline = [
+        {"$match": query},
+        {"$addFields": {
+            "enquiry_date_parsed": {
+                "$dateFromString": {
+                    "dateString": "$enquiry_date",
+                    "format": "%Y-%m-%d",
+                    "onError": None
+                }
+            },
+            "won_date_parsed": {
+                "$dateFromString": {
+                    "dateString": "$won_date",
+                    "format": "%Y-%m-%d",
+                    "onError": None
+                }
+            }
+        }},
+        {"$addFields": {
+            "days_to_close": {
+                "$divide": [
+                    {"$subtract": ["$won_date_parsed", "$enquiry_date_parsed"]},
+                    86400000  # milliseconds in a day
+                ]
+            }
+        }},
+        {"$match": {
+            "days_to_close": {"$gte": 0, "$lte": 2}
+        }},
+        {"$sort": {"enquiry_date": -1}},
+        {"$facet": {
+            "data": [
+                {"$skip": skip},
+                {"$limit": limit},
+                {"$project": {
+                    "_id": 0,
+                    "lead_id": 1,
+                    "enquiry_no": 1,
+                    "name": 1,
+                    "phone_number": 1,
+                    "dealer": 1,
+                    "state": 1,
+                    "employee_name": 1,
+                    "enquiry_date": 1,
+                    "won_date": 1,
+                    "days_to_close": 1,
+                    "kva": 1,
+                    "won_qty": 1,
+                    "segment": 1,
+                    "fy": 1,
+                    "quotation_no": 1,
+                    "sales_order_no": 1
+                }}
+            ],
+            "total": [{"$count": "count"}]
+        }}
+    ]
+    
+    result = await db.leads.aggregate(pipeline).to_list(1)
+    
+    leads = result[0]["data"] if result else []
+    total = result[0]["total"][0]["count"] if result and result[0]["total"] else 0
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "pages": (total + limit - 1) // limit if total > 0 else 1,
+        "description": "Leads closed within 2 days of creation (Order Time Punch)"
+    }
+
+
+@router.get("/order-time-punch/summary")
+async def get_order_time_punch_summary(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """Get summary statistics for Order Time Punch leads"""
+    db = await get_db(request)
+    
+    query = {
+        "deleted_at": {"$exists": False},
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        "enquiry_date": {"$exists": True, "$ne": None, "$ne": ""},
+        "won_date": {"$exists": True, "$ne": None, "$ne": ""}
+    }
+    
+    if start_date and end_date:
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    pipeline = [
+        {"$match": query},
+        {"$addFields": {
+            "enquiry_date_parsed": {
+                "$dateFromString": {"dateString": "$enquiry_date", "format": "%Y-%m-%d", "onError": None}
+            },
+            "won_date_parsed": {
+                "$dateFromString": {"dateString": "$won_date", "format": "%Y-%m-%d", "onError": None}
+            }
+        }},
+        {"$addFields": {
+            "days_to_close": {
+                "$divide": [{"$subtract": ["$won_date_parsed", "$enquiry_date_parsed"]}, 86400000]
+            }
+        }},
+        {"$match": {"days_to_close": {"$gte": 0, "$lte": 2}}},
+        {"$group": {
+            "_id": None,
+            "total_count": {"$sum": 1},
+            "total_qty": {"$sum": {"$ifNull": ["$won_qty", 1]}},
+            "same_day": {"$sum": {"$cond": [{"$eq": ["$days_to_close", 0]}, 1, 0]}},
+            "one_day": {"$sum": {"$cond": [{"$eq": [{"$ceil": "$days_to_close"}, 1]}, 1, 0]}},
+            "two_days": {"$sum": {"$cond": [{"$eq": [{"$ceil": "$days_to_close"}, 2]}, 1, 0]}},
+            "avg_days": {"$avg": "$days_to_close"}
+        }}
+    ]
+    
+    result = await db.leads.aggregate(pipeline).to_list(1)
+    
+    if result:
+        data = result[0]
+        return {
+            "total_count": data.get("total_count", 0),
+            "total_qty": data.get("total_qty", 0),
+            "same_day": data.get("same_day", 0),
+            "one_day": data.get("one_day", 0),
+            "two_days": data.get("two_days", 0),
+            "avg_days_to_close": round(data.get("avg_days", 0), 2)
+        }
+    
+    return {
+        "total_count": 0,
+        "total_qty": 0,
+        "same_day": 0,
+        "one_day": 0,
+        "two_days": 0,
+        "avg_days_to_close": 0
+    }
+
+
 @router.post("/duplicates/run-detection")
 async def run_duplicate_detection(
     request: Request,
