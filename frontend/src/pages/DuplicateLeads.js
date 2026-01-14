@@ -678,6 +678,165 @@ const DuplicateLeads = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Order Time Punch Tab */}
+        <TabsContent value="time-punch" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              Leads closed within 2 days of creation (quick wins / time punch orders)
+            </p>
+            <div className="flex gap-2">
+              {/* Search */}
+              <form onSubmit={(e) => { e.preventDefault(); setTimePunchPage(1); }} className="flex gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search leads..."
+                    value={timePunchSearchQuery}
+                    onChange={(e) => setTimePunchSearchQuery(e.target.value)}
+                    className="pl-9 w-48"
+                  />
+                  {timePunchSearchQuery && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0"
+                      onClick={() => { setTimePunchSearchQuery(''); setTimePunchPage(1); }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+                <Button type="submit" variant="secondary" size="sm">
+                  Search
+                </Button>
+              </form>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
+          {timePunchSummary && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold">{timePunchSummary.total_count || 0}</div>
+                  <p className="text-xs text-muted-foreground">Total Orders</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold">{timePunchSummary.total_qty || 0}</div>
+                  <p className="text-xs text-muted-foreground">Total Qty</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-green-600">{timePunchSummary.same_day || 0}</div>
+                  <p className="text-xs text-muted-foreground">Same Day</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-blue-600">{timePunchSummary.one_day || 0}</div>
+                  <p className="text-xs text-muted-foreground">1 Day</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="text-2xl font-bold text-orange-600">{timePunchSummary.two_days || 0}</div>
+                  <p className="text-xs text-muted-foreground">2 Days</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Time Punch Leads Table */}
+          <Card>
+            <CardContent className="p-0">
+              {timePunchLoading ? (
+                <div className="p-4 space-y-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+                </div>
+              ) : timePunchLeads.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Zap className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  <p className="mt-4 text-muted-foreground">No Order Time Punch leads found</p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Enquiry No</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Dealer</TableHead>
+                        <TableHead>Enquiry Date</TableHead>
+                        <TableHead>Won Date</TableHead>
+                        <TableHead className="text-center">Days</TableHead>
+                        <TableHead>KVA</TableHead>
+                        <TableHead>Qty</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {timePunchLeads.map((lead) => (
+                        <TableRow key={lead.lead_id}>
+                          <TableCell className="font-mono text-xs">{lead.enquiry_no}</TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{lead.name}</div>
+                              <div className="text-xs text-muted-foreground">{lead.phone_number}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{lead.dealer}</TableCell>
+                          <TableCell>{lead.enquiry_date}</TableCell>
+                          <TableCell>{lead.won_date}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={lead.days_to_close === 0 ? "success" : lead.days_to_close <= 1 ? "default" : "secondary"}>
+                              {Math.round(lead.days_to_close)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{lead.kva}</TableCell>
+                          <TableCell>{lead.won_qty || 1}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination */}
+                  <div className="flex items-center justify-between px-4 py-3 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {((timePunchPage - 1) * 50) + 1} - {Math.min(timePunchPage * 50, totalTimePunch)} of {totalTimePunch}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTimePunchPage(p => Math.max(1, p - 1))}
+                        disabled={timePunchPage <= 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="flex items-center px-2 text-sm">
+                        {timePunchPage} / {timePunchTotalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTimePunchPage(p => Math.min(timePunchTotalPages, p + 1))}
+                        disabled={timePunchPage >= timePunchTotalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Lead Detail Sheet */}
