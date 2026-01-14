@@ -880,6 +880,84 @@ async def get_quotations_summary(
     }
 
 
+@router.get("/data-quality/won-without-quotation")
+async def get_won_leads_without_quotation(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    employee_name: Optional[str] = None,
+    segment: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=500)
+):
+    """
+    Get Won leads that are missing quotation data.
+    This is a data quality report to help identify leads that need quotation info.
+    """
+    db = await get_db(request)
+    
+    # Get FY dates if not provided
+    if not start_date or not end_date:
+        from datetime import datetime
+        today = datetime.now()
+        if today.month >= 4:
+            start_year = today.year
+        else:
+            start_year = today.year - 1
+        start_date = f"{start_year}-04-01"
+        end_date = f"{start_year + 1}-03-31"
+    
+    # Won leads WITHOUT quotation data
+    query = {
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]},
+            # No quotation data
+            {"$or": [{"quotation_sent": {"$exists": False}}, {"quotation_sent": {"$in": [False, None]}}]},
+            {"$or": [{"quotation_no": {"$exists": False}}, {"quotation_no": {"$in": [None, ""]}}]},
+            {"$or": [{"quotation_date": {"$exists": False}}, {"quotation_date": {"$in": [None, ""]}}]}
+        ]
+    }
+    
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if employee_name:
+        query["employee_name"] = employee_name
+    if segment:
+        query["segment"] = segment
+    
+    skip = (page - 1) * limit
+    total = await db.leads.count_documents(query)
+    
+    leads = await db.leads.find(
+        query, 
+        {"_id": 0, "lead_id": 1, "name": 1, "phone_number": 1, "enquiry_no": 1, 
+         "enquiry_date": 1, "enquiry_stage": 1, "dealer": 1, "state": 1, 
+         "employee_name": 1, "segment": 1, "kva": 1, "qty": 1, "won_qty": 1}
+    ).sort("enquiry_date", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return {
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "date_range": {"start_date": start_date, "end_date": end_date},
+        "leads": leads,
+        "message": f"{total} Won leads are missing quotation data. Please update their quotation_no/quotation_date in the source files."
+    }
+
+
 # Closure Questions Endpoints - MUST be before /{lead_id} route
 @router.get("/pending-closure-questions/count")
 async def get_pending_closure_questions_count(
