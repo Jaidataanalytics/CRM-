@@ -227,6 +227,35 @@ const DuplicateLeads = () => {
     }
   };
 
+  const loadWonNoSoLeads = async () => {
+    setWonNoSoLoading(true);
+    try {
+      let url = `${API}/leads/won-without-so?page=${wonNoSoPage}&limit=50`;
+      if (wonNoSoSearchQuery.trim()) {
+        url += `&search=${encodeURIComponent(wonNoSoSearchQuery.trim())}`;
+      }
+      
+      const res = await axios.get(url, { withCredentials: true });
+      setWonNoSoLeads(res.data.leads || []);
+      setTotalWonNoSo(res.data.total || 0);
+      setWonNoSoTotalPages(res.data.pages || 1);
+    } catch (error) {
+      console.error('Error loading won without SO leads:', error);
+      toast.error('Failed to load won without SO leads');
+    } finally {
+      setWonNoSoLoading(false);
+    }
+  };
+
+  const loadWonNoSoSummary = async () => {
+    try {
+      const res = await axios.get(`${API}/leads/won-without-so/summary`, { withCredentials: true });
+      setWonNoSoSummary(res.data);
+    } catch (error) {
+      console.error('Error loading won without SO summary:', error);
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     setPage(1);
