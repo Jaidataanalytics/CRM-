@@ -396,12 +396,13 @@ async def emergency_reset_from_preview(
             # Also reset users - delete all and create admin
             await db.users.delete_many({})
             
-            # Create admin user
-            import hashlib
-            password_hash = hashlib.sha256("admin123".encode()).hexdigest()
+            # Create admin user with bcrypt password hash
+            import bcrypt
+            password_hash = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             admin_user = {
                 "user_id": "user_admin_001",
                 "username": "admin",
+                "name": "Admin User",
                 "email": "admin@example.com",
                 "password_hash": password_hash,
                 "role": "Admin",
