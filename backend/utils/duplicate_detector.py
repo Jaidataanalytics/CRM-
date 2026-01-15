@@ -428,8 +428,12 @@ async def find_by_enquiry_no(db, enquiry_no: str) -> Optional[Dict]:
     if not enquiry_no:
         return None
     
+    enquiry_no_clean = str(enquiry_no).strip() if enquiry_no else ""
+    if not enquiry_no_clean:
+        return None
+    
     existing = await db.leads.find_one({
-        "enquiry_no": enquiry_no.strip(),
+        "enquiry_no": enquiry_no_clean,
         "deleted_at": {"$exists": False}
     }, {"_id": 0})
     
