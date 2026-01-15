@@ -317,6 +317,126 @@ async def import_leads_only(
     }
 
 
+@router.post("/emergency-reset")
+async def emergency_reset_from_preview(
+    request: Request,
+    secret_key: str = "RESET_DEPLOYED_DB_2024",
+    preview_url: str = "https://salessyncpro.preview.emergentagent.com"
+):
+    """
+    EMERGENCY: Reset database from preview without authentication.
+    This is for when the deployed database has different users and you can't login.
+    Requires a secret key for security.
+    """
+    # Simple security check
+    if secret_key != "RESET_DEPLOYED_DB_2024":
+        raise HTTPException(status_code=403, detail="Invalid secret key")
+    
+    db = await get_db(request)
+    
+    try:
+        async with httpx.AsyncClient(timeout=180.0) as client:
+            # Login to preview
+            login_resp = await client.post(
+                f"{preview_url}/api/auth/login",
+                json={"username": "admin", "password": "admin123"}
+            )
+            if login_resp.status_code != 200:
+                raise HTTPException(status_code=400, detail="Failed to login to preview")
+            
+            token = login_resp.json().get("token")
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            # Fetch all leads from preview
+            all_leads = []
+            page = 1
+            while True:
+                leads_resp = await client.get(
+                    f"{preview_url}/api/leads/export-all?page={page}&limit=5000",
+                    headers=headers,
+                    timeout=60.0
+                )
+                if leads_resp.status_code != 200:
+                    break
+                    
+                data = leads_resp.json()
+                leads = data.get("leads", [])
+                if not leads:
+                    break
+                all_leads.extend(leads)
+                
+                if page >= data.get("pages", 1):
+                    break
+                page += 1
+            
+            if not all_leads:
+                raise HTTPException(status_code=400, detail="No leads fetched from preview")
+            
+            logger.info(f"Fetched {len(all_leads)} leads from preview")
+            
+            # Delete ALL leads
+            delete_result = await db.leads.delete_many({})
+            logger.info(f"Deleted {delete_result.deleted_count} existing leads")
+            
+            # Clean leads for insertion
+            for lead in all_leads:
+                if '_id' in lead:
+                    del lead['_id']
+            
+            # Insert in batches of 500 (smaller batches for cloud DB)
+            batch_size = 500
+            inserted = 0
+            
+            for i in range(0, len(all_leads), batch_size):
+                batch = all_leads[i:i + batch_size]
+                result = await db.leads.insert_many(batch)
+                inserted += len(result.inserted_ids)
+                logger.info(f"Imported batch {i//batch_size + 1}, total: {inserted}")
+            
+            # Also reset users - delete all and create admin
+            await db.users.delete_many({})
+            
+            # Create admin user
+            import hashlib
+            password_hash = hashlib.sha256("admin123".encode()).hexdigest()
+            admin_user = {
+                "user_id": "user_admin_001",
+                "username": "admin",
+                "email": "admin@example.com",
+                "password_hash": password_hash,
+                "role": "Admin",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(admin_user)
+            logger.info("Created admin user")
+            
+            # Verify
+            final_count = await db.leads.count_documents({})
+            duplicates = await db.leads.count_documents({'is_duplicate': True})
+            with_so = await db.leads.count_documents({'has_so_record': True})
+            
+            return {
+                "status": "success",
+                "message": f"Emergency reset complete. Imported {inserted} leads and created admin user.",
+                "deleted": delete_result.deleted_count,
+                "imported": inserted,
+                "admin_created": True,
+                "login": {"username": "admin", "password": "admin123"},
+                "verification": {
+                    "final_count": final_count,
+                    "duplicates": duplicates,
+                    "non_duplicates": final_count - duplicates,
+                    "with_so_record": with_so
+                }
+            }
+            
+    except httpx.RequestError as e:
+        logger.error(f"Network error: {e}")
+        raise HTTPException(status_code=500, detail=f"Network error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error during emergency reset: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
 
 @router.post("/reset-from-preview")
 async def reset_from_preview(
