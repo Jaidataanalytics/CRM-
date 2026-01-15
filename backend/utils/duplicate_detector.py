@@ -462,7 +462,7 @@ def calculate_qualified_status(lead: Dict) -> bool:
         # Check for various empty/null conditions
         if value is None:
             continue
-        if isinstance(value, str) and value.strip() == '':
+        if isinstance(value, str) and str(value).strip() == '':
             continue
         if isinstance(value, list) and len(value) == 0:
             continue
