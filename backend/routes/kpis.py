@@ -310,7 +310,7 @@ async def get_kpis(
     
     # ============ END QTY CALCULATIONS ============
     
-    # ============ OLD ENQUIRIES CLOSED KPI ============
+    # ============ OLD ENQUIRIES CLOSED KPI (RUN IN PARALLEL) ============
     # This KPI shows leads that were WON within the selected date range
     # but their original enquiry_date is from BEFORE the selected start_date
     # This helps track sales from older pipeline leads
@@ -351,31 +351,19 @@ async def get_kpis(
     if segment:
         old_enquiries_closed_query["segment"] = segment
     
-    old_enquiries_closed_count = await db.leads.count_documents(old_enquiries_closed_query)
-    
-    # Qty for old enquiries closed - use won_qty if set, else qty, else 1
     old_enquiries_closed_qty_pipeline = [
         {"$match": old_enquiries_closed_query},
-        {"$group": {"_id": None, "total_qty": {"$sum": {
-            "$cond": [
-                {"$and": [
-                    {"$ne": ["$won_qty", None]},
-                    {"$gt": ["$won_qty", 0]}
-                ]},
-                "$won_qty",
-                {"$cond": [
-                    {"$and": [
-                        {"$ne": ["$qty", None]},
-                        {"$gt": ["$qty", 0]}
-                    ]},
-                    "$qty",
-                    1
-                ]}
-            ]
-        }}}}
+        {"$group": {"_id": None, "total_qty": qty_sum_expr}}
     ]
-    old_enquiries_closed_qty_result = await db.leads.aggregate(old_enquiries_closed_qty_pipeline).to_list(1)
-    old_enquiries_closed_qty = old_enquiries_closed_qty_result[0]["total_qty"] if old_enquiries_closed_qty_result else 0
+    
+    # Run old enquiries count and qty in parallel
+    old_enquiries_results = await asyncio.gather(
+        db.leads.count_documents(old_enquiries_closed_query),
+        db.leads.aggregate(old_enquiries_closed_qty_pipeline).to_list(1),
+    )
+    
+    old_enquiries_closed_count = old_enquiries_results[0]
+    old_enquiries_closed_qty = old_enquiries_results[1][0]["total_qty"] if old_enquiries_results[1] else 0
     
     # ============ END OLD ENQUIRIES CLOSED KPI ============
     
