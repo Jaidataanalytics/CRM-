@@ -259,6 +259,20 @@ async def reset_and_import_all(
     except Exception as e:
         logger.error(f"Error during reset and import: {e}")
         raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+
+@router.post("/import-leads-only")
+async def import_leads_only(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    clear_existing: bool = True
+):
+    """
+    Quick import of just leads collection (the main data).
+    Use this if you only need to update the leads data.
+    """
+    if current_user.role.lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     
     db = await get_db(request)
     
