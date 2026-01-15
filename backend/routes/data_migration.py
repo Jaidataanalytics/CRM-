@@ -167,18 +167,98 @@ async def import_data(
     }
 
 
-@router.post("/import-leads-only")
-async def import_leads_only(
+@router.post("/reset-and-import")
+async def reset_and_import_all(
     request: Request,
-    current_user: User = Depends(get_current_user),
-    clear_existing: bool = True
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Quick import of just leads collection (the main data).
-    Use this if you only need to update the leads data.
+    DANGEROUS: Completely reset the database and import fresh data from export files.
+    This will DELETE ALL existing data and replace with exported data.
+    Use this to sync production with the correct dataset.
     """
     if current_user.role.lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
+    
+    db = await get_db(request)
+    
+    # Check if export files exist
+    leads_file = os.path.join(DATA_EXPORT_DIR, 'leads.json')
+    if not os.path.exists(leads_file):
+        raise HTTPException(status_code=404, detail="No export data found. Deploy from preview first.")
+    
+    results = {}
+    
+    try:
+        # Step 1: Delete ALL leads
+        delete_result = await db.leads.delete_many({})
+        results['deleted_leads'] = delete_result.deleted_count
+        logger.info(f"Deleted {delete_result.deleted_count} existing leads")
+        
+        # Step 2: Load and insert leads from export
+        with open(leads_file, 'r') as f:
+            leads = json.load(f)
+        
+        logger.info(f"Loaded {len(leads)} leads from export file")
+        
+        # Insert in batches
+        batch_size = 1000
+        inserted = 0
+        
+        for i in range(0, len(leads), batch_size):
+            batch = leads[i:i + batch_size]
+            result = await db.leads.insert_many(batch)
+            inserted += len(result.inserted_ids)
+            logger.info(f"Imported batch {i//batch_size + 1}, total: {inserted}")
+        
+        results['imported_leads'] = inserted
+        
+        # Step 3: Import other collections if they exist
+        other_collections = ['metric_settings', 'qualification_settings']
+        for coll_name in other_collections:
+            coll_file = os.path.join(DATA_EXPORT_DIR, f'{coll_name}.json')
+            if os.path.exists(coll_file):
+                with open(coll_file, 'r') as f:
+                    data = json.load(f)
+                if data:
+                    await db[coll_name].delete_many({})
+                    await db[coll_name].insert_many(data)
+                    results[f'imported_{coll_name}'] = len(data)
+        
+        # Step 4: Verify final counts
+        final_count = await db.leads.count_documents({})
+        duplicates = await db.leads.count_documents({'is_duplicate': True})
+        with_so = await db.leads.count_documents({'has_so_record': True})
+        
+        results['verification'] = {
+            'final_lead_count': final_count,
+            'duplicates': duplicates,
+            'non_duplicates': final_count - duplicates,
+            'with_so_record': with_so
+        }
+        
+        # Record migration
+        await db.migration_status.update_one(
+            {"migration": "reset_and_import"},
+            {
+                "$set": {
+                    "migration": "reset_and_import",
+                    "last_run": datetime.now(timezone.utc).isoformat(),
+                    "results": results
+                }
+            },
+            upsert=True
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Database reset complete. Imported {inserted} leads.",
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Error during reset and import: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
     
     db = await get_db(request)
     
