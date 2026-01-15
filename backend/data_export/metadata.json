@@ -1,0 +1,16 @@
+{
+  "export_date": "2026-01-15T06:20:30.164344",
+  "source_db": "test_database",
+  "collections": [
+    "leads",
+    "users",
+    "metric_settings",
+    "closure_questions",
+    "qualification_questions",
+    "qualification_settings",
+    "saved_forecasts",
+    "entity_profile_config",
+    "migration_status"
+  ],
+  "total_documents": 26785
+}

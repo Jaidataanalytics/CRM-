@@ -1,0 +1,1 @@
+[{"migration": "duplicate_detection", "last_run": "2026-01-15T05:47:30.552541+00:00", "result": {"duplicates_flagged": 1125, "total_checked": 26745, "merged": 1003}}, {"migration": "qualified_status", "last_run": "2026-01-14T09:23:11.550362+00:00", "result": {"qualified": 0, "not_qualified": 0, "total_processed": 26745}}]
