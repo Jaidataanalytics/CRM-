@@ -56,6 +56,7 @@ from routes.notifications import router as notifications_router
 from routes.entity_profile import router as entity_profile_router
 from routes.trash import router as trash_router
 from routes.dispatch import router as dispatch_router
+from routes.data_migration import router as data_migration_router
 
 # Include all routers
 api_router.include_router(auth_router)
@@ -73,6 +74,7 @@ api_router.include_router(metric_settings_router)
 api_router.include_router(entity_profile_router)
 api_router.include_router(trash_router)
 api_router.include_router(dispatch_router)
+api_router.include_router(data_migration_router)
 
 # Health check endpoint
 @api_router.get("/")
