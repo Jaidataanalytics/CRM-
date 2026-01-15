@@ -28,7 +28,7 @@ async def get_migration_status(
     current_user: User = Depends(get_current_user)
 ):
     """Check if exported data files exist and get current DB status"""
-    if current_user.role != "admin":
+    if current_user.role.lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     db = await get_db(request)
