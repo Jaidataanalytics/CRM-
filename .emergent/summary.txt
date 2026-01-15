@@ -1,156 +1,124 @@
 <analysis>**original_problem_statement:**
-The user wants to overhaul their lead management system. Key requirements include:
-1.  **Duplicate Logic Change**: Use  as the primary identifier. A new lead is a duplicate ONLY if a previous enquiry from the same phone number is currently **OPEN** and the time gap is **less than 1 year**. A previous closed (won/lost) enquiry from the same customer should be treated as a new lead (repeat business).
-2.  **Data Integrity**: Ensure KPI metrics on the dashboard (e.g., Won Leads, Quotations Sent) are consistent with the data shown on detailed pages. Won leads should never be filtered out as duplicates. The Quotations Sent count must be at least equal to the Won Leads count.
-3.  **Unified Data Upload**: Consolidate and merge data from three Excel files (, , ).
-4.  **Quantity (Qty) Tracking**: Introduce  as a core metric.
-5.  **New Features & Fixes**:
-    *   Build a Summary Builder (pivot table) with historical comparison.
-    *   Link quotations to their corresponding leads.
-    *   When quotation data is present in an upload, the  flag should be automatically marked as true.
-    *   Review the entire dashboard for data linking improvements and suggest enhancements.
+The user's primary goal is to perform a complete data overhaul of their lead management system and introduce new business logic and features. The key requirements are:
+1.  **Data Replacement**: Clear the entire database and re-upload ~4 years of data from three newly provided Excel files (, , ).
+2.  **Source of Truth for Won Leads**: The  file must be the single source of truth for all Won leads. The dashboard KPIs for  and  must align perfectly with this file.
+3.  **Data Discrepancy Reporting**:
+    *   Implement a new tab in the Data Management section called Won Without SO to list all leads that are marked as  or  in the  but do not have a corresponding entry in the .
+4.  **New Duplicate Detection Logic**:
+    *   Implement a new chunk-based merging logic: For each phone number, group all its associated leads, sort them by date, and merge all open leads into the next  lead in the sequence.
+    *   The  (e.g., enquiry number, date, stage) should be stored in the primary lead.
+    *   Answer the user's question about why the old logic didn't merge all duplicates.
+5.  **New Feature: Order Time Punch**: Add a new tab in Data Management to report on leads that were closed (won) within 2 days of their creation date, with summaries for same-day, 1-day, and 2-day closures.
+6.  **UI and Filter Enhancements**:
+    *   Remove the Qty metric from the Total Leads KPI card on the main dashboard.
+    *   Ensure all tabs within the Data Management page respect the global date filters applied on the dashboard.
+7.  **Deployment Failure**: The user has provided logs for a failed deployment and needs the agent to analyze the logs, identify the root cause, and fix the application code to ensure a successful deployment.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack lead management dashboard. The agent has implemented several major features, including a unified data upload process, new KPIs, and enhanced analytics pages (Closure Analysis, Quotations). A new Summary Builder (pivot table) feature was built on the  page, complete with a Year-over-Year historical comparison toggle.
-
-Most recently, the agent addressed critical data integrity bugs, ensuring that Won Leads KPIs correctly include repeat customer sales (which were previously being filtered as duplicates). The agent also fixed KPI calculation mismatches and began implementing a more sophisticated duplicate detection logic as requested by the user.
+The agent has successfully re-uploaded all the new data and implemented the requested features. The  is now the source of truth for won leads, and the dashboard KPIs reflect this. The Data Management page has been significantly enhanced with new tabs for Order Time Punch and Won Without SO to track quick wins and data discrepancies, respectively. The new, complex chunk-based duplicate detection logic has been implemented and run as a migration. However, the application is currently in a **non-deployable state**. A long-running data migration on application startup is causing the backend health check to fail during deployment.
 
 **Last working item**:
-*   **Last item agent was working**: The agent was in the process of implementing a new, more nuanced duplicate detection logic and fixing the Quotations Sent KPI to align with the user's requirements. The root causes for data discrepancies were identified, but the implementation was interrupted.
-*   **Status**: IN PROGRESS
-*   **Agent Testing Done**: N
-*   **Which testing method agent to use?**: both. The backend testing agent is needed to verify the new duplicate detection logic in  and the updated KPI calculations in . The frontend testing agent is needed to confirm the dashboard and all related pages display the corrected, consistent data.
+*   **Last item agent was working**: Diagnosing a critical deployment failure. The user provided deployment logs indicating that the backend is failing its health check due to a  error from MongoDB during a data migration that runs at startup.
+*   **Status**: BLOCKED
+*   **Agent Testing Done**: Y (for features), N (for deployment fix)
+*   **Which testing method agent to use?**: backend testing agent. The primary task is to fix the code causing the deployment failure. This involves analyzing  and  to move the long-running migration out of the synchronous startup path. After the fix, the agent should confirm the application runs locally and then use the  to verify a successful deployment.
 *   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Incorrect Quotations Sent KPI Calculation (P0)**
-    *   **Description**: The Quotations Sent KPI is currently excluding leads that are marked as duplicates, resulting in a lower count than expected. The count should include all leads that have quotation data, regardless of their duplicate status, to ensure it's at least equal to the Won Leads count.
-    *   **Attempted fixes**: The agent identified that the KPI query was using , which filters out duplicates.
-    *   **Next debug checklist**: Modify the  in  to use a base query that does *not* exclude duplicates, similar to how the  count was fixed.
-    *   **Why fix this issue and what will be achieved with the fix?**: This will fix the data discrepancy where the number of quotations was less than the number of won deals, which is logically impossible. It ensures dashboard metrics are accurate.
+*   **Issue 1: Deployment Failure: Backend Health Check Timeout (P0 - BLOCKER)**
+    *   **Description**: The application fails to deploy because a long-running duplicate detection migration is triggered on application startup. This process takes too long, preventing the FastAPI server from becoming ready. As a result, the Kubernetes health check probe fails after multiple attempts, and the deployment is rolled back. The error log explicitly shows a  error during this migration.
+    *   **Attempted fixes**: None. The agent was paused immediately after being given the logs.
+    *   **Next debug checklist**:
+        1.  **Analyze Startup Script**: Examine  to identify where the  migration is being called during the startup event.
+        2.  **Optimize or Relocate the Migration**: The migration processing 30,000+ leads is too heavy for a startup task. The fix is to move it out of the blocking startup path.
+            *   **Recommended Fix**: Modify  to run the migration as a FastAPI . This will allow the server to start immediately and respond to health checks while the migration runs in the background.
+            *   **Alternative**: Create a new, dedicated API endpoint that must be called manually to trigger the migration post-deployment.
+        3.  **Verify Fix**: After applying the code change, confirm the backend starts up quickly without errors. Then, trigger a new deployment.
+    *   **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker. Fixing it will make the application deployable and functional in the production environment.
     *   **Status**: IN PROGRESS
     *   **Is recurring issue?**: N
-    *   **Should Test frontend/backend/both after fix?**: Both.
-*   **Issue 2: Data Quality Issue: Won Leads Missing Quotation Data (P1)**
-    *   **Description**: Analysis revealed that ~50 Won leads in the database are missing  or . This is a source data quality problem.
-    *   **Attempted fixes**: The issue has been identified and communicated.
-    *   **Next debug checklist**: This is not a code bug. The agent should inform the user that this requires a manual data fix in their source Excel files and cannot be resolved through code. The agent could potentially build a report to list these faulty leads for easy review.
-    *   **Why fix this issue and what will be achieved with the fix?**: Improves overall data integrity and trust in the system.
-    *   **Status**: NOT STARTED
-    *   **Is recurring issue?**: Y (data quality)
-    *   **Should Test frontend/backend/both after fix?**: Backend (for the report, if built).
+    *   **Should Test frontend/backend/both after fix?**: Backend. The success of the fix is measured by a successful deployment.
+    *   **Blocked on other issue**: No, this is the highest priority blocker.
 
 **In progress Task List**:
-*   **Task 1: Implement New Duplicate Detection Logic (P0)**
-    *   **Description**: Refactor the duplicate detection logic to align with the user's new rules: a lead is only a duplicate if a previous enquiry from the same phone number is still **OPEN** and was created **within the last year**.
-    *   **Where to resume**: The agent was about to modify the  function in . The new implementation needs to check the  of the existing lead and its .
-    *   **What will be achieved with this?**: This will correctly differentiate between a genuine duplicate entry and a repeat customer, ensuring sales from returning customers are not lost in the data.
-    *   **Status**: IN PROGRESS
-    *   **Should Test frontend/backend/both after fix?**: Both.
-    *   **Blocked on something**: No.
+*   None. All development work is blocked by the deployment failure.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
     *   **Funnel Analysis (P1)**: Create a new visualization to track conversion rates at each stage (Enquiry → Quotation → Won).
     *   **Manual 'Qualified' Toggle (P1)**: Add a UI element on the lead detail view to allow users to manually set a lead's  status.
-    *   **Lead Velocity & ROI Analysis (P2)**: Suggest and potentially implement new analytics for how fast leads move through stages and which sources provide the best return.
+    *   **Lead Velocity & ROI Analysis (P2)**: Suggest and potentially implement new analytics for how fast leads move through stages.
 *   **Future Tasks**:
+    *   Dashboard customization.
+    *   Export to Excel functionality for all pages.
     *   Verify Per-Dimension Forecast Accuracy.
     *   Detailed Audit Logs.
-    *   Refactor Forecast Page.
 
 **Completed work in this session**
-- **Summary Builder & Historical Comparison (DONE)**: Implemented a full-featured pivot table in the  page with a YoY comparison toggle.
-- **Area → Location Rename (DONE)**: Renamed all instances of Area to Location across the UI and backend.
-- **Quotation-Lead Linking (DONE)**: Added a View Lead link to the  page.
-- **Critical KPI Bug Fixes (DONE)**:
-    - **Won Leads Count**: Fixed the  KPI to correctly include sales from repeat customers, which were previously excluded as duplicates. The count now reflects the true number of won deals.
-    - **Won Qty Calculation**: Corrected the logic to use , then , then  as a fallback, ensuring accurate quantity tracking.
-    - **Data Migration**: Implemented a one-time startup script in  to auto-mark the  flag for all leads with existing quotation data.
-- **Dashboard/Quotations Page Sync (DONE)**: Fixed data discrepancies between the main dashboard KPIs and the Quotations page by applying consistent filtering logic (date filters, duplicate exclusion).
-- **Environment Fix (DONE)**: Resolved a Preview not working issue by rebuilding the frontend after an environment reset had deleted the  folder.
-
-**Known issue recurrence from previous fork**
-- **Shallow Copy Bugs**: A bug where a Python dictionary query was being mutated due to shallow copying () was found and fixed by using . The next agent should be mindful of this pattern, especially when reusing query objects.
+- **Full Data Re-upload**: Successfully wiped the database and populated it with ~4 years of data from the user's new Excel files.
+- **New Duplicate Detection Logic**: Implemented and executed a chunk-based duplicate merging algorithm as requested by the user.
+- **KPI and Data Integrity Fix**: Made the  the single source of truth for Won leads, correcting the dashboard KPIs to match the raw sales data.
+- **New Feature - Order Time Punch**: Built a new report in the Data Management section to identify leads closed within two days of creation.
+- **New Feature - Won Without SO**: Created a discrepancy report to show leads marked as Won in the enquiry system but missing from the official sales records.
+- **UI/UX Improvements**:
+    - Removed the Qty count from the Total Leads dashboard card.
+    - Added global date filter functionality to the Data Management page.
 
 **Code Architecture**
-
+has_so_record
 
 **Key Technical Concepts**
-*   **Stateful Duplicate Detection**: The required logic is no longer static. It depends on the *state* (open/closed) and *age* of existing records.
-*   **Data Integrity and Reconciliation**: A major theme. All KPIs must be consistent with detailed views. This involves applying identical filtering logic (date ranges, exclusion rules) across different endpoints.
-*   **Dynamic Aggregation**: The backend for the Summary Builder uses flexible MongoDB aggregation pipelines based on user-selected dimensions and metrics.
-*   **Defensive Copying**: Using  is crucial when reusing and modifying complex dictionary-based queries to prevent unintended side effects (mutations).
+*   **Application Startup anti-patterns**: Long-running, blocking tasks (like data migrations) during application startup must be avoided as they interfere with health checks in containerized environments.
+*   **Background Tasks**: The appropriate pattern for handling long-running operations in a web server context without blocking startup or user requests. FastAPI's  is the ideal solution here.
+*   **Data Reconciliation**: The process of comparing two datasets (Enquiry vs. Sales) to identify discrepancies and establish a single source of truth.
 
 **key DB schema**
 *   **leads**:
-    *   : (Boolean) Flag indicating a duplicate. The logic for setting this is the focus of the current task.
-    *   : (Boolean) Flag indicating a quotation was sent. Now automatically set via migration if  or  exists.
-    *   : (String) Used to determine if a lead is Open or Closed for the new duplicate logic.
-
-**changes in tech stack**
-- None.
+    *    - New field indicating if a lead is confirmed by the Sales Order register. This is the new source of truth for Won status.
+    *    - New field storing an array of enquiry objects that were merged into this lead by the new duplicate logic.
 
 **All files of reference**
-*    (Primary file for the next task)
-*    (Contains the KPI logic to be fixed)
-*   
-*   
-*   
-*   
-*   
-
-**Areas that need refactoring**:
-*   : Needs to be refactored to implement the new, more complex duplicate detection rules.
-
-**key api endpoints**
-*   : Heavily modified to fix data integrity issues with Won Leads and Quotations Sent.
-*   : New endpoint for the pivot table feature, including historical comparison.
-*    & : Modified to respect global date filters and apply consistent duplicate exclusion logic.
+*    (The entry point where the failing startup migration is called)
+*    (Contains the  function that is timing out)
+*    (Frontend for the new data management features)
+*   Deployment logs provided by the user.
 
 **Critical Info for New Agent**
-1.  **Prioritize Duplicate Logic**: The most urgent task is to implement the new duplicate detection rules in . This is a core business logic change requested by the user to correctly track repeat customers.
-2.  **Fix Quotation KPI**: Immediately after, fix the Quotations Sent KPI in  to ensure its count is not artificially low due to the duplicate filter. It must include all leads with quotation data.
-3.  **Won Leads are Sacred**: A key principle established is that a Won lead should never be filtered out as a duplicate. Each represents a sale. The KPI logic was fixed to reflect this; ensure this principle is maintained.
-4.  **Test for Consistency**: After making changes, always test that the numbers on the main dashboard KPIs match the totals shown on the corresponding detailed pages (e.g., Quotations page). The user is highly sensitive to these mismatches.
+1.  **Deployment is Failing**: Your number one priority is to fix the deployment failure. The application is not usable in production until this is resolved.
+2.  **The Root Cause is Known**: The deployment logs clearly indicate the issue is a MongoDB read timeout during a duplicate detection migration that runs on application startup. This is a blocking task preventing the server from becoming healthy.
+3.  **The Fix**: You must modify  to prevent the  function from blocking startup. The recommended approach is to wrap it in a FastAPI . This allows the server to start immediately while the migration runs in the background. Do not alter the business logic itself, only how it is executed.
+4.  **Do Not Rerun Migrations Needlessly**: The data migrations have already been run successfully in the development environment. The goal is to make them non-blocking for production deployment, not to change the data again.
 
 **documents and test reports created in this job**
 *   
 *   
-*    (Updated with completed tasks)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Confirmed the new duplicate logic: a lead is a duplicate only if the previous enquiry from the same customer is still open and less than a year old.
-2.  **User**: Confirmed that if quotation data exists, it means a quote was sent. The Quotation Sent count should reflect this.
-3.  **User**: Expressed concern that the Quotation Sent KPI count is lower than the Won Leads count, which is incorrect.
-4.  **User**: Pointed out that Won leads should not have duplicates and asked for an investigation into why 185 won leads were being filtered out.
-5.  **User**: Requested that the  checkbox be automatically marked if quotation data is present.
-6.  **User**: Reported several data discrepancies via screenshot (KPIs not matching Quotations page, incorrect Old Enquiries Closed definition) and asked for them to be fixed.
-7.  **User**: Confirmed the logic for Old Enquiries Closed:  is before the selected range, but  is within it.
-8.  **User**: Reported that the preview was not working. (RESOLVED)
-9.  **User**: Requested a comprehensive review of the entire dashboard for data linking improvements and suggested adding a historical comparison toggle to the Summary Builder. (IN PROGRESS/DONE)
-10. **User**: Confirmed that quotations should be linked to their leads and approved moving forward with the historical comparison toggle.
+1.  **User**: Provided deployment logs showing the app is failing and asked for a fix.
+2.  **User**: Confirmed  should be the source of truth for Won leads.
+3.  **User**: Asked to see Won leads without a corresponding SO record in a separate tab.
+4.  **User**: Questioned why dashboard  were higher than the  data.
+5.  **User**: Explained the new chunk-based duplicate logic (merge open leads into subsequent closed leads).
+6.  **User**: Asked for an explanation of why the old duplicate logic didn't merge all leads.
+7.  **User**: Requested the Order Time Punch feature and other UI/filter changes.
+8.  **User**: Provided a corrected  file and requested a full data re-upload.
+9.  **User**: Reported that the dashboard data was wrong after the first data upload attempt.
+10. **User**: Provided the initial set of new data files and asked for a database replacement.
 
 **Project Health Check:**
-*   **Functional**: The application is running.
-*   **Broken**: The core business logic for duplicate detection is incorrect and is the highest priority to fix. The Quotations Sent KPI is also providing inaccurate numbers due to this faulty logic.
+*   **Broken**: The application is non-deployable due to a backend health check failure caused by a long-running startup migration.
 
 **3rd Party Integrations**
-*   **OpenAI GPT-4o**: Used for generating qualitative trend analysis in forecasts. Relies on the Emergent LLM Key.
-*   **rapidfuzz**: A Python library used for fuzzy string matching.
+*   **rapidfuzz**: Python library for string matching.
 
 **Testing status**
-*   **Testing agent used after significant changes**: YES, for the Summary Builder and YoY features.
-*   **Troubleshoot agent used after agent stuck in loop**: NO.
-*   **Test files created**: No new persistent test files were created.
-*   **Known regressions**: None.
+*   **Testing agent used after significant changes**: YES
+*   **Known regressions**: The entire application is non-deployable.
 
 **Credentials to test flow:**
 *   **Admin**:  / 
 
 **What agent forgot to execute**
-The agent was in the middle of a multi-step fix. It correctly identified the root causes but did not complete the implementation for:
-1.  Refactoring  in  with the new logic (checking stage and date).
-2.  Fixing the  in  to stop excluding duplicates.</analysis>
+The agent implemented all requested features but was stopped by the user reporting a deployment failure. The agent has not yet implemented the fix for the deployment issue.</analysis>
