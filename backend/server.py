@@ -750,7 +750,8 @@ async def startup_db_client():
         await migrate_lost_leads_field_mapping()
         await migrate_quotation_sent_flag()
         
-        # Create indexes for better query performance
+        # Create indexes for better query performance (including COMPOUND indexes for KPIs)
+        # Single field indexes
         await db.leads.create_index("lead_id", unique=True)
         await db.leads.create_index("enquiry_no")
         await db.leads.create_index("state")
@@ -762,6 +763,19 @@ async def startup_db_client():
         await db.leads.create_index("is_duplicate")
         await db.leads.create_index("phone_number")
         await db.leads.create_index("location")
+        await db.leads.create_index("enquiry_stage")
+        await db.leads.create_index("enquiry_type")
+        await db.leads.create_index("has_so_record")
+        await db.leads.create_index("dispatch_status")
+        
+        # COMPOUND indexes for KPI queries (critical for performance)
+        await db.leads.create_index([("is_duplicate", 1), ("enquiry_date", 1)])
+        await db.leads.create_index([("enquiry_stage", 1), ("is_duplicate", 1)])
+        await db.leads.create_index([("enquiry_status", 1), ("enquiry_type", 1)])
+        await db.leads.create_index([("has_so_record", 1), ("enquiry_date", 1)])
+        await db.leads.create_index([("dispatch_status", 1), ("enquiry_stage", 1)])
+        
+        # User related indexes
         await db.users.create_index("user_id", unique=True)
         await db.users.create_index("email", unique=True)
         await db.user_sessions.create_index("session_token", unique=True)
