@@ -138,40 +138,14 @@ async def get_kpis(
     won_base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
     # Total leads (excluding transferred and duplicates) - for pipeline counting
-    total_leads = await db.leads.count_documents(base_query)
+    # Run all count queries in PARALLEL using asyncio.gather for performance
     
-    # Get configurable metrics
-    won_config = await get_metric_config(db, "won_leads")
-    lost_config = await get_metric_config(db, "lost_leads")
-    closed_config = await get_metric_config(db, "closed_config")
-    open_config = await get_metric_config(db, "open_leads")
-    hot_config = await get_metric_config(db, "hot_leads")
-    warm_config = await get_metric_config(db, "warm_leads")
-    cold_config = await get_metric_config(db, "cold_leads")
-    
-    # Count Won leads using won_base_query (includes duplicates)
-    won_leads = await count_by_metric(db, won_base_query, won_config)
-    
-    # Count other metrics using base_query (excludes duplicates)
-    lost_leads = await count_by_metric(db, base_query, lost_config)
-    closed_leads = await count_by_metric(db, base_query, closed_config)
-    
-    # Open leads = enquiry_status = "Open"
+    # Build all query variants
     open_query = {**base_query, "enquiry_status": "Open"}
-    open_leads = await db.leads.count_documents(open_query)
-    
-    # Hot/Warm/Cold leads - ONLY count for OPEN leads (enquiry_status = "Open")
-    # These are based on enquiry_type field
     hot_query = {**base_query, "enquiry_status": "Open", "enquiry_type": "Hot"}
     warm_query = {**base_query, "enquiry_status": "Open", "enquiry_type": "Warm"}
     cold_query = {**base_query, "enquiry_status": "Open", "enquiry_type": "Cold"}
     
-    hot_leads = await db.leads.count_documents(hot_query)
-    warm_leads = await db.leads.count_documents(warm_query)
-    cold_leads = await db.leads.count_documents(cold_query)
-    
-    # Call & Quotation tracking metrics
-    # Calls placed - leads that have been called (any status except 'Not Called')
     calls_placed_statuses = [
         'Called - No Response',
         'Called - Interested', 
@@ -180,46 +154,18 @@ async def get_kpis(
         'Called - Converted'
     ]
     calls_placed_query = {**base_query, "call_status": {"$in": calls_placed_statuses}}
-    calls_placed = await db.leads.count_documents(calls_placed_query)
-    
-    # Not called
     not_called_query = {**base_query, "$or": [
         {"call_status": {"$exists": False}},
         {"call_status": None},
         {"call_status": "Not Called"}
     ]}
-    not_called = await db.leads.count_documents(not_called_query)
     
-    # Quotations sent - includes manual quotation_sent OR has quotation data
-    # NOTE: Uses won_base_query (no duplicate filter) because:
-    # 1. Each quotation sent is real, even to repeat customers
-    # 2. Quotations Sent must be >= Won Leads (can't win without a quote)
-    # Use deepcopy to avoid mutation and properly add $or condition
-    quotations_sent_query = copy.deepcopy(won_base_query)
-    quotations_sent_query["deleted_at"] = {"$exists": False}
-    # Add the quotation condition to the existing $and array
-    quotations_sent_query["$and"].append({
-        "$or": [
-            {"quotation_sent": True},
-            {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
-            {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
-        ]
-    })
-    quotations_sent = await db.leads.count_documents(quotations_sent_query)
-    
-    # Call to Quotation rate
-    call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
-    
-    # Transferred leads (BDM leads transferred to dealers)
     transferred_query = {
         "is_deleted": {"$ne": True},
         "is_transferred": True,
         "enquiry_date": {"$gte": start_date, "$lte": end_date}
     }
-    transferred_leads = await db.leads.count_documents(transferred_query)
     
-    # Dispatch tracking metrics (for won orders - Closed-Won or Order Booked)
-    # NOTE: Different from won_base_query - this is just for dispatch status tracking
     dispatch_base_query = {
         "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
         "deleted_at": {"$exists": False}
@@ -229,25 +175,90 @@ async def get_kpis(
     if dealer:
         dispatch_base_query["dealer"] = dealer
     
-    # Pending dispatch count
     pending_dispatch_query = {**dispatch_base_query, "dispatch_status": "pending"}
-    pending_dispatch = await db.leads.count_documents(pending_dispatch_query)
-    
-    # Dispatched count
     dispatched_query = {**dispatch_base_query, "dispatch_status": "dispatched"}
-    dispatched_count = await db.leads.count_documents(dispatched_query)
-    
-    # Orders without dispatch status (need migration)
     no_dispatch_status_query = {**dispatch_base_query, "dispatch_status": {"$exists": False}}
-    no_dispatch_status = await db.leads.count_documents(no_dispatch_status_query)
-    
-    # Qualified leads (system-based, not configurable)
     qualified_query = {**base_query, "is_qualified": True}
-    qualified_leads = await db.leads.count_documents(qualified_query)
-    
-    # Faulty leads (explicitly marked as not qualified after being evaluated)
     faulty_query = {**base_query, "is_qualified": False, "qualification_score": {"$exists": True}}
-    faulty_leads = await db.leads.count_documents(faulty_query)
+    
+    # Quotations query
+    quotations_sent_query = copy.deepcopy(won_base_query)
+    quotations_sent_query["deleted_at"] = {"$exists": False}
+    quotations_sent_query["$and"].append({
+        "$or": [
+            {"quotation_sent": True},
+            {"quotation_no": {"$exists": True, "$ne": None, "$ne": ""}},
+            {"quotation_date": {"$exists": True, "$ne": None, "$ne": ""}}
+        ]
+    })
+    
+    # Get metric configs in parallel
+    metric_configs_task = asyncio.gather(
+        get_metric_config(db, "won_leads"),
+        get_metric_config(db, "lost_leads"),
+        get_metric_config(db, "closed_config"),
+        get_metric_config(db, "open_leads"),
+        get_metric_config(db, "hot_leads"),
+        get_metric_config(db, "warm_leads"),
+        get_metric_config(db, "cold_leads"),
+    )
+    
+    won_config, lost_config, closed_config, open_config, hot_config, warm_config, cold_config = await metric_configs_task
+    
+    # Build won query for metrics
+    won_metric_query = copy.deepcopy(won_base_query)
+    if won_config and won_config.get("field_name") and won_config.get("field_values"):
+        won_metric_query[won_config["field_name"]] = {"$in": won_config["field_values"]}
+    won_metric_query["deleted_at"] = {"$exists": False}
+    
+    # Build lost query for metrics
+    lost_metric_query = copy.deepcopy(base_query)
+    if lost_config and lost_config.get("field_name") and lost_config.get("field_values"):
+        lost_metric_query[lost_config["field_name"]] = {"$in": lost_config["field_values"]}
+    lost_metric_query["deleted_at"] = {"$exists": False}
+    
+    # Execute ALL count queries in parallel
+    count_results = await asyncio.gather(
+        db.leads.count_documents(base_query),  # 0: total_leads
+        db.leads.count_documents(won_metric_query),  # 1: won_leads
+        db.leads.count_documents(lost_metric_query),  # 2: lost_leads
+        db.leads.count_documents(open_query),  # 3: open_leads
+        db.leads.count_documents(hot_query),  # 4: hot_leads
+        db.leads.count_documents(warm_query),  # 5: warm_leads
+        db.leads.count_documents(cold_query),  # 6: cold_leads
+        db.leads.count_documents(calls_placed_query),  # 7: calls_placed
+        db.leads.count_documents(not_called_query),  # 8: not_called
+        db.leads.count_documents(quotations_sent_query),  # 9: quotations_sent
+        db.leads.count_documents(transferred_query),  # 10: transferred_leads
+        db.leads.count_documents(pending_dispatch_query),  # 11: pending_dispatch
+        db.leads.count_documents(dispatched_query),  # 12: dispatched_count
+        db.leads.count_documents(no_dispatch_status_query),  # 13: no_dispatch_status
+        db.leads.count_documents(qualified_query),  # 14: qualified_leads
+        db.leads.count_documents(faulty_query),  # 15: faulty_leads
+    )
+    
+    total_leads = count_results[0]
+    won_leads = count_results[1]
+    lost_leads = count_results[2]
+    open_leads = count_results[3]
+    hot_leads = count_results[4]
+    warm_leads = count_results[5]
+    cold_leads = count_results[6]
+    calls_placed = count_results[7]
+    not_called = count_results[8]
+    quotations_sent = count_results[9]
+    transferred_leads = count_results[10]
+    pending_dispatch = count_results[11]
+    dispatched_count = count_results[12]
+    no_dispatch_status = count_results[13]
+    qualified_leads = count_results[14]
+    faulty_leads = count_results[15]
+    
+    # Closed leads count
+    closed_leads = won_leads + lost_leads
+    
+    # Call to Quotation rate
+    call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
     
     # ============ QTY CALCULATIONS ============
     # Qty tracks gensets sold - only applicable to Won leads
