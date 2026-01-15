@@ -2,12 +2,13 @@
 Data Import Route - Import exported data into production database.
 This endpoint allows importing the exported JSON data after deployment.
 """
-from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks, UploadFile, File
 from typing import Optional
 import json
 import os
 import logging
 from datetime import datetime, timezone
+import httpx
 
 from models.user import User
 from routes.auth import get_current_user
