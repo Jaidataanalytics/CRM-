@@ -2871,7 +2871,22 @@ const Admin = () => {
                           variant="destructive"
                         >
                           {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                          FULL RESET & Import (Delete All)
+                          FULL RESET (Local Files)
+                        </Button>
+                      </div>
+
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-2">Sync from Preview (Recommended for Deployed Version)</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          This will fetch all 26,745 leads directly from the preview environment and import them here.
+                        </p>
+                        <Button 
+                          onClick={syncFromPreview} 
+                          disabled={importing}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                          Sync from Preview Environment
                         </Button>
                       </div>
 
@@ -2879,19 +2894,36 @@ const Admin = () => {
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>Warning</AlertTitle>
                         <AlertDescription>
-                          Importing will replace all existing data in the selected collections. This action cannot be undone.
-                          <br /><strong>FULL RESET</strong> will delete ALL database data and import fresh 26,745 leads.
+                          All import options will replace existing data. This action cannot be undone.
+                          <br /><strong>Sync from Preview</strong> is recommended for deployed environments as it fetches fresh data directly.
                         </AlertDescription>
                       </Alert>
                     </>
                   ) : (
-                    <Alert variant="destructive">
-                      <X className="h-4 w-4" />
-                      <AlertTitle>No Export Data Found</AlertTitle>
-                      <AlertDescription>
-                        No exported data files found. Export must be run in the source environment first.
-                      </AlertDescription>
-                    </Alert>
+                    <>
+                      <Alert className="mb-4">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>No Local Export Files</AlertTitle>
+                        <AlertDescription>
+                          Local export files not found. Use "Sync from Preview" to import data directly.
+                        </AlertDescription>
+                      </Alert>
+                      
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-2">Sync from Preview Environment</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Fetch all 26,745 leads directly from the preview environment.
+                        </p>
+                        <Button 
+                          onClick={syncFromPreview} 
+                          disabled={importing}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+                          Sync from Preview Environment
+                        </Button>
+                      </div>
+                    </>
                   )}
                 </div>
               )}
