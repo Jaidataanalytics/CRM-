@@ -653,7 +653,10 @@ class GradientBoostingForecaster(BaseForecaster):
     def __init__(self, historical_data: List[Dict]):
         super().__init__(historical_data)
         self.model = None
-        self.scaler = StandardScaler()
+        self.scaler = None
+        _load_sklearn()
+        if _sklearn_loaded and _StandardScaler:
+            self.scaler = _StandardScaler()
     
     def _create_features(self, idx: int) -> List[float]:
         features = []
@@ -680,6 +683,9 @@ class GradientBoostingForecaster(BaseForecaster):
         if len(self.values) < 10:
             return SimpleMovingAverage(self.data).predict(periods)
         
+        if not _sklearn_loaded or self.scaler is None or _GradientBoostingRegressor is None:
+            return SimpleMovingAverage(self.data).predict(periods)
+        
         X, y = [], []
         for i in range(4, len(self.values)):
             X.append(self._create_features(i - 1))
@@ -692,7 +698,7 @@ class GradientBoostingForecaster(BaseForecaster):
         y = np.array(y)
         X_scaled = self.scaler.fit_transform(X)
         
-        self.model = GradientBoostingRegressor(
+        self.model = _GradientBoostingRegressor(
             n_estimators=100,
             max_depth=4,
             learning_rate=0.1,
