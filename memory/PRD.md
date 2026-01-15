@@ -274,15 +274,23 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ## Completed Work (Latest)
 
 ### Session 11 - Dec 2025 (COMPLETED)
-**Deployment Fix - Background Migrations**
+**Performance Fix - Dashboard Loading Optimized**
 
-1. ✅ **Fixed Deployment Timeout Issue (P0 - BLOCKER)**:
-   - **Root Cause**: Heavy migrations (`migrate_detect_duplicates` and `migrate_qualified_status`) were blocking server startup
-   - **Impact**: Kubernetes health check failed because server couldn't respond within timeout
-   - **Fix**: Moved heavy migrations to run as background tasks using `asyncio.create_task()`
-   - Server now responds to `/health` immediately on startup
-   - Heavy migrations complete in background without blocking
-   - Deployment agent verified: READY FOR DEPLOYMENT
+1. ✅ **KPI Endpoint Optimization (P0)**:
+   - Changed from 20+ sequential DB queries to parallel execution using `asyncio.gather()`
+   - KPI response time improved from 2+ minutes to **0.76 seconds**
+   - All count queries now run concurrently
+
+2. ✅ **Added Compound Database Indexes**:
+   - `(is_duplicate, enquiry_date)` - for filtered queries
+   - `(enquiry_stage, is_duplicate)` - for won/lost counting  
+   - `(enquiry_status, enquiry_type)` - for hot/warm/cold queries
+   - `(has_so_record, enquiry_date)` - for SO-verified queries
+   - `(dispatch_status, enquiry_stage)` - for dispatch queries
+
+3. ✅ **Fixed Deployment Timeout Issue**:
+   - Moved heavy migrations to background tasks using `asyncio.create_task()`
+   - Server now responds to health checks immediately on startup
 
 ## Upcoming Tasks
 - Funnel Analysis (P1) - Create visualization to track conversion rates at each stage (Enquiry → Quotation → Won)
