@@ -89,10 +89,6 @@ class BulkDeleteRequest(BaseModel):
     search: Optional[str] = None
 
 
-async def get_db(request: Request):
-    return request.app.state.db
-
-
 @router.get("")
 async def get_leads(
     request: Request,
