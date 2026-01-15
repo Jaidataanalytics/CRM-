@@ -177,7 +177,7 @@ async def import_leads_only(
     Quick import of just leads collection (the main data).
     Use this if you only need to update the leads data.
     """
-    if current_user.role != "admin":
+    if current_user.role.lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     db = await get_db(request)
