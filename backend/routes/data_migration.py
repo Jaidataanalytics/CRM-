@@ -315,3 +315,174 @@ async def import_leads_only(
         "non_duplicates": non_duplicates,
         "message": f"Successfully imported {inserted} leads"
     }
+
+
+
+@router.post("/reset-from-preview")
+async def reset_from_preview(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    preview_url: str = "https://salessyncpro.preview.emergentagent.com"
+):
+    """
+    Fetch data from preview environment and import into this database.
+    This is for syncing production with preview data.
+    """
+    if current_user.role.lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    db = await get_db(request)
+    
+    try:
+        # Login to preview to get token
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            # Login
+            login_resp = await client.post(
+                f"{preview_url}/api/auth/login",
+                json={"username": "admin", "password": "admin123"}
+            )
+            if login_resp.status_code != 200:
+                raise HTTPException(status_code=400, detail="Failed to login to preview")
+            
+            token = login_resp.json().get("token")
+            headers = {"Authorization": f"Bearer {token}"}
+            
+            # Get all leads from preview (paginated)
+            all_leads = []
+            page = 1
+            while True:
+                leads_resp = await client.get(
+                    f"{preview_url}/api/leads/export-all?page={page}&limit=5000",
+                    headers=headers
+                )
+                if leads_resp.status_code != 200:
+                    # Try alternative endpoint
+                    leads_resp = await client.get(
+                        f"{preview_url}/api/leads?page={page}&limit=5000&include_duplicates=true",
+                        headers=headers
+                    )
+                
+                if leads_resp.status_code != 200:
+                    break
+                    
+                data = leads_resp.json()
+                leads = data.get("leads", [])
+                if not leads:
+                    break
+                all_leads.extend(leads)
+                
+                if page >= data.get("pages", 1):
+                    break
+                page += 1
+            
+            if not all_leads:
+                raise HTTPException(status_code=400, detail="No leads fetched from preview")
+            
+            logger.info(f"Fetched {len(all_leads)} leads from preview")
+            
+            # Delete all existing leads
+            delete_result = await db.leads.delete_many({})
+            logger.info(f"Deleted {delete_result.deleted_count} existing leads")
+            
+            # Clean leads for insertion (remove any _id fields)
+            for lead in all_leads:
+                if '_id' in lead:
+                    del lead['_id']
+            
+            # Insert in batches
+            batch_size = 1000
+            inserted = 0
+            
+            for i in range(0, len(all_leads), batch_size):
+                batch = all_leads[i:i + batch_size]
+                result = await db.leads.insert_many(batch)
+                inserted += len(result.inserted_ids)
+                logger.info(f"Imported batch {i//batch_size + 1}, total: {inserted}")
+            
+            # Verify
+            final_count = await db.leads.count_documents({})
+            duplicates = await db.leads.count_documents({'is_duplicate': True})
+            with_so = await db.leads.count_documents({'has_so_record': True})
+            
+            return {
+                "status": "success",
+                "message": f"Imported {inserted} leads from preview",
+                "deleted": delete_result.deleted_count,
+                "imported": inserted,
+                "verification": {
+                    "final_count": final_count,
+                    "duplicates": duplicates,
+                    "non_duplicates": final_count - duplicates,
+                    "with_so_record": with_so
+                }
+            }
+            
+    except httpx.RequestError as e:
+        logger.error(f"Network error: {e}")
+        raise HTTPException(status_code=500, detail=f"Network error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error during reset from preview: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+
+@router.post("/upload-and-import")
+async def upload_and_import(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Upload a JSON file with leads data and import it.
+    The file should be the leads.json export file.
+    """
+    if current_user.role.lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    db = await get_db(request)
+    
+    try:
+        # Read the uploaded file
+        content = await file.read()
+        leads = json.loads(content)
+        
+        if not isinstance(leads, list):
+            raise HTTPException(status_code=400, detail="File must contain a JSON array of leads")
+        
+        logger.info(f"Loaded {len(leads)} leads from uploaded file")
+        
+        # Delete all existing leads
+        delete_result = await db.leads.delete_many({})
+        logger.info(f"Deleted {delete_result.deleted_count} existing leads")
+        
+        # Clean leads for insertion
+        for lead in leads:
+            if '_id' in lead:
+                del lead['_id']
+        
+        # Insert in batches
+        batch_size = 1000
+        inserted = 0
+        
+        for i in range(0, len(leads), batch_size):
+            batch = leads[i:i + batch_size]
+            result = await db.leads.insert_many(batch)
+            inserted += len(result.inserted_ids)
+        
+        # Verify
+        final_count = await db.leads.count_documents({})
+        duplicates = await db.leads.count_documents({'is_duplicate': True})
+        
+        return {
+            "status": "success",
+            "message": f"Imported {inserted} leads from upload",
+            "deleted": delete_result.deleted_count,
+            "imported": inserted,
+            "final_count": final_count,
+            "duplicates": duplicates
+        }
+        
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+    except Exception as e:
+        logger.error(f"Error during upload import: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
