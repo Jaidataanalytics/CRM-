@@ -267,6 +267,28 @@ const Admin = () => {
     }
   };
 
+  const syncFromPreview = async () => {
+    if (!window.confirm('This will DELETE all data and sync from preview environment. Continue?')) {
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const res = await axios.post(`${API}/data-migration/reset-from-preview`, {}, { 
+        withCredentials: true,
+        timeout: 120000 // 2 minute timeout for large data
+      });
+      toast.success(`Sync complete! Imported ${res.data.imported} leads from preview.`);
+      loadMigrationStatus();
+      loadDataStats();
+    } catch (error) {
+      console.error('Error syncing from preview:', error);
+      toast.error('Failed to sync: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const loadDataStats = async () => {
     try {
       const res = await axios.get(`${API}/admin/data-stats`, { withCredentials: true });
