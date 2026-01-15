@@ -17,6 +17,56 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/leads", tags=["Leads"])
 
 
+async def get_db(request: Request):
+    return request.app.state.db
+
+
+@router.get("/export-all")
+async def export_all_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(5000, ge=1, le=10000),
+    include_duplicates: bool = True
+):
+    """
+    Export all leads for migration purposes.
+    Returns leads in batches for large datasets.
+    """
+    if current_user.role.lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    db = await get_db(request)
+    
+    # Build query - include all leads for migration
+    query = {"deleted_at": {"$exists": False}}
+    if not include_duplicates:
+        query["$or"] = [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False},
+            {"is_duplicate": None}
+        ]
+    
+    # Get total count
+    total = await db.leads.count_documents(query)
+    
+    # Calculate pagination
+    skip = (page - 1) * limit
+    pages = (total + limit - 1) // limit
+    
+    # Get leads
+    cursor = db.leads.find(query, {"_id": 0}).skip(skip).limit(limit)
+    leads = await cursor.to_list(length=limit)
+    
+    return {
+        "leads": leads,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "limit": limit
+    }
+
+
 # Bulk delete limits by role
 BULK_DELETE_LIMITS = {
     UserRole.ADMIN: 10000,  # Essentially unlimited
