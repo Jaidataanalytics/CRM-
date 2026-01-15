@@ -2765,6 +2765,96 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Data Migration Card - For Production Deployment */}
+          <Card className="border-blue-200 bg-blue-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-700">
+                <Database className="h-5 w-5" />
+                Data Migration (Production Import)
+              </CardTitle>
+              <CardDescription>
+                Import pre-exported data into this database. Use this after deployment to sync production data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button 
+                onClick={loadMigrationStatus} 
+                disabled={loadingMigration}
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loadingMigration ? 'animate-spin' : ''}`} />
+                Check Migration Status
+              </Button>
+
+              {migrationStatus && (
+                <div className="space-y-4">
+                  {migrationStatus.export_available ? (
+                    <>
+                      <Alert className="border-green-200 bg-green-50">
+                        <Check className="h-4 w-4 text-green-600" />
+                        <AlertTitle className="text-green-700">Export Data Available</AlertTitle>
+                        <AlertDescription className="text-green-600">
+                          Export Date: {new Date(migrationStatus.export_info?.export_date).toLocaleString()}<br />
+                          Total Documents: {migrationStatus.export_info?.total_documents?.toLocaleString()}
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 bg-white rounded-lg border">
+                          <p className="text-sm text-muted-foreground">Current Leads</p>
+                          <p className="text-2xl font-bold">{migrationStatus.current_db_counts?.leads?.toLocaleString()}</p>
+                        </div>
+                        <div className="p-4 bg-white rounded-lg border">
+                          <p className="text-sm text-muted-foreground">Export Leads</p>
+                          <p className="text-2xl font-bold text-blue-600">26,745</p>
+                        </div>
+                        <div className="p-4 bg-white rounded-lg border">
+                          <p className="text-sm text-muted-foreground">Users</p>
+                          <p className="text-2xl font-bold">{migrationStatus.current_db_counts?.users}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => runDataImport(true)} 
+                          disabled={importing}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
+                          Import Leads Only (Recommended)
+                        </Button>
+                        <Button 
+                          onClick={() => runDataImport(false)} 
+                          disabled={importing}
+                          variant="outline"
+                        >
+                          {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
+                          Import All Collections
+                        </Button>
+                      </div>
+
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Warning</AlertTitle>
+                        <AlertDescription>
+                          Importing will replace all existing data in the selected collections. This action cannot be undone.
+                        </AlertDescription>
+                      </Alert>
+                    </>
+                  ) : (
+                    <Alert variant="destructive">
+                      <X className="h-4 w-4" />
+                      <AlertTitle>No Export Data Found</AlertTitle>
+                      <AlertDescription>
+                        No exported data files found. Export must be run in the source environment first.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Trash Tab */}
