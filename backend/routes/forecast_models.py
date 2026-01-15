@@ -6,17 +6,39 @@ Supports per-dimension model optimization.
 import numpy as np
 from typing import List, Dict, Tuple, Optional
 from statistics import mean, stdev, median
-from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.preprocessing import StandardScaler
 import warnings
 
-# Suppress all warnings globally, especially statsmodels convergence warnings
+# Suppress all warnings globally
 warnings.filterwarnings('ignore')
 warnings.filterwarnings('ignore', category=UserWarning)
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings('ignore', message='.*convergence.*')
 warnings.filterwarnings('ignore', message='.*Maximum Likelihood.*')
+
+# Lazy load heavy ML libraries to speed up startup
+_sklearn_loaded = False
+_LinearRegression = None
+_Ridge = None
+_RandomForestRegressor = None
+_GradientBoostingRegressor = None
+_StandardScaler = None
+
+def _load_sklearn():
+    global _sklearn_loaded, _LinearRegression, _Ridge, _RandomForestRegressor, _GradientBoostingRegressor, _StandardScaler
+    if not _sklearn_loaded:
+        try:
+            from sklearn.linear_model import LinearRegression, Ridge
+            from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+            from sklearn.preprocessing import StandardScaler
+            _LinearRegression = LinearRegression
+            _Ridge = Ridge
+            _RandomForestRegressor = RandomForestRegressor
+            _GradientBoostingRegressor = GradientBoostingRegressor
+            _StandardScaler = StandardScaler
+            _sklearn_loaded = True
+        except ImportError:
+            pass
+    return _sklearn_loaded
 
 
 def convert_numpy_types(obj):
@@ -36,28 +58,37 @@ def convert_numpy_types(obj):
     return obj
 
 
-try:
-    import xgboost as xgb
-    HAS_XGBOOST = True
-except ImportError:
-    HAS_XGBOOST = False
+# Lazy load flags
+HAS_XGBOOST = False
+HAS_STATSMODELS = False
+HAS_PROPHET = False
 
-try:
-    from statsmodels.tsa.arima.model import ARIMA
-    from statsmodels.tsa.holtwinters import ExponentialSmoothing as HoltWinters
-    HAS_STATSMODELS = True
-    # Also suppress statsmodels specific warnings
-    import statsmodels.tools.sm_exceptions as sm_exceptions
-    warnings.filterwarnings('ignore', category=sm_exceptions.ConvergenceWarning)
-except ImportError:
-    HAS_STATSMODELS = False
+def _check_xgboost():
+    global HAS_XGBOOST
+    try:
+        import xgboost as xgb
+        HAS_XGBOOST = True
+    except ImportError:
+        HAS_XGBOOST = False
+    return HAS_XGBOOST
 
-try:
-    from prophet import Prophet
-    import pandas as pd
-    HAS_PROPHET = True
-except ImportError:
-    HAS_PROPHET = False
+def _check_statsmodels():
+    global HAS_STATSMODELS
+    try:
+        from statsmodels.tsa.arima.model import ARIMA
+        HAS_STATSMODELS = True
+    except ImportError:
+        HAS_STATSMODELS = False
+    return HAS_STATSMODELS
+
+def _check_prophet():
+    global HAS_PROPHET
+    try:
+        from prophet import Prophet
+        HAS_PROPHET = True
+    except ImportError:
+        HAS_PROPHET = False
+    return HAS_PROPHET
 
 
 def calculate_rolling_accuracy(actual: List[float], predicted: List[float], window: int = 3) -> Dict:
