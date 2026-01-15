@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 import logging
 import copy
+import asyncio
 
 from models.user import User
 from models.metric_settings import DEFAULT_METRICS
