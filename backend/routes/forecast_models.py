@@ -397,10 +397,15 @@ class LinearTrend(BaseForecaster):
         if len(self.values) < 3:
             return [mean(self.values)] * periods if self.values else [0] * periods
         
+        _load_sklearn()
+        if not _sklearn_loaded or _LinearRegression is None:
+            # Fallback to simple average
+            return [mean(self.values)] * periods
+        
         X = np.arange(len(self.values)).reshape(-1, 1)
         y = np.array(self.values)
         
-        model = LinearRegression()
+        model = _LinearRegression()
         model.fit(X, y)
         
         future_X = np.arange(len(self.values), len(self.values) + periods).reshape(-1, 1)
@@ -416,7 +421,10 @@ class RandomForestForecaster(BaseForecaster):
     def __init__(self, historical_data: List[Dict]):
         super().__init__(historical_data)
         self.model = None
-        self.scaler = StandardScaler()
+        self.scaler = None
+        _load_sklearn()
+        if _sklearn_loaded and _StandardScaler:
+            self.scaler = _StandardScaler()
     
     def _create_features(self, idx: int) -> List[float]:
         """Create features for a given index"""
