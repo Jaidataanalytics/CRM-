@@ -260,7 +260,7 @@ async def get_kpis(
     # Call to Quotation rate
     call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
     
-    # ============ QTY CALCULATIONS ============
+    # ============ QTY CALCULATIONS (PARALLEL) ============
     # Qty tracks gensets sold - only applicable to Won leads
     # Priority: won_qty > qty > 1 (default)
     # IMPORTANT: Use won_base_query for qty calculations (includes duplicate won leads)
@@ -270,77 +270,43 @@ async def get_kpis(
     qty_won_base_query = copy.deepcopy(won_base_query)
     qty_won_base_query["deleted_at"] = {"$exists": False}
     
-    # Won qty - for won leads, use won_qty if set, else qty if set, else default to 1
+    # Reusable qty aggregation expression
+    qty_sum_expr = {"$sum": {
+        "$cond": [
+            {"$and": [{"$ne": ["$won_qty", None]}, {"$gt": ["$won_qty", 0]}]},
+            "$won_qty",
+            {"$cond": [
+                {"$and": [{"$ne": ["$qty", None]}, {"$gt": ["$qty", 0]}]},
+                "$qty",
+                1
+            ]}
+        ]
+    }}
+    
+    # Build all qty pipelines
     won_qty_pipeline = [
         {"$match": {**qty_won_base_query, "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]}}},
-        {"$group": {"_id": None, "won_qty": {"$sum": {
-            "$cond": [
-                {"$and": [
-                    {"$ne": ["$won_qty", None]},
-                    {"$gt": ["$won_qty", 0]}
-                ]},
-                "$won_qty",  # Use won_qty if set
-                {"$cond": [
-                    {"$and": [
-                        {"$ne": ["$qty", None]},
-                        {"$gt": ["$qty", 0]}
-                    ]},
-                    "$qty",  # Use qty as fallback
-                    1  # Default to 1 if neither is set
-                ]}
-            ]
-        }}}}
+        {"$group": {"_id": None, "result": qty_sum_expr}}
     ]
-    won_qty_result = await db.leads.aggregate(won_qty_pipeline).to_list(1)
-    won_qty = won_qty_result[0]["won_qty"] if won_qty_result else 0
-    
-    # Dispatched qty - use won_qty if set, else qty, else 1
     dispatched_qty_pipeline = [
         {"$match": {**qty_won_base_query, "dispatch_status": "dispatched"}},
-        {"$group": {"_id": None, "dispatched_qty": {"$sum": {
-            "$cond": [
-                {"$and": [
-                    {"$ne": ["$won_qty", None]},
-                    {"$gt": ["$won_qty", 0]}
-                ]},
-                "$won_qty",
-                {"$cond": [
-                    {"$and": [
-                        {"$ne": ["$qty", None]},
-                        {"$gt": ["$qty", 0]}
-                    ]},
-                    "$qty",
-                    1
-                ]}
-            ]
-        }}}}
+        {"$group": {"_id": None, "result": qty_sum_expr}}
     ]
-    dispatched_qty_result = await db.leads.aggregate(dispatched_qty_pipeline).to_list(1)
-    dispatched_qty = dispatched_qty_result[0]["dispatched_qty"] if dispatched_qty_result else 0
-    
-    # Pending dispatch qty - use won_qty if set, else qty, else 1
     pending_dispatch_qty_pipeline = [
         {"$match": {**qty_won_base_query, "dispatch_status": "pending"}},
-        {"$group": {"_id": None, "pending_qty": {"$sum": {
-            "$cond": [
-                {"$and": [
-                    {"$ne": ["$won_qty", None]},
-                    {"$gt": ["$won_qty", 0]}
-                ]},
-                "$won_qty",
-                {"$cond": [
-                    {"$and": [
-                        {"$ne": ["$qty", None]},
-                        {"$gt": ["$qty", 0]}
-                    ]},
-                    "$qty",
-                    1
-                ]}
-            ]
-        }}}}
+        {"$group": {"_id": None, "result": qty_sum_expr}}
     ]
-    pending_dispatch_qty_result = await db.leads.aggregate(pending_dispatch_qty_pipeline).to_list(1)
-    pending_dispatch_qty = pending_dispatch_qty_result[0]["pending_qty"] if pending_dispatch_qty_result else 0
+    
+    # Execute all qty aggregations in parallel
+    qty_results = await asyncio.gather(
+        db.leads.aggregate(won_qty_pipeline).to_list(1),
+        db.leads.aggregate(dispatched_qty_pipeline).to_list(1),
+        db.leads.aggregate(pending_dispatch_qty_pipeline).to_list(1),
+    )
+    
+    won_qty = qty_results[0][0]["result"] if qty_results[0] else 0
+    dispatched_qty = qty_results[1][0]["result"] if qty_results[1] else 0
+    pending_dispatch_qty = qty_results[2][0]["result"] if qty_results[2] else 0
     
     # ============ END QTY CALCULATIONS ============
     
