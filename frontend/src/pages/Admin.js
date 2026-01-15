@@ -232,20 +232,31 @@ const Admin = () => {
     }
   };
 
-  const runDataImport = async (leadsOnly = false) => {
-    if (!window.confirm(
-      leadsOnly 
+  const runDataImport = async (leadsOnly = false, fullReset = false) => {
+    const message = fullReset 
+      ? 'This will DELETE ALL data and import fresh data from export. This is a COMPLETE RESET. Are you absolutely sure?'
+      : leadsOnly 
         ? 'This will replace ALL leads in the database with the exported data. Are you sure?'
-        : 'This will replace ALL data in the database with the exported data. Are you sure?'
-    )) {
+        : 'This will replace ALL data in the database with the exported data. Are you sure?';
+    
+    if (!window.confirm(message)) {
+      return;
+    }
+    
+    // Double confirm for full reset
+    if (fullReset && !window.confirm('FINAL WARNING: This will delete everything. Type "RESET" in the next prompt to confirm.')) {
       return;
     }
     
     setImporting(true);
     try {
-      const endpoint = leadsOnly ? '/data-migration/import-leads-only' : '/data-migration/import';
+      const endpoint = fullReset 
+        ? '/data-migration/reset-and-import' 
+        : leadsOnly 
+          ? '/data-migration/import-leads-only' 
+          : '/data-migration/import';
       const res = await axios.post(`${API}${endpoint}?clear_existing=true`, {}, { withCredentials: true });
-      toast.success(`Import complete! ${res.data.leads_imported || res.data.total_imported} records imported.`);
+      toast.success(`Import complete! ${res.data.leads_imported || res.data.results?.imported_leads || res.data.total_imported} records imported.`);
       loadMigrationStatus();
       loadDataStats();
     } catch (error) {
