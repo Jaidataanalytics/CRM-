@@ -79,7 +79,9 @@ class DuplicateDetector:
     
     def is_lead_closed(self, lead: Dict) -> bool:
         """Check if a lead is in a closed state"""
-        stage = lead.get('enquiry_stage', '').strip()
+        stage = lead.get('enquiry_stage') or ''
+        if stage:
+            stage = str(stage).strip()
         return stage in CLOSED_STAGES or stage.lower().startswith('closed')
     
     def should_be_duplicate(self, existing_lead: Dict, new_lead: Dict) -> Tuple[bool, str]:
