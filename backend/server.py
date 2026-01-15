@@ -709,6 +709,23 @@ async def migrate_quotation_sent_flag():
         logger.error(f"Quotation sent flag migration failed: {str(e)}")
 
 
+async def run_heavy_migrations_background():
+    """
+    Run heavy migrations in the background to avoid blocking server startup.
+    This allows the server to respond to health checks immediately.
+    """
+    try:
+        logger.info("Starting background migrations...")
+        
+        # These are heavier migrations that can take time
+        await migrate_detect_duplicates()
+        await migrate_qualified_status()
+        
+        logger.info("Background migrations completed successfully")
+    except Exception as e:
+        logger.error(f"Error during background migrations: {str(e)}")
+
+
 @app.on_event("startup")
 async def startup_db_client():
     logger.info("Starting Lead Management Dashboard API...")
@@ -726,13 +743,11 @@ async def startup_db_client():
         return
     
     try:
-        # Run database migrations
+        # Run FAST migrations synchronously (these are quick and essential)
         await migrate_metric_settings()
         await migrate_normalize_duplicates()
-        await migrate_detect_duplicates()
         await migrate_lost_leads_enquiry_date()
         await migrate_lost_leads_field_mapping()
-        await migrate_qualified_status()
         await migrate_quotation_sent_flag()
         
         # Create indexes for better query performance
@@ -754,6 +769,12 @@ async def startup_db_client():
         await db.activity_logs.create_index("user_id")
         await db.activity_logs.create_index("created_at")
         logger.info("Database indexes created successfully")
+        
+        # Schedule HEAVY migrations to run in background (non-blocking)
+        # This allows the server to respond to health checks immediately
+        asyncio.create_task(run_heavy_migrations_background())
+        logger.info("Heavy migrations scheduled to run in background")
+        
     except Exception as e:
         logger.error(f"Error during startup migrations: {str(e)}")
         # Don't raise - let the server start anyway
