@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request, Depends, Query, Body
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel
 import logging
 import io
+import json
 
 from models.lead import Lead, LeadCreate, LeadUpdate, LeadResponse
 from models.user import User, UserRole
