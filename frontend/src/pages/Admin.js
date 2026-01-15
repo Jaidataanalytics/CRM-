@@ -110,6 +110,11 @@ const Admin = () => {
   const [selectedTrashLeads, setSelectedTrashLeads] = useState([]);
   const [recoveringLeads, setRecoveringLeads] = useState(false);
   
+  // Data Migration state
+  const [migrationStatus, setMigrationStatus] = useState(null);
+  const [loadingMigration, setLoadingMigration] = useState(false);
+  const [importing, setImporting] = useState(false);
+  
   // Entity Profile Config state
   const [entityProfileConfig, setEntityProfileConfig] = useState(null);
   const [availableKpis, setAvailableKpis] = useState({ built_in_metrics: [], configurable_metrics: [] });
