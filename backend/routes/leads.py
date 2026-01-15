@@ -879,10 +879,11 @@ async def get_merge_history_summary(
     """Get summary statistics for merged/consolidated leads"""
     db = await get_db(request)
     
-    # Count leads with merged data
+    # Count leads with merged data (include merged_enquiries from chunk-based detection)
     total_merged = await db.leads.count_documents({
         "deleted_at": {"$exists": False},
         "$or": [
+            {"merged_enquiries": {"$exists": True, "$ne": [], "$ne": None}},
             {"duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}},
             {"merged_from": {"$exists": True, "$ne": [], "$ne": None}}
         ]
