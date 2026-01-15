@@ -218,6 +218,44 @@ const Admin = () => {
     }
   };
 
+  // Data Migration functions
+  const loadMigrationStatus = async () => {
+    setLoadingMigration(true);
+    try {
+      const res = await axios.get(`${API}/data-migration/status`, { withCredentials: true });
+      setMigrationStatus(res.data);
+    } catch (error) {
+      console.error('Error loading migration status:', error);
+      toast.error('Failed to load migration status');
+    } finally {
+      setLoadingMigration(false);
+    }
+  };
+
+  const runDataImport = async (leadsOnly = false) => {
+    if (!window.confirm(
+      leadsOnly 
+        ? 'This will replace ALL leads in the database with the exported data. Are you sure?'
+        : 'This will replace ALL data in the database with the exported data. Are you sure?'
+    )) {
+      return;
+    }
+    
+    setImporting(true);
+    try {
+      const endpoint = leadsOnly ? '/data-migration/import-leads-only' : '/data-migration/import';
+      const res = await axios.post(`${API}${endpoint}?clear_existing=true`, {}, { withCredentials: true });
+      toast.success(`Import complete! ${res.data.leads_imported || res.data.total_imported} records imported.`);
+      loadMigrationStatus();
+      loadDataStats();
+    } catch (error) {
+      console.error('Error importing data:', error);
+      toast.error('Failed to import data: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const loadDataStats = async () => {
     try {
       const res = await axios.get(`${API}/admin/data-stats`, { withCredentials: true });
