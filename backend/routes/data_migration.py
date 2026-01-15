@@ -72,7 +72,7 @@ async def import_data(
         clear_existing: If True, clears existing data before import (recommended)
         collections: Comma-separated list of collections to import, or None for all
     """
-    if current_user.role != "admin":
+    if current_user.role.lower() != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
     db = await get_db(request)
