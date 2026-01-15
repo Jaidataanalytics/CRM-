@@ -2826,14 +2826,14 @@ const Admin = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button 
                           onClick={() => runDataImport(true)} 
                           disabled={importing}
                           className="bg-blue-600 hover:bg-blue-700"
                         >
                           {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
-                          Import Leads Only (Recommended)
+                          Import Leads Only
                         </Button>
                         <Button 
                           onClick={() => runDataImport(false)} 
@@ -2843,6 +2843,14 @@ const Admin = () => {
                           {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Database className="h-4 w-4 mr-2" />}
                           Import All Collections
                         </Button>
+                        <Button 
+                          onClick={() => runDataImport(false, true)} 
+                          disabled={importing}
+                          variant="destructive"
+                        >
+                          {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                          FULL RESET & Import (Delete All)
+                        </Button>
                       </div>
 
                       <Alert>
@@ -2850,6 +2858,7 @@ const Admin = () => {
                         <AlertTitle>Warning</AlertTitle>
                         <AlertDescription>
                           Importing will replace all existing data in the selected collections. This action cannot be undone.
+                          <br /><strong>FULL RESET</strong> will delete ALL database data and import fresh 26,745 leads.
                         </AlertDescription>
                       </Alert>
                     </>
