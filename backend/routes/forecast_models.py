@@ -470,6 +470,9 @@ class RandomForestForecaster(BaseForecaster):
         if len(X) < 6:
             return SimpleMovingAverage(self.data).predict(periods)
         
+        if not _sklearn_loaded or self.scaler is None or _RandomForestRegressor is None:
+            return SimpleMovingAverage(self.data).predict(periods)
+        
         X = np.array(X)
         y = np.array(y)
         
@@ -477,7 +480,7 @@ class RandomForestForecaster(BaseForecaster):
         X_scaled = self.scaler.fit_transform(X)
         
         # Train model
-        self.model = RandomForestRegressor(
+        self.model = _RandomForestRegressor(
             n_estimators=100,
             max_depth=6,
             min_samples_split=3,
@@ -533,7 +536,10 @@ class XGBoostForecaster(BaseForecaster):
     def __init__(self, historical_data: List[Dict]):
         super().__init__(historical_data)
         self.model = None
-        self.scaler = StandardScaler()
+        self.scaler = None
+        _load_sklearn()
+        if _sklearn_loaded and _StandardScaler:
+            self.scaler = _StandardScaler()
     
     def _create_features(self, idx: int) -> List[float]:
         """Create features for a given index"""
