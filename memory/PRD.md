@@ -271,6 +271,19 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 - Closure consistency fix
 - Save/View projections
 
+## Completed Work (Latest)
+
+### Session 11 - Dec 2025 (COMPLETED)
+**Deployment Fix - Background Migrations**
+
+1. ✅ **Fixed Deployment Timeout Issue (P0 - BLOCKER)**:
+   - **Root Cause**: Heavy migrations (`migrate_detect_duplicates` and `migrate_qualified_status`) were blocking server startup
+   - **Impact**: Kubernetes health check failed because server couldn't respond within timeout
+   - **Fix**: Moved heavy migrations to run as background tasks using `asyncio.create_task()`
+   - Server now responds to `/health` immediately on startup
+   - Heavy migrations complete in background without blocking
+   - Deployment agent verified: READY FOR DEPLOYMENT
+
 ## Upcoming Tasks
 - Funnel Analysis (P1) - Create visualization to track conversion rates at each stage (Enquiry → Quotation → Won)
 - Manual 'Qualified' Toggle (P1) - Add UI element to toggle qualified status on lead detail
