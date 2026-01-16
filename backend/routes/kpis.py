@@ -77,7 +77,9 @@ async def get_kpis(
     employee_name: Optional[str] = None,
     segment: Optional[str] = None,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    kva_min: Optional[float] = None,
+    kva_max: Optional[float] = None
 ):
     """Get KPI metrics with optional filters - uses configurable metric settings"""
     db = await get_db(request)
