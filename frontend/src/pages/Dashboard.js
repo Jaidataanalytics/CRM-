@@ -532,32 +532,93 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          {kpis?.date_range?.start_date} to {kpis?.date_range?.end_date}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            {kpis?.date_range?.start_date} to {kpis?.date_range?.end_date}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowKpiSettings(true)}
+          className="gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          KPI Settings
+        </Button>
       </div>
+
+      {/* KPI Settings Dialog */}
+      <Dialog open={showKpiSettings} onOpenChange={setShowKpiSettings}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>KPI Card Visibility</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="grid gap-3">
+              {[
+                { key: 'total_leads', label: 'Total Leads' },
+                { key: 'won_leads', label: 'Won Leads' },
+                { key: 'lost_leads', label: 'Lost Leads' },
+                { key: 'open_leads', label: 'Open Leads' },
+                { key: 'hot_leads', label: 'Hot Leads' },
+                { key: 'warm_leads', label: 'Warm Leads' },
+                { key: 'cold_leads', label: 'Cold Leads' },
+                { key: 'conversion_rate', label: 'Conversion Rate' },
+                { key: 'calls_placed', label: 'Calls Placed' },
+                { key: 'quotations_sent', label: 'Quotations Sent' },
+                { key: 'call_to_quotation_rate', label: 'Call to Quotation Rate' },
+                { key: 'not_called', label: 'Not Called' },
+                { key: 'qualified_leads', label: 'Qualified Leads' },
+                { key: 'faulty_leads', label: 'Faulty Leads' },
+                { key: 'transferred_leads', label: 'Transferred Leads' },
+                { key: 'old_enquiries_closed', label: 'Old Enquiries Closed' },
+                { key: 'pending_dispatch', label: 'Pending Dispatch' },
+                { key: 'dispatched', label: 'Dispatched' }
+              ].map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <Label htmlFor={key} className="text-sm">{label}</Label>
+                  <Switch
+                    id={key}
+                    checked={kpiVisibility[key]}
+                    onCheckedChange={() => toggleKpiVisibility(key)}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="pt-4 border-t">
+              <Button variant="outline" size="sm" onClick={resetKpiVisibility}>
+                Reset to Default
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* KPI Cards - Row 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title="Total Leads"
-          value={kpis?.total_leads || 0}
-          icon={Users}
-          color="text-primary"
-          onClick={() => handleKPIClick('all')}
-          onDoubleClick={() => handleKPINavigate('all')}
-          active={selectedKPI === 'all'}
-        />
-        <KPICard
-          title="Won Leads"
-          value={kpis?.won_leads || 0}
-          qty={kpis?.won_qty || 0}
-          icon={CheckCircle}
-          color="text-green-500"
-          onClick={() => handleKPIClick('won')}
-          onDoubleClick={() => handleKPINavigate('won')}
+        {kpiVisibility.total_leads && (
+          <KPICard
+            title="Total Leads"
+            value={kpis?.total_leads || 0}
+            icon={Users}
+            color="text-primary"
+            onClick={() => handleKPIClick('all')}
+            onDoubleClick={() => handleKPINavigate('all')}
+            active={selectedKPI === 'all'}
+          />
+        )}
+        {kpiVisibility.won_leads && (
+          <KPICard
+            title="Won Leads"
+            value={kpis?.won_leads || 0}
+            qty={kpis?.won_qty || 0}
+            icon={CheckCircle}
+            color="text-green-500"
+            onClick={() => handleKPIClick('won')}
+            onDoubleClick={() => handleKPINavigate('won')}}
           active={selectedKPI === 'won'}
         />
         <KPICard
