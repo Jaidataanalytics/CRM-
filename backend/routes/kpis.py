@@ -136,6 +136,16 @@ async def get_kpis(
         base_query["segment"] = segment
         won_base_query["segment"] = segment
     
+    # KVA range filter
+    if kva_min is not None or kva_max is not None:
+        kva_filter = {}
+        if kva_min is not None:
+            kva_filter["$gte"] = kva_min
+        if kva_max is not None:
+            kva_filter["$lte"] = kva_max
+        base_query["kva"] = kva_filter
+        won_base_query["kva"] = kva_filter
+    
     base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     won_base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
