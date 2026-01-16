@@ -618,86 +618,105 @@ const Dashboard = () => {
             icon={CheckCircle}
             color="text-green-500"
             onClick={() => handleKPIClick('won')}
-            onDoubleClick={() => handleKPINavigate('won')}}
-          active={selectedKPI === 'won'}
-        />
-        <KPICard
-          title="Lost Leads"
-          value={kpis?.lost_leads || 0}
-          icon={XCircle}
-          color="text-red-500"
-          onClick={() => handleKPIClick('lost')}
-          onDoubleClick={() => handleKPINavigate('lost')}
-          active={selectedKPI === 'lost'}
-        />
-        <KPICard
-          title="Open Leads"
-          value={kpis?.open_leads || 0}
-          icon={Target}
-          color="text-yellow-500"
-          onClick={() => handleKPIClick('open')}
-          onDoubleClick={() => handleKPINavigate('open')}
-          active={selectedKPI === 'open'}
-        />
+            onDoubleClick={() => handleKPINavigate('won')}
+            active={selectedKPI === 'won'}
+          />
+        )}
+        {kpiVisibility.lost_leads && (
+          <KPICard
+            title="Lost Leads"
+            value={kpis?.lost_leads || 0}
+            icon={XCircle}
+            color="text-red-500"
+            onClick={() => handleKPIClick('lost')}
+            onDoubleClick={() => handleKPINavigate('lost')}
+            active={selectedKPI === 'lost'}
+          />
+        )}
+        {kpiVisibility.open_leads && (
+          <KPICard
+            title="Open Leads"
+            value={kpis?.open_leads || 0}
+            icon={Target}
+            color="text-yellow-500"
+            onClick={() => handleKPIClick('open')}
+            onDoubleClick={() => handleKPINavigate('open')}
+            active={selectedKPI === 'open'}
+          />
+        )}
       </div>
 
       {/* KPI Cards - Row 2: Lead Types */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title="Hot Leads"
-          value={kpis?.hot_leads || 0}
-          icon={Flame}
-          color="text-red-500"
-          onClick={() => handleKPIClick('hot')}
-          onDoubleClick={() => handleKPINavigate('hot')}
-          active={selectedKPI === 'hot'}
-        />
-        <KPICard
-          title="Warm Leads"
-          value={kpis?.warm_leads || 0}
-          icon={ThermometerSun}
-          color="text-orange-500"
-          onClick={() => handleKPIClick('warm')}
-          onDoubleClick={() => handleKPINavigate('warm')}
-          active={selectedKPI === 'warm'}
-        />
-        <KPICard
-          title="Cold Leads"
-          value={kpis?.cold_leads || 0}
-          icon={Snowflake}
-          color="text-blue-500"
-          onClick={() => handleKPIClick('cold')}
-          onDoubleClick={() => handleKPINavigate('cold')}
-          active={selectedKPI === 'cold'}
-        />
-        <KPICard
-          title="Conversion Rate"
-          value={`${kpis?.conversion_rate || 0}%`}
-          icon={TrendingUp}
-          color="text-primary"
-        />
+        {kpiVisibility.hot_leads && (
+          <KPICard
+            title="Hot Leads"
+            value={kpis?.hot_leads || 0}
+            icon={Flame}
+            color="text-red-500"
+            onClick={() => handleKPIClick('hot')}
+            onDoubleClick={() => handleKPINavigate('hot')}
+            active={selectedKPI === 'hot'}
+          />
+        )}
+        {kpiVisibility.warm_leads && (
+          <KPICard
+            title="Warm Leads"
+            value={kpis?.warm_leads || 0}
+            icon={ThermometerSun}
+            color="text-orange-500"
+            onClick={() => handleKPIClick('warm')}
+            onDoubleClick={() => handleKPINavigate('warm')}
+            active={selectedKPI === 'warm'}
+          />
+        )}
+        {kpiVisibility.cold_leads && (
+          <KPICard
+            title="Cold Leads"
+            value={kpis?.cold_leads || 0}
+            icon={Snowflake}
+            color="text-blue-500"
+            onClick={() => handleKPIClick('cold')}
+            onDoubleClick={() => handleKPINavigate('cold')}
+            active={selectedKPI === 'cold'}
+          />
+        )}
+        {kpiVisibility.conversion_rate && (
+          <KPICard
+            title="Conversion Rate"
+            value={`${kpis?.conversion_rate || 0}%`}
+            icon={TrendingUp}
+            color="text-primary"
+          />
+        )}
       </div>
 
       {/* KPI Cards - Row 3: Call & Quotation Tracking */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title="Calls Placed"
-          value={kpis?.calls_placed || 0}
-          icon={PhoneCall}
-          color="text-cyan-500"
-        />
-        <KPICard
-          title="Quotations Sent"
-          value={kpis?.quotations_sent || 0}
-          icon={FileText}
-          color="text-emerald-500"
-        />
-        <KPICard
-          title="Call to Quotation Rate"
-          value={`${kpis?.call_to_quotation_rate || 0}%`}
-          icon={Percent}
-          color="text-indigo-500"
-        />
+        {kpiVisibility.calls_placed && (
+          <KPICard
+            title="Calls Placed"
+            value={kpis?.calls_placed || 0}
+            icon={PhoneCall}
+            color="text-cyan-500"
+          />
+        )}
+        {kpiVisibility.quotations_sent && (
+          <KPICard
+            title="Quotations Sent"
+            value={kpis?.quotations_sent || 0}
+            icon={FileText}
+            color="text-emerald-500"
+          />
+        )}
+        {kpiVisibility.call_to_quotation_rate && (
+          <KPICard
+            title="Call to Quotation Rate"
+            value={`${kpis?.call_to_quotation_rate || 0}%`}
+            icon={Percent}
+            color="text-indigo-500"
+          />
+        )}
         <KPICard
           title="Not Called"
           value={kpis?.not_called || 0}
