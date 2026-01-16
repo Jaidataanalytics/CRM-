@@ -374,6 +374,45 @@ const Dashboard = () => {
   const [selectedKPI, setSelectedKPI] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [showKpiSettings, setShowKpiSettings] = useState(false);
+  
+  // KPI visibility settings - stored in localStorage
+  const defaultKpiVisibility = {
+    total_leads: true,
+    won_leads: true,
+    lost_leads: true,
+    open_leads: true,
+    hot_leads: true,
+    warm_leads: true,
+    cold_leads: true,
+    conversion_rate: true,
+    calls_placed: true,
+    quotations_sent: true,
+    call_to_quotation_rate: true,
+    not_called: true,
+    qualified_leads: true,
+    faulty_leads: true,
+    transferred_leads: true,
+    old_enquiries_closed: true,
+    pending_dispatch: true,
+    dispatched: true
+  };
+  
+  const [kpiVisibility, setKpiVisibility] = useState(() => {
+    const saved = localStorage.getItem('kpiVisibility');
+    return saved ? JSON.parse(saved) : defaultKpiVisibility;
+  });
+  
+  const toggleKpiVisibility = (kpiKey) => {
+    const newVisibility = { ...kpiVisibility, [kpiKey]: !kpiVisibility[kpiKey] };
+    setKpiVisibility(newVisibility);
+    localStorage.setItem('kpiVisibility', JSON.stringify(newVisibility));
+  };
+  
+  const resetKpiVisibility = () => {
+    setKpiVisibility(defaultKpiVisibility);
+    localStorage.setItem('kpiVisibility', JSON.stringify(defaultKpiVisibility));
+  };
 
   useEffect(() => {
     loadData();
