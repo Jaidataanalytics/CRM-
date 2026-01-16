@@ -717,18 +717,22 @@ const Dashboard = () => {
             color="text-indigo-500"
           />
         )}
-        <KPICard
-          title="Not Called"
-          value={kpis?.not_called || 0}
-          icon={Phone}
-          color="text-gray-500"
-        />
-        <KPICard
-          title="Transferred to Dealer"
-          value={kpis?.transferred_leads || 0}
-          icon={ArrowLeftRight}
-          color="text-indigo-500"
-        />
+        {kpiVisibility.not_called && (
+          <KPICard
+            title="Not Called"
+            value={kpis?.not_called || 0}
+            icon={Phone}
+            color="text-gray-500"
+          />
+        )}
+        {kpiVisibility.transferred_leads && (
+          <KPICard
+            title="Transferred to Dealer"
+            value={kpis?.transferred_leads || 0}
+            icon={ArrowLeftRight}
+            color="text-indigo-500"
+          />
+        )}
       </div>
 
       {/* KPI Cards - Row 4: Time Metrics */}
@@ -753,27 +757,33 @@ const Dashboard = () => {
         />
         
         {/* Dispatch KPI Cards */}
-        <KPICard
-          title="Pending Dispatch"
-          value={kpis?.pending_dispatch || 0}
-          qty={kpis?.pending_dispatch_qty || 0}
-          icon={Clock}
-          color="text-amber-600"
-        />
-        <KPICard
-          title="Dispatched"
-          value={kpis?.dispatched || 0}
-          qty={kpis?.dispatched_qty || 0}
-          icon={Truck}
-          color="text-blue-600"
-        />
-        <KPICard
-          title="Old Enquiries Closed"
-          value={kpis?.old_enquiries_closed || 0}
-          qty={kpis?.old_enquiries_closed_qty || 0}
-          icon={History}
-          color="text-purple-600"
-        />
+        {kpiVisibility.pending_dispatch && (
+          <KPICard
+            title="Pending Dispatch"
+            value={kpis?.pending_dispatch || 0}
+            qty={kpis?.pending_dispatch_qty || 0}
+            icon={Clock}
+            color="text-amber-600"
+          />
+        )}
+        {kpiVisibility.dispatched && (
+          <KPICard
+            title="Dispatched"
+            value={kpis?.dispatched || 0}
+            qty={kpis?.dispatched_qty || 0}
+            icon={Truck}
+            color="text-blue-600"
+          />
+        )}
+        {kpiVisibility.old_enquiries_closed && (
+          <KPICard
+            title="Old Enquiries Closed"
+            value={kpis?.old_enquiries_closed || 0}
+            qty={kpis?.old_enquiries_closed_qty || 0}
+            icon={History}
+            color="text-purple-600"
+          />
+        )}
         
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
