@@ -1380,6 +1380,11 @@ const Insights = () => {
                             <div>
                               <span className="text-muted-foreground">Total:</span>
                               <span className="ml-1 font-medium">{cat.total_leads}</span>
+                              {kvaCompareYoy && cat.yoy_total_change !== undefined && (
+                                <span className={`ml-1 text-xs ${cat.yoy_total_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  ({cat.yoy_total_change >= 0 ? '+' : ''}{cat.yoy_total_change}%)
+                                </span>
+                              )}
                             </div>
                             <div>
                               <span className="text-muted-foreground">Open:</span>
@@ -1388,12 +1393,22 @@ const Insights = () => {
                             <div>
                               <span className="text-muted-foreground">Won:</span>
                               <span className="ml-1 font-medium text-green-600">{cat.won_leads}</span>
+                              {kvaCompareYoy && cat.yoy_won_change !== undefined && (
+                                <span className={`ml-1 text-xs ${cat.yoy_won_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  ({cat.yoy_won_change >= 0 ? '+' : ''}{cat.yoy_won_change}%)
+                                </span>
+                              )}
                             </div>
                             <div>
                               <span className="text-muted-foreground">Lost:</span>
                               <span className="ml-1 font-medium text-red-600">{cat.lost_leads}</span>
                             </div>
                           </div>
+                          {kvaCompareYoy && cat.ly_total_leads !== undefined && (
+                            <div className="mt-2 pt-2 border-t text-xs text-muted-foreground">
+                              Last Year: {cat.ly_total_leads} total, {cat.ly_won_leads} won
+                            </div>
+                          )}
                           <div className="mt-3 pt-3 border-t">
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Conversion Rate</span>
