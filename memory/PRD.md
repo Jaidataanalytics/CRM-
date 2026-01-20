@@ -47,7 +47,10 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ### 5. Analytics & Insights (Admin/Manager only)
 - **Top Performers**: By Employee, Dealer, State
 - **Conversion Analysis**: Conversion rate vs follow-ups
-- **Segment Analysis**: Performance by segment
+- **Segment Analysis**: Performance by segment with drill-down (Segment → Dealer → Location → Employee)
+- **Source Analysis (NEW - Jan 20, 2026)**: Lead performance by source channel with drill-down
+- **KVA Analysis (NEW - Jan 20, 2026)**: LKVA/MKVA/HKVA category breakdown with drill-down
+- **Drill-Down Capability (NEW)**: Click on any analysis item to drill into Dealer → Location → Employee levels
 - **Closure Analysis** (NEW - Jan 5, 2026):
   - Summary cards: Total Lost, With Closure Data, Pending, Completion Rate
   - Question-by-question breakdown with answer distribution
