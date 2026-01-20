@@ -1065,11 +1065,23 @@ const Insights = () => {
                                 <span className="truncate max-w-[200px]" title={ans.answer}>
                                   {ans.answer || 'Not Answered'}
                                 </span>
-                                <span className="text-muted-foreground">
-                                  {ans.count} ({ans.percentage}%)
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-muted-foreground">
+                                    {ans.count} ({ans.percentage}%)
+                                  </span>
+                                  {closureCompareYoy && ans.yoy_change !== undefined && (
+                                    <span className={`text-xs ${ans.yoy_change >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                      {ans.yoy_change >= 0 ? '+' : ''}{ans.yoy_change}%
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <Progress value={ans.percentage} className="h-2" />
+                              {closureCompareYoy && ans.ly_count !== undefined && (
+                                <p className="text-xs text-muted-foreground">
+                                  LY: {ans.ly_count}
+                                </p>
+                              )}
                             </div>
                           ))}
                         </div>
