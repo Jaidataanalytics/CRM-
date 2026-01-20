@@ -1111,10 +1111,20 @@ const Insights = () => {
                   </CardTitle>
                   <CardDescription>Lead performance by source channel</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={loadSourceAnalysis} disabled={sourceLoading}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${sourceLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="source-yoy"
+                      checked={sourceCompareYoy}
+                      onCheckedChange={setSourceCompareYoy}
+                    />
+                    <Label htmlFor="source-yoy" className="text-sm">Compare YoY</Label>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={loadSourceAnalysis} disabled={sourceLoading}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${sourceLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
