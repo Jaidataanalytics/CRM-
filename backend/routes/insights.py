@@ -1727,6 +1727,36 @@ async def get_kva_analysis(
     
     results = await db.leads.aggregate(pipeline).to_list(10)
     
+    # Get last year data if YoY comparison enabled
+    ly_data = {}
+    if compare_yoy and ly_start and ly_end:
+        ly_query = {**query, "enquiry_date": {"$gte": ly_start, "$lte": ly_end}}
+        ly_pipeline = [
+            {"$match": ly_query},
+            {
+                "$addFields": {
+                    "kva_category": {
+                        "$switch": {
+                            "branches": [
+                                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
+                                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"}
+                            ],
+                            "default": "HKVA (≥250)"
+                        }
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$kva_category",
+                    "total_leads": {"$sum": 1},
+                    "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}}
+                }
+            }
+        ]
+        ly_results = await db.leads.aggregate(ly_pipeline).to_list(10)
+        ly_data = {r["_id"]: r for r in ly_results}
+    
     # Define category order and colors
     category_order = ["LKVA (<82.5)", "MKVA (82.5-249)", "HKVA (≥250)"]
     category_colors = {
@@ -1741,7 +1771,8 @@ async def get_kva_analysis(
         if r:
             closed_total = r["won_leads"] + r["lost_leads"]
             conversion_rate = round((r["won_leads"] / closed_total * 100), 1) if closed_total > 0 else 0
-            categories.append({
+            
+            cat_item = {
                 "category": r["_id"],
                 "total_leads": r["total_leads"],
                 "won_leads": r["won_leads"],
@@ -1752,9 +1783,21 @@ async def get_kva_analysis(
                 "total_kva": round(r.get("total_kva", 0), 2),
                 "avg_kva": round(r.get("avg_kva", 0), 2),
                 "color": category_colors.get(cat, "#6b7280")
-            })
+            }
+            
+            # Add YoY comparison data
+            if compare_yoy:
+                ly = ly_data.get(cat, {})
+                ly_total = ly.get("total_leads", 0)
+                ly_won = ly.get("won_leads", 0)
+                cat_item["ly_total_leads"] = ly_total
+                cat_item["ly_won_leads"] = ly_won
+                cat_item["yoy_total_change"] = round(((r["total_leads"] - ly_total) / ly_total * 100), 1) if ly_total > 0 else 0
+                cat_item["yoy_won_change"] = round(((r["won_leads"] - ly_won) / ly_won * 100), 1) if ly_won > 0 else 0
+            
+            categories.append(cat_item)
         else:
-            categories.append({
+            cat_item = {
                 "category": cat,
                 "total_leads": 0,
                 "won_leads": 0,
@@ -1765,13 +1808,22 @@ async def get_kva_analysis(
                 "total_kva": 0,
                 "avg_kva": 0,
                 "color": category_colors.get(cat, "#6b7280")
-            })
+            }
+            if compare_yoy:
+                cat_item["ly_total_leads"] = 0
+                cat_item["ly_won_leads"] = 0
+                cat_item["yoy_total_change"] = 0
+                cat_item["yoy_won_change"] = 0
+            categories.append(cat_item)
     
     return {
         "categories": categories,
+        "compare_yoy": compare_yoy,
         "filters": {
             "start_date": start_date,
             "end_date": end_date,
+            "ly_start": ly_start,
+            "ly_end": ly_end,
             "state": state,
             "dealer": dealer,
             "segment": segment
