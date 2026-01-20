@@ -1526,11 +1526,24 @@ async def get_source_analysis(
 ):
     """
     Source-wise lead analysis - similar to segment analysis but grouped by lead source.
+    When compare_yoy=True, also returns last year's data for comparison.
     """
     db = await get_db(request)
     
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
+    
+    # Calculate last year dates for YoY comparison
+    from datetime import datetime as dt
+    ly_start = ly_end = None
+    if compare_yoy:
+        try:
+            start_dt = dt.strptime(start_date, "%Y-%m-%d")
+            end_dt = dt.strptime(end_date, "%Y-%m-%d")
+            ly_start = start_dt.replace(year=start_dt.year - 1).strftime("%Y-%m-%d")
+            ly_end = end_dt.replace(year=end_dt.year - 1).strftime("%Y-%m-%d")
+        except:
+            pass
     
     # Build base query
     query = {
@@ -1569,11 +1582,29 @@ async def get_source_analysis(
     
     results = await db.leads.aggregate(pipeline).to_list(50)
     
+    # Get last year data if YoY comparison enabled
+    ly_data = {}
+    if compare_yoy and ly_start and ly_end:
+        ly_query = {**query, "enquiry_date": {"$gte": ly_start, "$lte": ly_end}}
+        ly_pipeline = [
+            {"$match": ly_query},
+            {
+                "$group": {
+                    "_id": "$source",
+                    "total_leads": {"$sum": 1},
+                    "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}}
+                }
+            }
+        ]
+        ly_results = await db.leads.aggregate(ly_pipeline).to_list(50)
+        ly_data = {r["_id"]: r for r in ly_results}
+    
     sources = []
     for r in results:
         closed_total = r["won_leads"] + r["lost_leads"]
         conversion_rate = round((r["won_leads"] / closed_total * 100), 1) if closed_total > 0 else 0
-        sources.append({
+        
+        source_item = {
             "source": r["_id"] or "Unknown",
             "total_leads": r["total_leads"],
             "won_leads": r["won_leads"],
@@ -1583,13 +1614,28 @@ async def get_source_analysis(
             "conversion_rate": conversion_rate,
             "total_kva": round(r.get("total_kva", 0), 2),
             "avg_kva": round(r.get("avg_kva", 0), 2)
-        })
+        }
+        
+        # Add YoY comparison data
+        if compare_yoy:
+            ly = ly_data.get(r["_id"], {})
+            ly_total = ly.get("total_leads", 0)
+            ly_won = ly.get("won_leads", 0)
+            source_item["ly_total_leads"] = ly_total
+            source_item["ly_won_leads"] = ly_won
+            source_item["yoy_total_change"] = round(((r["total_leads"] - ly_total) / ly_total * 100), 1) if ly_total > 0 else 0
+            source_item["yoy_won_change"] = round(((r["won_leads"] - ly_won) / ly_won * 100), 1) if ly_won > 0 else 0
+        
+        sources.append(source_item)
     
     return {
         "sources": sources,
+        "compare_yoy": compare_yoy,
         "filters": {
             "start_date": start_date,
             "end_date": end_date,
+            "ly_start": ly_start,
+            "ly_end": ly_end,
             "state": state,
             "dealer": dealer,
             "segment": segment
