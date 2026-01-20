@@ -243,7 +243,7 @@ async def add_district_potential(
         'state': data.get('state', '').strip(),
         'potential': int(data.get('potential', 0)),
         'created_at': datetime.utcnow(),
-        'created_by': current_user.username
+        'created_by': getattr(current_user, 'email', None) or getattr(current_user, 'name', 'unknown')
     }
     
     if not record['dealer'] or not record['district']:
@@ -272,7 +272,7 @@ async def update_district_potential(
     update_data = {
         'potential': int(data.get('potential', 0)),
         'updated_at': datetime.utcnow(),
-        'updated_by': current_user.username
+        'updated_by': getattr(current_user, 'email', None) or getattr(current_user, 'name', 'unknown')
     }
     
     if 'state' in data:
@@ -329,7 +329,7 @@ async def add_kva_potential(
         'kva_range': data.get('kva_range', '').strip(),
         'market_size': int(data.get('market_size', 0)),
         'created_at': datetime.utcnow(),
-        'created_by': current_user.username
+        'created_by': getattr(current_user, 'email', None) or getattr(current_user, 'name', 'unknown')
     }
     
     if not record['kva_range']:
@@ -357,7 +357,7 @@ async def update_kva_potential(
     update_data = {
         'market_size': int(data.get('market_size', 0)),
         'updated_at': datetime.utcnow(),
-        'updated_by': current_user.username
+        'updated_by': getattr(current_user, 'email', None) or getattr(current_user, 'name', 'unknown')
     }
     
     result = await db.market_potential_kva.update_one(
