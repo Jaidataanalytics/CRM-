@@ -1273,10 +1273,20 @@ const Insights = () => {
                   </CardTitle>
                   <CardDescription>Lead performance by KVA range (LKVA/MKVA/HKVA)</CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={loadKvaAnalysis} disabled={kvaLoading}>
-                  <RefreshCw className={`h-4 w-4 mr-2 ${kvaLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="kva-yoy"
+                      checked={kvaCompareYoy}
+                      onCheckedChange={setKvaCompareYoy}
+                    />
+                    <Label htmlFor="kva-yoy" className="text-sm">Compare YoY</Label>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={loadKvaAnalysis} disabled={kvaLoading}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${kvaLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
