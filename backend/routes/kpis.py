@@ -253,6 +253,9 @@ async def get_kpis(
         db.leads.count_documents(no_dispatch_status_query),  # 13: no_dispatch_status
         db.leads.count_documents(qualified_query),  # 14: qualified_leads
         db.leads.count_documents(faulty_query),  # 15: faulty_leads
+        db.leads.count_documents(open_lkva_query),  # 16: open_lkva
+        db.leads.count_documents(open_mkva_query),  # 17: open_mkva
+        db.leads.count_documents(open_hkva_query),  # 18: open_hkva
     )
     
     total_leads = count_results[0]
@@ -271,6 +274,9 @@ async def get_kpis(
     no_dispatch_status = count_results[13]
     qualified_leads = count_results[14]
     faulty_leads = count_results[15]
+    open_lkva = count_results[16]
+    open_mkva = count_results[17]
+    open_hkva = count_results[18]
     
     # Closed leads count
     closed_leads = won_leads + lost_leads
