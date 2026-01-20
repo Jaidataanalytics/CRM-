@@ -158,14 +158,18 @@ async def upload_market_potential(
         
         # Insert KVA potentials
         kva_records = []
-        for _, row in kva_df.iterrows():
-            if pd.notna(row['KVA_Range']):
-                kva_records.append({
-                    'kva_range': str(row['KVA_Range']).strip(),
-                    'market_size': int(row['Market_Size']) if pd.notna(row['Market_Size']) else 0,
-                    'created_at': datetime.utcnow(),
-                    'created_by': current_user.username
-                })
+        if kva_df is not None and not kva_df.empty:
+            for _, row in kva_df.iterrows():
+                kva_range_val = row.get('KVA_Range') or row.get('kva_range') or row.get('KVA')
+                market_size_val = row.get('Market_Size') or row.get('market_size') or row.get('Size') or 0
+                
+                if pd.notna(kva_range_val):
+                    kva_records.append({
+                        'kva_range': str(kva_range_val).strip(),
+                        'market_size': int(market_size_val) if pd.notna(market_size_val) else 0,
+                        'created_at': datetime.utcnow(),
+                        'created_by': user_id
+                    })
         
         if kva_records:
             await db.market_potential_kva.insert_many(kva_records)
@@ -177,6 +181,8 @@ async def upload_market_potential(
             'kva_ranges_imported': len(kva_records)
         }
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error uploading market potential: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
