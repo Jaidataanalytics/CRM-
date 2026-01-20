@@ -279,25 +279,41 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ## Completed Work (Latest)
 
 ### Session 12 - Jan 20, 2026 (COMPLETED)
-**Data Cleanup Feature - Run Cleanup from Admin Panel**
 
-1. ✅ **Data Cleanup UI Button (P0)**:
-   - Added "Run Data Cleanup & Merge" button to Admin > Data Management > Data Migration section
-   - Purple-themed button with loading state and results display
-   - Confirmation dialog before running cleanup
-   - Results show: Total Processed, Leads Cleaned, Merge Groups, Marked Duplicate, Final Counts
+**Phase 1: Dashboard KVA Cards**
+1. ✅ Added 3 new KPI cards for Open Leads by KVA category:
+   - Open LKVA (<82.5 KVA)
+   - Open MKVA (82.5-249 KVA)
+   - Open HKVA (≥250 KVA)
+2. ✅ Backend: Added parallel queries in `/app/backend/routes/kpis.py`
+3. ✅ Frontend: Updated Dashboard.js with new cards, visibility settings
 
-2. ✅ **Backend Cleanup Endpoint**:
-   - `POST /api/data-migration/run-cleanup` - Runs comprehensive data cleanup
-   - Cleans concatenated/messy data in text fields
-   - De-duplicates remarks using intelligent merge logic
-   - Re-runs chunk-based merge on leads with same phone number
-   - Results: 26,745 leads processed, 868 cleaned, 467 merge groups, 532 marked duplicate
+**Phase 2: Insights Drill-Down Analysis**
+1. ✅ **Source Analysis Tab**: New tab showing leads by source with drill-down
+2. ✅ **KVA Analysis Tab**: New tab with LKVA/MKVA/HKVA category breakdown
+3. ✅ **Drill-Down Capability**: 4-level drill-down (Item → Dealer → Location → Employee)
+4. ✅ Backend: New endpoints in `/app/backend/routes/insights.py`:
+   - `/api/insights/source-analysis`
+   - `/api/insights/kva-analysis`
+   - `/api/insights/analysis-drilldown`
+5. ✅ Frontend: Updated Insights.js with new tabs and drill-down UI
 
-3. ✅ **Handler & State Management**:
-   - `runDataCleanup()` function with 5-minute timeout for large datasets
-   - `runningCleanup` and `cleanupResult` state variables
-   - Toast notifications for success/error feedback
+**Phase 3: Comparison Page Overhaul**
+1. ✅ **New Backend Route**: `/app/backend/routes/market_potential.py`
+   - Template download endpoint
+   - Excel upload/import endpoint
+   - CRUD operations for districts and KVA ranges
+   - Market share comparison calculations
+2. ✅ **New Collections**: `market_potential_districts`, `market_potential_kva`
+3. ✅ **Frontend Complete Rewrite**: `/app/frontend/src/pages/Comparison.js`
+   - Download Template button
+   - Upload Data button
+   - Compare by dropdown (District/Dealer/State/KVA Range)
+   - Overall Summary with Market Share % and YoY Change
+   - Bar chart visualization
+   - Detailed comparison table
+   - Manage Data tab with CRUD for districts and KVA ranges
+   - Add/Edit/Delete entries manually
 
 ### Session 11 - Dec 2025 (COMPLETED)
 **Performance Fix - Dashboard Loading Optimized**
