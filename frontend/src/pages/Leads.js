@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useFilters } from '@/context/FilterContext';
 import { useAuth } from '@/context/AuthContext';
