@@ -1294,3 +1294,425 @@ async def get_summary_builder(
         },
         "insights": insights
     }
+
+
+
+@router.get("/analysis-drilldown")
+async def get_analysis_drilldown(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    analysis_type: str = Query("segment", enum=["segment", "source", "kva", "closure"]),
+    level: int = Query(1, ge=1, le=4),
+    value: Optional[str] = None,
+    parent_dealer: Optional[str] = None,
+    parent_location: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    segment: Optional[str] = None
+):
+    """
+    Drill-down analysis endpoint for multi-level exploration.
+    
+    Level 1: Main analysis (segment/source/kva/closure breakdown)
+    Level 2: Drill into a value → shows dealers
+    Level 3: Drill into a dealer → shows locations (districts)
+    Level 4: Drill into a location → shows employees
+    
+    For closure analysis, Level 1 shows competitors/lost reasons
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build base query
+    base_query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False}
+        ]
+    }
+    
+    # Apply global filters
+    if state:
+        base_query["state"] = state
+    if dealer:
+        base_query["dealer"] = dealer
+    if segment:
+        base_query["segment"] = segment
+    
+    # KVA category helper function
+    def get_kva_category(kva_value):
+        if kva_value is None:
+            return "Unknown"
+        if kva_value < 82.5:
+            return "LKVA (<82.5)"
+        elif kva_value < 250:
+            return "MKVA (82.5-249)"
+        else:
+            return "HKVA (≥250)"
+    
+    # Build KVA category filter
+    def get_kva_filter(category):
+        if category == "LKVA (<82.5)":
+            return {"kva": {"$lt": 82.5}}
+        elif category == "MKVA (82.5-249)":
+            return {"kva": {"$gte": 82.5, "$lt": 250}}
+        elif category == "HKVA (≥250)":
+            return {"kva": {"$gte": 250}}
+        return {}
+    
+    # Apply analysis-specific filters
+    if analysis_type == "segment" and value and level >= 2:
+        base_query["segment"] = value
+    elif analysis_type == "source" and value and level >= 2:
+        base_query["source"] = value
+    elif analysis_type == "kva" and value and level >= 2:
+        base_query.update(get_kva_filter(value))
+    elif analysis_type == "closure":
+        base_query["enquiry_stage"] = {"$in": ["Closed-Lost", "Closed-Dropped"]}
+        if value and level >= 2:
+            base_query["competitor"] = value
+    
+    # Apply parent filters for deeper drill-downs
+    if parent_dealer and level >= 3:
+        base_query["dealer"] = parent_dealer
+    if parent_location and level >= 4:
+        base_query["location"] = parent_location
+    
+    # Determine grouping field based on level
+    if level == 1:
+        if analysis_type == "segment":
+            group_field = "$segment"
+        elif analysis_type == "source":
+            group_field = "$source"
+        elif analysis_type == "kva":
+            # Special handling for KVA categories
+            pass  # Will use aggregation with conditional
+        elif analysis_type == "closure":
+            group_field = "$competitor"
+    elif level == 2:
+        group_field = "$dealer"
+    elif level == 3:
+        group_field = "$location"
+    elif level == 4:
+        group_field = "$employee_name"
+    
+    # Build pipeline
+    if analysis_type == "kva" and level == 1:
+        # Special pipeline for KVA categories
+        pipeline = [
+            {"$match": base_query},
+            {
+                "$addFields": {
+                    "kva_category": {
+                        "$switch": {
+                            "branches": [
+                                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
+                                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"},
+                            ],
+                            "default": "HKVA (≥250)"
+                        }
+                    }
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$kva_category",
+                    "total": {"$sum": 1},
+                    "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
+                    "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}},
+                    "open": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+                    "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                    "avg_kva": {"$avg": {"$ifNull": ["$kva", 0]}}
+                }
+            },
+            {"$sort": {"total": -1}}
+        ]
+    else:
+        pipeline = [
+            {"$match": base_query},
+            {
+                "$group": {
+                    "_id": group_field,
+                    "total": {"$sum": 1},
+                    "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
+                    "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}},
+                    "open": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+                    "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                    "avg_kva": {"$avg": {"$ifNull": ["$kva", 0]}}
+                }
+            },
+            {"$match": {"_id": {"$ne": None, "$ne": ""}}},
+            {"$sort": {"total": -1}},
+            {"$limit": 50}
+        ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(50)
+    
+    # Calculate total for percentage
+    total_count = sum(r["total"] for r in results)
+    
+    # Format results
+    data = []
+    for r in results:
+        item = {
+            "name": r["_id"] or "Unknown",
+            "total": r["total"],
+            "won": r["won"],
+            "lost": r["lost"],
+            "open": r["open"],
+            "percentage": round((r["total"] / total_count * 100), 1) if total_count > 0 else 0,
+            "conversion_rate": round((r["won"] / (r["won"] + r["lost"]) * 100), 1) if (r["won"] + r["lost"]) > 0 else 0,
+            "total_kva": round(r.get("total_kva", 0), 2),
+            "avg_kva": round(r.get("avg_kva", 0), 2)
+        }
+        data.append(item)
+    
+    # Get level label
+    level_labels = {
+        1: {
+            "segment": "Segment",
+            "source": "Source", 
+            "kva": "KVA Category",
+            "closure": "Competitor"
+        },
+        2: "Dealer",
+        3: "Location",
+        4: "Employee"
+    }
+    
+    current_level_label = level_labels.get(level, level_labels[1].get(analysis_type)) if level == 1 else level_labels.get(level, "")
+    
+    # Next level info
+    next_level = level + 1 if level < 4 else None
+    next_level_label = level_labels.get(next_level) if next_level else None
+    
+    return {
+        "analysis_type": analysis_type,
+        "level": level,
+        "level_label": current_level_label,
+        "next_level": next_level,
+        "next_level_label": next_level_label,
+        "value": value,
+        "parent_dealer": parent_dealer,
+        "parent_location": parent_location,
+        "total_count": total_count,
+        "data": data,
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "state": state,
+            "dealer": dealer,
+            "segment": segment
+        }
+    }
+
+
+@router.get("/source-analysis")
+async def get_source_analysis(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    segment: Optional[str] = None
+):
+    """
+    Source-wise lead analysis - similar to segment analysis but grouped by lead source.
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build base query
+    query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False}
+        ]
+    }
+    
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if segment:
+        query["segment"] = segment
+    
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": "$source",
+                "total_leads": {"$sum": 1},
+                "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
+                "lost_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}},
+                "open_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+                "hot_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_type", "Hot"]}, 1, 0]}},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "avg_kva": {"$avg": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$match": {"_id": {"$ne": None, "$ne": ""}}},
+        {"$sort": {"total_leads": -1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(50)
+    
+    sources = []
+    for r in results:
+        closed_total = r["won_leads"] + r["lost_leads"]
+        conversion_rate = round((r["won_leads"] / closed_total * 100), 1) if closed_total > 0 else 0
+        sources.append({
+            "source": r["_id"] or "Unknown",
+            "total_leads": r["total_leads"],
+            "won_leads": r["won_leads"],
+            "lost_leads": r["lost_leads"],
+            "open_leads": r["open_leads"],
+            "hot_leads": r["hot_leads"],
+            "conversion_rate": conversion_rate,
+            "total_kva": round(r.get("total_kva", 0), 2),
+            "avg_kva": round(r.get("avg_kva", 0), 2)
+        })
+    
+    return {
+        "sources": sources,
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "state": state,
+            "dealer": dealer,
+            "segment": segment
+        }
+    }
+
+
+@router.get("/kva-analysis")
+async def get_kva_analysis(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    segment: Optional[str] = None
+):
+    """
+    KVA category analysis - breaks down leads by LKVA, MKVA, HKVA categories.
+    LKVA: < 82.5 KVA
+    MKVA: 82.5 - 249 KVA
+    HKVA: >= 250 KVA
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build base query
+    query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False}
+        ]
+    }
+    
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if segment:
+        query["segment"] = segment
+    
+    pipeline = [
+        {"$match": query},
+        {
+            "$addFields": {
+                "kva_category": {
+                    "$switch": {
+                        "branches": [
+                            {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
+                            {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"}
+                        ],
+                        "default": "HKVA (≥250)"
+                    }
+                }
+            }
+        },
+        {
+            "$group": {
+                "_id": "$kva_category",
+                "total_leads": {"$sum": 1},
+                "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
+                "lost_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}},
+                "open_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+                "hot_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_type", "Hot"]}, 1, 0]}},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "avg_kva": {"$avg": {"$ifNull": ["$kva", 0]}}
+            }
+        },
+        {"$sort": {"_id": 1}}  # Sort by category name
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(10)
+    
+    # Define category order and colors
+    category_order = ["LKVA (<82.5)", "MKVA (82.5-249)", "HKVA (≥250)"]
+    category_colors = {
+        "LKVA (<82.5)": "#64748b",   # Slate
+        "MKVA (82.5-249)": "#f59e0b", # Amber
+        "HKVA (≥250)": "#9333ea"      # Purple
+    }
+    
+    categories = []
+    for cat in category_order:
+        r = next((x for x in results if x["_id"] == cat), None)
+        if r:
+            closed_total = r["won_leads"] + r["lost_leads"]
+            conversion_rate = round((r["won_leads"] / closed_total * 100), 1) if closed_total > 0 else 0
+            categories.append({
+                "category": r["_id"],
+                "total_leads": r["total_leads"],
+                "won_leads": r["won_leads"],
+                "lost_leads": r["lost_leads"],
+                "open_leads": r["open_leads"],
+                "hot_leads": r["hot_leads"],
+                "conversion_rate": conversion_rate,
+                "total_kva": round(r.get("total_kva", 0), 2),
+                "avg_kva": round(r.get("avg_kva", 0), 2),
+                "color": category_colors.get(cat, "#6b7280")
+            })
+        else:
+            categories.append({
+                "category": cat,
+                "total_leads": 0,
+                "won_leads": 0,
+                "lost_leads": 0,
+                "open_leads": 0,
+                "hot_leads": 0,
+                "conversion_rate": 0,
+                "total_kva": 0,
+                "avg_kva": 0,
+                "color": category_colors.get(cat, "#6b7280")
+            })
+    
+    return {
+        "categories": categories,
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "state": state,
+            "dealer": dealer,
+            "segment": segment
+        }
+    }
