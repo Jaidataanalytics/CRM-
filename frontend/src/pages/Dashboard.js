@@ -488,6 +488,20 @@ const Dashboard = () => {
       params.append('lead_type', 'Cold');
       params.append('status', 'Open');
     }
+    // KVA Category filters
+    else if (filter === 'open_lkva') {
+      params.append('status', 'Open');
+      params.append('kva_max', '82.49');
+    }
+    else if (filter === 'open_mkva') {
+      params.append('status', 'Open');
+      params.append('kva_min', '82.5');
+      params.append('kva_max', '249.99');
+    }
+    else if (filter === 'open_hkva') {
+      params.append('status', 'Open');
+      params.append('kva_min', '250');
+    }
     
     window.location.href = url + params.toString();
   };
