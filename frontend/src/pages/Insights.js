@@ -954,6 +954,16 @@ const Insights = () => {
 
         {/* Closure Analysis Tab */}
         <TabsContent value="closure" className="space-y-6">
+          {/* YoY Toggle */}
+          <div className="flex items-center justify-end gap-2">
+            <Switch
+              id="closure-yoy"
+              checked={closureCompareYoy}
+              onCheckedChange={setClosureCompareYoy}
+            />
+            <Label htmlFor="closure-yoy" className="text-sm">Compare YoY</Label>
+          </div>
+          
           {closureLoading ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -973,6 +983,14 @@ const Insights = () => {
                         <p className="text-2xl font-bold text-red-600">
                           {closureAnalysis.summary.total_lost_leads.toLocaleString()}
                         </p>
+                        {closureCompareYoy && closureAnalysis.summary.ly_total_lost !== null && (
+                          <p className="text-xs text-muted-foreground">
+                            LY: {closureAnalysis.summary.ly_total_lost?.toLocaleString()} 
+                            <span className={`ml-1 ${closureAnalysis.summary.yoy_change >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              ({closureAnalysis.summary.yoy_change >= 0 ? '+' : ''}{closureAnalysis.summary.yoy_change}%)
+                            </span>
+                          </p>
+                        )}
                       </div>
                       <XCircle className="h-8 w-8 text-red-500" />
                     </div>
