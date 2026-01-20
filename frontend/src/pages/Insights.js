@@ -164,6 +164,92 @@ const Insights = () => {
     }
   };
 
+  const loadSourceAnalysis = async () => {
+    setSourceLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/source-analysis?${queryParams}`, { withCredentials: true });
+      setSourceData(res.data.sources || []);
+    } catch (error) {
+      console.error('Error loading source analysis:', error);
+    } finally {
+      setSourceLoading(false);
+    }
+  };
+
+  const loadKvaAnalysis = async () => {
+    setKvaLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/kva-analysis?${queryParams}`, { withCredentials: true });
+      setKvaData(res.data.categories || []);
+    } catch (error) {
+      console.error('Error loading KVA analysis:', error);
+    } finally {
+      setKvaLoading(false);
+    }
+  };
+
+  const loadDrilldown = async (analysisType, level, value, parentDealer, parentLocation) => {
+    setDrilldownLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      let url = `${API}/insights/analysis-drilldown?analysis_type=${analysisType}&level=${level}&${queryParams}`;
+      if (value) url += `&value=${encodeURIComponent(value)}`;
+      if (parentDealer) url += `&parent_dealer=${encodeURIComponent(parentDealer)}`;
+      if (parentLocation) url += `&parent_location=${encodeURIComponent(parentLocation)}`;
+      
+      const res = await axios.get(url, { withCredentials: true });
+      setDrilldownData(res.data);
+    } catch (error) {
+      console.error('Error loading drilldown:', error);
+    } finally {
+      setDrilldownLoading(false);
+    }
+  };
+
+  const handleDrilldown = (analysisType, item, currentLevel = 1) => {
+    const newPath = [...drilldownPath];
+    
+    if (currentLevel === 1) {
+      // Starting fresh drilldown
+      newPath.length = 0;
+      newPath.push({ level: 1, label: item.name || item.segment || item.source || item.category, value: item.name || item.segment || item.source || item.category });
+      loadDrilldown(analysisType, 2, item.name || item.segment || item.source || item.category, null, null);
+    } else if (currentLevel === 2) {
+      // Drilldown from dealer to location
+      newPath.push({ level: 2, label: item.name, value: item.name, type: 'dealer' });
+      loadDrilldown(analysisType, 3, drilldownPath[0]?.value, item.name, null);
+    } else if (currentLevel === 3) {
+      // Drilldown from location to employee
+      newPath.push({ level: 3, label: item.name, value: item.name, type: 'location' });
+      const parentDealer = drilldownPath.find(p => p.type === 'dealer')?.value;
+      loadDrilldown(analysisType, 4, drilldownPath[0]?.value, parentDealer, item.name);
+    }
+    
+    setDrilldownPath(newPath);
+  };
+
+  const resetDrilldown = () => {
+    setDrilldownData(null);
+    setDrilldownPath([]);
+  };
+
+  const goBackDrilldown = (toLevel) => {
+    const newPath = drilldownPath.slice(0, toLevel);
+    setDrilldownPath(newPath);
+    
+    if (toLevel === 0) {
+      setDrilldownData(null);
+    } else {
+      const analysisType = drilldownData?.analysis_type;
+      const value = newPath[0]?.value;
+      const parentDealer = newPath.find(p => p.type === 'dealer')?.value;
+      const parentLocation = newPath.find(p => p.type === 'location')?.value;
+      loadDrilldown(analysisType, toLevel + 1, value, parentDealer, parentLocation);
+    }
+  };
+
   // Load summary builder when params change
   useEffect(() => {
     loadSummaryBuilder();
