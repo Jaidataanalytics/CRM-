@@ -655,6 +655,46 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* KPI Cards - Row 1.5: Open Leads by KVA Category */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpiVisibility.open_lkva && (
+          <KPICard
+            title="Open LKVA"
+            value={kpis?.open_lkva || 0}
+            icon={ZapOff}
+            color="text-slate-500"
+            onClick={() => handleKPIClick('open_lkva')}
+            onDoubleClick={() => handleKPINavigate('open_lkva')}
+            active={selectedKPI === 'open_lkva'}
+            unit="<82.5 KVA"
+          />
+        )}
+        {kpiVisibility.open_mkva && (
+          <KPICard
+            title="Open MKVA"
+            value={kpis?.open_mkva || 0}
+            icon={Gauge}
+            color="text-amber-500"
+            onClick={() => handleKPIClick('open_mkva')}
+            onDoubleClick={() => handleKPINavigate('open_mkva')}
+            active={selectedKPI === 'open_mkva'}
+            unit="82.5-249 KVA"
+          />
+        )}
+        {kpiVisibility.open_hkva && (
+          <KPICard
+            title="Open HKVA"
+            value={kpis?.open_hkva || 0}
+            icon={Zap}
+            color="text-purple-600"
+            onClick={() => handleKPIClick('open_hkva')}
+            onDoubleClick={() => handleKPINavigate('open_hkva')}
+            active={selectedKPI === 'open_hkva'}
+            unit="≥250 KVA"
+          />
+        )}
+      </div>
+
       {/* KPI Cards - Row 2: Lead Types */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiVisibility.hot_leads && (
