@@ -636,11 +636,13 @@ const Insights = () => {
                     <TableRow>
                       <TableHead>Segment</TableHead>
                       <TableHead className="text-right">Total</TableHead>
+                      {segmentCompareYoy && <TableHead className="text-right">LY Total</TableHead>}
+                      {segmentCompareYoy && <TableHead className="text-right">YoY %</TableHead>}
                       <TableHead className="text-right">Won</TableHead>
+                      {segmentCompareYoy && <TableHead className="text-right">LY Won</TableHead>}
+                      {segmentCompareYoy && <TableHead className="text-right">Won YoY</TableHead>}
                       <TableHead className="text-right">Lost</TableHead>
-                      <TableHead className="text-right">Hot</TableHead>
                       <TableHead className="text-right">Conv. Rate</TableHead>
-                      <TableHead className="text-right">Avg KVA</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -655,16 +657,30 @@ const Insights = () => {
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </TableCell>
                         <TableCell className="text-right">{s.total_leads}</TableCell>
+                        {segmentCompareYoy && <TableCell className="text-right text-muted-foreground">{s.ly_total_leads || 0}</TableCell>}
+                        {segmentCompareYoy && (
+                          <TableCell className="text-right">
+                            <span className={s.yoy_total_change >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {s.yoy_total_change >= 0 ? '+' : ''}{s.yoy_total_change || 0}%
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-right text-green-600">{s.won_leads}</TableCell>
+                        {segmentCompareYoy && <TableCell className="text-right text-muted-foreground">{s.ly_won_leads || 0}</TableCell>}
+                        {segmentCompareYoy && (
+                          <TableCell className="text-right">
+                            <span className={s.yoy_won_change >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {s.yoy_won_change >= 0 ? '+' : ''}{s.yoy_won_change || 0}%
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-right text-red-600">{s.lost_leads}</TableCell>
-                        <TableCell className="text-right text-orange-600">{s.hot_leads}</TableCell>
                         <TableCell className="text-right">{s.conversion_rate}%</TableCell>
-                        <TableCell className="text-right">{s.avg_kva}</TableCell>
                       </TableRow>
                     ))}
                     {segmentData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={segmentCompareYoy ? 10 : 6} className="text-center text-muted-foreground py-8">
                           No segment data available
                         </TableCell>
                       </TableRow>
