@@ -114,6 +114,8 @@ const Admin = () => {
   const [migrationStatus, setMigrationStatus] = useState(null);
   const [loadingMigration, setLoadingMigration] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [runningCleanup, setRunningCleanup] = useState(false);
+  const [cleanupResult, setCleanupResult] = useState(null);
   
   // Entity Profile Config state
   const [entityProfileConfig, setEntityProfileConfig] = useState(null);
