@@ -291,6 +291,30 @@ const Admin = () => {
     }
   };
 
+  const runDataCleanup = async () => {
+    if (!window.confirm('This will run the comprehensive data cleanup and merge logic on the current database. This will:\n\n1. Clean concatenated/messy data in all fields\n2. De-duplicate remarks and other text fields\n3. Re-run intelligent merge logic on leads with same phone numbers\n\nAre you sure you want to proceed?')) {
+      return;
+    }
+    
+    setRunningCleanup(true);
+    setCleanupResult(null);
+    try {
+      const res = await axios.post(`${API}/data-migration/run-cleanup`, {}, { 
+        withCredentials: true,
+        timeout: 300000 // 5 minute timeout for large datasets
+      });
+      toast.success(res.data.message || 'Data cleanup completed successfully');
+      setCleanupResult(res.data.results);
+      loadDataStats();
+      loadMigrationStatus();
+    } catch (error) {
+      console.error('Error running data cleanup:', error);
+      toast.error('Failed to run cleanup: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setRunningCleanup(false);
+    }
+  };
+
   const loadDataStats = async () => {
     try {
       const res = await axios.get(`${API}/admin/data-stats`, { withCredentials: true });
