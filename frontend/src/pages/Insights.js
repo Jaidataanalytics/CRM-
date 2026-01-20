@@ -60,7 +60,9 @@ const Insights = () => {
   const [performers, setPerformers] = useState([]);
   const [conversionData, setConversionData] = useState([]);
   const [segmentData, setSegmentData] = useState([]);
+  const [segmentCompareYoy, setSegmentCompareYoy] = useState(false);
   const [closureAnalysis, setClosureAnalysis] = useState(null);
+  const [closureCompareYoy, setClosureCompareYoy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [closureLoading, setClosureLoading] = useState(false);
   
