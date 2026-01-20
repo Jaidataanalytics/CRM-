@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Trophy, Users, Building, MapPin, XCircle, AlertTriangle, CheckCircle2, HelpCircle, RefreshCw, LayoutGrid, TrendingUp, TrendingDown, Lightbulb, Download, History, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import { Trophy, Users, Building, MapPin, XCircle, AlertTriangle, CheckCircle2, HelpCircle, RefreshCw, LayoutGrid, TrendingUp, TrendingDown, Lightbulb, Download, History, ArrowUpRight, ArrowDownRight, Minus, Globe, Zap, ChevronRight, ArrowLeft } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
