@@ -1010,6 +1010,289 @@ const Insights = () => {
           )}
         </TabsContent>
 
+        {/* Source Analysis Tab */}
+        <TabsContent value="source" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-blue-500" />
+                    Source Performance
+                  </CardTitle>
+                  <CardDescription>Lead performance by source channel</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadSourceAnalysis} disabled={sourceLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${sourceLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {sourceLoading ? (
+                <div className="space-y-3">
+                  {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12" />)}
+                </div>
+              ) : drilldownData && drilldownData.analysis_type === 'source' ? (
+                // Drilldown view
+                <div className="space-y-4">
+                  {/* Breadcrumb */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <Button variant="ghost" size="sm" onClick={resetDrilldown} className="h-7 px-2">
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Back to Sources
+                    </Button>
+                    {drilldownPath.map((item, idx) => (
+                      <span key={idx} className="flex items-center gap-1">
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2"
+                          onClick={() => goBackDrilldown(idx)}
+                        >
+                          {item.label}
+                        </Button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Showing {drilldownData.level_label}s for <strong>{drilldownPath[0]?.label}</strong>
+                    {drilldownData.next_level_label && ` • Click to drill into ${drilldownData.next_level_label}s`}
+                  </p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{drilldownData.level_label}</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">Won</TableHead>
+                        <TableHead className="text-right">Lost</TableHead>
+                        <TableHead className="text-right">Open</TableHead>
+                        <TableHead className="text-right">Conv. Rate</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drilldownData.data.map((item, idx) => (
+                        <TableRow 
+                          key={idx} 
+                          className={drilldownData.next_level ? 'cursor-pointer hover:bg-muted/50' : ''}
+                          onClick={() => drilldownData.next_level && handleDrilldown('source', item, drilldownData.level)}
+                        >
+                          <TableCell className="font-medium flex items-center gap-2">
+                            {item.name}
+                            {drilldownData.next_level && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </TableCell>
+                          <TableCell className="text-right">{item.total}</TableCell>
+                          <TableCell className="text-right text-green-600">{item.won}</TableCell>
+                          <TableCell className="text-right text-red-600">{item.lost}</TableCell>
+                          <TableCell className="text-right text-yellow-600">{item.open}</TableCell>
+                          <TableCell className="text-right">{item.conversion_rate}%</TableCell>
+                        </TableRow>
+                      ))}
+                      {drilldownData.data.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No data available at this level
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                // Main source view
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Source</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Won</TableHead>
+                      <TableHead className="text-right">Lost</TableHead>
+                      <TableHead className="text-right">Open</TableHead>
+                      <TableHead className="text-right">Hot</TableHead>
+                      <TableHead className="text-right">Conv. Rate</TableHead>
+                      <TableHead className="text-right">Avg KVA</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sourceData.map((s, idx) => (
+                      <TableRow 
+                        key={idx} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleDrilldown('source', { name: s.source }, 1)}
+                      >
+                        <TableCell className="font-medium flex items-center gap-2">
+                          {s.source}
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </TableCell>
+                        <TableCell className="text-right">{s.total_leads}</TableCell>
+                        <TableCell className="text-right text-green-600">{s.won_leads}</TableCell>
+                        <TableCell className="text-right text-red-600">{s.lost_leads}</TableCell>
+                        <TableCell className="text-right text-yellow-600">{s.open_leads}</TableCell>
+                        <TableCell className="text-right text-orange-600">{s.hot_leads}</TableCell>
+                        <TableCell className="text-right">{s.conversion_rate}%</TableCell>
+                        <TableCell className="text-right">{s.avg_kva}</TableCell>
+                      </TableRow>
+                    ))}
+                    {sourceData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          No source data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* KVA Analysis Tab */}
+        <TabsContent value="kva" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-purple-500" />
+                    KVA Category Analysis
+                  </CardTitle>
+                  <CardDescription>Lead performance by KVA range (LKVA/MKVA/HKVA)</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadKvaAnalysis} disabled={kvaLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${kvaLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {kvaLoading ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => <Skeleton key={i} className="h-24" />)}
+                </div>
+              ) : drilldownData && drilldownData.analysis_type === 'kva' ? (
+                // Drilldown view
+                <div className="space-y-4">
+                  {/* Breadcrumb */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <Button variant="ghost" size="sm" onClick={resetDrilldown} className="h-7 px-2">
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Back to Categories
+                    </Button>
+                    {drilldownPath.map((item, idx) => (
+                      <span key={idx} className="flex items-center gap-1">
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2"
+                          onClick={() => goBackDrilldown(idx)}
+                        >
+                          {item.label}
+                        </Button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Showing {drilldownData.level_label}s for <strong>{drilldownPath[0]?.label}</strong>
+                    {drilldownData.next_level_label && ` • Click to drill into ${drilldownData.next_level_label}s`}
+                  </p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{drilldownData.level_label}</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">Won</TableHead>
+                        <TableHead className="text-right">Lost</TableHead>
+                        <TableHead className="text-right">Open</TableHead>
+                        <TableHead className="text-right">Conv. Rate</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drilldownData.data.map((item, idx) => (
+                        <TableRow 
+                          key={idx} 
+                          className={drilldownData.next_level ? 'cursor-pointer hover:bg-muted/50' : ''}
+                          onClick={() => drilldownData.next_level && handleDrilldown('kva', item, drilldownData.level)}
+                        >
+                          <TableCell className="font-medium flex items-center gap-2">
+                            {item.name}
+                            {drilldownData.next_level && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </TableCell>
+                          <TableCell className="text-right">{item.total}</TableCell>
+                          <TableCell className="text-right text-green-600">{item.won}</TableCell>
+                          <TableCell className="text-right text-red-600">{item.lost}</TableCell>
+                          <TableCell className="text-right text-yellow-600">{item.open}</TableCell>
+                          <TableCell className="text-right">{item.conversion_rate}%</TableCell>
+                        </TableRow>
+                      ))}
+                      {drilldownData.data.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No data available at this level
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                // Main KVA category cards
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {kvaData.map((cat, idx) => (
+                      <Card 
+                        key={idx} 
+                        className="cursor-pointer hover:shadow-md transition-shadow border-l-4"
+                        style={{ borderLeftColor: cat.color }}
+                        onClick={() => handleDrilldown('kva', { name: cat.category }, 1)}
+                      >
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-semibold text-lg">{cat.category}</span>
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Total:</span>
+                              <span className="ml-1 font-medium">{cat.total_leads}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Open:</span>
+                              <span className="ml-1 font-medium text-yellow-600">{cat.open_leads}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Won:</span>
+                              <span className="ml-1 font-medium text-green-600">{cat.won_leads}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Lost:</span>
+                              <span className="ml-1 font-medium text-red-600">{cat.lost_leads}</span>
+                            </div>
+                          </div>
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Conversion Rate</span>
+                              <span className="font-semibold">{cat.conversion_rate}%</span>
+                            </div>
+                            <Progress value={cat.conversion_rate} className="mt-1 h-2" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                  {kvaData.length === 0 && (
+                    <div className="text-center text-muted-foreground py-8">
+                      No KVA data available
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Summary Builder Tab */}
         <TabsContent value="summary" className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
