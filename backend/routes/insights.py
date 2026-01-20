@@ -202,16 +202,32 @@ async def get_closure_analysis(
     request: Request,
     current_user: User = Depends(get_current_user),
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    compare_yoy: bool = False
 ):
     """
     Get analysis of closure data for lost leads.
     Closure questions are: Competitor, Lost Reason, Lost Remarks
+    Supports YoY comparison when compare_yoy=True
     """
     db = await get_db(request)
     
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
+    
+    # Calculate last year dates for YoY comparison
+    from datetime import datetime as dt
+    ly_start = ly_end = None
+    if compare_yoy:
+        try:
+            start_dt = dt.strptime(start_date, "%Y-%m-%d")
+            end_dt = dt.strptime(end_date, "%Y-%m-%d")
+            ly_start = start_dt.replace(year=start_dt.year - 1).strftime("%Y-%m-%d")
+            ly_end = end_dt.replace(year=end_dt.year - 1).strftime("%Y-%m-%d")
+        except:
+            pass
     
     # Lost stages query
     lost_stages_query = {
@@ -229,6 +245,11 @@ async def get_closure_analysis(
         "enquiry_date": {"$gte": start_date, "$lte": end_date},
         "deleted_at": {"$exists": False}
     }
+    
+    if state:
+        base_query["state"] = state
+    if dealer:
+        base_query["dealer"] = dealer
     
     # Total lost leads
     total_lost_leads = await db.leads.count_documents(base_query)
@@ -260,6 +281,22 @@ async def get_closure_analysis(
         ]
     })
     
+    # Get LY summary if YoY enabled
+    ly_summary = {}
+    if compare_yoy and ly_start and ly_end:
+        ly_base_query = {
+            **lost_stages_query,
+            "enquiry_date": {"$gte": ly_start, "$lte": ly_end},
+            "deleted_at": {"$exists": False}
+        }
+        if state:
+            ly_base_query["state"] = state
+        if dealer:
+            ly_base_query["dealer"] = dealer
+        
+        ly_total = await db.leads.count_documents(ly_base_query)
+        ly_summary = {"ly_total_lost": ly_total}
+    
     # ============ COMPETITOR ANALYSIS (Question 1) ============
     competitor_pipeline = [
         {"$match": {
@@ -276,19 +313,44 @@ async def get_closure_analysis(
     competitor_results = await db.leads.aggregate(competitor_pipeline).to_list(15)
     competitor_total = sum(r["count"] for r in competitor_results)
     
+    # Get LY competitor data if YoY enabled
+    ly_competitor_data = {}
+    if compare_yoy and ly_start and ly_end:
+        ly_comp_pipeline = [
+            {"$match": {
+                **lost_stages_query,
+                "enquiry_date": {"$gte": ly_start, "$lte": ly_end},
+                "deleted_at": {"$exists": False},
+                "competitor": {"$exists": True, "$ne": None, "$ne": ""}
+            }},
+            {"$group": {"_id": "$competitor", "count": {"$sum": 1}}}
+        ]
+        if state:
+            ly_comp_pipeline[0]["$match"]["state"] = state
+        if dealer:
+            ly_comp_pipeline[0]["$match"]["dealer"] = dealer
+        ly_comp_results = await db.leads.aggregate(ly_comp_pipeline).to_list(50)
+        ly_competitor_data = {r["_id"]: r["count"] for r in ly_comp_results}
+    
     competitor_analysis = {
         "question": "Which competitor won?",
         "question_id": "competitor",
         "total_responses": competitor_total,
-        "top_answers": [
-            {
+        "top_answers": []
+    }
+    
+    for r in competitor_results:
+        if r["_id"]:
+            answer_item = {
                 "answer": r["_id"],
                 "count": r["count"],
                 "percentage": round((r["count"] / competitor_total) * 100, 1) if competitor_total > 0 else 0
             }
-            for r in competitor_results if r["_id"]
-        ]
-    }
+            if compare_yoy:
+                ly_count = ly_competitor_data.get(r["_id"], 0)
+                answer_item["ly_count"] = ly_count
+                answer_item["yoy_change"] = round(((r["count"] - ly_count) / ly_count * 100), 1) if ly_count > 0 else 0
+            competitor_analysis["top_answers"].append(answer_item)
     
     # ============ LOST REASON ANALYSIS (Question 2) ============
     lost_reason_pipeline = [
@@ -306,19 +368,44 @@ async def get_closure_analysis(
     lost_reason_results = await db.leads.aggregate(lost_reason_pipeline).to_list(15)
     lost_reason_total = sum(r["count"] for r in lost_reason_results)
     
+    # Get LY lost reason data if YoY enabled
+    ly_reason_data = {}
+    if compare_yoy and ly_start and ly_end:
+        ly_reason_pipeline = [
+            {"$match": {
+                **lost_stages_query,
+                "enquiry_date": {"$gte": ly_start, "$lte": ly_end},
+                "deleted_at": {"$exists": False},
+                "lost_reason": {"$exists": True, "$ne": None, "$ne": ""}
+            }},
+            {"$group": {"_id": "$lost_reason", "count": {"$sum": 1}}}
+        ]
+        if state:
+            ly_reason_pipeline[0]["$match"]["state"] = state
+        if dealer:
+            ly_reason_pipeline[0]["$match"]["dealer"] = dealer
+        ly_reason_results = await db.leads.aggregate(ly_reason_pipeline).to_list(50)
+        ly_reason_data = {r["_id"]: r["count"] for r in ly_reason_results}
+    
     lost_reason_analysis = {
         "question": "Why was the lead lost?",
         "question_id": "lost_reason",
         "total_responses": lost_reason_total,
-        "top_answers": [
-            {
+        "top_answers": []
+    }
+    
+    for r in lost_reason_results:
+        if r["_id"]:
+            answer_item = {
                 "answer": r["_id"],
                 "count": r["count"],
                 "percentage": round((r["count"] / lost_reason_total) * 100, 1) if lost_reason_total > 0 else 0
             }
-            for r in lost_reason_results if r["_id"]
-        ]
-    }
+            if compare_yoy:
+                ly_count = ly_reason_data.get(r["_id"], 0)
+                answer_item["ly_count"] = ly_count
+                answer_item["yoy_change"] = round(((r["count"] - ly_count) / ly_count * 100), 1) if ly_count > 0 else 0
+            lost_reason_analysis["top_answers"].append(answer_item)
     
     # ============ LOST REMARKS ANALYSIS (Question 3) ============
     # For remarks, just count how many have remarks
