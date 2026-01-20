@@ -2924,6 +2924,70 @@ const Admin = () => {
                           <br /><strong>Sync from Preview</strong> is recommended for deployed environments as it fetches fresh data directly.
                         </AlertDescription>
                       </Alert>
+
+                      {/* Data Cleanup Section */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4 text-purple-600" />
+                          Run Data Cleanup & Merge
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Clean messy/concatenated data and re-run intelligent merge logic. This cleans remarks, 
+                          de-duplicates text fields, and merges leads by phone number using the new logic.
+                        </p>
+                        <Button 
+                          onClick={runDataCleanup} 
+                          disabled={runningCleanup || importing}
+                          className="bg-purple-600 hover:bg-purple-700"
+                          data-testid="run-cleanup-btn"
+                        >
+                          {runningCleanup ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Running Cleanup...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Run Data Cleanup
+                            </>
+                          )}
+                        </Button>
+                        
+                        {cleanupResult && (
+                          <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <h5 className="font-medium text-purple-700 mb-2">Cleanup Results</h5>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Total Processed</p>
+                                <p className="font-semibold">{cleanupResult.total_leads_processed?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Leads Cleaned</p>
+                                <p className="font-semibold text-blue-600">{cleanupResult.leads_cleaned?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Merge Groups</p>
+                                <p className="font-semibold text-green-600">{cleanupResult.merge_groups_processed?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Marked Duplicate</p>
+                                <p className="font-semibold text-orange-600">{cleanupResult.leads_marked_duplicate?.toLocaleString()}</p>
+                              </div>
+                            </div>
+                            <div className="mt-3 pt-3 border-t border-purple-200 grid grid-cols-2 gap-3 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Final Total</p>
+                                <p className="font-semibold">{cleanupResult.final_total?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Non-Duplicates</p>
+                                <p className="font-semibold text-green-600">{cleanupResult.final_non_duplicates?.toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </>
                   ) : (
                     <>
@@ -2948,6 +3012,59 @@ const Admin = () => {
                           {importing ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                           Sync from Preview Environment
                         </Button>
+                      </div>
+
+                      {/* Data Cleanup Section - Also available when no local export */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-2 flex items-center gap-2">
+                          <RefreshCw className="h-4 w-4 text-purple-600" />
+                          Run Data Cleanup & Merge
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Clean messy/concatenated data and re-run intelligent merge logic on the current database.
+                        </p>
+                        <Button 
+                          onClick={runDataCleanup} 
+                          disabled={runningCleanup || importing}
+                          className="bg-purple-600 hover:bg-purple-700"
+                          data-testid="run-cleanup-btn-alt"
+                        >
+                          {runningCleanup ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Running Cleanup...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Run Data Cleanup
+                            </>
+                          )}
+                        </Button>
+                        
+                        {cleanupResult && (
+                          <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <h5 className="font-medium text-purple-700 mb-2">Cleanup Results</h5>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">Total Processed</p>
+                                <p className="font-semibold">{cleanupResult.total_leads_processed?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Leads Cleaned</p>
+                                <p className="font-semibold text-blue-600">{cleanupResult.leads_cleaned?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Merge Groups</p>
+                                <p className="font-semibold text-green-600">{cleanupResult.merge_groups_processed?.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Marked Duplicate</p>
+                                <p className="font-semibold text-orange-600">{cleanupResult.leads_marked_duplicate?.toLocaleString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
