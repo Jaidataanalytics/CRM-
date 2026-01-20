@@ -172,7 +172,7 @@ const Insights = () => {
     setSourceLoading(true);
     try {
       const queryParams = buildQueryParams();
-      const res = await axios.get(`${API}/insights/source-analysis?${queryParams}`, { withCredentials: true });
+      const res = await axios.get(`${API}/insights/source-analysis?${queryParams}&compare_yoy=${sourceCompareYoy}`, { withCredentials: true });
       setSourceData(res.data.sources || []);
     } catch (error) {
       console.error('Error loading source analysis:', error);
@@ -185,7 +185,7 @@ const Insights = () => {
     setKvaLoading(true);
     try {
       const queryParams = buildQueryParams();
-      const res = await axios.get(`${API}/insights/kva-analysis?${queryParams}`, { withCredentials: true });
+      const res = await axios.get(`${API}/insights/kva-analysis?${queryParams}&compare_yoy=${kvaCompareYoy}`, { withCredentials: true });
       setKvaData(res.data.categories || []);
     } catch (error) {
       console.error('Error loading KVA analysis:', error);
