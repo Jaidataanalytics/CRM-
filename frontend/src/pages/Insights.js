@@ -548,8 +548,18 @@ const Insights = () => {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Segment Performance</CardTitle>
-                <p className="text-sm text-muted-foreground">Click on any segment to drill down into dealers</p>
+                <div>
+                  <CardTitle>Segment Performance</CardTitle>
+                  <p className="text-sm text-muted-foreground">Click on any segment to drill down into dealers</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="segment-yoy"
+                    checked={segmentCompareYoy}
+                    onCheckedChange={setSegmentCompareYoy}
+                  />
+                  <Label htmlFor="segment-yoy" className="text-sm">Compare YoY</Label>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
