@@ -273,6 +273,27 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 
 ## Completed Work (Latest)
 
+### Session 12 - Jan 20, 2026 (COMPLETED)
+**Data Cleanup Feature - Run Cleanup from Admin Panel**
+
+1. ✅ **Data Cleanup UI Button (P0)**:
+   - Added "Run Data Cleanup & Merge" button to Admin > Data Management > Data Migration section
+   - Purple-themed button with loading state and results display
+   - Confirmation dialog before running cleanup
+   - Results show: Total Processed, Leads Cleaned, Merge Groups, Marked Duplicate, Final Counts
+
+2. ✅ **Backend Cleanup Endpoint**:
+   - `POST /api/data-migration/run-cleanup` - Runs comprehensive data cleanup
+   - Cleans concatenated/messy data in text fields
+   - De-duplicates remarks using intelligent merge logic
+   - Re-runs chunk-based merge on leads with same phone number
+   - Results: 26,745 leads processed, 868 cleaned, 467 merge groups, 532 marked duplicate
+
+3. ✅ **Handler & State Management**:
+   - `runDataCleanup()` function with 5-minute timeout for large datasets
+   - `runningCleanup` and `cleanupResult` state variables
+   - Toast notifications for success/error feedback
+
 ### Session 11 - Dec 2025 (COMPLETED)
 **Performance Fix - Dashboard Loading Optimized**
 
