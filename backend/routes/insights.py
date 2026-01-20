@@ -456,12 +456,19 @@ async def get_closure_analysis(
     ]
     by_dealer = await db.leads.aggregate(dealer_pipeline).to_list(15)
     
+    # Build YoY summary
+    yoy_change = 0
+    if compare_yoy and ly_summary.get("ly_total_lost", 0) > 0:
+        yoy_change = round(((total_lost_leads - ly_summary["ly_total_lost"]) / ly_summary["ly_total_lost"] * 100), 1)
+    
     return {
         "summary": {
             "total_lost_leads": total_lost_leads,
             "leads_with_closure_data": leads_with_closure_data,
             "pending_closure": pending_closure,
-            "completion_rate": round((leads_with_closure_data / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0
+            "completion_rate": round((leads_with_closure_data / total_lost_leads) * 100, 1) if total_lost_leads > 0 else 0,
+            "ly_total_lost": ly_summary.get("ly_total_lost") if compare_yoy else None,
+            "yoy_change": yoy_change if compare_yoy else None
         },
         "question_analysis": question_analysis,
         "by_state": [
@@ -472,7 +479,13 @@ async def get_closure_analysis(
             {"dealer": d["_id"] or "Unknown", "count": d["count"]}
             for d in by_dealer if d["_id"]
         ],
-        "date_range": {"start_date": start_date, "end_date": end_date}
+        "compare_yoy": compare_yoy,
+        "date_range": {
+            "start_date": start_date, 
+            "end_date": end_date,
+            "ly_start": ly_start,
+            "ly_end": ly_end
+        }
     }
 
 
