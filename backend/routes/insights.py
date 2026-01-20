@@ -1651,18 +1651,32 @@ async def get_kva_analysis(
     end_date: Optional[str] = None,
     state: Optional[str] = None,
     dealer: Optional[str] = None,
-    segment: Optional[str] = None
+    segment: Optional[str] = None,
+    compare_yoy: bool = False
 ):
     """
     KVA category analysis - breaks down leads by LKVA, MKVA, HKVA categories.
     LKVA: < 82.5 KVA
     MKVA: 82.5 - 249 KVA
     HKVA: >= 250 KVA
+    When compare_yoy=True, also returns last year's data for comparison.
     """
     db = await get_db(request)
     
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
+    
+    # Calculate last year dates for YoY comparison
+    from datetime import datetime as dt
+    ly_start = ly_end = None
+    if compare_yoy:
+        try:
+            start_dt = dt.strptime(start_date, "%Y-%m-%d")
+            end_dt = dt.strptime(end_date, "%Y-%m-%d")
+            ly_start = start_dt.replace(year=start_dt.year - 1).strftime("%Y-%m-%d")
+            ly_end = end_dt.replace(year=end_dt.year - 1).strftime("%Y-%m-%d")
+        except:
+            pass
     
     # Build base query
     query = {
