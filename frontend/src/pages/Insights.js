@@ -107,6 +107,14 @@ const Insights = () => {
     loadCompetitorAnalysis();
   }, [competitorDimension]);
 
+  useEffect(() => {
+    loadSourceAnalysis();
+  }, [sourceCompareYoy]);
+
+  useEffect(() => {
+    loadKvaAnalysis();
+  }, [kvaCompareYoy]);
+
   const loadData = async () => {
     setLoading(true);
     try {
