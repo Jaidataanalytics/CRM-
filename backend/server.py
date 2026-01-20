@@ -76,6 +76,7 @@ api_router.include_router(entity_profile_router)
 api_router.include_router(trash_router)
 api_router.include_router(dispatch_router)
 api_router.include_router(data_migration_router)
+api_router.include_router(market_potential_router)
 
 # Health check endpoint
 @api_router.get("/")
