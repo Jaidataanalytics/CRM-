@@ -68,7 +68,9 @@ async def upload_market_potential(
 ):
     """
     Upload market potential data from Excel file.
-    Expects two sheets: 'District Potentials' and 'KVA Range Potentials'
+    Accepts sheets named either:
+    - 'District Potentials' / 'KVA Range Potentials' (template format)
+    - 'Dealer' / 'KVA_Range' (user format)
     """
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
@@ -79,38 +81,76 @@ async def upload_market_potential(
         contents = await file.read()
         excel_file = io.BytesIO(contents)
         
-        # Read both sheets
-        district_df = pd.read_excel(excel_file, sheet_name='District Potentials')
-        excel_file.seek(0)
-        kva_df = pd.read_excel(excel_file, sheet_name='KVA Range Potentials')
+        # Get sheet names to handle different naming conventions
+        xl = pd.ExcelFile(excel_file)
+        sheet_names = xl.sheet_names
         
-        # Validate district sheet columns
-        required_district_cols = ['Dealer', 'District', 'State', 'FY26_Potential']
+        # Find district sheet (try different names)
+        district_sheet = None
+        for name in ['District Potentials', 'Dealer', 'Districts', 'district', 'dealers']:
+            if name in sheet_names:
+                district_sheet = name
+                break
+        
+        # Find KVA sheet (try different names)
+        kva_sheet = None
+        for name in ['KVA Range Potentials', 'KVA_Range', 'KVA', 'kva', 'KVA Range']:
+            if name in sheet_names:
+                kva_sheet = name
+                break
+        
+        if not district_sheet:
+            raise HTTPException(status_code=400, detail=f"Could not find district sheet. Found sheets: {sheet_names}")
+        
+        # Read sheets
+        excel_file.seek(0)
+        district_df = pd.read_excel(excel_file, sheet_name=district_sheet)
+        
+        kva_df = None
+        if kva_sheet:
+            excel_file.seek(0)
+            kva_df = pd.read_excel(excel_file, sheet_name=kva_sheet)
+        
+        # Validate and normalize district columns
+        # Accept both FY26_Potential and Potential
+        if 'FY26_Potential' not in district_df.columns and 'Potential' not in district_df.columns:
+            # Check if there's any column with 'potential' in it
+            potential_col = None
+            for col in district_df.columns:
+                if 'potential' in col.lower() or 'fy' in col.lower():
+                    potential_col = col
+                    break
+            if potential_col:
+                district_df['FY26_Potential'] = district_df[potential_col]
+            else:
+                district_df['FY26_Potential'] = 0
+        elif 'Potential' in district_df.columns:
+            district_df['FY26_Potential'] = district_df['Potential']
+        
+        required_district_cols = ['Dealer', 'District']
         missing_cols = [col for col in required_district_cols if col not in district_df.columns]
         if missing_cols:
-            raise HTTPException(status_code=400, detail=f"Missing columns in District Potentials: {missing_cols}")
-        
-        # Validate KVA sheet columns
-        required_kva_cols = ['KVA_Range', 'Market_Size']
-        missing_kva_cols = [col for col in required_kva_cols if col not in kva_df.columns]
-        if missing_kva_cols:
-            raise HTTPException(status_code=400, detail=f"Missing columns in KVA Range Potentials: {missing_kva_cols}")
+            raise HTTPException(status_code=400, detail=f"Missing required columns: {missing_cols}. Found columns: {list(district_df.columns)}")
         
         # Clear existing data
         await db.market_potential_districts.delete_many({})
         await db.market_potential_kva.delete_many({})
         
+        # Get user identifier
+        user_id = getattr(current_user, 'email', None) or getattr(current_user, 'name', None) or 'unknown'
+        
         # Insert district potentials
         district_records = []
         for _, row in district_df.iterrows():
             if pd.notna(row['Dealer']) and pd.notna(row['District']):
+                potential_value = row.get('FY26_Potential', 0)
                 district_records.append({
                     'dealer': str(row['Dealer']).strip(),
                     'district': str(row['District']).strip(),
-                    'state': str(row['State']).strip() if pd.notna(row['State']) else '',
-                    'potential': int(row['FY26_Potential']) if pd.notna(row['FY26_Potential']) else 0,
+                    'state': str(row['State']).strip() if 'State' in row and pd.notna(row['State']) else '',
+                    'potential': int(potential_value) if pd.notna(potential_value) else 0,
                     'created_at': datetime.utcnow(),
-                    'created_by': current_user.username
+                    'created_by': user_id
                 })
         
         if district_records:
