@@ -80,10 +80,12 @@ const Insights = () => {
   // Source Analysis state
   const [sourceData, setSourceData] = useState([]);
   const [sourceLoading, setSourceLoading] = useState(false);
+  const [sourceCompareYoy, setSourceCompareYoy] = useState(false);
   
   // KVA Analysis state
   const [kvaData, setKvaData] = useState([]);
   const [kvaLoading, setKvaLoading] = useState(false);
+  const [kvaCompareYoy, setKvaCompareYoy] = useState(false);
   
   // Drill-down state
   const [drilldownData, setDrilldownData] = useState(null);
