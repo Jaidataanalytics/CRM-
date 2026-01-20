@@ -643,6 +643,10 @@ async def get_kpis(
         "needs_dispatch_migration": no_dispatch_status,
         "old_enquiries_closed": old_enquiries_closed_count,
         "old_enquiries_closed_qty": old_enquiries_closed_qty,
+        # KVA Category breakdown for open leads
+        "open_lkva": open_lkva,  # < 82.5 KVA
+        "open_mkva": open_mkva,  # 82.5 - 249 KVA
+        "open_hkva": open_hkva,  # >= 250 KVA
         "segment_distribution": [
             {"segment": s["_id"] or "Unknown", "count": s["count"]}
             for s in segment_distribution
