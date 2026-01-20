@@ -155,6 +155,9 @@ const Leads = () => {
   const [followupRemark, setFollowupRemark] = useState('');
   const [nextFollowupDate, setNextFollowupDate] = useState('');
   
+  // URL search params for edit mode
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   // Closure questions state
   const [isClosureQuestionsOpen, setIsClosureQuestionsOpen] = useState(false);
   const [closureQuestionsLead, setClosureQuestionsLead] = useState(null);
@@ -165,6 +168,50 @@ const Leads = () => {
   // Lost leads upload summary modal state
   const [isUploadSummaryOpen, setIsUploadSummaryOpen] = useState(false);
   const [uploadSummaryData, setUploadSummaryData] = useState(null);
+
+  // Handle edit parameter from URL (e.g., /leads?edit=lead_123)
+  useEffect(() => {
+    const editLeadId = searchParams.get('edit');
+    if (editLeadId) {
+      // Fetch the lead and open edit dialog
+      const fetchAndEditLead = async () => {
+        try {
+          const res = await axios.get(`${API}/leads/${editLeadId}`, { withCredentials: true });
+          if (res.data) {
+            setEditingLead(res.data);
+            setFormData({
+              name: res.data.name || '',
+              phone_number: res.data.phone_number || '',
+              email_address: res.data.email_address || '',
+              address: res.data.address || '',
+              state: res.data.state || '',
+              district: res.data.district || '',
+              tehsil: res.data.tehsil || '',
+              pincode: res.data.pincode || '',
+              dealer: res.data.dealer || '',
+              segment: res.data.segment || '',
+              kva: res.data.kva || '',
+              qty: res.data.qty || '',
+              enquiry_type: res.data.enquiry_type || '',
+              enquiry_stage: res.data.enquiry_stage || '',
+              remarks: res.data.remarks || '',
+              employee_name: res.data.employee_name || '',
+              assigned_to: res.data.assigned_to || '',
+              call_status: res.data.call_status || '',
+            });
+            setIsFormOpen(true);
+            // Clear the edit param from URL
+            searchParams.delete('edit');
+            setSearchParams(searchParams);
+          }
+        } catch (error) {
+          console.error('Error fetching lead for edit:', error);
+          toast.error('Failed to load lead for editing');
+        }
+      };
+      fetchAndEditLead();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadLeads();
