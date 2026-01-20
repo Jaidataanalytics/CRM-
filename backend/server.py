@@ -57,6 +57,7 @@ from routes.entity_profile import router as entity_profile_router
 from routes.trash import router as trash_router
 from routes.dispatch import router as dispatch_router
 from routes.data_migration import router as data_migration_router
+from routes.market_potential import router as market_potential_router
 
 # Include all routers
 api_router.include_router(auth_router)
