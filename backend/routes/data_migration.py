@@ -253,6 +253,146 @@ def merge_leads_intelligently(leads: List[Dict]) -> Dict:
     return clean_single_lead(merged)
 
 
+@router.post("/run-cleanup")
+async def run_data_cleanup(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Run comprehensive data cleanup and merge on the current database.
+    This cleans all leads and re-runs the intelligent merge logic.
+    """
+    if current_user.role.lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    db = await get_db(request)
+    
+    logger.info("Starting comprehensive data cleanup and merge...")
+    
+    # Step 1: Get all leads
+    all_leads = await db.leads.find({}, {'_id': 0}).to_list(None)
+    total_leads = len(all_leads)
+    logger.info(f"Found {total_leads} total leads to process")
+    
+    # Step 2: Clean all existing leads
+    cleaned_count = 0
+    for lead in all_leads:
+        cleaned = clean_single_lead(lead)
+        if cleaned != lead:
+            await db.leads.update_one(
+                {'lead_id': lead['lead_id']},
+                {'$set': cleaned}
+            )
+            cleaned_count += 1
+    
+    logger.info(f"Cleaned {cleaned_count} leads")
+    
+    # Step 3: Group leads by phone number
+    phone_groups = {}
+    for lead in all_leads:
+        phone = clean_phone_number(lead.get('phone_number'))
+        if phone and len(phone) >= 10:
+            if phone not in phone_groups:
+                phone_groups[phone] = []
+            phone_groups[phone].append(lead)
+    
+    multi_lead_phones = {p: leads for p, leads in phone_groups.items() if len(leads) > 1}
+    logger.info(f"Found {len(multi_lead_phones)} phone numbers with multiple leads")
+    
+    # Step 4: Process each phone group with chunk-based merge
+    total_merged = 0
+    total_marked_duplicate = 0
+    
+    for phone, leads in multi_lead_phones.items():
+        sorted_leads = sorted(leads, key=lambda x: x.get('enquiry_date') or '')
+        
+        chunks = []
+        current_chunk = []
+        
+        for lead in sorted_leads:
+            current_chunk.append(lead)
+            stage = lead.get('enquiry_stage', '')
+            is_closed = stage in CLOSED_STAGES or stage.lower().startswith('closed')
+            
+            if is_closed:
+                chunks.append(current_chunk)
+                current_chunk = []
+        
+        if current_chunk:
+            chunks.append(current_chunk)
+        
+        for chunk in chunks:
+            if len(chunk) <= 1:
+                continue
+            
+            last_lead = chunk[-1]
+            last_stage = last_lead.get('enquiry_stage', '')
+            has_closed_target = last_stage in CLOSED_STAGES or last_stage.lower().startswith('closed')
+            
+            if has_closed_target:
+                merged = merge_leads_intelligently(chunk)
+                
+                await db.leads.update_one(
+                    {'lead_id': last_lead['lead_id']},
+                    {'$set': merged}
+                )
+                
+                for lead in chunk[:-1]:
+                    await db.leads.update_one(
+                        {'lead_id': lead['lead_id']},
+                        {'$set': {
+                            'is_duplicate': True,
+                            'duplicate_of': last_lead['lead_id'],
+                            'merged_into': last_lead['lead_id']
+                        }}
+                    )
+                    total_marked_duplicate += 1
+                
+                total_merged += 1
+    
+    logger.info(f"Merge complete: {total_merged} groups merged, {total_marked_duplicate} leads marked as duplicates")
+    
+    # Step 5: Final verification
+    final_total = await db.leads.count_documents({})
+    final_duplicates = await db.leads.count_documents({'is_duplicate': True})
+    final_non_duplicates = final_total - final_duplicates
+    
+    # Record migration
+    await db.migration_status.update_one(
+        {"migration": "data_cleanup"},
+        {
+            "$set": {
+                "migration": "data_cleanup",
+                "last_run": datetime.now(timezone.utc).isoformat(),
+                "results": {
+                    "total_leads": total_leads,
+                    "cleaned": cleaned_count,
+                    "merged_groups": total_merged,
+                    "marked_duplicate": total_marked_duplicate,
+                    "final_total": final_total,
+                    "final_duplicates": final_duplicates,
+                    "final_non_duplicates": final_non_duplicates
+                }
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "status": "success",
+        "message": f"Cleanup complete. Cleaned {cleaned_count} leads, merged {total_merged} groups.",
+        "results": {
+            "total_leads_processed": total_leads,
+            "leads_cleaned": cleaned_count,
+            "merge_groups_processed": total_merged,
+            "leads_marked_duplicate": total_marked_duplicate,
+            "final_total": final_total,
+            "final_duplicates": final_duplicates,
+            "final_non_duplicates": final_non_duplicates
+        }
+    }
+
+
 @router.get("/status")
 async def get_migration_status(
     request: Request,
