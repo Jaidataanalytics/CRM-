@@ -200,18 +200,19 @@ const Leads = () => {
               call_status: res.data.call_status || '',
             });
             setIsFormOpen(true);
-            // Clear the edit param from URL
-            searchParams.delete('edit');
-            setSearchParams(searchParams);
+            // Clear the edit param from URL without triggering re-render
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.delete('edit');
+            window.history.replaceState(null, '', `${window.location.pathname}?${newSearchParams.toString()}`);
           }
         } catch (error) {
           console.error('Error fetching lead for edit:', error);
-          toast.error('Failed to load lead for editing');
+          toast.error('Failed to load lead for editing: ' + (error.response?.data?.detail || error.message));
         }
       };
       fetchAndEditLead();
     }
-  }, [searchParams]);
+  }, [searchParams.get('edit')]); // Only re-run when edit param changes
 
   useEffect(() => {
     loadLeads();
