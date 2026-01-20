@@ -1,124 +1,176 @@
 <analysis>**original_problem_statement:**
-The user's primary goal is to perform a complete data overhaul of their lead management system and introduce new business logic and features. The key requirements are:
-1.  **Data Replacement**: Clear the entire database and re-upload ~4 years of data from three newly provided Excel files (, , ).
-2.  **Source of Truth for Won Leads**: The  file must be the single source of truth for all Won leads. The dashboard KPIs for  and  must align perfectly with this file.
-3.  **Data Discrepancy Reporting**:
-    *   Implement a new tab in the Data Management section called Won Without SO to list all leads that are marked as  or  in the  but do not have a corresponding entry in the .
-4.  **New Duplicate Detection Logic**:
-    *   Implement a new chunk-based merging logic: For each phone number, group all its associated leads, sort them by date, and merge all open leads into the next  lead in the sequence.
-    *   The  (e.g., enquiry number, date, stage) should be stored in the primary lead.
-    *   Answer the user's question about why the old logic didn't merge all duplicates.
-5.  **New Feature: Order Time Punch**: Add a new tab in Data Management to report on leads that were closed (won) within 2 days of their creation date, with summaries for same-day, 1-day, and 2-day closures.
-6.  **UI and Filter Enhancements**:
-    *   Remove the Qty metric from the Total Leads KPI card on the main dashboard.
-    *   Ensure all tabs within the Data Management page respect the global date filters applied on the dashboard.
-7.  **Deployment Failure**: The user has provided logs for a failed deployment and needs the agent to analyze the logs, identify the root cause, and fix the application code to ensure a successful deployment.
+The user initiated a new set of major feature requests and bug reports after the previous work was completed.
+
+**PRODUCT REQUIREMENTS:**
+
+1.  **Drill-Down Analytics (Insights Page)**:
+    *   Implement multi-level drill-down functionality for all analysis types (Segment, Closure, Source, KVA).
+    *   The drill-down hierarchy should follow: .
+    *   Add two new analysis tabs to the Insights page: Source Analysis and KVA Analysis.
+
+2.  **Dashboard Enhancements**:
+    *   Add new KPI cards to the main dashboard to show a count of open leads categorized by KVA ranges (HKVA, MKVA, LKVA).
+        *   HKVA: 250 and above
+        *   MKVA: 82.5 to 249
+        *   LKVA: up to 82.5
+
+3.  **Comparison Page Overhaul**:
+    *   Completely redesign the Comparison page to analyze sales performance against market potential.
+    *   Create a system for users to upload market potential data via a pre-defined Excel template.
+    *   The page should allow comparison of sales vs. potential by , , , and .
+    *   Implement functionality to download the Excel template, upload data, and manually add/edit entries.
+    *   The page must use the Indian Financial Year (April 1 - March 31) for all date-based calculations and comparisons.
+
+4.  **Year-over-Year (YoY) Comparison**:
+    *   Add a Compare YoY toggle to all relevant analysis tabs in the Insights page (Segment, Closure, Source, KVA).
+    *   When enabled, the view should show data for the current period alongside the previous year's data and calculate the percentage change.
+
+5.  **Bug Reports**:
+    *   An edit lead from global search bug was reported as still present.
+    *   A 500 error occurred when uploading the market potential data file.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The agent has successfully re-uploaded all the new data and implemented the requested features. The  is now the source of truth for won leads, and the dashboard KPIs reflect this. The Data Management page has been significantly enhanced with new tabs for Order Time Punch and Won Without SO to track quick wins and data discrepancies, respectively. The new, complex chunk-based duplicate detection logic has been implemented and run as a migration. However, the application is currently in a **non-deployable state**. A long-running data migration on application startup is causing the backend health check to fail during deployment.
+The agent has successfully implemented all the user's requested features in a phased approach. The application is stable and features are working as verified by the agent.
+
+1.  **Data Cleanup UI**: A button was added to the Admin page to allow the user to trigger the data cleanup script on the production database.
+2.  **Dashboard KVA Cards**: The dashboard now displays three new KPI cards breaking down open leads by their KVA rating (LKVA, MKVA, HKVA).
+3.  **Insights Page Overhaul**: The Insights page now features new Source Analysis and KVA Analysis tabs. A multi-level drill-down capability has been added to all analysis tabs (Segment, Source, KVA, Closure), allowing users to explore data from high-level categories down to individual employees.
+4.  **Comparison Page Rebuilt**: The Comparison page has been completely redesigned to support market potential analysis. It includes functionality to download a template, upload data, and view performance against potential across various dimensions.
+5.  **YoY Comparisons**: A Compare YoY toggle has been successfully added to the Segment, Closure, Source, and KVA analysis tabs, showing percentage changes from the previous year.
+6.  **Bug Fixes**: The 500 error on file upload has been resolved. The agent also re-investigated the edit from global search bug and confirmed it is working correctly.
 
 **Last working item**:
-*   **Last item agent was working**: Diagnosing a critical deployment failure. The user provided deployment logs indicating that the backend is failing its health check due to a  error from MongoDB during a data migration that runs at startup.
-*   **Status**: BLOCKED
-*   **Agent Testing Done**: Y (for features), N (for deployment fix)
-*   **Which testing method agent to use?**: backend testing agent. The primary task is to fix the code causing the deployment failure. This involves analyzing  and  to move the long-running migration out of the synchronous startup path. After the fix, the agent should confirm the application runs locally and then use the  to verify a successful deployment.
-*   **User Testing Done**: N
+- **Last item agent was working**: The agent just finished adding Year-over-Year (YoY) comparison toggles to the **Segment Analysis** and **Closure Analysis** tabs on the Insights page. This completed the user's request to have YoY functionality across all relevant analysis sections. The agent also verified that the Comparison page correctly uses the Indian Financial Year for its date ranges.
+- **Status**: USER VERIFICATION PENDING
+- **Agent Testing Done**: Y
+- **Which testing method agent to use?**: Manual Testing. Ask the user to verify the new YoY toggles on the Segment Analysis and Closure Analysis tabs.
+- **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: Deployment Failure: Backend Health Check Timeout (P0 - BLOCKER)**
-    *   **Description**: The application fails to deploy because a long-running duplicate detection migration is triggered on application startup. This process takes too long, preventing the FastAPI server from becoming ready. As a result, the Kubernetes health check probe fails after multiple attempts, and the deployment is rolled back. The error log explicitly shows a  error during this migration.
-    *   **Attempted fixes**: None. The agent was paused immediately after being given the logs.
-    *   **Next debug checklist**:
-        1.  **Analyze Startup Script**: Examine  to identify where the  migration is being called during the startup event.
-        2.  **Optimize or Relocate the Migration**: The migration processing 30,000+ leads is too heavy for a startup task. The fix is to move it out of the blocking startup path.
-            *   **Recommended Fix**: Modify  to run the migration as a FastAPI . This will allow the server to start immediately and respond to health checks while the migration runs in the background.
-            *   **Alternative**: Create a new, dedicated API endpoint that must be called manually to trigger the migration post-deployment.
-        3.  **Verify Fix**: After applying the code change, confirm the backend starts up quickly without errors. Then, trigger a new deployment.
-    *   **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker. Fixing it will make the application deployable and functional in the production environment.
-    *   **Status**: IN PROGRESS
-    *   **Is recurring issue?**: N
-    *   **Should Test frontend/backend/both after fix?**: Backend. The success of the fix is measured by a successful deployment.
-    *   **Blocked on other issue**: No, this is the highest priority blocker.
+*   None. All issues reported in this session have been resolved. The next step is user verification of the last completed items.
 
 **In progress Task List**:
-*   None. All development work is blocked by the deployment failure.
+*   None.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
-    *   **Funnel Analysis (P1)**: Create a new visualization to track conversion rates at each stage (Enquiry → Quotation → Won).
-    *   **Manual 'Qualified' Toggle (P1)**: Add a UI element on the lead detail view to allow users to manually set a lead's  status.
-    *   **Lead Velocity & ROI Analysis (P2)**: Suggest and potentially implement new analytics for how fast leads move through stages.
+    *   **(P1) Funnel Analysis**: Create a new visualization to track conversion rates at each stage (Enquiry → Quotation → Won).
+    *   **(P1) Manual 'Qualified' Toggle**: Add a UI element on the lead detail view to allow users to manually set a lead's  status.
 *   **Future Tasks**:
+    *   **(P2) Refactor Large Components**:  (~2000+ lines) and  (~3000+ lines) have become very large and complex. They should be broken down into smaller, more maintainable components.
+    *   **(P2) Lead Velocity & ROI Analysis**: Implement new analytics for how fast leads move through stages.
     *   Dashboard customization.
     *   Export to Excel functionality for all pages.
     *   Verify Per-Dimension Forecast Accuracy.
     *   Detailed Audit Logs.
 
 **Completed work in this session**
-- **Full Data Re-upload**: Successfully wiped the database and populated it with ~4 years of data from the user's new Excel files.
-- **New Duplicate Detection Logic**: Implemented and executed a chunk-based duplicate merging algorithm as requested by the user.
-- **KPI and Data Integrity Fix**: Made the  the single source of truth for Won leads, correcting the dashboard KPIs to match the raw sales data.
-- **New Feature - Order Time Punch**: Built a new report in the Data Management section to identify leads closed within two days of creation.
-- **New Feature - Won Without SO**: Created a discrepancy report to show leads marked as Won in the enquiry system but missing from the official sales records.
-- **UI/UX Improvements**:
-    - Removed the Qty count from the Total Leads dashboard card.
-    - Added global date filter functionality to the Data Management page.
+- **Data Cleanup UI Implemented**: Added a button to  to trigger the production data cleanup script.
+- **Bug Investigation (Edit from Global Search)**: Re-investigated the user-reported bug and confirmed through detailed testing that the feature is working as expected.
+- **Dashboard KVA Breakdown**: Added new KPI cards for LKVA, MKVA, and HKVA to  and updated the  endpoint.
+- **Insights Page Drill-Down & New Analyses**:
+    - Implemented multi-level drill-down in  powered by a new generic endpoint in .
+    - Added Source Analysis and KVA Analysis tabs with new backend endpoints and UI components.
+- **Comparison Page Overhaul**:
+    - Completely rewrote  for market potential analysis.
+    - Created a new backend module  to handle data upload, management, and calculations.
+- **File Upload Bug Fix**: Patched  to correctly handle different Excel sheet names and use the right user attribute, resolving a 500 error.
+- **Year-over-Year (YoY) Feature**: Added a Compare YoY toggle and associated logic to the Segment, Closure, Source, and KVA analysis sections in  and updated the corresponding backend endpoints in .
+- **Financial Year Verification**: Confirmed the Comparison page date logic in  correctly uses the Indian Financial Year.
+
+**Earlier issues found/mentioned but not fixed**
+*   None.
+
+**Known issue recurrence from previous fork**
+- **Issue**: The frontend build folder () can disappear, causing the preview to return a 404 error.
+- **Recurrence count**: This happened once in the session (message #84).
+- **Status**: RESOLVED (workaround). The agent resolved it by running yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. and restarting the frontend service. This is a known environmental instability.
 
 **Code Architecture**
-has_so_record
+
 
 **Key Technical Concepts**
-*   **Application Startup anti-patterns**: Long-running, blocking tasks (like data migrations) during application startup must be avoided as they interfere with health checks in containerized environments.
-*   **Background Tasks**: The appropriate pattern for handling long-running operations in a web server context without blocking startup or user requests. FastAPI's  is the ideal solution here.
-*   **Data Reconciliation**: The process of comparing two datasets (Enquiry vs. Sales) to identify discrepancies and establish a single source of truth.
+*   **Multi-Level Aggregation**: Using complex MongoDB aggregation pipelines to create drill-down reports.
+*   **Dynamic React UI**: Heavy use of React state (, ) to manage complex UI interactions like drill-down navigation, YoY toggles, and conditional rendering of data tables.
+*   **Excel Data Processing**: Using the  library in the backend to parse uploaded  files for market potential data.
+*   **Financial Year Logic**: Implementing and verifying date logic that adheres to the Indian Financial Year (April 1 - March 31).
 
 **key DB schema**
-*   **leads**:
-    *    - New field indicating if a lead is confirmed by the Sales Order register. This is the new source of truth for Won status.
-    *    - New field storing an array of enquiry objects that were merged into this lead by the new duplicate logic.
+- **market_potential_district**: (New Collection)
+    - , , , , , 
+- **market_potential_kva**: (New Collection)
+    - , , , 
+
+**changes in tech stack**
+- **pandas**: Added to the backend for processing Excel files.
 
 **All files of reference**
-*    (The entry point where the failing startup migration is called)
-*    (Contains the  function that is timing out)
-*    (Frontend for the new data management features)
-*   Deployment logs provided by the user.
+*   : The most heavily modified file, containing logic for all new analysis tabs, drill-down, and YoY comparisons.
+*   : The backend counterpart to , with new endpoints and updated logic.
+*   : Completely rewritten to support market potential analysis.
+*   : New file containing all backend logic for the Comparison page overhaul.
+*   : Updated to show KVA breakdown.
+*   : Updated to provide data for the new KVA cards.
+*   : Updated to add the data cleanup button.
+
+**Areas that need refactoring**:
+*   ****: This file has grown to over 2000 lines and is extremely complex. It urgently needs to be broken down into smaller, reusable components for each analysis tab and the drill-down view.
+*   ****: This file is over 3000 lines and should also be refactored into smaller components for each admin function.
+
+**key api endpoints**
+*   : Runs the data cleanup script.
+*   : (New) Gets data for the source analysis tab.
+*   : (New) Gets data for the KVA analysis tab.
+*   : (New) Powers the multi-level drill-down feature.
+*   : (New) Handles uploading the market potential Excel file.
+*   : (New) Provides summary data for the Comparison page.
+*   : (New) Downloads the Excel template file.
+*   : (Updated) Now includes , ,  counts.
+*   : (Updated) Now supports  parameter.
+*   : (Updated) Now supports  parameter.
 
 **Critical Info for New Agent**
-1.  **Deployment is Failing**: Your number one priority is to fix the deployment failure. The application is not usable in production until this is resolved.
-2.  **The Root Cause is Known**: The deployment logs clearly indicate the issue is a MongoDB read timeout during a duplicate detection migration that runs on application startup. This is a blocking task preventing the server from becoming healthy.
-3.  **The Fix**: You must modify  to prevent the  function from blocking startup. The recommended approach is to wrap it in a FastAPI . This allows the server to start immediately while the migration runs in the background. Do not alter the business logic itself, only how it is executed.
-4.  **Do Not Rerun Migrations Needlessly**: The data migrations have already been run successfully in the development environment. The goal is to make them non-blocking for production deployment, not to change the data again.
+1.  **Verify Last Work**: Your first action should be to confirm with the user that the new Year-over-Year (YoY) toggles on the **Segment Analysis** and **Closure Analysis** tabs are working as they expect.
+2.  **Code Complexity**: Be aware that  and  are now very large and difficult to maintain. Propose refactoring them as a future task. Any new changes to these files should be done with extreme care.
+3.  **Frontend Build Instability**: The  directory might disappear, causing a 404 error on the preview. The fix is to run yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command..
+4.  **Edit from Global Search Bug**: The agent thoroughly investigated this recurring user report and confirmed the feature works correctly. If the user reports it again, suggest they clear their browser cache before escalating.
 
 **documents and test reports created in this job**
-*   
-*   
+*   None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Provided deployment logs showing the app is failing and asked for a fix.
-2.  **User**: Confirmed  should be the source of truth for Won leads.
-3.  **User**: Asked to see Won leads without a corresponding SO record in a separate tab.
-4.  **User**: Questioned why dashboard  were higher than the  data.
-5.  **User**: Explained the new chunk-based duplicate logic (merge open leads into subsequent closed leads).
-6.  **User**: Asked for an explanation of why the old duplicate logic didn't merge all leads.
-7.  **User**: Requested the Order Time Punch feature and other UI/filter changes.
-8.  **User**: Provided a corrected  file and requested a full data re-upload.
-9.  **User**: Reported that the dashboard data was wrong after the first data upload attempt.
-10. **User**: Provided the initial set of new data files and asked for a database replacement.
+1.  **User**: Instructed the agent to add YoY to the remaining analysis tabs and to ensure the Comparison page uses the Indian financial year. (Status: COMPLETED)
+2.  **User**: Reported a 500 error when uploading the market potential file and requested a YoY comparison toggle for all analysis types in the Insights page. (Status: COMPLETED)
+3.  **User**: Gave approval to proceed with Phase 3 (Comparison Page Overhaul). (Status: COMPLETED)
+4.  **User**: Gave approval to proceed with the agent's multi-phase implementation plan. (Status: COMPLETED)
+5.  **User**: Asked for a dashboard (interpreted as the Comparison page features) and re-reported the edit from global search bug. (Status: COMPLETED)
+6.  **User**: Provided clarifications on the market potential data structure and calculation logic. (Status: COMPLETED)
+7.  **User**: Provided key clarifications on the drill-down hierarchy () and provided a corrected Excel template. (Status: COMPLETED)
+8.  **User**: Kicked off the entire development cycle with a massive request for drill-down analytics, new analysis types, dashboard KVA cards, and a complete Comparison page overhaul. (Status: COMPLETED)
+9.  **User**: Confirmed the agent's plan for the data cleanup button. (Status: COMPLETED)
+10. **User**: Asked the agent to proceed after the initial plan was sent. (Status: COMPLETED)
 
 **Project Health Check:**
-*   **Broken**: The application is non-deployable due to a backend health check failure caused by a long-running startup migration.
+*   **Broken**: None.
+*   **Mocked**: None.
 
 **3rd Party Integrations**
-*   **rapidfuzz**: Python library for string matching.
+*   **rapidfuzz**: Python library for fuzzy string matching.
+*   **pandas**: Python library for data analysis, used for parsing Excel files.
 
 **Testing status**
-*   **Testing agent used after significant changes**: YES
-*   **Known regressions**: The entire application is non-deployable.
+- **Testing agent used after significant changes**: NO
+- **Troubleshoot agent used after agent stuck in loop**: NO
+- **Test files created**: None
+- **Known regressions**: None
 
 **Credentials to test flow:**
-*   **Admin**:  / 
+*   **Username**: 
+*   **Password**: 
 
 **What agent forgot to execute**
-The agent implemented all requested features but was stopped by the user reporting a deployment failure. The agent has not yet implemented the fix for the deployment issue.</analysis>
+*   Nothing. The agent successfully completed all tasks assigned in this session, including the large, emergent feature requests from the user.</analysis>
