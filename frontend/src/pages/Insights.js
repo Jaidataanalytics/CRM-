@@ -97,6 +97,8 @@ const Insights = () => {
   useEffect(() => {
     loadClosureAnalysis();
     loadCompetitorAnalysis();
+    loadSourceAnalysis();
+    loadKvaAnalysis();
   }, [buildQueryParams]);
 
   useEffect(() => {
