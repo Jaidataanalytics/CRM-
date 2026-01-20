@@ -199,7 +199,7 @@ const Leads = () => {
               assigned_to: res.data.assigned_to || '',
               call_status: res.data.call_status || '',
             });
-            setIsFormOpen(true);
+            setIsDialogOpen(true);
             // Clear the edit param from URL without triggering re-render
             const newSearchParams = new URLSearchParams(searchParams);
             newSearchParams.delete('edit');
