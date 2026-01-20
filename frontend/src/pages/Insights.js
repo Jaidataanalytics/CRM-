@@ -77,6 +77,19 @@ const Insights = () => {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [compareHistorical, setCompareHistorical] = useState(false);
 
+  // Source Analysis state
+  const [sourceData, setSourceData] = useState([]);
+  const [sourceLoading, setSourceLoading] = useState(false);
+  
+  // KVA Analysis state
+  const [kvaData, setKvaData] = useState([]);
+  const [kvaLoading, setKvaLoading] = useState(false);
+  
+  // Drill-down state
+  const [drilldownData, setDrilldownData] = useState(null);
+  const [drilldownLoading, setDrilldownLoading] = useState(false);
+  const [drilldownPath, setDrilldownPath] = useState([]); // Breadcrumb path
+
   useEffect(() => {
     loadData();
   }, [buildQueryParams, performerType, metric]);
