@@ -178,6 +178,12 @@ async def get_kpis(
         "enquiry_date": {"$gte": start_date, "$lte": end_date}
     }
     
+    # KVA Category queries for open leads
+    # LKVA: < 82.5, MKVA: 82.5 - 249, HKVA: >= 250
+    open_lkva_query = {**base_query, "enquiry_status": "Open", "kva": {"$lt": 82.5}}
+    open_mkva_query = {**base_query, "enquiry_status": "Open", "kva": {"$gte": 82.5, "$lt": 250}}
+    open_hkva_query = {**base_query, "enquiry_status": "Open", "kva": {"$gte": 250}}
+    
     dispatch_base_query = {
         "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
         "deleted_at": {"$exists": False}
