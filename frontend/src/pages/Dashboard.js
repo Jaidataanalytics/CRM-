@@ -451,6 +451,10 @@ const Dashboard = () => {
       else if (filter === 'hot') endpoint += '&enquiry_type=Hot&enquiry_status=Open';
       else if (filter === 'warm') endpoint += '&enquiry_type=Warm&enquiry_status=Open';
       else if (filter === 'cold') endpoint += '&enquiry_type=Cold&enquiry_status=Open';
+      // KVA Category filters
+      else if (filter === 'open_lkva') endpoint += '&enquiry_status=Open&kva_max=82.49';
+      else if (filter === 'open_mkva') endpoint += '&enquiry_status=Open&kva_min=82.5&kva_max=249.99';
+      else if (filter === 'open_hkva') endpoint += '&enquiry_status=Open&kva_min=250';
       
       const res = await axios.get(endpoint, { withCredentials: true });
       setLeads(res.data.leads || []);
