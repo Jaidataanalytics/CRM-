@@ -517,42 +517,121 @@ const Insights = () => {
         <TabsContent value="segments">
           <Card>
             <CardHeader>
-              <CardTitle>Segment Performance</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Segment Performance</CardTitle>
+                <p className="text-sm text-muted-foreground">Click on any segment to drill down into dealers</p>
+              </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Segment</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Won</TableHead>
-                    <TableHead className="text-right">Lost</TableHead>
-                    <TableHead className="text-right">Hot</TableHead>
-                    <TableHead className="text-right">Conv. Rate</TableHead>
-                    <TableHead className="text-right">Avg KVA</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {segmentData.map((s, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-medium">{s.segment}</TableCell>
-                      <TableCell className="text-right">{s.total_leads}</TableCell>
-                      <TableCell className="text-right text-green-600">{s.won_leads}</TableCell>
-                      <TableCell className="text-right text-red-600">{s.lost_leads}</TableCell>
-                      <TableCell className="text-right text-orange-600">{s.hot_leads}</TableCell>
-                      <TableCell className="text-right">{s.conversion_rate}%</TableCell>
-                      <TableCell className="text-right">{s.avg_kva}</TableCell>
-                    </TableRow>
-                  ))}
-                  {segmentData.length === 0 && (
+              {drilldownData && drilldownData.analysis_type === 'segment' ? (
+                // Drilldown view
+                <div className="space-y-4">
+                  {/* Breadcrumb */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <Button variant="ghost" size="sm" onClick={resetDrilldown} className="h-7 px-2">
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Back to Segments
+                    </Button>
+                    {drilldownPath.map((item, idx) => (
+                      <span key={idx} className="flex items-center gap-1">
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2"
+                          onClick={() => goBackDrilldown(idx)}
+                        >
+                          {item.label}
+                        </Button>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Showing {drilldownData.level_label}s for <strong>{drilldownPath[0]?.label}</strong>
+                    {drilldownData.next_level_label && ` • Click to drill into ${drilldownData.next_level_label}s`}
+                  </p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{drilldownData.level_label}</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">Won</TableHead>
+                        <TableHead className="text-right">Lost</TableHead>
+                        <TableHead className="text-right">Open</TableHead>
+                        <TableHead className="text-right">Conv. Rate</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {drilldownData.data.map((item, idx) => (
+                        <TableRow 
+                          key={idx} 
+                          className={drilldownData.next_level ? 'cursor-pointer hover:bg-muted/50' : ''}
+                          onClick={() => drilldownData.next_level && handleDrilldown('segment', item, drilldownData.level)}
+                        >
+                          <TableCell className="font-medium flex items-center gap-2">
+                            {item.name}
+                            {drilldownData.next_level && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </TableCell>
+                          <TableCell className="text-right">{item.total}</TableCell>
+                          <TableCell className="text-right text-green-600">{item.won}</TableCell>
+                          <TableCell className="text-right text-red-600">{item.lost}</TableCell>
+                          <TableCell className="text-right text-yellow-600">{item.open}</TableCell>
+                          <TableCell className="text-right">{item.conversion_rate}%</TableCell>
+                        </TableRow>
+                      ))}
+                      {drilldownData.data.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No data available at this level
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                // Main segment view
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        No segment data available
-                      </TableCell>
+                      <TableHead>Segment</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Won</TableHead>
+                      <TableHead className="text-right">Lost</TableHead>
+                      <TableHead className="text-right">Hot</TableHead>
+                      <TableHead className="text-right">Conv. Rate</TableHead>
+                      <TableHead className="text-right">Avg KVA</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {segmentData.map((s, idx) => (
+                      <TableRow 
+                        key={idx}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleDrilldown('segment', { name: s.segment }, 1)}
+                      >
+                        <TableCell className="font-medium flex items-center gap-2">
+                          {s.segment}
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </TableCell>
+                        <TableCell className="text-right">{s.total_leads}</TableCell>
+                        <TableCell className="text-right text-green-600">{s.won_leads}</TableCell>
+                        <TableCell className="text-right text-red-600">{s.lost_leads}</TableCell>
+                        <TableCell className="text-right text-orange-600">{s.hot_leads}</TableCell>
+                        <TableCell className="text-right">{s.conversion_rate}%</TableCell>
+                        <TableCell className="text-right">{s.avg_kva}</TableCell>
+                      </TableRow>
+                    ))}
+                    {segmentData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                          No segment data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
