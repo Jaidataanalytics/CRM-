@@ -124,7 +124,7 @@ const Insights = () => {
       const [performersRes, conversionRes, segmentRes] = await Promise.all([
         axios.get(`${API}/insights/top-performers?by=${performerType}&metric=${metric}&${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/conversion-vs-followups?${queryParams}`, { withCredentials: true }),
-        axios.get(`${API}/insights/segment-analysis?${queryParams}`, { withCredentials: true })
+        axios.get(`${API}/insights/segment-analysis?${queryParams}&compare_yoy=${segmentCompareYoy}`, { withCredentials: true })
       ]);
       setPerformers(performersRes.data.performers || []);
       setConversionData(conversionRes.data.data || []);
@@ -136,11 +136,21 @@ const Insights = () => {
     }
   };
 
+  const loadSegmentAnalysis = async () => {
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/segment-analysis?${queryParams}&compare_yoy=${segmentCompareYoy}`, { withCredentials: true });
+      setSegmentData(res.data.segments || []);
+    } catch (error) {
+      console.error('Error loading segment analysis:', error);
+    }
+  };
+
   const loadClosureAnalysis = async () => {
     setClosureLoading(true);
     try {
       const queryParams = buildQueryParams();
-      const res = await axios.get(`${API}/insights/closure-analysis?${queryParams}`, { withCredentials: true });
+      const res = await axios.get(`${API}/insights/closure-analysis?${queryParams}&compare_yoy=${closureCompareYoy}`, { withCredentials: true });
       setClosureAnalysis(res.data);
     } catch (error) {
       console.error('Error loading closure analysis:', error);
