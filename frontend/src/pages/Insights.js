@@ -411,6 +411,14 @@ const Insights = () => {
             <XCircle className="h-4 w-4" />
             Closure Analysis
           </TabsTrigger>
+          <TabsTrigger value="source" className="flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            Source Analysis
+          </TabsTrigger>
+          <TabsTrigger value="kva" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            KVA Analysis
+          </TabsTrigger>
           <TabsTrigger value="summary" className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4" />
             Summary Builder
