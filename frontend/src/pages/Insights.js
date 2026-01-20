@@ -117,6 +117,14 @@ const Insights = () => {
     loadKvaAnalysis();
   }, [kvaCompareYoy]);
 
+  useEffect(() => {
+    loadSegmentAnalysis();
+  }, [segmentCompareYoy]);
+
+  useEffect(() => {
+    loadClosureAnalysis();
+  }, [closureCompareYoy]);
+
   const loadData = async () => {
     setLoading(true);
     try {
