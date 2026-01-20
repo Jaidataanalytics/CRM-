@@ -16,7 +16,9 @@ A full-stack Lead Management application for Sharda, a generator/genset company.
 ### 2. Dashboard & KPIs
 - Real-time KPI cards (Hot/Warm/Cold/Won/Lost)
 - **Dispatch KPIs**: Pending Dispatch, Dispatched counts
+- **KVA Category KPIs (NEW - Jan 20, 2026)**: Open LKVA (<82.5), Open MKVA (82.5-249), Open HKVA (≥250)
 - Clickable KPI cards for filtering
+- KPI visibility settings (show/hide individual cards)
 - Recent leads table with status indicators
 
 ### 3. Dispatch Management
