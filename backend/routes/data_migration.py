@@ -3,11 +3,13 @@ Data Import Route - Import exported data into production database.
 This endpoint allows importing the exported JSON data after deployment.
 """
 from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks, UploadFile, File
-from typing import Optional
+from typing import Optional, Dict, List, Any
 import json
 import os
+import re
 import logging
 from datetime import datetime, timezone
+from collections import Counter
 import httpx
 
 from models.user import User
@@ -19,8 +21,236 @@ router = APIRouter(prefix="/data-migration", tags=["Data Migration"])
 # Path to exported data files
 DATA_EXPORT_DIR = '/app/backend/data_export'
 
+# Closed stages (merge ends at these)
+CLOSED_STAGES = [
+    'Closed-Won', 'Closed-Lost', 'Closed-Dropped', 
+    'Order Booked', 'Lost', 'Dropped'
+]
+
+# Stage hierarchy (higher = more advanced)
+STAGE_HIERARCHY = {
+    'Prospecting': 1,
+    'Qualified': 2,
+    'Quotation': 3,
+    'Quotation Sent': 3,
+    'Negotiation': 4,
+    'Closed-Lost': 5,
+    'Closed-Dropped': 5,
+    'Lost': 5,
+    'Dropped': 5,
+    'Closed-Won': 6,
+    'Order Booked': 7
+}
+
 async def get_db(request: Request):
     return request.app.state.db
+
+
+def normalize_text(text: str) -> str:
+    """Normalize text for comparison"""
+    if not text:
+        return ""
+    return re.sub(r'\s+', ' ', str(text).lower().strip())
+
+def clean_phone_number(phone: Any) -> str:
+    """Clean and normalize phone number"""
+    if not phone:
+        return ""
+    phone_str = str(phone)
+    phone_str = re.sub(r'^(\+91|91|0)', '', phone_str)
+    phone_str = re.sub(r'[^0-9]', '', phone_str)
+    if len(phone_str) > 10:
+        phone_str = phone_str[-10:]
+    return phone_str
+
+def split_concatenated_field(value: str) -> List[str]:
+    """Split concatenated field into parts"""
+    if not value:
+        return []
+    parts = re.split(r'\s*\|\s*', str(value))
+    return [p.strip() for p in parts if p.strip()]
+
+def deduplicate_remarks(remarks_list: List[tuple]) -> str:
+    """Deduplicate remarks and format them"""
+    if not remarks_list:
+        return ""
+    remarks_list = [(r, d) for r, d in remarks_list if r and str(r).strip()]
+    if not remarks_list:
+        return ""
+    
+    unique_remarks = []
+    seen_normalized = set()
+    
+    for remark, date in sorted(remarks_list, key=lambda x: x[1] or ''):
+        normalized = normalize_text(remark)
+        if normalized and normalized not in seen_normalized:
+            seen_normalized.add(normalized)
+            unique_remarks.append((str(remark).strip(), date))
+    
+    if len(unique_remarks) == 1:
+        return unique_remarks[0][0]
+    
+    formatted = []
+    for i, (remark, date) in enumerate(unique_remarks[:3], 1):
+        formatted.append(f"Remark {i}: {remark}")
+    
+    return " | ".join(formatted)
+
+def get_most_common_or_recent(values: List[tuple]) -> Any:
+    """Get most repeated value, or most recent if tied"""
+    if not values:
+        return None
+    valid_values = [(v, d) for v, d in values if v is not None and str(v).strip()]
+    if not valid_values:
+        return None
+    
+    counter = Counter(v for v, d in valid_values)
+    most_common = counter.most_common()
+    
+    if len(most_common) == 1 or most_common[0][1] > most_common[1][1]:
+        return most_common[0][0]
+    
+    sorted_by_date = sorted(valid_values, key=lambda x: x[1] or '', reverse=True)
+    return sorted_by_date[0][0]
+
+def get_most_advanced_stage(stages: List[tuple]) -> str:
+    """Get most advanced stage"""
+    if not stages:
+        return ""
+    valid_stages = [(s, d) for s, d in stages if s and str(s).strip()]
+    if not valid_stages:
+        return ""
+    
+    def sort_key(item):
+        stage, date = item
+        return (STAGE_HIERARCHY.get(stage, 0), date or '')
+    
+    sorted_stages = sorted(valid_stages, key=sort_key, reverse=True)
+    return sorted_stages[0][0]
+
+def clean_single_lead(lead: Dict) -> Dict:
+    """Clean a single lead"""
+    cleaned = dict(lead)
+    
+    if 'phone_number' in cleaned:
+        cleaned['phone_number'] = clean_phone_number(cleaned['phone_number'])
+    
+    text_fields = ['name', 'email_address', 'address', 'district', 'tehsil', 'pincode', 
+                   'dealer', 'segment', 'employee_name', 'state', 'location']
+    
+    for field in text_fields:
+        if field in cleaned and cleaned[field]:
+            value = str(cleaned[field])
+            if ' | ' in value or value.count(value[:20]) > 1:
+                parts = split_concatenated_field(value)
+                if parts:
+                    counter = Counter(normalize_text(p) for p in parts)
+                    most_common_normalized = counter.most_common(1)[0][0]
+                    for p in parts:
+                        if normalize_text(p) == most_common_normalized:
+                            cleaned[field] = p
+                            break
+    
+    if 'remarks' in cleaned and cleaned['remarks']:
+        remarks = str(cleaned['remarks'])
+        if ' | ' in remarks or len(remarks) > 500:
+            parts = split_concatenated_field(remarks)
+            unique_parts = []
+            seen = set()
+            for p in parts:
+                normalized = normalize_text(p)
+                if normalized and normalized not in seen:
+                    seen.add(normalized)
+                    unique_parts.append(p)
+            if unique_parts:
+                if len(unique_parts) == 1:
+                    cleaned['remarks'] = unique_parts[0]
+                else:
+                    cleaned['remarks'] = " | ".join(f"Remark {i+1}: {r}" for i, r in enumerate(unique_parts[:3]))
+    
+    return cleaned
+
+def merge_leads_intelligently(leads: List[Dict]) -> Dict:
+    """Merge multiple leads into one"""
+    if not leads:
+        return {}
+    if len(leads) == 1:
+        return clean_single_lead(leads[0])
+    
+    sorted_leads = sorted(leads, key=lambda x: x.get('enquiry_date') or '')
+    primary_lead = sorted_leads[-1]
+    merged = dict(primary_lead)
+    
+    remarks_with_dates = []
+    numeric_fields = {'kva': [], 'qty': [], 'won_qty': []}
+    text_fields = {
+        'name': [], 'email_address': [], 'address': [], 'district': [], 
+        'tehsil': [], 'pincode': [], 'dealer': [], 'segment': [], 
+        'employee_name': [], 'state': [], 'location': [], 'phone_number': []
+    }
+    stages_with_dates = []
+    
+    for lead in sorted_leads:
+        date = lead.get('enquiry_date') or ''
+        
+        if lead.get('remarks'):
+            for part in split_concatenated_field(str(lead['remarks'])):
+                remarks_with_dates.append((part, date))
+        
+        for field in numeric_fields:
+            if lead.get(field) is not None:
+                try:
+                    val = float(lead[field])
+                    if val > 0:
+                        numeric_fields[field].append((val, date))
+                except (ValueError, TypeError):
+                    pass
+        
+        for field in text_fields:
+            if lead.get(field):
+                val = str(lead[field]).strip()
+                if val:
+                    text_fields[field].append((val, date))
+        
+        if lead.get('enquiry_stage'):
+            stages_with_dates.append((lead['enquiry_stage'], date))
+    
+    merged['remarks'] = deduplicate_remarks(remarks_with_dates)
+    
+    for field, values in numeric_fields.items():
+        if values:
+            result = get_most_common_or_recent(values)
+            if result is not None:
+                merged[field] = result
+    
+    for field, values in text_fields.items():
+        if values:
+            if field == 'phone_number':
+                values = [(clean_phone_number(v), d) for v, d in values]
+            result = get_most_common_or_recent(values)
+            if result:
+                merged[field] = result
+    
+    if stages_with_dates:
+        merged['enquiry_stage'] = get_most_advanced_stage(stages_with_dates)
+    
+    merged_enquiries = []
+    for lead in sorted_leads[:-1]:
+        merged_enquiries.append({
+            'enquiry_no': lead.get('enquiry_no'),
+            'enquiry_date': lead.get('enquiry_date'),
+            'enquiry_stage': lead.get('enquiry_stage'),
+            'enquiry_type': lead.get('enquiry_type'),
+            'name': lead.get('name'),
+            'kva': lead.get('kva'),
+            'qty': lead.get('qty'),
+            'remarks': lead.get('remarks', '')[:100] if lead.get('remarks') else ''
+        })
+    
+    if merged_enquiries:
+        merged['merged_enquiries'] = merged_enquiries
+    
+    return clean_single_lead(merged)
 
 
 @router.get("/status")
