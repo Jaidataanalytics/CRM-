@@ -1521,7 +1521,8 @@ async def get_source_analysis(
     end_date: Optional[str] = None,
     state: Optional[str] = None,
     dealer: Optional[str] = None,
-    segment: Optional[str] = None
+    segment: Optional[str] = None,
+    compare_yoy: bool = False
 ):
     """
     Source-wise lead analysis - similar to segment analysis but grouped by lead source.
