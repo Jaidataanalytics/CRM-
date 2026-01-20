@@ -394,19 +394,44 @@ async def get_segment_analysis(
     request: Request,
     current_user: User = Depends(get_current_user),
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    compare_yoy: bool = False
 ):
-    """Detailed segment analysis"""
+    """Detailed segment analysis with optional YoY comparison"""
     db = await get_db(request)
     
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
+    # Calculate last year dates for YoY comparison
+    from datetime import datetime as dt
+    ly_start = ly_end = None
+    if compare_yoy:
+        try:
+            start_dt = dt.strptime(start_date, "%Y-%m-%d")
+            end_dt = dt.strptime(end_date, "%Y-%m-%d")
+            ly_start = start_dt.replace(year=start_dt.year - 1).strftime("%Y-%m-%d")
+            ly_end = end_dt.replace(year=end_dt.year - 1).strftime("%Y-%m-%d")
+        except:
+            pass
+    
     # Open stages
     OPEN_STAGES = ["Prospecting", "Qualified", "Proposal", "Negotiation"]
     
+    # Build base query
+    base_match = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False}
+    }
+    if state:
+        base_match["state"] = state
+    if dealer:
+        base_match["dealer"] = dealer
+    
     pipeline = [
-        {"$match": {"enquiry_date": {"$gte": start_date, "$lte": end_date}}},
+        {"$match": base_match},
         {
             "$group": {
                 "_id": "$segment",
@@ -448,22 +473,58 @@ async def get_segment_analysis(
     
     results = await db.leads.aggregate(pipeline).to_list(50)
     
-    return {
-        "segments": [
+    # Get last year data if YoY comparison enabled
+    ly_data = {}
+    if compare_yoy and ly_start and ly_end:
+        ly_match = {**base_match, "enquiry_date": {"$gte": ly_start, "$lte": ly_end}}
+        ly_pipeline = [
+            {"$match": ly_match},
             {
-                "segment": r["_id"] or "Unknown",
-                "total_leads": r["total_leads"],
-                "won_leads": r["won_leads"],
-                "lost_leads": r["lost_leads"],
-                "open_leads": r.get("open_leads", 0),
-                "hot_leads": r["hot_leads"],
-                "conversion_rate": round(r["conversion_rate"], 2),
-                "avg_kva": round(r["avg_kva"], 2),
-                "total_kva": round(r["total_kva"], 2)
+                "$group": {
+                    "_id": "$segment",
+                    "total_leads": {"$sum": 1},
+                    "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}}
+                }
             }
-            for r in results
-        ],
-        "date_range": {"start_date": start_date, "end_date": end_date}
+        ]
+        ly_results = await db.leads.aggregate(ly_pipeline).to_list(50)
+        ly_data = {r["_id"]: r for r in ly_results}
+    
+    segments = []
+    for r in results:
+        segment_item = {
+            "segment": r["_id"] or "Unknown",
+            "total_leads": r["total_leads"],
+            "won_leads": r["won_leads"],
+            "lost_leads": r["lost_leads"],
+            "open_leads": r.get("open_leads", 0),
+            "hot_leads": r["hot_leads"],
+            "conversion_rate": round(r["conversion_rate"], 2),
+            "avg_kva": round(r["avg_kva"], 2),
+            "total_kva": round(r["total_kva"], 2)
+        }
+        
+        # Add YoY comparison data
+        if compare_yoy:
+            ly = ly_data.get(r["_id"], {})
+            ly_total = ly.get("total_leads", 0)
+            ly_won = ly.get("won_leads", 0)
+            segment_item["ly_total_leads"] = ly_total
+            segment_item["ly_won_leads"] = ly_won
+            segment_item["yoy_total_change"] = round(((r["total_leads"] - ly_total) / ly_total * 100), 1) if ly_total > 0 else 0
+            segment_item["yoy_won_change"] = round(((r["won_leads"] - ly_won) / ly_won * 100), 1) if ly_won > 0 else 0
+        
+        segments.append(segment_item)
+    
+    return {
+        "segments": segments,
+        "compare_yoy": compare_yoy,
+        "date_range": {
+            "start_date": start_date, 
+            "end_date": end_date,
+            "ly_start": ly_start,
+            "ly_end": ly_end
+        }
     }
 
 
