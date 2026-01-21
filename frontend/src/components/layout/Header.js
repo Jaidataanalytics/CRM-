@@ -474,13 +474,13 @@ export const Header = () => {
                 </div>
               </div>
 
-              {/* Location & Dealer */}
+              {/* District & Dealer */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" /> Location
+                    <MapPin className="h-3 w-3" /> District
                   </Label>
-                  <p className="font-medium">{selectedLead.state || '-'}{selectedLead.area ? `, ${selectedLead.area}` : ''}</p>
+                  <p className="font-medium">{selectedLead.district || selectedLead.state || '-'}{selectedLead.area ? `, ${selectedLead.area}` : ''}</p>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground flex items-center gap-1">
