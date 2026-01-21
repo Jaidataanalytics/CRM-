@@ -2,19 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useFilters } from '@/context/FilterContext';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, RotateCcw, Filter, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
