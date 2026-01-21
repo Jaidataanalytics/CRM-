@@ -493,14 +493,14 @@ async def get_market_comparison(
                 district_potential_map[district] = {'potential': 0, 'state': dp.get('state', '')}
             district_potential_map[district]['potential'] += dp['potential']
         
-        # Get sales by district
+        # Get sales by district (using district field, not location)
         pipeline_current = [
             {"$match": current_query},
-            {"$group": {"_id": "$location", "sales": {"$sum": 1}}}
+            {"$group": {"_id": "$district", "sales": {"$sum": 1}}}
         ]
         pipeline_ly = [
             {"$match": last_year_query},
-            {"$group": {"_id": "$location", "sales": {"$sum": 1}}}
+            {"$group": {"_id": "$district", "sales": {"$sum": 1}}}
         ]
         
         current_sales_data = await db.leads.aggregate(pipeline_current).to_list(1000)
