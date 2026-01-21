@@ -2065,32 +2065,113 @@ async def get_transferred_stats(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ):
-    """Get transferred leads statistics"""
+    """Get comprehensive transferred leads statistics"""
     db = await get_db(request)
     
-    query = {
+    base_query = {
         "is_transferred": True,
         "deleted_at": {"$exists": False}
     }
     
     # Date filter on enquiry_date
     if start_date and end_date:
-        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+        base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
-    total_transferred = await db.leads.count_documents(query)
+    # Total transferred
+    total_transferred = await db.leads.count_documents(base_query)
     
-    # Get by employee breakdown
-    pipeline = [
-        {"$match": query},
-        {"$group": {"_id": "$employee_name", "count": {"$sum": 1}}},
+    # Linked (re-uploaded by dealer)
+    linked_query = {**base_query, "linked_dealer_lead_id": {"$exists": True, "$ne": None}}
+    total_linked = await db.leads.count_documents(linked_query)
+    
+    # Pending (not yet re-uploaded)
+    pending_query = {**base_query, "$or": [
+        {"linked_dealer_lead_id": {"$exists": False}},
+        {"linked_dealer_lead_id": None}
+    ]}
+    total_pending = await db.leads.count_documents(pending_query)
+    
+    # Get linked lead IDs to fetch their statuses
+    linked_leads = await db.leads.find(linked_query, {"linked_dealer_lead_id": 1}).to_list(10000)
+    linked_lead_ids = [l.get("linked_dealer_lead_id") for l in linked_leads if l.get("linked_dealer_lead_id")]
+    
+    # Count statuses of dealer's leads
+    won_count = 0
+    lost_count = 0
+    open_count = 0
+    
+    if linked_lead_ids:
+        won_count = await db.leads.count_documents({
+            "lead_id": {"$in": linked_lead_ids},
+            "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
+            "deleted_at": {"$exists": False}
+        })
+        lost_count = await db.leads.count_documents({
+            "lead_id": {"$in": linked_lead_ids},
+            "enquiry_stage": {"$in": ["Closed-Lost", "Closed-Dropped"]},
+            "deleted_at": {"$exists": False}
+        })
+        open_count = await db.leads.count_documents({
+            "lead_id": {"$in": linked_lead_ids},
+            "enquiry_status": "Open",
+            "deleted_at": {"$exists": False}
+        })
+    
+    # By original generator (transferred_by_employee)
+    by_employee_pipeline = [
+        {"$match": base_query},
+        {"$group": {
+            "_id": "$transferred_by_employee",
+            "count": {"$sum": 1},
+            "linked_count": {"$sum": {"$cond": [{"$and": [
+                {"$ne": ["$linked_dealer_lead_id", None]},
+                {"$ne": ["$linked_dealer_lead_id", ""]}
+            ]}, 1, 0]}}
+        }},
         {"$sort": {"count": -1}},
-        {"$limit": 10}
+        {"$limit": 20}
     ]
-    by_employee = await db.leads.aggregate(pipeline).to_list(10)
+    by_employee = await db.leads.aggregate(by_employee_pipeline).to_list(20)
+    
+    # By target dealer
+    by_dealer_pipeline = [
+        {"$match": base_query},
+        {"$group": {
+            "_id": "$transferred_to_dealer_name",
+            "count": {"$sum": 1},
+            "linked_count": {"$sum": {"$cond": [{"$and": [
+                {"$ne": ["$linked_dealer_lead_id", None]},
+                {"$ne": ["$linked_dealer_lead_id", ""]}
+            ]}, 1, 0]}}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 20}
+    ]
+    by_dealer = await db.leads.aggregate(by_dealer_pipeline).to_list(20)
     
     return {
         "total_transferred": total_transferred,
-        "by_employee": [{"employee": e["_id"] or "Unknown", "count": e["count"]} for e in by_employee]
+        "total_linked": total_linked,
+        "total_pending": total_pending,
+        "won_count": won_count,
+        "lost_count": lost_count,
+        "open_count": open_count,
+        "by_employee": [
+            {
+                "employee": e["_id"] or "Unknown",
+                "count": e["count"],
+                "linked_count": e["linked_count"],
+                "pending_count": e["count"] - e["linked_count"]
+            } for e in by_employee if e["_id"]
+        ],
+        "by_dealer": [
+            {
+                "dealer": d["_id"] or "Unknown",
+                "count": d["count"],
+                "linked_count": d["linked_count"],
+                "pending_count": d["count"] - d["linked_count"]
+            } for d in by_dealer if d["_id"]
+        ]
     }
 
 
