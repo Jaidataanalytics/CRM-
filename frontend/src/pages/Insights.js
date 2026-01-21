@@ -59,9 +59,6 @@ const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Insights = () => {
   const { buildQueryParams } = useFilters();
-  const [performerType, setPerformerType] = useState('employee');
-  const [metric, setMetric] = useState('won');
-  const [performers, setPerformers] = useState([]);
   const [conversionData, setConversionData] = useState([]);
   const [segmentData, setSegmentData] = useState([]);
   const [segmentCompareYoy, setSegmentCompareYoy] = useState(false);
@@ -74,14 +71,6 @@ const Insights = () => {
   const [competitorDimension, setCompetitorDimension] = useState('competitor');
   const [competitorAnalysis, setCompetitorAnalysis] = useState(null);
   const [competitorLoading, setCompetitorLoading] = useState(false);
-  
-  // Summary Builder state
-  const [summaryMetric, setSummaryMetric] = useState('leads');
-  const [summaryTimeFrame, setSummaryTimeFrame] = useState('monthly');
-  const [summaryDimension, setSummaryDimension] = useState('employee');
-  const [summaryData, setSummaryData] = useState(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [compareHistorical, setCompareHistorical] = useState(false);
 
   // Source Analysis state
   const [sourceData, setSourceData] = useState([]);
@@ -92,16 +81,6 @@ const Insights = () => {
   const [kvaData, setKvaData] = useState([]);
   const [kvaLoading, setKvaLoading] = useState(false);
   const [kvaCompareYoy, setKvaCompareYoy] = useState(false);
-  
-  // Temperature (Hot/Warm/Cold) Analysis state
-  const [temperatureData, setTemperatureData] = useState(null);
-  const [temperatureLoading, setTemperatureLoading] = useState(false);
-  const [temperatureDimension, setTemperatureDimension] = useState('dealer');
-  
-  // Lead Age Analysis state
-  const [leadAgeData, setLeadAgeData] = useState(null);
-  const [leadAgeLoading, setLeadAgeLoading] = useState(false);
-  const [leadAgeDimension, setLeadAgeDimension] = useState('dealer');
   
   // Drill-down state
   const [drilldownData, setDrilldownData] = useState(null);
