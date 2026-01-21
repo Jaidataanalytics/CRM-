@@ -31,10 +31,15 @@ async def get_top_performers(
     if not start_date or not end_date:
         start_date, end_date = get_indian_fy_dates()
     
-    # Exclude soft-deleted leads
+    # Exclude soft-deleted and transferred leads
     base_match = {
         "enquiry_date": {"$gte": start_date, "$lte": end_date},
-        "deleted_at": {"$exists": False}
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
     }
     
     # Apply max lead age filter
