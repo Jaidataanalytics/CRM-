@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { 
   TrendingUp, TrendingDown, Minus, Target, BarChart3, 
   Calendar, RefreshCw, CheckCircle2, XCircle, AlertCircle,
-  Zap, MapPin, Building, Users
+  Zap, MapPin, Building, Users, FileText
 } from 'lucide-react';
 import {
   BarChart,
