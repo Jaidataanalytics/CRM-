@@ -257,7 +257,10 @@ fuzzy_matcher = FuzzyMatcher(threshold=75)
 
 def normalize_lead_data(lead_data: Dict, existing_values: Dict[str, List[str]]) -> Dict:
     """
-    Normalize all relevant fields in lead data against existing values.
+    Normalize lead data by fuzzy matching against existing database values.
+    This helps consolidate similar values (e.g., "Jharkhand" vs "jharkhand").
+    
+    NOTE: employee_name is NOT fuzzy matched to preserve original values.
     
     Args:
         lead_data: Dictionary of lead fields
@@ -267,12 +270,16 @@ def normalize_lead_data(lead_data: Dict, existing_values: Dict[str, List[str]]) 
     Returns:
         Normalized lead data dictionary
     """
+    if not lead_data:
+        return lead_data
+    
     normalized = lead_data.copy()
     
+    # Fields to normalize with fuzzy matching
+    # IMPORTANT: employee_name is excluded to prevent unwanted name changes
     fields_to_normalize = [
         ('dealer', 'dealer'),
         ('state', 'state'),
-        ('employee_name', 'employee_name'),
         ('segment', 'segment'),
         ('enquiry_stage', 'enquiry_stage'),
         ('status', 'enquiry_stage'),
@@ -286,5 +293,22 @@ def normalize_lead_data(lead_data: Dict, existing_values: Dict[str, List[str]]) 
                 existing,
                 field_key
             )
+    
+    # For employee_name, only do exact match or smart title case - NO fuzzy matching
+    if 'employee_name' in normalized and normalized['employee_name']:
+        emp_name = normalized['employee_name'].strip()
+        existing_employees = existing_values.get('employee_name', [])
+        
+        # Check for exact match (case-insensitive)
+        matched = False
+        for existing_emp in existing_employees:
+            if existing_emp and existing_emp.lower() == emp_name.lower():
+                normalized['employee_name'] = existing_emp
+                matched = True
+                break
+        
+        # If no exact match, just use smart title case
+        if not matched:
+            normalized['employee_name'] = fuzzy_matcher.smart_title_case(emp_name)
     
     return normalized
