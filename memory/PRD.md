@@ -82,6 +82,23 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] Lead age now calculated in real-time using MongoDB's `$dateDiff` instead of relying on a stored field
 - [x] Age buckets (0-30d, 31-60d, 61-90d, 90+d) working correctly
 
+### Excel Export to All Pages (NEW - Jan 21, 2026)
+- [x] Created reusable `ExportButton` component at `/app/frontend/src/components/ui/export-button.jsx`
+- [x] Created export utility functions at `/app/frontend/src/utils/exportUtils.js`
+- [x] Added `xlsx`, `file-saver`, and `html2canvas` dependencies for Excel and image export
+- [x] **Dashboard**: Added "Export KPIs" button - exports KPI summary to Excel
+- [x] **Dispatch**: Added "Export to Excel" button - exports dispatch orders
+- [x] **Transferred Leads**: Added "Export to Excel" button - exports transferred leads data
+- [x] **Comparison**: Added "Export Data" button - exports market comparison data
+- [x] **Data Management**: Added "Export Duplicates" button - exports duplicate leads
+- [x] **Forecast**: Added conditional "Export Forecast" button (appears after generation)
+- [x] **Entity Profile**: Added "Export" button with data and chart export options
+- [x] **Manage Leads**: Already had Excel export (verified working)
+- [x] **Insights Summary Builder**: Already had Excel export (verified working)
+- [x] Fixed dynamic calculation of `lead_age` in `/app/backend/routes/insights.py`
+- [x] Lead age now calculated in real-time using MongoDB's `$dateDiff` instead of relying on a stored field
+- [x] Age buckets (0-30d, 31-60d, 61-90d, 90+d) working correctly
+
 ### Transfer to Dealer Feature
 - [x] Transfer Modal with Target Dealer, Original Generator, Notes
 - [x] Transferred Leads Page with summary cards and analytics
