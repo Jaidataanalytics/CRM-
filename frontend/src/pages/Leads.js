@@ -147,8 +147,9 @@ const Leads = () => {
     transfer_notes: ''
   });
   
-  // Dealers list for transfer modal
+  // Dealers and employees list for transfer modal
   const [dealersList, setDealersList] = useState([]);
+  const [employeesList, setEmployeesList] = useState([]);
   
   // New filter states for Lead Type and Follow-up Date
   const [selectedLeadTypes, setSelectedLeadTypes] = useState([]);
