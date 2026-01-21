@@ -181,69 +181,54 @@ export const FilterBar = () => {
           {/* State */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">State</label>
-            <Select value={getSelectValue(filters.state)} onValueChange={(v) => handleSelectChange('state', v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="All States" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                {options.states.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={['', ...options.states]}
+              value={filters.state || ''}
+              onValueChange={(v) => updateFilter('state', v)}
+              placeholder="All States"
+              searchPlaceholder="Search states..."
+              emptyText="No states found."
+            />
           </div>
 
           {/* Dealer */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Dealer</label>
-            <Select value={getSelectValue(filters.dealer)} onValueChange={(v) => handleSelectChange('dealer', v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Dealers" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dealers</SelectItem>
-                {options.dealers.map(d => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={['', ...options.dealers]}
+              value={filters.dealer || ''}
+              onValueChange={(v) => updateFilter('dealer', v)}
+              placeholder="All Dealers"
+              searchPlaceholder="Search dealers..."
+              emptyText="No dealers found."
+            />
           </div>
 
           {/* Employee */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Employee</label>
-            <Select 
-              value={getSelectValue(filters.employee)} 
-              onValueChange={(v) => handleSelectChange('employee', v)}
+            <SearchableSelect
+              options={['', ...options.employees]}
+              value={filters.employee || ''}
+              onValueChange={(v) => updateFilter('employee', v)}
+              placeholder="All Employees"
+              searchPlaceholder="Search employees..."
+              emptyText="No employees found."
               disabled={!filters.dealer && options.employees.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="All Employees" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Employees</SelectItem>
-                {options.employees.map(e => (
-                  <SelectItem key={e} value={e}>{e}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
           </div>
 
           {/* Segment */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">Segment</label>
-            <Select value={getSelectValue(filters.segment)} onValueChange={(v) => handleSelectChange('segment', v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="All Segments" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Segments</SelectItem>
-                {options.segments.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              options={['', ...options.segments]}
+              value={filters.segment || ''}
+              onValueChange={(v) => updateFilter('segment', v)}
+              placeholder="All Segments"
+              searchPlaceholder="Search segments..."
+              emptyText="No segments found."
+            />
           </div>
 
           {/* KVA Min */}
