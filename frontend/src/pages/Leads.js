@@ -2467,12 +2467,12 @@ const Leads = () => {
                 {canTransferLead(selectedLead) && (
                   <Button 
                     variant="secondary" 
-                    onClick={() => handleTransferLead(selectedLead)}
+                    onClick={() => openTransferModal(selectedLead)}
                     disabled={transferring}
                     className="bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900 dark:hover:bg-blue-800 dark:text-blue-200"
                   >
                     <ArrowLeftRight className="h-4 w-4 mr-2" />
-                    {transferring ? 'Transferring...' : 'Transfer to Dealer'}
+                    Transfer to Dealer
                   </Button>
                 )}
               </div>
