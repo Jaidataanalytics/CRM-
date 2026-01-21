@@ -167,15 +167,13 @@ const Admin = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [statsRes, usersRes, closureRes, qualRes, settingsRes] = await Promise.all([
+      const [statsRes, closureRes, qualRes, settingsRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { withCredentials: true }),
-        axios.get(`${API}/admin/users`, { withCredentials: true }),
         axios.get(`${API}/admin/closure-questions`, { withCredentials: true }),
         axios.get(`${API}/qualification/questions`, { withCredentials: true }),
         axios.get(`${API}/qualification/settings`, { withCredentials: true })
       ]);
       setStats(statsRes.data);
-      setUsers(usersRes.data);
       setClosureQuestions(closureRes.data.questions || []);
       setQualificationQuestions(qualRes.data.questions || []);
       setQualificationSettings(settingsRes.data);
