@@ -461,7 +461,7 @@ const Insights = () => {
   };
 
   const Icon = getPerformerIcon();
-  const maxValue = Math.max(...performers.map(p => p[metric === 'conversion_rate' ? 'conversion_rate' : metric === 'won' ? 'won_leads' : metric === 'kva' ? 'total_kva' : 'total_leads']));
+  const maxValue = Math.max(...performers.map(p => p[metric === 'conversion_rate' ? 'conversion_rate' : metric === 'won' ? 'won_leads' : 'total_leads']));
 
   if (loading) {
     return (
