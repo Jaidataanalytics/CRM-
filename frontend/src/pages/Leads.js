@@ -1584,16 +1584,14 @@ const Leads = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Dealer <span className="text-red-500">*</span></Label>
-                    <Select value={formData.dealer || ''} onValueChange={(v) => handleInputChange('dealer', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select dealer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(dropdownOptions.dealer || []).slice(0, 100).map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={dropdownOptions.dealer || []}
+                      value={formData.dealer || ''}
+                      onValueChange={(v) => handleInputChange('dealer', v)}
+                      placeholder="Search and select dealer..."
+                      searchPlaceholder="Type to search dealers..."
+                      emptyText="No dealers found."
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Employee</Label>
