@@ -1784,7 +1784,6 @@ const Insights = () => {
                           <TableHead className="text-center text-yellow-600">31-60d</TableHead>
                           <TableHead className="text-center text-orange-600">61-90d</TableHead>
                           <TableHead className="text-center text-red-600">90+d</TableHead>
-                          <TableHead className="text-center">Total KVA</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -1799,7 +1798,6 @@ const Insights = () => {
                             <TableCell className="text-center text-yellow-600">{item.age_31_60}</TableCell>
                             <TableCell className="text-center text-orange-600">{item.age_61_90}</TableCell>
                             <TableCell className="text-center text-red-600 font-medium">{item.age_90_plus}</TableCell>
-                            <TableCell className="text-center">{item.total_kva.toLocaleString()}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
