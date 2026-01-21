@@ -273,6 +273,25 @@ export const FilterBar = () => {
               onChange={(e) => updateFilter('kvaMax', e.target.value)}
             />
           </div>
+
+          {/* Max Lead Age */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Max Lead Age (days)</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min="0"
+                max="365"
+                step="10"
+                value={filters.maxLeadAge || 365}
+                onChange={(e) => updateFilter('maxLeadAge', e.target.value === '365' ? '' : e.target.value)}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <span className="text-sm font-medium min-w-[50px] text-right">
+                {filters.maxLeadAge ? `≤${filters.maxLeadAge}d` : 'All'}
+              </span>
+            </div>
+          </div>
         </div>
       )}
     </div>
