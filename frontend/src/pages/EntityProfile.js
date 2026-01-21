@@ -538,6 +538,205 @@ const EntityProfile = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Mini Summary Builder */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Summary Builder
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Select value={timeFrame} onValueChange={setTimeFrame}>
+                    <SelectTrigger className="w-28 h-8 text-xs">
+                      <SelectValue placeholder="Time Frame" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="quarterly">Quarterly</SelectItem>
+                      <SelectItem value="yearly">Yearly</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Period</TableHead>
+                      <TableHead className="text-xs text-right">Total</TableHead>
+                      <TableHead className="text-xs text-right">Won</TableHead>
+                      <TableHead className="text-xs text-right">Lost</TableHead>
+                      <TableHead className="text-xs text-right">Open</TableHead>
+                      <TableHead className="text-xs text-right">Conv %</TableHead>
+                      <TableHead className="text-xs text-right">KVA</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(enhancedData.summary_builder || []).map((row) => (
+                      <TableRow key={row.period}>
+                        <TableCell className="text-xs font-medium">{row.period}</TableCell>
+                        <TableCell className="text-xs text-right">{row.total_leads}</TableCell>
+                        <TableCell className="text-xs text-right text-green-600">{row.won_leads}</TableCell>
+                        <TableCell className="text-xs text-right text-red-600">{row.lost_leads}</TableCell>
+                        <TableCell className="text-xs text-right text-blue-600">{row.open_leads}</TableCell>
+                        <TableCell className="text-xs text-right">{row.conversion_rate}%</TableCell>
+                        <TableCell className="text-xs text-right">{row.total_kva}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!enhancedData.summary_builder || enhancedData.summary_builder.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground text-xs">
+                          No data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* KVA Breakdown + Top Segments */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* KVA Breakdown */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">KVA Breakdown (Individual Values)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-48">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">KVA</TableHead>
+                        <TableHead className="text-xs text-right">Total</TableHead>
+                        <TableHead className="text-xs text-right">Won</TableHead>
+                        <TableHead className="text-xs text-right">Conv %</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(enhancedData.kva_breakdown || []).map((row) => (
+                        <TableRow key={row.kva}>
+                          <TableCell className="text-xs font-medium">{row.kva}</TableCell>
+                          <TableCell className="text-xs text-right">{row.total_leads}</TableCell>
+                          <TableCell className="text-xs text-right text-green-600">{row.won_leads}</TableCell>
+                          <TableCell className="text-xs text-right">{row.conversion_rate}%</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!enhancedData.kva_breakdown || enhancedData.kva_breakdown.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground text-xs">
+                            No KVA data available
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Top Segments */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Top Segments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-48">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Segment</TableHead>
+                        <TableHead className="text-xs text-right">Total</TableHead>
+                        <TableHead className="text-xs text-right">Won</TableHead>
+                        <TableHead className="text-xs text-right">KVA</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(enhancedData.top_segments || []).map((row) => (
+                        <TableRow key={row.segment}>
+                          <TableCell className="text-xs font-medium">{row.segment}</TableCell>
+                          <TableCell className="text-xs text-right">{row.total_leads}</TableCell>
+                          <TableCell className="text-xs text-right text-green-600">{row.won_leads}</TableCell>
+                          <TableCell className="text-xs text-right">{row.total_kva}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(!enhancedData.top_segments || enhancedData.top_segments.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground text-xs">
+                            No segment data available
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Dimension Breakdown */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">Breakdown By</CardTitle>
+                <Select value={breakdownBy} onValueChange={setBreakdownBy}>
+                  <SelectTrigger className="w-32 h-8 text-xs">
+                    <SelectValue placeholder="Dimension" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="segment">Segment</SelectItem>
+                    <SelectItem value="employee">Employee</SelectItem>
+                    <SelectItem value="dealer">Dealer</SelectItem>
+                    <SelectItem value="source">Source</SelectItem>
+                    <SelectItem value="kva">KVA</SelectItem>
+                    <SelectItem value="district">District</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">{breakdownBy.charAt(0).toUpperCase() + breakdownBy.slice(1)}</TableHead>
+                      <TableHead className="text-xs text-right">Total</TableHead>
+                      <TableHead className="text-xs text-right">Won</TableHead>
+                      <TableHead className="text-xs text-right">Lost</TableHead>
+                      <TableHead className="text-xs text-right">Open</TableHead>
+                      <TableHead className="text-xs text-right">Conv %</TableHead>
+                      <TableHead className="text-xs text-right">KVA</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(enhancedData.breakdown?.data || []).map((row, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="text-xs font-medium">{row.name}</TableCell>
+                        <TableCell className="text-xs text-right">{row.total_leads}</TableCell>
+                        <TableCell className="text-xs text-right text-green-600">{row.won_leads}</TableCell>
+                        <TableCell className="text-xs text-right text-red-600">{row.lost_leads}</TableCell>
+                        <TableCell className="text-xs text-right text-blue-600">{row.open_leads}</TableCell>
+                        <TableCell className="text-xs text-right">{row.conversion_rate}%</TableCell>
+                        <TableCell className="text-xs text-right">{row.total_kva}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!enhancedData.breakdown?.data || enhancedData.breakdown.data.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground text-xs">
+                          No breakdown data available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </>
       )}
 
