@@ -50,10 +50,26 @@ const CompareForecasts = () => {
   const [savedForecasts, setSavedForecasts] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [comparisonData, setComparisonData] = useState(null);
+  const [selectedForecast, setSelectedForecast] = useState(null);
+  const [expandedPrediction, setExpandedPrediction] = useState({});
 
   useEffect(() => {
     loadSavedForecasts();
   }, []);
+
+  // When index changes, find and set the selected forecast
+  useEffect(() => {
+    if (selectedIndex !== null) {
+      const forecast = savedForecasts.find(f => f.index === selectedIndex);
+      setSelectedForecast(forecast);
+    } else {
+      setSelectedForecast(null);
+    }
+  }, [selectedIndex, savedForecasts]);
+
+  const togglePrediction = (idx) => {
+    setExpandedPrediction(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
 
   const loadSavedForecasts = async () => {
     setLoading(true);
