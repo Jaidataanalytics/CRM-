@@ -232,6 +232,32 @@ const Insights = () => {
     }
   };
 
+  const loadTemperatureAnalysis = async () => {
+    setTemperatureLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/temperature-analysis?${queryParams}&dimension=${temperatureDimension}`, { withCredentials: true });
+      setTemperatureData(res.data);
+    } catch (error) {
+      console.error('Error loading temperature analysis:', error);
+    } finally {
+      setTemperatureLoading(false);
+    }
+  };
+
+  const loadLeadAgeAnalysis = async () => {
+    setLeadAgeLoading(true);
+    try {
+      const queryParams = buildQueryParams();
+      const res = await axios.get(`${API}/insights/lead-age-analysis?${queryParams}&dimension=${leadAgeDimension}`, { withCredentials: true });
+      setLeadAgeData(res.data);
+    } catch (error) {
+      console.error('Error loading lead age analysis:', error);
+    } finally {
+      setLeadAgeLoading(false);
+    }
+  };
+
   const loadDrilldown = async (analysisType, level, value, parentDealer, parentDistrict) => {
     setDrilldownLoading(true);
     try {
