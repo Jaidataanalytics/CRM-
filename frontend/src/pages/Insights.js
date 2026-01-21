@@ -135,6 +135,14 @@ const Insights = () => {
     loadClosureAnalysis();
   }, [closureCompareYoy]);
 
+  useEffect(() => {
+    loadTemperatureAnalysis();
+  }, [temperatureDimension, buildQueryParams]);
+
+  useEffect(() => {
+    loadLeadAgeAnalysis();
+  }, [leadAgeDimension, buildQueryParams]);
+
   const loadData = async () => {
     setLoading(true);
     try {
