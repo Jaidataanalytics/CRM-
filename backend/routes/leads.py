@@ -1663,6 +1663,58 @@ async def create_lead(
     
     await db.leads.insert_one(lead_doc)
     
+    # Auto-link to transferred lead if matching phone + dealer
+    phone = lead_doc.get("phone_number")
+    dealer = lead_doc.get("dealer")
+    
+    if phone and dealer:
+        # Look for a transferred lead with same phone + target dealer
+        transferred_lead = await db.leads.find_one({
+            "is_transferred": True,
+            "phone_number": phone,
+            "transferred_to_dealer_name": dealer,
+            "linked_dealer_lead_id": {"$exists": False},  # Not already linked
+            "deleted_at": {"$exists": False}
+        }, {"_id": 0})
+        
+        if transferred_lead:
+            # Link the transferred lead to this new lead
+            await db.leads.update_one(
+                {"lead_id": transferred_lead["lead_id"]},
+                {"$set": {
+                    "linked_dealer_lead_id": lead.lead_id,
+                    "linked_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            
+            # Mark this new lead as originating from a transfer
+            await db.leads.update_one(
+                {"lead_id": lead.lead_id},
+                {"$set": {
+                    "is_transferred_lead": True,
+                    "original_transfer_id": transferred_lead["lead_id"],
+                    "original_generated_by": transferred_lead.get("transferred_by_employee", ""),
+                    "original_enquiry_no": transferred_lead.get("enquiry_no", "")
+                }}
+            )
+            
+            # Log the auto-linking
+            link_activity = {
+                "activity_id": f"activity_link_{datetime.now(timezone.utc).timestamp()}",
+                "resource": "lead",
+                "resource_id": lead.lead_id,
+                "action": "auto_linked_to_transfer",
+                "user_id": current_user.user_id,
+                "user_name": current_user.name,
+                "details": {
+                    "original_transfer_id": transferred_lead["lead_id"],
+                    "original_generated_by": transferred_lead.get("transferred_by_employee", ""),
+                    "message": f"Auto-linked to transferred lead {transferred_lead.get('enquiry_no', '')}"
+                },
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.activity_logs.insert_one(link_activity)
+    
     # Log activity
     activity = ActivityLog(
         user_id=current_user.user_id,
