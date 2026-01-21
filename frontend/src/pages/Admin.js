@@ -161,10 +161,6 @@ const Admin = () => {
   }, []);
 
   useEffect(() => {
-    loadLogs();
-  }, [logsPage]);
-
-  useEffect(() => {
     loadTrashLeads();
   }, [trashPage]);
 
