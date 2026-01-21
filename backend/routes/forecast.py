@@ -690,7 +690,7 @@ async def generate_forecast(
     
     # Calculate overall conversion rate
     total_leads_all = await db.leads.count_documents(query)
-    total_won_all = await db.leads.count_documents({**query, "enquiry_stage": "Closed-Won"})
+    total_won_all = await db.leads.count_documents({**query, "enquiry_stage": {"$in": WON_STAGES}})
     overall_conversion_rate = total_won_all / total_leads_all if total_leads_all > 0 else 0.25
     
     # KVA distribution with conversion rates
