@@ -691,7 +691,7 @@ async def import_leads_only(
 async def reset_from_preview(
     request: Request,
     current_user: User = Depends(get_current_user),
-    preview_url: str = "https://leads-dashboard-4.preview.emergentagent.com"
+    preview_url: str = "https://insight-bridge-1.preview.emergentagent.com"
 ):
     """
     Fetch data from preview environment and import into this database.
