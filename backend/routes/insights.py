@@ -1673,7 +1673,7 @@ async def get_analysis_drilldown(
         "next_level_label": next_level_label,
         "value": value,
         "parent_dealer": parent_dealer,
-        "parent_location": parent_location,
+        "parent_district": parent_district,
         "total_count": total_count,
         "data": data,
         "filters": {
