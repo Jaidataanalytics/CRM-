@@ -373,7 +373,7 @@ const DuplicateLeads = () => {
           </p>
         </div>
         <ExportButton
-          data={duplicateGroups.flatMap(g => g.leads)}
+          data={leads}
           filename="duplicate_leads"
           sheetName="Duplicate Leads"
           columns={[
