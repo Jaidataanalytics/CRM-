@@ -170,13 +170,30 @@ None currently
 ### P1 - High Priority
 1. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
 2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
-3. **Complete searchable dropdowns** - Apply SearchableSelect to remaining large dropdowns in Insights.js and Admin.js
-4. **Complete Component Refactoring** - Integrate extracted components into Insights.js to reduce file size
+3. **Complete Component Integration** - Integrate admin and leads components into main pages to further reduce file sizes
 
 ### P2 - Medium Priority
-1. **Continue Refactor** - Break down Admin.js (~3462 lines) and Leads.js (~3106 lines)
+1. **Continue Refactor** - Admin.js (3462 lines) and Leads.js (3106 lines) still need more component extraction
 2. **Lead Velocity & ROI Analysis** - How fast leads move through stages
 3. **Dashboard customization** - User-configurable widgets
+
+## Refactored Components Structure
+```
+/app/frontend/src/components/
+├── insights/           # 878 lines extracted
+│   ├── SummaryBuilder.jsx (366 lines)
+│   ├── TopPerformers.jsx (162 lines)
+│   ├── TemperatureAnalysis.jsx (177 lines)
+│   ├── LeadAgeAnalysis.jsx (169 lines)
+│   └── index.js
+├── admin/             # 420 lines extracted
+│   ├── UserManagement.jsx (275 lines)
+│   ├── ActivityLogs.jsx (143 lines)
+│   └── index.js
+└── leads/             # 238 lines extracted
+    ├── LeadDetailPanel.jsx (238 lines)
+    └── index.js
+```
 
 ### P3 - Low Priority
 1. **Verify Per-Dimension Forecast Accuracy**
