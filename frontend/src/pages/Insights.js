@@ -521,73 +521,7 @@ const Insights = () => {
         </TabsList>
 
         <TabsContent value="performers" className="space-y-4">
-          <div className="flex gap-4">
-            <Select value={performerType} onValueChange={setPerformerType}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="employee">By Employee</SelectItem>
-                <SelectItem value="dealer">By Dealer</SelectItem>
-                <SelectItem value="state">By State</SelectItem>
-                <SelectItem value="source">By Source</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={metric} onValueChange={setMetric}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="won">Won Leads</SelectItem>
-                <SelectItem value="total">Total Leads</SelectItem>
-                <SelectItem value="conversion_rate">Conversion Rate</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Top {performerType.charAt(0).toUpperCase() + performerType.slice(1)}s
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {performers.map((p, idx) => {
-                  const value = metric === 'conversion_rate' ? p.conversion_rate : 
-                               metric === 'won' ? p.won_leads : p.total_leads;
-                  const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
-                  
-                  return (
-                    <div key={idx} className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted">
-                        {idx < 3 ? (
-                          <span className={`font-bold text-sm ${idx === 0 ? 'text-yellow-500' : idx === 1 ? 'text-gray-400' : 'text-amber-600'}`}>
-                            {idx + 1}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">{idx + 1}</span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium truncate">{p.name}</span>
-                          <span className="text-sm text-muted-foreground">
-                            {metric === 'conversion_rate' ? `${value}%` : value.toLocaleString()}
-                          </span>
-                        </div>
-                        <Progress value={percentage} className="h-2" />
-                      </div>
-                    </div>
-                  );
-                })}
-                {performers.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">No data available</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <TopPerformers buildQueryParams={buildQueryParams} />
         </TabsContent>
 
         <TabsContent value="conversion">
