@@ -258,3 +258,7 @@ None currently
 
 ## Known Issues
 - Frontend build folder may disappear - fix: `yarn build && sudo supervisorctl restart frontend`
+
+---
+*Last Updated: Jan 21, 2026*
+*Latest Feature: Excel Export to All Pages*
