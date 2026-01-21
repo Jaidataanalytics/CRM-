@@ -249,8 +249,18 @@ const Leads = () => {
       }
     };
     
+    const loadDealers = async () => {
+      try {
+        const res = await axios.get(`${API}/filters?filter_type=dealer`, { withCredentials: true });
+        setDealersList(res.data.values || []);
+      } catch (error) {
+        console.error('Error loading dealers:', error);
+      }
+    };
+    
     loadDropdownOptions();
     loadUsers();
+    loadDealers();
     loadPendingClosureCount();
   }, []);
 
