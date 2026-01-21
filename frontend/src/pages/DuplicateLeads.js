@@ -711,7 +711,11 @@ const DuplicateLeads = () => {
                     </TableHeader>
                     <TableBody>
                       {mergedLeads.map((lead) => (
-                        <TableRow key={lead.lead_id} className="hover:bg-muted/50">
+                        <TableRow 
+                          key={lead.lead_id} 
+                          className="hover:bg-muted/50 cursor-pointer"
+                          onClick={() => handleViewLead(lead)}
+                        >
                           <TableCell className="font-mono text-sm">{lead.enquiry_no || '-'}</TableCell>
                           <TableCell className="font-medium">{lead.name || lead.corporate_name || '-'}</TableCell>
                           <TableCell>{lead.phone_number || '-'}</TableCell>
