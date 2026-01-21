@@ -102,16 +102,6 @@ export const FilterBar = () => {
     }
   };
 
-  const handleSelectChange = (key, value) => {
-    // Convert "all" back to empty string for the filter
-    updateFilter(key, value === 'all' ? '' : value);
-  };
-
-  const getSelectValue = (value) => {
-    // Convert empty string to "all" for the Select component
-    return value || 'all';
-  };
-
   const activeFilters = getActiveFilters();
   const activeCount = Object.keys(activeFilters).filter(k => !['startDate', 'endDate'].includes(k)).length;
 
