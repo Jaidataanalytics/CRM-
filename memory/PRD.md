@@ -1,369 +1,131 @@
-# Sharda Lead Management Dashboard - PRD
+# Sharda Leads Dashboard - Product Requirements Document
 
 ## Original Problem Statement
-A full-stack Lead Management application for Sharda, a generator/genset company. The application helps manage sales leads with features for tracking, forecasting, analytics, and dispatch management.
+Build a comprehensive leads management dashboard for tracking sales leads, forecasting, and analytics with features for:
+- Lead management with deduplication
+- Sales forecasting with KVA breakdown
+- Multi-dimensional analytics (Segment, Source, KVA, Closure)
+- Market potential comparison
+- Year-over-Year analysis
 
-## Core Features Implemented
+## User Personas
+- **Admin**: Full access to all features, data management, cleanup tools
+- **Manager**: Access to forecasts, analytics, lead management
+- **Sales Staff**: Basic lead viewing and updates
 
-### 1. Lead Management
-- CRUD operations for leads
-- Bulk upload via Excel (uses enquiry_no + phone_number composite key)
-- Advanced filtering (State, Dealer, Lead Type, Follow-up Date)
-- Export with applied filters
-- Follow-up tracking with history
-- **Lost Lead Questions**: Optional closure questions when lead is marked as Lost (shows "Pending" until filled)
+## Core Architecture
+```
+/app/
+├── backend/
+│   ├── routes/
+│   │   ├── kpis.py              # Dashboard KPIs with KVA breakdown
+│   │   ├── insights.py          # All analytics endpoints (Segment, Source, KVA, Temperature, Lead Age)
+│   │   ├── market_potential.py  # Comparison page data
+│   │   ├── forecast.py          # Forecasting with complete data saving
+│   │   └── leads.py             # Lead management + duplicate analytics
+│   └── server.py
+└── frontend/
+    └── src/
+        ├── pages/
+        │   ├── Dashboard.js      # KVA breakdown cards (LKVA/MKVA/HKVA)
+        │   ├── Insights.js       # All analysis tabs + Summary Builder
+        │   ├── Comparison.js     # Market potential analysis
+        │   ├── DuplicateLeads.js # Data quality + Analytics tab
+        │   └── CompareForecasts.js # Saved forecast details view
+        ├── context/
+        │   └── FilterContext.js  # Global filters including maxLeadAge
+        └── components/
+            └── filters/
+                └── FilterBar.js  # Filter bar with lead age slider
+```
 
-### 2. Dashboard & KPIs
-- Real-time KPI cards (Hot/Warm/Cold/Won/Lost)
-- **Dispatch KPIs**: Pending Dispatch, Dispatched counts
-- **KVA Category KPIs (NEW - Jan 20, 2026)**: Open LKVA (<82.5), Open MKVA (82.5-249), Open HKVA (≥250)
-- Clickable KPI cards for filtering
-- KPI visibility settings (show/hide individual cards)
-- Recent leads table with status indicators
+## What's Been Implemented (as of Jan 2026)
 
-### 3. Dispatch Management
-- **Dedicated Dispatch Page**: Track and manage order dispatches
-- **Status Tracking**: Pending Dispatch → Dispatched
-- **Historical Data Handling**: 
-  - Orders won before Jan 5, 2026 = "Dispatched" by default (no date)
-  - Orders won on/after Jan 5, 2026 = "Pending Dispatch" by default
-- **Dispatch Fields**: Dispatch date, delivery address, transporter details
-- **Validation**: Dispatch date cannot be before won date
-- **Status Change Rules**:
-  - Historical orders: Can change without reason
-  - New orders: Reason required when changing dispatched → pending
-- **Dispatch History**: Full audit trail of status changes
+### Dashboard
+- [x] KPI cards with LKVA/MKVA/HKVA breakdown
+- [x] Hot/Warm/Cold leads summary
+- [x] Quick actions and recent activity
 
-### 4. AI-Powered Forecasting (Enhanced)
-- **Auto Model Optimization**: Tests 8+ models, selects best
-- **91.2% Accuracy Achieved**: Using Weighted Moving Average
-- **Per-Dimension Accuracy**: All dimensions ≥75%
-- **Multi-Dimensional Breakdowns**: KVA, State, Dealer, Employee, Segment
-- **Consistent Closure Totals**: All breakdowns equal monthly total
-- **Business Context Adjustments**
-- **Save & View Projections**
-- **Compare Forecasts**: Compare saved projections against actual results (NEW - Jan 5, 2026)
+### Insights Page
+- [x] Top Performers tab
+- [x] Segment Analysis with YoY toggle
+- [x] Closure Analysis with YoY toggle
+- [x] Source Analysis with YoY toggle
+- [x] KVA Analysis with YoY toggle
+- [x] **Hot/Warm/Cold Analysis** (NEW) - Temperature distribution by dimension
+- [x] **Lead Age Analysis** (NEW) - Average lead age by dimension
+- [x] Summary Builder with KVA dimension + Financial Year format
+- [x] Multi-level drill-down (Category → Dealer → District → Employee)
 
-### 5. Analytics & Insights (Admin/Manager only)
-- **Top Performers**: By Employee, Dealer, State
-- **Conversion Analysis**: Conversion rate vs follow-ups
-- **Segment Analysis**: Performance by segment with drill-down (Segment → Dealer → Location → Employee)
-- **Source Analysis (NEW - Jan 20, 2026)**: Lead performance by source channel with drill-down
-- **KVA Analysis (NEW - Jan 20, 2026)**: LKVA/MKVA/HKVA category breakdown with drill-down
-- **Drill-Down Capability (NEW)**: Click on any analysis item to drill into Dealer → Location → Employee levels
-- **Closure Analysis** (NEW - Jan 5, 2026):
-  - Summary cards: Total Lost, With Closure Data, Pending, Completion Rate
-  - Question-by-question breakdown with answer distribution
-  - Lost leads by State and Dealer
-  - Helps identify patterns in why leads are lost
+### Comparison Page
+- [x] Market potential data upload via Excel
+- [x] Comparison by District, Dealer, State, KVA Range
+- [x] Uses actual `district` field (not `location`)
+- [x] Indian Financial Year date logic
 
-### 6. User Management
-- Role-based access (Admin, Manager, Employee)
-- Google OAuth via Emergent-managed Auth
-- Activity logging
+### Global Filters
+- [x] Date range (Indian FY default)
+- [x] State, Dealer, Employee, Segment
+- [x] KVA Min/Max
+- [x] **Max Lead Age slider** (NEW) - Filter out leads older than X days
 
-## Technical Stack
-- **Frontend**: React + Tailwind CSS + Shadcn/UI + Chart.js + Recharts
-- **Backend**: FastAPI + MongoDB
-- **AI**: GPT-4o via Emergent LLM Key
-- **ML Libraries**: scikit-learn, XGBoost, statsmodels, Prophet
+### Forecasting
+- [x] Adaptive seasonal forecasting model
+- [x] KVA, Dealer, Segment breakdowns
+- [x] Backtest functionality
+- [x] **Complete forecast saving** (NEW) - Saves all breakdowns, notes, summary
+- [x] **Saved forecast details view** (NEW) - View breakdown on Compare Forecasts page
 
-## Key API Endpoints
+### Data Management
+- [x] Duplicate leads detection
+- [x] Merge history
+- [x] Order time punch detection
+- [x] Won without SO detection
+- [x] **Analytics tab** (NEW) - Duplicates/merges by dimension
+- [x] Clickable leads in merge history
 
-### Summary Builder / Pivot Table (NEW - Jan 13, 2026)
-- `GET /api/insights/summary-builder` - Dynamic pivot table with metric, time_frame, dimension params
-  - metrics: leads, qty, won_leads, lost_leads, conversion_rate
-  - time_frames: monthly, quarterly, yearly
-  - dimensions: employee, dealer, state, location, segment, source
-- `GET /api/filters/locations` - Get unique locations for filtering
+### Terminology Updates
+- [x] Changed "Location" to "District" everywhere
+- [x] Uses actual `district` column from lead data
 
-### Dispatch Module
-- `GET /api/dispatch/summary` - Get pending/dispatched counts
-- `GET /api/dispatch/list` - List won orders with dispatch status
-- `PATCH /api/dispatch/{lead_id}` - Update dispatch status
-- `GET /api/dispatch/{lead_id}/history` - Dispatch change history
-- `POST /api/dispatch/migrate` - Migrate existing data (admin only)
+## Prioritized Backlog
 
-### Forecast Module
-- `POST /api/forecast` - Generate forecast with auto-optimized model
-- `POST /api/forecast/save` - Save a generated forecast
-- `GET /api/forecast/saved` - Get list of saved forecasts
-- `GET /api/forecast/compare/{index}` - Compare saved forecast with actual results (NEW)
+### P0 - Critical
+None currently
 
-### Closure Questions Module (NEW)
-- `GET /api/leads/pending-closure-questions/count` - Count leads needing closure questions
-- `GET /api/leads/pending-closure-questions` - List leads needing closure questions
-- `POST /api/leads/{lead_id}/closure-answers` - Save closure question answers
-- `GET /api/admin/closure-questions` - Get configured closure questions
+### P1 - High Priority
+1. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
+2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
 
-### Insights Module (NEW)
-- `GET /api/insights/closure-analysis` - Get closure questions analysis for lost leads
-- `GET /api/leads/data-quality/won-without-quotation` - Returns Won leads missing quotation data (data quality report)
+### P2 - Medium Priority
+1. **Refactor Large Components** - Break down Insights.js (~2500 lines), Admin.js (~3000 lines)
+2. **Lead Velocity & ROI Analysis** - How fast leads move through stages
+3. **Dashboard customization** - User-configurable widgets
+4. **Export to Excel** - All pages
 
-## Completed Work
+### P3 - Low Priority
+1. **Verify Per-Dimension Forecast Accuracy**
+2. **Detailed Audit Logs**
 
-### Session 10 - Jan 14, 2026 (COMPLETED)
-**Data Re-Upload and Order Time Punch Feature**
+## Key Technical Notes
 
-1. ✅ **Complete Data Re-Upload**:
-   - Cleared all existing data and re-uploaded fresh files
-   - Enquiry Dump (26,697 rows) → 26,690 unique leads
-   - Lost Dump (4,057 rows) → 3,961 updated to Lost
-   - SO Register (5,205 rows) → 5,150 matched with enquiries (98.9% match rate!)
+### Financial Year Logic
+- Indian FY: April 1 - March 31
+- Quarterly: Q1=Apr-Jun, Q2=Jul-Sep, Q3=Oct-Dec, Q4=Jan-Mar
+- Format: "FY2025-26" for yearly, "2025-26-Q1" for quarterly
 
-2. ✅ **Removed Qty from Total Leads KPI**:
-   - Qty now only shows for Won Leads (genset count)
-   - Total Leads shows count only
+### Hot/Warm/Cold Classification
+- Based on `enquiry_type` field (not `enquiry_stage`)
+- Hot, Warm, Cold values from lead data
 
-3. ✅ **Added "Order Time Punch" Tab** in Data Management:
-   - Shows leads closed within 2 days of creation
-   - Summary cards: Total Orders, Total Qty, Same Day, 1 Day, 2 Days
-   - Currently shows 2,583 quick wins (1,564 same-day closures!)
-   - Backend endpoints: `/api/leads/order-time-punch` and `/api/leads/order-time-punch/summary`
+### MongoDB Considerations
+- Always exclude `_id` from responses or convert to string
+- Use `deleted_at: {"$exists": False}` for soft-deleted leads
+- Use `is_duplicate: False` filter where applicable
 
-4. ✅ **Documented Duplicate Detection Logic**:
-   - Explained why 4,775 leads with repeated phones are NOT flagged as duplicates
-   - These are legitimate repeat/returning customers per business rules
+## Credentials for Testing
+- Username: `admin`
+- Password: `admin123`
 
-### Session 9 - Jan 14, 2026 (COMPLETED)
-**CRITICAL BUG FIX: Won Leads now include duplicate/repeat customer purchases**
-
-1. ✅ **Won Leads Include Duplicates Fix (CRITICAL)**:
-   - **Root Cause Found**: Won leads from repeat customers (same phone number) were being filtered out as "duplicates"
-   - **Impact**: 185 won leads (189 qty) were being excluded from KPIs
-   - **Fix**: Won leads now use separate `won_base_query` that doesn't exclude duplicates
-   - Each won lead = real sale, even from repeat customers
-   - **Fixed numbers**: 866 leads, 878 qty (previously 681 leads, 689 qty)
-
-2. ✅ **Bug Fix: Variable Shadowing in kpis.py**:
-   - `won_base_query` was being redefined at line 217 for dispatch tracking
-   - This overwrote the original query used for qty calculations
-   - Renamed to `dispatch_base_query` to prevent shadowing
-
-3. ✅ **Quotations Page Now Respects Date Filters**:
-   - Added filter parameters to `/api/leads/quotations` and `/api/leads/quotations/summary`
-   - Quotations page now uses FilterContext like other pages
-   - Both KPIs and Quotations page now show same totals (680)
-
-4. ✅ **Quotations Sent KPI Now Includes All Quotation Data**:
-   - Changed from only counting `quotation_sent: True` (was 2)
-   - Now counts leads with quotation_no OR quotation_date OR quotation_sent (680)
-
-5. ✅ **Auto-Mark quotation_sent Migration**:
-   - Migration script to auto-set `quotation_sent=True` for leads with quotation data
-   - Runs on server startup
-
-6. ✅ **Deep Copy Fix for Query Mutations**:
-   - `count_by_metric()` now uses `copy.deepcopy()` to prevent query mutations
-
-### Session 8 - Jan 13, 2026 (COMPLETED)
-1. ✅ **YoY Historical Comparison Toggle in Summary Builder (P0)**:
-   - New toggle "YoY Comparison" with History icon
-   - When enabled, table shows: Current | Prev | YoY% columns for each period
-   - YoY insight card shows growth/decline percentage
-   - Green up arrows for positive YoY, red down arrows for negative
-   - Works with all metrics, time frames, and dimensions
-   - CSV export includes YoY data when toggle is on
-   - Backend: `compare_historical=true` parameter on `/api/insights/summary-builder`
-
-2. ✅ **Quotations Linked to Leads (P0)**:
-   - Added "View Lead" button with Eye icon in Quotations table
-   - Shows Enquiry No column for reference
-   - Clicking navigates to Leads page with search prefilled
-   - Entire row is clickable for navigation
-
-3. ✅ All 15 tests passed (15/15 backend, frontend verified)
-
-### Session 7 - Jan 13, 2026 (COMPLETED)
-1. ✅ **Summary Builder / Pivot Table Feature (P0)**:
-   - New "Summary Builder" tab in Insights page
-   - Dynamic pivot table with:
-     - Metric selector (Total Leads, Total Qty, Won Leads, Lost Leads, Conversion %)
-     - Time frame selector (Monthly, Quarterly, Yearly)
-     - Dimension selector (Employee, Dealer, State, Location, Segment, Source)
-   - Pivot table shows all rows with period columns and totals
-   - Insight cards: Top Performer (trophy), Trend analysis, Best Period
-   - Export to CSV functionality
-   - Backend: `/api/insights/summary-builder` endpoint
-
-2. ✅ **Area → Location Rename**:
-   - Changed "Area Comparison" tab to "Location Comparison" in Comparison page
-   - Updated backend `/api/insights/top-performers` to support `by=location`
-   - Updated `/api/filters/all` to return `locations` instead of `areas`
-   - Added new `/api/filters/locations` endpoint
-
-3. ✅ **Bug Fix**: Fixed KeyError in summary-builder when data is empty
-   - Added null checks for r.get('_id') and nested dimension/time_period
-
-4. ✅ All tests passed (12/12 backend, frontend verified)
-
-### Session 6 - Jan 13, 2026 (COMPLETED)
-1. ✅ **"Old Enquiries Closed" KPI**: New KPI card on Dashboard showing leads won in date range but with older enquiry_date
-
-2. ✅ **Phone-Based Duplicate Detection & Merge for All Uploads**:
-   - Enquiry Upload: Phone as PRIMARY identifier, enquiry_no as fallback
-   - Lost Leads Upload: Now merges data for ALL leads including "Already Lost" and "Won"
-   - Preserves Won/Lost stages while filling missing fields from incoming data
-
-3. ✅ **Closure Analysis Refactored**:
-   - Closure Questions are now: Competitor, Lost Reason, Lost Remarks (from uploads)
-   - Summary: 1,312 Lost, 254 with closure data, 19.4% completion rate
-   - Competitor breakdown: Kirloskar (80), Eicher (48), Others (34), TATA (25)
-   - Lost Reasons: Pricing (116), Brand Image (56), Purchased Old Dg (24)
-   - Removed KVA from all closure analysis displays
-
-4. ✅ **Upload Merge Summary Modal**: Shows merged leads and fields after uploads
-
-5. ✅ **Data Management Page with Merge History Tab**:
-   - Renamed "Duplicate Leads" → "Data Management"
-   - Added "Merge History" tab showing consolidated leads
-   - Stats: 1,474 consolidated leads, 2,659 alt. enquiry numbers
-
-6. ✅ **File Upload Testing with Real Data**:
-   - Enquiry Dump (4785 rows): 1,463 created, 3,322 merged
-   - Lost Dump (698 rows): 677 Already Lost (data merged), 21 Won (data merged), 0 updated to Lost
-
-7. ✅ All features tested and verified
-
-8. ✅ **Quotations Page Created (P1)**:
-   - New dedicated Quotations page at `/quotations`
-   - Summary cards: Total (1,001), Pending (64), Won (912), Conversion Rate (91.1%)
-   - Tabs: All, Pending, Won, Lost
-   - Table with: Quotation No, Lead Name, Phone, Date Sent, Amount, Stage, Status
-   - Search functionality
-   - Backend: `/api/leads/quotations` and `/api/leads/quotations/summary` endpoints
-
-9. ✅ **Per-Dimension Analytics Verified (P1)**:
-   - Insights page: Top Performers, Conversion Analysis, Segment Analysis, Competitor Analysis, Closure Analysis
-   - Comparison page: Geographic Map, State, Dealer, Area, Employee comparisons
-   - All dropdowns (By Employee, By State, By Dealer, By Segment, By Source) working correctly
-
-### Session 5 - Jan 5, 2026 (COMPLETED)
-1. ✅ **Compare Forecasts Page**:
-   - New page at /compare-forecasts
-   - Select saved forecast from dropdown
-   - Compare button triggers comparison
-   - Monthly comparison table with predicted vs actual
-   - KVA, State, Dealer breakdown tabs
-   - Accuracy metrics (Overall, Leads, Closures, KVA)
-   - Charts showing Predicted vs Actual
-2. ✅ **Lost Lead Questions**:
-   - Modal triggers when lead status changes to Lost
-   - Optional answers (shows "Pending" until filled)
-   - Backend endpoints for closure answers
-   - Pending count shown in Leads page header
-3. ✅ **Upload Composite Key Logic**:
-   - Uses enquiry_no + phone_number to identify existing leads
-   - Updates existing leads, creates new ones if not found
-4. ✅ **Closure Analysis in Insights** (NEW):
-   - New "Closure Analysis" tab in Insights page
-   - Summary cards: Total Lost, With Closure Data, Pending, Completion Rate
-   - Question-by-question breakdown with answer distribution charts
-   - Lost leads by State and Dealer tables
-5. ✅ **Restricted Insights Access**:
-   - Insights page now only accessible to Admin and Manager roles
-   - Employees no longer see Insights in sidebar
-6. ✅ All tests passed (12/12 backend, frontend verified)
-
-### Session 4 - COMPLETED
-1. ✅ **Dispatch Management Feature**
-2. ✅ **KPI Cards**: Added Pending Dispatch and Dispatched to Dashboard
-3. ✅ **Migration**: Dispatch status for historical orders
-
-### Previous Sessions - COMPLETED
-- Auto Model Optimization (91.2% accuracy)
-- Per-Dimension Accuracy (all ≥75%)
-- Closure consistency fix
-- Save/View projections
-
-## Completed Work (Latest)
-
-### Session 12 - Jan 20, 2026 (COMPLETED)
-
-**Phase 1: Dashboard KVA Cards**
-1. ✅ Added 3 new KPI cards for Open Leads by KVA category:
-   - Open LKVA (<82.5 KVA)
-   - Open MKVA (82.5-249 KVA)
-   - Open HKVA (≥250 KVA)
-2. ✅ Backend: Added parallel queries in `/app/backend/routes/kpis.py`
-3. ✅ Frontend: Updated Dashboard.js with new cards, visibility settings
-
-**Phase 2: Insights Drill-Down Analysis**
-1. ✅ **Source Analysis Tab**: New tab showing leads by source with drill-down
-2. ✅ **KVA Analysis Tab**: New tab with LKVA/MKVA/HKVA category breakdown
-3. ✅ **Drill-Down Capability**: 4-level drill-down (Item → Dealer → Location → Employee)
-4. ✅ Backend: New endpoints in `/app/backend/routes/insights.py`:
-   - `/api/insights/source-analysis`
-   - `/api/insights/kva-analysis`
-   - `/api/insights/analysis-drilldown`
-5. ✅ Frontend: Updated Insights.js with new tabs and drill-down UI
-
-**Phase 3: Comparison Page Overhaul**
-1. ✅ **New Backend Route**: `/app/backend/routes/market_potential.py`
-   - Template download endpoint
-   - Excel upload/import endpoint
-   - CRUD operations for districts and KVA ranges
-   - Market share comparison calculations
-2. ✅ **New Collections**: `market_potential_districts`, `market_potential_kva`
-3. ✅ **Frontend Complete Rewrite**: `/app/frontend/src/pages/Comparison.js`
-   - Download Template button
-   - Upload Data button
-   - Compare by dropdown (District/Dealer/State/KVA Range)
-   - Overall Summary with Market Share % and YoY Change
-   - Bar chart visualization
-   - Detailed comparison table
-   - Manage Data tab with CRUD for districts and KVA ranges
-   - Add/Edit/Delete entries manually
-
-### Session 11 - Dec 2025 (COMPLETED)
-**Performance Fix - Dashboard Loading Optimized**
-
-1. ✅ **KPI Endpoint Optimization (P0)**:
-   - Changed from 20+ sequential DB queries to parallel execution using `asyncio.gather()`
-   - KPI response time improved from 2+ minutes to **0.76 seconds**
-   - All count queries now run concurrently
-
-2. ✅ **Added Compound Database Indexes**:
-   - `(is_duplicate, enquiry_date)` - for filtered queries
-   - `(enquiry_stage, is_duplicate)` - for won/lost counting  
-   - `(enquiry_status, enquiry_type)` - for hot/warm/cold queries
-   - `(has_so_record, enquiry_date)` - for SO-verified queries
-   - `(dispatch_status, enquiry_stage)` - for dispatch queries
-
-3. ✅ **Fixed Deployment Timeout Issue**:
-   - Moved heavy migrations to background tasks using `asyncio.create_task()`
-   - Server now responds to health checks immediately on startup
-
-## Upcoming Tasks
-- Funnel Analysis (P1) - Create visualization to track conversion rates at each stage (Enquiry → Quotation → Won)
-- Manual 'Qualified' Toggle (P1) - Add UI element to toggle qualified status on lead detail
-- Lead Velocity & ROI Analysis (P2) - Analytics for how fast leads move through stages and which sources provide best return
-- Verify per-dimension forecast accuracy (P2)
-- Detailed audit logs (P2)
-- Refactor large files (`upload.py`, `Leads.js`, `Forecast.js`)
-
-## Future/Backlog Tasks
-- Dashboard customization
-- Export to Excel for all pages
-- Email notifications for lead status changes
-- UI for Data Quality Report (show won leads without quotation data)
-
-## Data Quality Notes
-- **Data Refresh (Jan 14, 2026)**: Uploaded fresh 4-year data from FY23-FY26
-  - Enquiry Dump: 26,697 rows → 26,690 unique leads
-  - Lost Dump: 4,057 rows → 3,961 updated to Lost
-  - SO Register: 5,205 rows → 5,150 matched & updated, 55 new leads created
-  - Total Leads: 26,745 | Won: 5,761 | Lost: 3,533 | Duplicates: 1,125
-
-- **Duplicate Detection Logic**:
-  - A lead is flagged as duplicate ONLY if:
-    1. Same phone number exists in another lead
-    2. The ORIGINAL (earlier) lead is still OPEN (not Won/Lost)
-    3. The time gap between enquiries is < 1 year
-  - If original is CLOSED (Won/Lost) → New enquiry = REPEAT CUSTOMER (not duplicate)
-  - If time gap > 1 year → RETURNING CUSTOMER (not duplicate)
-  - This explains why 4,775 leads with repeated phones are NOT flagged (they're repeat/returning customers)
-
-## Credentials
-- **Admin**: admin / admin123
-- **Employee**: employee@test.com / testpassword
+## Known Issues
+- Frontend build folder may disappear - fix: `yarn build && sudo supervisorctl restart frontend`
