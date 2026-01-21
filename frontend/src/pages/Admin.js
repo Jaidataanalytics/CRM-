@@ -3202,63 +3202,7 @@ const Admin = () => {
 
         {/* Activity Logs Tab */}
         <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Activity Logs</CardTitle>
-              <CardDescription>Recent user activities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Resource</TableHead>
-                    <TableHead>Timestamp</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map((log, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{log.user_name}</p>
-                          <p className="text-xs text-muted-foreground">{log.user_email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell><Badge variant="outline">{log.action}</Badge></TableCell>
-                      <TableCell>
-                        <span className="text-sm">{log.resource_type}</span>
-                        {log.resource_id && (
-                          <span className="text-xs text-muted-foreground block font-mono">{log.resource_id}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm">{formatDate(log.created_at)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {logs.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                        No activity logs found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-              
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-sm text-muted-foreground">Page {logsPage} of {logsTotalPages}</p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setLogsPage(p => Math.max(1, p - 1))} disabled={logsPage === 1}>
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setLogsPage(p => Math.min(logsTotalPages, p + 1))} disabled={logsPage === logsTotalPages}>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <ActivityLogs />
         </TabsContent>
       </Tabs>
 
