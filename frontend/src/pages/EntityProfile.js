@@ -68,6 +68,12 @@ const EntityProfile = () => {
   const [recentLeads, setRecentLeads] = useState({ leads: [], total: 0, pages: 1 });
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [exporting, setExporting] = useState(false);
+  
+  // Enhanced analytics state
+  const [enhancedData, setEnhancedData] = useState(null);
+  const [loadingEnhanced, setLoadingEnhanced] = useState(false);
+  const [timeFrame, setTimeFrame] = useState('monthly');
+  const [breakdownBy, setBreakdownBy] = useState('segment');
 
   const entityIcons = {
     state: MapPin,
@@ -80,6 +86,7 @@ const EntityProfile = () => {
 
   useEffect(() => {
     loadProfile();
+    loadEnhancedAnalytics();
   }, [entityType, entityId, dateRange]);
 
   useEffect(() => {
@@ -87,6 +94,10 @@ const EntityProfile = () => {
       loadRecentLeads();
     }
   }, [recentLeadsPage, profile]);
+  
+  useEffect(() => {
+    loadEnhancedAnalytics();
+  }, [timeFrame, breakdownBy]);
 
   const loadProfile = async () => {
     setLoading(true);
