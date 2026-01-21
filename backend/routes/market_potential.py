@@ -426,10 +426,17 @@ async def get_market_comparison(
         ly_end = end_date
     
     # Build leads query for current year and last year
+    # STANDARDIZED: Match KPI page query filters for consistency
     base_query = {
         "deleted_at": {"$exists": False},
+        "is_deleted": {"$ne": True},
         "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
-        "has_so_record": True
+        "has_so_record": True,
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
     }
     
     if state:
