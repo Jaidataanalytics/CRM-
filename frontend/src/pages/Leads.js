@@ -3059,8 +3059,8 @@ const Leads = () => {
                   className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background"
                 >
                   <option value="">Select employee...</option>
-                  {usersList.map((user, idx) => (
-                    <option key={idx} value={user.name || user.email}>{user.name || user.email}</option>
+                  {employeesList.map((employee, idx) => (
+                    <option key={idx} value={employee}>{employee}</option>
                   ))}
                 </select>
               </div>
