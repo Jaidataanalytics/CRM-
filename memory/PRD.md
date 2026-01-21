@@ -7,6 +7,7 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - Multi-dimensional analytics (Segment, Source, KVA, Closure)
 - Market potential comparison
 - Year-over-Year analysis
+- Transfer leads to dealers workflow
 
 ## User Personas
 - **Admin**: Full access to all features, data management, cleanup tools
@@ -22,7 +23,7 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 │   │   ├── insights.py          # All analytics endpoints (Segment, Source, KVA, Temperature, Lead Age)
 │   │   ├── market_potential.py  # Comparison page data
 │   │   ├── forecast.py          # Forecasting with complete data saving
-│   │   └── leads.py             # Lead management + duplicate analytics
+│   │   └── leads.py             # Lead management + transfer + duplicate analytics
 │   └── server.py
 └── frontend/
     └── src/
@@ -30,6 +31,8 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
         │   ├── Dashboard.js      # KVA breakdown cards (LKVA/MKVA/HKVA)
         │   ├── Insights.js       # All analysis tabs + Summary Builder
         │   ├── Comparison.js     # Market potential analysis
+        │   ├── Leads.js          # Lead management + Transfer Modal
+        │   ├── TransferredLeads.js # Transferred leads tracking + analytics
         │   ├── DuplicateLeads.js # Data quality + Analytics tab
         │   └── CompareForecasts.js # Saved forecast details view
         ├── context/
@@ -40,6 +43,16 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 ```
 
 ## What's Been Implemented (as of Jan 2026)
+
+### Transfer to Dealer Feature (NEW)
+- [x] Transfer Modal with Target Dealer, Original Generator, Notes
+- [x] Transferred Leads Page with summary cards and analytics
+- [x] By Employee / By Dealer breakdown tabs
+- [x] Auto-linking when dealer re-uploads matching lead
+- [x] Exclusion from all KPIs (no count duplication)
+- [x] Visual indicator (↔ icon) on transferred leads
+- [x] Bulk transfer support
+- [x] Undo transfer functionality
 
 ### Dashboard
 - [x] KPI cards with LKVA/MKVA/HKVA breakdown
@@ -52,8 +65,8 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] Closure Analysis with YoY toggle
 - [x] Source Analysis with YoY toggle
 - [x] KVA Analysis with YoY toggle
-- [x] **Hot/Warm/Cold Analysis** (NEW) - Temperature distribution by dimension
-- [x] **Lead Age Analysis** (NEW) - Average lead age by dimension
+- [x] **Hot/Warm/Cold Analysis** - Temperature distribution by dimension
+- [x] **Lead Age Analysis** - Average lead age by dimension
 - [x] Summary Builder with KVA dimension + Financial Year format
 - [x] Multi-level drill-down (Category → Dealer → District → Employee)
 
@@ -67,26 +80,49 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] Date range (Indian FY default)
 - [x] State, Dealer, Employee, Segment
 - [x] KVA Min/Max
-- [x] **Max Lead Age slider** (NEW) - Filter out leads older than X days
+- [x] **Max Lead Age slider** - Filter out leads older than X days
 
 ### Forecasting
 - [x] Adaptive seasonal forecasting model
 - [x] KVA, Dealer, Segment breakdowns
 - [x] Backtest functionality
-- [x] **Complete forecast saving** (NEW) - Saves all breakdowns, notes, summary
-- [x] **Saved forecast details view** (NEW) - View breakdown on Compare Forecasts page
+- [x] **Complete forecast saving** - Saves all breakdowns, notes, summary
+- [x] **Saved forecast details view** - View breakdown on Compare Forecasts page
 
 ### Data Management
 - [x] Duplicate leads detection
 - [x] Merge history
 - [x] Order time punch detection
 - [x] Won without SO detection
-- [x] **Analytics tab** (NEW) - Duplicates/merges by dimension
+- [x] **Analytics tab** - Duplicates/merges by dimension
 - [x] Clickable leads in merge history
 
-### Terminology Updates
-- [x] Changed "Location" to "District" everywhere
-- [x] Uses actual `district` column from lead data
+## Transfer to Dealer - Data Model
+
+### Transferred Lead Fields:
+```javascript
+{
+  is_transferred: true,               // Flag for exclusion
+  enquiry_status: "Transferred",      // New status
+  transferred_to_dealer_name: "...",  // Target dealer
+  transferred_by_employee: "...",     // Original generator
+  transfer_notes: "...",              // Optional notes
+  transferred_at: "2026-01-21T...",   // Transfer timestamp
+  transferred_by_user: "admin",       // Who performed transfer
+  linked_dealer_lead_id: "...",       // When dealer uploads (auto-linked)
+  linked_at: "..."                    // Link timestamp
+}
+```
+
+### Dealer's Re-uploaded Lead Fields:
+```javascript
+{
+  is_transferred_lead: true,          // Indicator flag
+  original_transfer_id: "...",        // Link to original
+  original_generated_by: "...",       // Who generated original
+  original_enquiry_no: "..."          // Original enquiry reference
+}
+```
 
 ## Prioritized Backlog
 
@@ -98,7 +134,7 @@ None currently
 2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
 
 ### P2 - Medium Priority
-1. **Refactor Large Components** - Break down Insights.js (~2500 lines), Admin.js (~3000 lines)
+1. **Refactor Large Components** - Break down Insights.js (~2500 lines), Admin.js (~3000 lines), Leads.js (~3000 lines)
 2. **Lead Velocity & ROI Analysis** - How fast leads move through stages
 3. **Dashboard customization** - User-configurable widgets
 4. **Export to Excel** - All pages
@@ -117,6 +153,16 @@ None currently
 ### Hot/Warm/Cold Classification
 - Based on `enquiry_type` field (not `enquiry_stage`)
 - Hot, Warm, Cold values from lead data
+
+### Transfer Exclusion
+- All KPIs and insights queries include:
+```javascript
+"$or": [
+  {"is_transferred": {"$exists": False}},
+  {"is_transferred": False},
+  {"is_transferred": None}
+]
+```
 
 ### MongoDB Considerations
 - Always exclude `_id` from responses or convert to string
