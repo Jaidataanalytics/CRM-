@@ -1830,8 +1830,19 @@ async def transfer_lead_to_dealer(
     lead_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Transfer any lead to dealer (mark as transferred)"""
+    """Transfer any lead to dealer (mark as transferred) - DEPRECATED: Use /transfer-to-dealer instead"""
     db = await get_db(request)
+    body = await request.json()
+    
+    # Get transfer details from body
+    target_dealer = body.get("target_dealer")
+    transferred_by_employee = body.get("transferred_by_employee")
+    transfer_notes = body.get("transfer_notes", "")
+    
+    if not target_dealer:
+        raise HTTPException(status_code=400, detail="Target dealer is required")
+    if not transferred_by_employee:
+        raise HTTPException(status_code=400, detail="Transferred by employee is required")
     
     # Find the lead
     lead = await db.leads.find_one({"lead_id": lead_id}, {"_id": 0})
@@ -1842,15 +1853,19 @@ async def transfer_lead_to_dealer(
     if lead.get("is_transferred"):
         raise HTTPException(status_code=400, detail="Lead is already transferred")
     
-    # Mark as transferred
+    # Mark as transferred with full details
     await db.leads.update_one(
         {"lead_id": lead_id},
         {
             "$set": {
                 "is_transferred": True,
-                "transferred_at": datetime.now(timezone.utc),
-                "transferred_by": current_user.name or current_user.email,
-                "updated_at": datetime.now(timezone.utc)
+                "enquiry_status": "Transferred",
+                "transferred_to_dealer_name": target_dealer,
+                "transferred_by_employee": transferred_by_employee,
+                "transfer_notes": transfer_notes,
+                "transferred_at": datetime.now(timezone.utc).isoformat(),
+                "transferred_by_user": current_user.name or current_user.email,
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }
         }
     )
@@ -1860,15 +1875,92 @@ async def transfer_lead_to_dealer(
         "activity_id": f"activity_{datetime.now(timezone.utc).timestamp()}",
         "resource": "lead",
         "resource_id": lead_id,
-        "action": "transferred",
+        "action": "transferred_to_dealer",
         "user_id": current_user.user_id,
         "user_name": current_user.name,
-        "details": {"message": "Lead transferred to dealer"},
+        "details": {
+            "message": f"Lead transferred to dealer: {target_dealer}",
+            "target_dealer": target_dealer,
+            "transferred_by_employee": transferred_by_employee,
+            "transfer_notes": transfer_notes
+        },
         "created_at": datetime.now(timezone.utc)
     }
     await db.activity_logs.insert_one(activity)
     
-    return {"message": "Lead transferred successfully", "lead_id": lead_id}
+    return {
+        "message": "Lead transferred successfully",
+        "lead_id": lead_id,
+        "target_dealer": target_dealer,
+        "transferred_by_employee": transferred_by_employee
+    }
+
+
+@router.post("/bulk-transfer")
+async def bulk_transfer_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Bulk transfer multiple leads to a dealer"""
+    db = await get_db(request)
+    body = await request.json()
+    
+    lead_ids = body.get("lead_ids", [])
+    target_dealer = body.get("target_dealer")
+    transferred_by_employee = body.get("transferred_by_employee")
+    transfer_notes = body.get("transfer_notes", "")
+    
+    if not lead_ids:
+        raise HTTPException(status_code=400, detail="No lead IDs provided")
+    if not target_dealer:
+        raise HTTPException(status_code=400, detail="Target dealer is required")
+    if not transferred_by_employee:
+        raise HTTPException(status_code=400, detail="Transferred by employee is required")
+    
+    # Update all leads
+    result = await db.leads.update_many(
+        {
+            "lead_id": {"$in": lead_ids},
+            "is_transferred": {"$ne": True},
+            "deleted_at": {"$exists": False}
+        },
+        {
+            "$set": {
+                "is_transferred": True,
+                "enquiry_status": "Transferred",
+                "transferred_to_dealer_name": target_dealer,
+                "transferred_by_employee": transferred_by_employee,
+                "transfer_notes": transfer_notes,
+                "transferred_at": datetime.now(timezone.utc).isoformat(),
+                "transferred_by_user": current_user.name or current_user.email,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    # Log the activity
+    activity = {
+        "activity_id": f"activity_{datetime.now(timezone.utc).timestamp()}",
+        "resource": "leads",
+        "resource_id": ",".join(lead_ids[:5]),  # First 5 IDs for reference
+        "action": "bulk_transferred_to_dealer",
+        "user_id": current_user.user_id,
+        "user_name": current_user.name,
+        "details": {
+            "message": f"Bulk transferred {result.modified_count} leads to dealer: {target_dealer}",
+            "target_dealer": target_dealer,
+            "transferred_by_employee": transferred_by_employee,
+            "count": result.modified_count
+        },
+        "created_at": datetime.now(timezone.utc)
+    }
+    await db.activity_logs.insert_one(activity)
+    
+    return {
+        "message": f"Successfully transferred {result.modified_count} leads",
+        "transferred_count": result.modified_count,
+        "target_dealer": target_dealer
+    }
 
 
 @router.post("/{lead_id}/untransfer")
