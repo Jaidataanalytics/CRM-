@@ -159,17 +159,6 @@ const Admin = () => {
     icon: 'Calculator'
   });
 
-  // Add User state
-  const [showAddUser, setShowAddUser] = useState(false);
-  const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    username: '',
-    password: '',
-    role: 'Employee'
-  });
-  const [creatingUser, setCreatingUser] = useState(false);
-
   useEffect(() => {
     loadData();
     loadDataStats();
