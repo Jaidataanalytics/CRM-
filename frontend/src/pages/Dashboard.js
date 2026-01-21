@@ -393,8 +393,6 @@ const Dashboard = () => {
     cold_leads: true,
     conversion_rate: true,
     calls_placed: true,
-    quotations_sent: true,
-    call_to_quotation_rate: true,
     not_called: true,
     qualified_leads: true,
     faulty_leads: true,
