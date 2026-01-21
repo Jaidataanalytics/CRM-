@@ -44,6 +44,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { DataGrid } from '@/components/ui/data-grid';
 import { LeadTimeline } from '@/components/leads/LeadTimeline';
+import { LeadDetailPanel } from '@/components/leads';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
