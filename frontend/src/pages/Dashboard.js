@@ -593,8 +593,6 @@ const Dashboard = () => {
                 { key: 'cold_leads', label: 'Cold Leads' },
                 { key: 'conversion_rate', label: 'Conversion Rate' },
                 { key: 'calls_placed', label: 'Calls Placed' },
-                { key: 'quotations_sent', label: 'Quotations Sent' },
-                { key: 'call_to_quotation_rate', label: 'Call to Quotation Rate' },
                 { key: 'not_called', label: 'Not Called' },
                 { key: 'qualified_leads', label: 'Qualified Leads' },
                 { key: 'faulty_leads', label: 'Faulty Leads' },
