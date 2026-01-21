@@ -988,16 +988,8 @@ async def get_summary_builder(
         "deleted_at": {"$exists": False}
     }
     
-    # KVA category expression for aggregation
-    kva_category_expr = {
-        "$switch": {
-            "branches": [
-                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
-                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"},
-            ],
-            "default": "HKVA (≥250)"
-        }
-    }
+    # KVA - convert to string for grouping individual values
+    kva_as_string = {"$toString": {"$ifNull": ["$kva", 0]}}
     
     # Dimension field mapping
     dimension_field_map = {
@@ -1007,7 +999,7 @@ async def get_summary_builder(
         "district": "$district",
         "segment": "$segment",
         "source": "$source",
-        "kva": kva_category_expr
+        "kva": kva_as_string
     }
     dimension_field = dimension_field_map.get(dimension, "$employee_name")
     
