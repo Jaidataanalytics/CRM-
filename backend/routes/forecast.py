@@ -27,6 +27,11 @@ from routes.forecast_models import (
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/forecast", tags=["Forecast"])
 
+# Standardized Won stages - include both Closed-Won and Order Booked
+WON_STAGES = ["Closed-Won", "Order Booked"]
+
+# Won condition for aggregation pipelines
+WON_CONDITION = {"$in": ["$enquiry_stage", WON_STAGES]}
 
 async def get_db(request: Request):
     return request.app.state.db
