@@ -223,6 +223,129 @@ const CompareForecasts = () => {
         </CardContent>
       </Card>
 
+      {/* Saved Forecast Details (before comparison) */}
+      {selectedForecast && !comparisonData && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Saved Forecast Details
+            </CardTitle>
+            <CardDescription>
+              Saved on {formatDate(selectedForecast.saved_at)} by {selectedForecast.saved_by}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Summary */}
+            {selectedForecast.summary && (
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="font-medium mb-2">Summary</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedForecast.summary}</p>
+              </div>
+            )}
+
+            {/* Notes */}
+            {selectedForecast.notes && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-medium mb-2 text-blue-800">Notes</h4>
+                <p className="text-sm text-blue-700 whitespace-pre-wrap">{selectedForecast.notes}</p>
+              </div>
+            )}
+
+            {/* Predictions with Breakdown */}
+            <div>
+              <h4 className="font-medium mb-4">Monthly Predictions</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(selectedForecast.predictions || []).map((pred, idx) => (
+                  <Card key={idx} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => togglePrediction(idx)}>
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Month {pred.forecast_month}</p>
+                          <p className="text-2xl font-bold">{pred.predicted_enquiries?.toLocaleString() || 0} Leads</p>
+                          <p className="text-sm text-muted-foreground">
+                            {pred.predicted_closures?.toLocaleString() || 0} Closures • {pred.predicted_kva?.toLocaleString() || 0} KVA
+                          </p>
+                        </div>
+                        <Badge variant="outline">{pred.method || 'N/A'}</Badge>
+                      </div>
+                      
+                      {/* Breakdown details if expanded */}
+                      {expandedPrediction[idx] && pred.breakdown && (
+                        <div className="mt-4 pt-4 border-t space-y-3">
+                          {/* KVA Breakdown */}
+                          {pred.breakdown.by_kva && pred.breakdown.by_kva.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">By KVA Range</p>
+                              <div className="space-y-1">
+                                {pred.breakdown.by_kva.slice(0, 5).map((item, i) => (
+                                  <div key={i} className="flex justify-between text-xs">
+                                    <span>{item.kva_range || item.name}</span>
+                                    <span className="font-medium">{item.leads || item.count || 0}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Dealer Breakdown */}
+                          {pred.breakdown.by_dealer && pred.breakdown.by_dealer.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Top Dealers</p>
+                              <div className="space-y-1">
+                                {pred.breakdown.by_dealer.slice(0, 5).map((item, i) => (
+                                  <div key={i} className="flex justify-between text-xs">
+                                    <span className="truncate max-w-[150px]">{item.dealer || item.name}</span>
+                                    <span className="font-medium">{item.leads || item.count || 0}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Segment Breakdown */}
+                          {pred.breakdown.by_segment && pred.breakdown.by_segment.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1">By Segment</p>
+                              <div className="space-y-1">
+                                {pred.breakdown.by_segment.slice(0, 5).map((item, i) => (
+                                  <div key={i} className="flex justify-between text-xs">
+                                    <span>{item.segment || item.name}</span>
+                                    <span className="font-medium">{item.leads || item.count || 0}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {pred.breakdown && (
+                        <p className="text-xs text-muted-foreground text-center mt-2">
+                          {expandedPrediction[idx] ? 'Click to collapse' : 'Click to see breakdown'}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Full Forecast Data Display */}
+            {selectedForecast.full_forecast_data && (
+              <div className="text-xs text-muted-foreground">
+                <details>
+                  <summary className="cursor-pointer hover:text-foreground">View Full Saved Data</summary>
+                  <pre className="mt-2 p-4 bg-muted rounded-lg overflow-auto max-h-96">
+                    {JSON.stringify(selectedForecast.full_forecast_data, null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Comparison Results */}
       {comparisonData && (
         <>
