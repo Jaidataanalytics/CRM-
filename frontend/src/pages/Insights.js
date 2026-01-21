@@ -1559,6 +1559,257 @@ const Insights = () => {
           </Card>
         </TabsContent>
 
+        {/* Temperature (Hot/Warm/Cold) Analysis Tab */}
+        <TabsContent value="temperature" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Flame className="h-5 w-5 text-orange-500" />
+                    Hot/Warm/Cold Analysis
+                  </CardTitle>
+                  <CardDescription>Analyze lead temperature distribution by various dimensions</CardDescription>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Select value={temperatureDimension} onValueChange={setTemperatureDimension}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dealer">By Dealer</SelectItem>
+                      <SelectItem value="segment">By Segment</SelectItem>
+                      <SelectItem value="source">By Source</SelectItem>
+                      <SelectItem value="employee">By Employee</SelectItem>
+                      <SelectItem value="district">By District</SelectItem>
+                      <SelectItem value="state">By State</SelectItem>
+                      <SelectItem value="kva">By KVA</SelectItem>
+                      <SelectItem value="kva_range">By KVA Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={loadTemperatureAnalysis} disabled={temperatureLoading}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${temperatureLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {temperatureLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : temperatureData ? (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <Card className="bg-gradient-to-br from-red-50 to-orange-50 border-red-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-red-600 font-medium">Hot Leads</div>
+                        <div className="text-2xl font-bold text-red-700">{temperatureData.totals?.hot_leads || 0}</div>
+                        <div className="text-xs text-muted-foreground">Proposal/Negotiation stage</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-yellow-600 font-medium">Warm Leads</div>
+                        <div className="text-2xl font-bold text-yellow-700">{temperatureData.totals?.warm_leads || 0}</div>
+                        <div className="text-xs text-muted-foreground">Qualified stage</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-blue-600 font-medium">Cold Leads</div>
+                        <div className="text-2xl font-bold text-blue-700">{temperatureData.totals?.cold_leads || 0}</div>
+                        <div className="text-xs text-muted-foreground">Prospecting stage</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-gray-600 font-medium">Total Open</div>
+                        <div className="text-2xl font-bold text-gray-700">{temperatureData.totals?.open_leads || 0}</div>
+                        <div className="text-xs text-muted-foreground">All open leads</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Data Table */}
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{temperatureDimension.charAt(0).toUpperCase() + temperatureDimension.slice(1).replace('_', ' ')}</TableHead>
+                          <TableHead className="text-center">Total</TableHead>
+                          <TableHead className="text-center text-red-600">Hot</TableHead>
+                          <TableHead className="text-center text-yellow-600">Warm</TableHead>
+                          <TableHead className="text-center text-blue-600">Cold</TableHead>
+                          <TableHead className="text-center">Open</TableHead>
+                          <TableHead className="text-center text-green-600">Won</TableHead>
+                          <TableHead className="text-center text-gray-600">Lost</TableHead>
+                          <TableHead className="text-center">Avg Age</TableHead>
+                          <TableHead>Distribution</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {temperatureData.data?.slice(0, 30).map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{item.name}</TableCell>
+                            <TableCell className="text-center">{item.total_leads}</TableCell>
+                            <TableCell className="text-center text-red-600 font-medium">{item.hot_leads}</TableCell>
+                            <TableCell className="text-center text-yellow-600 font-medium">{item.warm_leads}</TableCell>
+                            <TableCell className="text-center text-blue-600 font-medium">{item.cold_leads}</TableCell>
+                            <TableCell className="text-center">{item.open_leads}</TableCell>
+                            <TableCell className="text-center text-green-600">{item.won_leads}</TableCell>
+                            <TableCell className="text-center text-gray-500">{item.lost_leads}</TableCell>
+                            <TableCell className="text-center">{item.avg_lead_age} days</TableCell>
+                            <TableCell className="w-40">
+                              <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
+                                <div className="bg-red-500" style={{ width: `${item.hot_percentage}%` }} />
+                                <div className="bg-yellow-500" style={{ width: `${item.warm_percentage}%` }} />
+                                <div className="bg-blue-400" style={{ width: `${item.cold_percentage}%` }} />
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {item.hot_percentage}% / {item.warm_percentage}% / {item.cold_percentage}%
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  No temperature data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Lead Age Analysis Tab */}
+        <TabsContent value="leadage" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-purple-500" />
+                    Lead Age Analysis
+                  </CardTitle>
+                  <CardDescription>Analyze average lead age by various dimensions (open leads only)</CardDescription>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Select value={leadAgeDimension} onValueChange={setLeadAgeDimension}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dealer">By Dealer</SelectItem>
+                      <SelectItem value="segment">By Segment</SelectItem>
+                      <SelectItem value="source">By Source</SelectItem>
+                      <SelectItem value="employee">By Employee</SelectItem>
+                      <SelectItem value="district">By District</SelectItem>
+                      <SelectItem value="state">By State</SelectItem>
+                      <SelectItem value="kva">By KVA</SelectItem>
+                      <SelectItem value="kva_range">By KVA Range</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" onClick={loadLeadAgeAnalysis} disabled={leadAgeLoading}>
+                    <RefreshCw className={`h-4 w-4 mr-2 ${leadAgeLoading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {leadAgeLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : leadAgeData ? (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-5 gap-4">
+                    <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-purple-600 font-medium">Overall Avg Age</div>
+                        <div className="text-2xl font-bold text-purple-700">{leadAgeData.overall_stats?.overall_avg_lead_age || 0} days</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-green-600 font-medium">0-30 Days</div>
+                        <div className="text-2xl font-bold text-green-700">{leadAgeData.overall_stats?.age_0_30 || 0}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-yellow-600 font-medium">31-60 Days</div>
+                        <div className="text-2xl font-bold text-yellow-700">{leadAgeData.overall_stats?.age_31_60 || 0}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-orange-600 font-medium">61-90 Days</div>
+                        <div className="text-2xl font-bold text-orange-700">{leadAgeData.overall_stats?.age_61_90 || 0}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-red-600 font-medium">90+ Days</div>
+                        <div className="text-2xl font-bold text-red-700">{leadAgeData.overall_stats?.age_90_plus || 0}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Data Table */}
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{leadAgeDimension.charAt(0).toUpperCase() + leadAgeDimension.slice(1).replace('_', ' ')}</TableHead>
+                          <TableHead className="text-center">Open Leads</TableHead>
+                          <TableHead className="text-center text-purple-600">Avg Age</TableHead>
+                          <TableHead className="text-center">Min Age</TableHead>
+                          <TableHead className="text-center">Max Age</TableHead>
+                          <TableHead className="text-center text-green-600">0-30d</TableHead>
+                          <TableHead className="text-center text-yellow-600">31-60d</TableHead>
+                          <TableHead className="text-center text-orange-600">61-90d</TableHead>
+                          <TableHead className="text-center text-red-600">90+d</TableHead>
+                          <TableHead className="text-center">Total KVA</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {leadAgeData.data?.slice(0, 30).map((item, idx) => (
+                          <TableRow key={idx} className={item.avg_lead_age > 90 ? 'bg-red-50' : item.avg_lead_age > 60 ? 'bg-orange-50' : ''}>
+                            <TableCell className="font-medium">{item.name}</TableCell>
+                            <TableCell className="text-center">{item.total_open_leads}</TableCell>
+                            <TableCell className="text-center font-bold text-purple-600">{item.avg_lead_age} days</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{item.min_lead_age}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{item.max_lead_age}</TableCell>
+                            <TableCell className="text-center text-green-600">{item.age_0_30}</TableCell>
+                            <TableCell className="text-center text-yellow-600">{item.age_31_60}</TableCell>
+                            <TableCell className="text-center text-orange-600">{item.age_61_90}</TableCell>
+                            <TableCell className="text-center text-red-600 font-medium">{item.age_90_plus}</TableCell>
+                            <TableCell className="text-center">{item.total_kva.toLocaleString()}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  No lead age data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Summary Builder Tab */}
         <TabsContent value="summary" className="space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
