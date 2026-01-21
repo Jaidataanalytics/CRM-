@@ -449,6 +449,14 @@ const Insights = () => {
             <Zap className="h-4 w-4" />
             KVA Analysis
           </TabsTrigger>
+          <TabsTrigger value="temperature" className="flex items-center gap-2">
+            <Flame className="h-4 w-4" />
+            Hot/Warm/Cold
+          </TabsTrigger>
+          <TabsTrigger value="leadage" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Lead Age
+          </TabsTrigger>
           <TabsTrigger value="summary" className="flex items-center gap-2">
             <LayoutGrid className="h-4 w-4" />
             Summary Builder
