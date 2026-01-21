@@ -202,6 +202,19 @@ const DuplicateLeads = () => {
     }
   };
 
+  const loadAnalytics = async () => {
+    setAnalyticsLoading(true);
+    try {
+      const res = await axios.get(`${API}/leads/duplicate-analytics`, { withCredentials: true });
+      setAnalyticsData(res.data);
+    } catch (error) {
+      console.error('Error loading duplicate analytics:', error);
+      toast.error('Failed to load analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   const loadTimePunchLeads = async () => {
     setTimePunchLoading(true);
     try {
