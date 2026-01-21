@@ -192,18 +192,6 @@ const Admin = () => {
     }
   };
 
-  const loadLogs = async () => {
-    try {
-      const res = await axios.get(`${API}/admin/activity-logs?page=${logsPage}&limit=20`, {
-        withCredentials: true
-      });
-      setLogs(res.data.logs || []);
-      setLogsTotalPages(res.data.pages || 1);
-    } catch (error) {
-      console.error('Error loading logs:', error);
-    }
-  };
-
   // Data Migration functions
   const loadMigrationStatus = async () => {
     setLoadingMigration(true);
