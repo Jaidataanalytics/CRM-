@@ -23,6 +23,7 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 │   │   ├── insights.py          # All analytics endpoints (Segment, Source, KVA, Temperature, Lead Age)
 │   │   ├── market_potential.py  # Comparison page data
 │   │   ├── forecast.py          # Forecasting with complete data saving
+│   │   ├── entity_profile.py    # Enhanced entity analytics
 │   │   └── leads.py             # Lead management + transfer + duplicate analytics
 │   └── server.py
 └── frontend/
@@ -34,17 +35,44 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
         │   ├── Leads.js          # Lead management + Transfer Modal
         │   ├── TransferredLeads.js # Transferred leads tracking + analytics
         │   ├── DuplicateLeads.js # Data quality + Analytics tab
+        │   ├── EntityProfile.js  # Enhanced entity profiles
         │   └── CompareForecasts.js # Saved forecast details view
         ├── context/
         │   └── FilterContext.js  # Global filters including maxLeadAge
         └── components/
             └── filters/
-                └── FilterBar.js  # Filter bar with lead age slider
+                └── FilterBar.js  # Filter bar with lead age slider (searchable)
 ```
 
 ## What's Been Implemented (as of Jan 2026)
 
-### Searchable Dropdowns (NEW - Jan 21, 2026)
+### Win Count Standardization (NEW - Jan 21, 2026)
+- [x] Standardized all won queries across KPI, Dispatch, Comparison pages
+- [x] All pages now use `["Closed-Won", "Order Booked"]` for won stages
+- [x] Added `has_so_record`, `is_transferred`, `is_deleted` filters consistently
+- [x] Changed dispatch.py from `eo_po_date` to `enquiry_date` for consistency
+- [x] Created `/app/WIN_COUNT_ANALYSIS.md` documenting the differences
+
+### Quotation Removal (NEW - Jan 21, 2026)
+- [x] Removed Quotation page from navigation and routes
+- [x] Removed Quotations Sent and Call to Quotation Rate KPI cards from Dashboard
+- [x] Removed from Charts.js metric options
+- [x] Removed from insights.py metric enum
+
+### Entity Profile Enhancements (NEW - Jan 21, 2026)
+- [x] Created `/api/entity/enhanced-analytics/{entity_type}/{entity_id}` endpoint
+- [x] Mini Summary Builder (monthly/quarterly/yearly with FY logic)
+- [x] Market Share calculations (company, state, district, dealer)
+- [x] KVA breakdown with individual values
+- [x] YoY comparison with percentage changes
+- [x] Rank/Position among peers
+- [x] Pipeline health (Hot/Warm/Cold distribution)
+- [x] Lead age distribution (0-30, 31-60, 61-90, 90+ days)
+- [x] Top segments performance
+- [x] Dimension breakdown (segment, employee, dealer, source, kva, district)
+- [x] Updated EntityProfile.js frontend with all new sections
+
+### Searchable Dropdowns (Jan 21, 2026)
 - [x] Created reusable `SearchableSelect` component at `/app/frontend/src/components/ui/searchable-select.jsx`
 - [x] Implemented in FilterBar.js - State, Dealer, Employee, Segment dropdowns now searchable
 - [x] Implemented in Leads.js - Dealer and Employee fields in edit form and transfer modal
