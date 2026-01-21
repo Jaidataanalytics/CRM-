@@ -254,6 +254,7 @@ const Leads = () => {
       try {
         const res = await axios.get(`${API}/leads/dropdown-options`, { withCredentials: true });
         setDealersList(res.data.dealer || []);
+        setEmployeesList(res.data.employee_name || []);
       } catch (error) {
         console.error('Error loading dealers:', error);
       }
