@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useFilters } from '@/context/FilterContext';
@@ -37,9 +37,11 @@ import {
 import { 
   MapPin, Building2, User, Users, Target, CheckCircle, XCircle, Clock,
   TrendingUp, TrendingDown, AlertTriangle, Calendar, Download, ExternalLink,
-  ChevronRight, Activity, BarChart3, PieChartIcon, ArrowUpRight, ArrowDownRight
+  ChevronRight, Activity, BarChart3, PieChartIcon, ArrowUpRight, ArrowDownRight, Image
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExportButton } from '@/components/ui/export-button';
+import { exportChartAsImage } from '@/utils/exportUtils';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
