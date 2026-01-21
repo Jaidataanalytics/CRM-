@@ -1478,7 +1478,7 @@ async def get_analysis_drilldown(
     level: int = Query(1, ge=1, le=4),
     value: Optional[str] = None,
     parent_dealer: Optional[str] = None,
-    parent_location: Optional[str] = None,
+    parent_district: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     state: Optional[str] = None,
@@ -1490,8 +1490,8 @@ async def get_analysis_drilldown(
     
     Level 1: Main analysis (segment/source/kva/closure breakdown)
     Level 2: Drill into a value → shows dealers
-    Level 3: Drill into a dealer → shows locations (districts)
-    Level 4: Drill into a location → shows employees
+    Level 3: Drill into a dealer → shows districts
+    Level 4: Drill into a district → shows employees
     
     For closure analysis, Level 1 shows competitors/lost reasons
     """
@@ -1554,8 +1554,8 @@ async def get_analysis_drilldown(
     # Apply parent filters for deeper drill-downs
     if parent_dealer and level >= 3:
         base_query["dealer"] = parent_dealer
-    if parent_location and level >= 4:
-        base_query["location"] = parent_location
+    if parent_district and level >= 4:
+        base_query["district"] = parent_district
     
     # Determine grouping field based on level
     if level == 1:
@@ -1571,7 +1571,7 @@ async def get_analysis_drilldown(
     elif level == 2:
         group_field = "$dealer"
     elif level == 3:
-        group_field = "$location"
+        group_field = "$district"
     elif level == 4:
         group_field = "$employee_name"
     
