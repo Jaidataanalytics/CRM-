@@ -207,10 +207,33 @@ const TransferredLeads = () => {
             Leads transferred to dealers - track their progress and conversion
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { loadTransferredLeads(); loadStats(); }}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            data={leads}
+            filename="transferred_leads"
+            sheetName="Transferred Leads"
+            columns={[
+              { key: 'enquiry_no', header: 'Enquiry No', width: 15 },
+              { key: 'name', header: 'Customer Name', width: 20 },
+              { key: 'phone_number', header: 'Phone', width: 15 },
+              { key: 'transferred_to_dealer_name', header: 'Target Dealer', width: 20 },
+              { key: 'transferred_by_employee', header: 'Original Generator', width: 20 },
+              { key: 'transferred_at', header: 'Transfer Date', width: 18 },
+              { key: 'transfer_notes', header: 'Notes', width: 25 },
+              { key: 'kva', header: 'KVA', width: 10 },
+              { key: 'segment', header: 'Segment', width: 15 },
+              { key: 'state', header: 'State', width: 15 },
+              { key: 'district', header: 'District', width: 15 }
+            ]}
+            size="sm"
+          >
+            Export to Excel
+          </ExportButton>
+          <Button variant="outline" size="sm" onClick={() => { loadTransferredLeads(); loadStats(); }}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Summary Stats Cards */}
