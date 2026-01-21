@@ -219,6 +219,27 @@ const Dispatch = () => {
           <div className="flex items-center justify-between">
             <CardTitle>Orders</CardTitle>
             <div className="flex items-center gap-2">
+              <ExportButton
+                data={leads}
+                filename="dispatch_orders"
+                sheetName="Dispatch Orders"
+                columns={[
+                  { key: 'enquiry_no', header: 'Enquiry No', width: 15 },
+                  { key: 'name', header: 'Customer Name', width: 20 },
+                  { key: 'phone_number', header: 'Phone', width: 15 },
+                  { key: 'kva', header: 'KVA', width: 10 },
+                  { key: 'eo_po_date', header: 'Won Date', width: 15 },
+                  { key: 'dispatch_status', header: 'Dispatch Status', width: 15 },
+                  { key: 'dispatch_date', header: 'Dispatch Date', width: 15 },
+                  { key: 'delivery_address', header: 'Delivery Address', width: 25 },
+                  { key: 'transporter_details', header: 'Transporter', width: 20 },
+                  { key: 'dealer', header: 'Dealer', width: 20 },
+                  { key: 'state', header: 'State', width: 15 }
+                ]}
+                size="sm"
+              >
+                Export to Excel
+              </ExportButton>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
