@@ -966,6 +966,82 @@ async def get_merge_history_summary(
     }
 
 
+@router.get("/duplicate-analytics")
+async def get_duplicate_analytics(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+):
+    """
+    Get analytics on duplicate leads - which dealer/employee/district/segment/source
+    has the most duplicates.
+    """
+    from routes.kpis import get_indian_fy_dates
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Base query for duplicates
+    base_query = {
+        "deleted_at": {"$exists": False},
+        "is_duplicate": True,
+        "enquiry_date": {"$gte": start_date, "$lte": end_date}
+    }
+    
+    # Total duplicates
+    total_duplicates = await db.leads.count_documents(base_query)
+    
+    # Analytics by different dimensions
+    dimensions = ["dealer", "employee_name", "district", "state", "segment", "source"]
+    analytics = {}
+    
+    for dim in dimensions:
+        pipeline = [
+            {"$match": base_query},
+            {"$group": {"_id": f"${dim}", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 20}
+        ]
+        results = await db.leads.aggregate(pipeline).to_list(20)
+        analytics[dim] = [{"name": r["_id"] or "Unknown", "count": r["count"]} for r in results if r["_id"]]
+    
+    # Merged leads analytics
+    merged_query = {
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "$or": [
+            {"merged_enquiries": {"$exists": True, "$ne": [], "$ne": None}},
+            {"duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}},
+            {"merged_from": {"$exists": True, "$ne": [], "$ne": None}}
+        ]
+    }
+    total_merged = await db.leads.count_documents(merged_query)
+    
+    merged_analytics = {}
+    for dim in dimensions:
+        pipeline = [
+            {"$match": merged_query},
+            {"$group": {"_id": f"${dim}", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 20}
+        ]
+        results = await db.leads.aggregate(pipeline).to_list(20)
+        merged_analytics[dim] = [{"name": r["_id"] or "Unknown", "count": r["count"]} for r in results if r["_id"]]
+    
+    return {
+        "total_duplicates": total_duplicates,
+        "total_merged": total_merged,
+        "duplicate_by_dimension": analytics,
+        "merged_by_dimension": merged_analytics,
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date
+        }
+    }
+
+
 # ============ QUOTATIONS ENDPOINTS ============
 @router.get("/quotations")
 async def get_quotations(
