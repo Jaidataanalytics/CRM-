@@ -95,6 +95,11 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] **Entity Profile**: Added "Export" button with data and chart export options
 - [x] **Manage Leads**: Already had Excel export (verified working)
 - [x] **Insights Summary Builder**: Already had Excel export (verified working)
+
+### Bug Fixes (Jan 21, 2026)
+- [x] **Insights page zero data** - Fixed syntax error in `insights.py` (double curly brace `{{` → `{`)
+- [x] **Admin page error** - Removed orphan `loadLogs` useEffect, fixed UserManagement to handle array response, removed redundant users API call from loadData
+- [x] **Comparison win count discrepancy** - Removed `has_so_record: True` filter from `market_potential.py` to match entity profile counts (140 vs 128 issue)
 - [x] Fixed dynamic calculation of `lead_age` in `/app/backend/routes/insights.py`
 - [x] Lead age now calculated in real-time using MongoDB's `$dateDiff` instead of relying on a stored field
 - [x] Age buckets (0-30d, 31-60d, 61-90d, 90+d) working correctly
