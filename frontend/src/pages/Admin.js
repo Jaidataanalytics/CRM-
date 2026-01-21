@@ -3186,47 +3186,6 @@ const Admin = () => {
           <ActivityLogs />
         </TabsContent>
       </Tabs>
-
-      {/* Password Change Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={(open) => {
-        setIsPasswordDialogOpen(open);
-        if (!open) {
-          setPasswordChangeUser(null);
-          setNewPassword('');
-        }
-      }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              Change Password
-            </DialogTitle>
-            <DialogDescription>
-              Change password for {passwordChangeUser?.name || passwordChangeUser?.email}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password (min 6 characters)"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleChangePassword} disabled={changingPassword || newPassword.length < 6}>
-              {changingPassword ? 'Changing...' : 'Change Password'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
