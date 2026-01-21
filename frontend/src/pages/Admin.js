@@ -50,8 +50,6 @@ const Admin = () => {
   const [qualificationQuestions, setQualificationQuestions] = useState([]);
   const [qualificationSettings, setQualificationSettings] = useState({ threshold_score: 0 });
   const [loading, setLoading] = useState(true);
-  const [logsPage, setLogsPage] = useState(1);
-  const [logsTotalPages, setLogsTotalPages] = useState(1);
   
   // Closure question dialog
   const [isClosureDialogOpen, setIsClosureDialogOpen] = useState(false);
