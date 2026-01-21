@@ -819,3 +819,564 @@ async def get_available_kpis(
         "built_in_metrics": built_in_metrics,
         "configurable_metrics": metrics
     }
+
+
+
+# ============================================================================
+# ENHANCED ENTITY ANALYTICS - Summary Builder, Market Share, KVA, YoY, etc.
+# ============================================================================
+
+def get_fy_for_date(date_str: str) -> tuple:
+    """Get FY start and end dates for a given date string"""
+    from datetime import datetime as dt
+    date = dt.strptime(date_str[:10], "%Y-%m-%d")
+    if date.month >= 4:
+        fy_start = f"{date.year}-04-01"
+        fy_end = f"{date.year + 1}-03-31"
+    else:
+        fy_start = f"{date.year - 1}-04-01"
+        fy_end = f"{date.year}-03-31"
+    return fy_start, fy_end
+
+
+def get_last_fy_dates(start_date: str, end_date: str) -> tuple:
+    """Calculate last FY dates for YoY comparison"""
+    from datetime import datetime as dt
+    start_dt = dt.strptime(start_date, "%Y-%m-%d")
+    end_dt = dt.strptime(end_date, "%Y-%m-%d")
+    ly_start = start_dt.replace(year=start_dt.year - 1).strftime("%Y-%m-%d")
+    ly_end = end_dt.replace(year=end_dt.year - 1).strftime("%Y-%m-%d")
+    return ly_start, ly_end
+
+
+@router.get("/enhanced-analytics/{entity_type}/{entity_id}")
+async def get_enhanced_entity_analytics(
+    request: Request,
+    entity_type: str,
+    entity_id: str,
+    current_user: User = Depends(get_current_user),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    time_frame: str = Query("monthly", enum=["monthly", "quarterly", "yearly"]),
+    breakdown_by: str = Query("segment", enum=["segment", "employee", "dealer", "source", "kva", "district"])
+):
+    """
+    Enhanced analytics for entity profiles including:
+    - Mini Summary Builder (time-based breakdown)
+    - Market Share calculations
+    - KVA-wise breakdown (individual values)
+    - YoY comparisons
+    - Rank/Position
+    - Pipeline health
+    - Lead age distribution
+    - Top segments
+    """
+    db = await get_db(request)
+    
+    field_map = {
+        "state": "state",
+        "dealer": "dealer", 
+        "city": "area",
+        "employee": "employee_name"
+    }
+    
+    if entity_type not in field_map:
+        raise HTTPException(status_code=400, detail="Invalid entity type")
+    
+    filter_field = field_map[entity_type]
+    
+    # Use FY dates if not provided
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Calculate last year dates for YoY
+    ly_start, ly_end = get_last_fy_dates(start_date, end_date)
+    
+    # Standardized won stages
+    WON_STAGES = ["Closed-Won", "Order Booked"]
+    LOST_STAGES = ["Closed-Lost", "Closed-Dropped"]
+    
+    # Base filter
+    base_filter = {
+        filter_field: entity_id,
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+    }
+    
+    # Last year filter
+    ly_filter = {
+        filter_field: entity_id,
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": ly_start, "$lte": ly_end},
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+    }
+    
+    result = {
+        "entity_type": entity_type,
+        "entity_id": entity_id,
+        "date_range": {"start_date": start_date, "end_date": end_date},
+        "ly_date_range": {"start_date": ly_start, "end_date": ly_end}
+    }
+    
+    # ===== 1. SUMMARY BUILDER (Mini version) =====
+    # Time frame extraction using FY logic
+    time_frame_map = {
+        "monthly": {"$substr": ["$enquiry_date", 0, 7]},
+        "quarterly": {
+            "$concat": [
+                {"$cond": {
+                    "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                    "then": {"$toString": {"$subtract": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}},
+                    "else": {"$substr": ["$enquiry_date", 0, 4]}
+                }},
+                "-",
+                {"$cond": {
+                    "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                    "then": {"$substr": ["$enquiry_date", 2, 2]},
+                    "else": {"$toString": {"$mod": [{"$add": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}, 100]}}
+                }},
+                "-Q",
+                {"$switch": {
+                    "branches": [
+                        {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["04", "05", "06"]]}, "then": "1"},
+                        {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["07", "08", "09"]]}, "then": "2"},
+                        {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["10", "11", "12"]]}, "then": "3"},
+                        {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]}, "then": "4"}
+                    ],
+                    "default": "1"
+                }}
+            ]
+        },
+        "yearly": {
+            "$concat": [
+                "FY",
+                {"$cond": {
+                    "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                    "then": {"$toString": {"$subtract": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}},
+                    "else": {"$substr": ["$enquiry_date", 0, 4]}
+                }},
+                "-",
+                {"$cond": {
+                    "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                    "then": {"$substr": ["$enquiry_date", 2, 2]},
+                    "else": {"$toString": {"$mod": [{"$add": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}, 100]}}
+                }}
+            ]
+        }
+    }
+    
+    time_extraction = time_frame_map.get(time_frame, time_frame_map["monthly"])
+    
+    summary_pipeline = [
+        {"$match": base_filter},
+        {"$addFields": {"time_period": time_extraction}},
+        {"$group": {
+            "_id": "$time_period",
+            "total_leads": {"$sum": 1},
+            "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}},
+            "lost_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", LOST_STAGES]}, 1, 0]}},
+            "open_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+            "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+            "hot_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_type", "Hot"]}, 1, 0]}},
+            "warm_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_type", "Warm"]}, 1, 0]}},
+            "cold_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_type", "Cold"]}, 1, 0]}}
+        }},
+        {"$addFields": {
+            "conversion_rate": {
+                "$cond": [
+                    {"$gt": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                    {"$multiply": [{"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]}, 100]},
+                    0
+                ]
+            }
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    summary_data = await db.leads.aggregate(summary_pipeline).to_list(100)
+    result["summary_builder"] = [{
+        "period": s["_id"],
+        "total_leads": s["total_leads"],
+        "won_leads": s["won_leads"],
+        "lost_leads": s["lost_leads"],
+        "open_leads": s["open_leads"],
+        "total_kva": round(s["total_kva"], 1),
+        "conversion_rate": round(s["conversion_rate"], 1),
+        "hot_leads": s["hot_leads"],
+        "warm_leads": s["warm_leads"],
+        "cold_leads": s["cold_leads"]
+    } for s in summary_data]
+    
+    # ===== 2. MARKET SHARE CALCULATIONS =====
+    # Current period totals for entity
+    entity_won = await db.leads.count_documents({
+        **base_filter,
+        "enquiry_stage": {"$in": WON_STAGES},
+        "has_so_record": True
+    })
+    
+    # Company-wide totals
+    company_won_query = {
+        "is_deleted": {"$ne": True},
+        "deleted_at": {"$exists": False},
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "enquiry_stage": {"$in": WON_STAGES},
+        "has_so_record": True,
+        "$or": [
+            {"is_transferred": {"$exists": False}},
+            {"is_transferred": False},
+            {"is_transferred": None}
+        ]
+    }
+    company_won = await db.leads.count_documents(company_won_query)
+    
+    market_share = {
+        "entity_wins": entity_won,
+        "company_wins": company_won,
+        "share_of_company": round((entity_won / company_won * 100) if company_won > 0 else 0, 2)
+    }
+    
+    # State-level share (for dealers/employees)
+    if entity_type in ["dealer", "employee"]:
+        # Get state for this entity
+        sample = await db.leads.find_one({filter_field: entity_id, "is_deleted": {"$ne": True}})
+        if sample and sample.get("state"):
+            state_won = await db.leads.count_documents({
+                **company_won_query,
+                "state": sample["state"]
+            })
+            market_share["state"] = sample["state"]
+            market_share["state_wins"] = state_won
+            market_share["share_of_state"] = round((entity_won / state_won * 100) if state_won > 0 else 0, 2)
+    
+    # District-level share (for dealers)
+    if entity_type == "dealer":
+        sample = await db.leads.find_one({filter_field: entity_id, "is_deleted": {"$ne": True}})
+        if sample and sample.get("district"):
+            district_won = await db.leads.count_documents({
+                **company_won_query,
+                "district": sample["district"]
+            })
+            market_share["district"] = sample["district"]
+            market_share["district_wins"] = district_won
+            market_share["share_of_district"] = round((entity_won / district_won * 100) if district_won > 0 else 0, 2)
+    
+    # Dealer share (for employees)
+    if entity_type == "employee":
+        sample = await db.leads.find_one({filter_field: entity_id, "is_deleted": {"$ne": True}})
+        if sample and sample.get("dealer"):
+            dealer_won = await db.leads.count_documents({
+                **company_won_query,
+                "dealer": sample["dealer"]
+            })
+            market_share["dealer"] = sample["dealer"]
+            market_share["dealer_wins"] = dealer_won
+            market_share["share_of_dealer"] = round((entity_won / dealer_won * 100) if dealer_won > 0 else 0, 2)
+    
+    result["market_share"] = market_share
+    
+    # ===== 3. KVA-WISE BREAKDOWN (Individual values) =====
+    kva_pipeline = [
+        {"$match": {**base_filter, "kva": {"$exists": True, "$ne": None, "$gt": 0}}},
+        {"$group": {
+            "_id": "$kva",
+            "total_leads": {"$sum": 1},
+            "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}},
+            "lost_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", LOST_STAGES]}, 1, 0]}},
+            "open_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}}
+        }},
+        {"$addFields": {
+            "conversion_rate": {
+                "$cond": [
+                    {"$gt": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                    {"$multiply": [{"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]}, 100]},
+                    0
+                ]
+            }
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    kva_data = await db.leads.aggregate(kva_pipeline).to_list(100)
+    result["kva_breakdown"] = [{
+        "kva": k["_id"],
+        "total_leads": k["total_leads"],
+        "won_leads": k["won_leads"],
+        "lost_leads": k["lost_leads"],
+        "open_leads": k["open_leads"],
+        "conversion_rate": round(k["conversion_rate"], 1)
+    } for k in kva_data]
+    
+    # ===== 4. YoY COMPARISON =====
+    # Current year totals
+    cy_total = await db.leads.count_documents(base_filter)
+    cy_won = await db.leads.count_documents({**base_filter, "enquiry_stage": {"$in": WON_STAGES}})
+    cy_lost = await db.leads.count_documents({**base_filter, "enquiry_stage": {"$in": LOST_STAGES}})
+    cy_kva = await db.leads.aggregate([
+        {"$match": {**base_filter, "enquiry_stage": {"$in": WON_STAGES}}},
+        {"$group": {"_id": None, "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}}}
+    ]).to_list(1)
+    cy_total_kva = cy_kva[0]["total_kva"] if cy_kva else 0
+    
+    # Last year totals
+    ly_total = await db.leads.count_documents(ly_filter)
+    ly_won = await db.leads.count_documents({**ly_filter, "enquiry_stage": {"$in": WON_STAGES}})
+    ly_lost = await db.leads.count_documents({**ly_filter, "enquiry_stage": {"$in": LOST_STAGES}})
+    ly_kva = await db.leads.aggregate([
+        {"$match": {**ly_filter, "enquiry_stage": {"$in": WON_STAGES}}},
+        {"$group": {"_id": None, "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}}}
+    ]).to_list(1)
+    ly_total_kva = ly_kva[0]["total_kva"] if ly_kva else 0
+    
+    def calc_yoy_change(current, last):
+        if last == 0:
+            return 100 if current > 0 else 0
+        return round(((current - last) / last) * 100, 1)
+    
+    result["yoy_comparison"] = {
+        "current_year": {
+            "total_leads": cy_total,
+            "won_leads": cy_won,
+            "lost_leads": cy_lost,
+            "total_kva": round(cy_total_kva, 1),
+            "conversion_rate": round((cy_won / (cy_won + cy_lost) * 100) if (cy_won + cy_lost) > 0 else 0, 1)
+        },
+        "last_year": {
+            "total_leads": ly_total,
+            "won_leads": ly_won,
+            "lost_leads": ly_lost,
+            "total_kva": round(ly_total_kva, 1),
+            "conversion_rate": round((ly_won / (ly_won + ly_lost) * 100) if (ly_won + ly_lost) > 0 else 0, 1)
+        },
+        "yoy_change": {
+            "total_leads": calc_yoy_change(cy_total, ly_total),
+            "won_leads": calc_yoy_change(cy_won, ly_won),
+            "total_kva": calc_yoy_change(cy_total_kva, ly_total_kva)
+        }
+    }
+    
+    # ===== 5. RANK/POSITION =====
+    # Calculate rank among peers
+    if entity_type == "dealer":
+        # Rank among all dealers
+        rank_pipeline = [
+            {"$match": {
+                "is_deleted": {"$ne": True},
+                "deleted_at": {"$exists": False},
+                "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                "enquiry_stage": {"$in": WON_STAGES}
+            }},
+            {"$group": {"_id": "$dealer", "wins": {"$sum": 1}}},
+            {"$sort": {"wins": -1}}
+        ]
+        all_dealers = await db.leads.aggregate(rank_pipeline).to_list(1000)
+        total_dealers = len(all_dealers)
+        rank = next((i + 1 for i, d in enumerate(all_dealers) if d["_id"] == entity_id), total_dealers)
+        result["rank"] = {
+            "position": rank,
+            "total": total_dealers,
+            "percentile": round((1 - rank / total_dealers) * 100, 1) if total_dealers > 0 else 0
+        }
+    elif entity_type == "employee":
+        # Rank among employees in same dealer
+        sample = await db.leads.find_one({filter_field: entity_id, "is_deleted": {"$ne": True}})
+        dealer = sample.get("dealer") if sample else None
+        if dealer:
+            rank_pipeline = [
+                {"$match": {
+                    "dealer": dealer,
+                    "is_deleted": {"$ne": True},
+                    "deleted_at": {"$exists": False},
+                    "enquiry_date": {"$gte": start_date, "$lte": end_date},
+                    "enquiry_stage": {"$in": WON_STAGES}
+                }},
+                {"$group": {"_id": "$employee_name", "wins": {"$sum": 1}}},
+                {"$sort": {"wins": -1}}
+            ]
+            all_employees = await db.leads.aggregate(rank_pipeline).to_list(1000)
+            total_employees = len(all_employees)
+            rank = next((i + 1 for i, e in enumerate(all_employees) if e["_id"] == entity_id), total_employees)
+            result["rank"] = {
+                "position": rank,
+                "total": total_employees,
+                "within": dealer,
+                "percentile": round((1 - rank / total_employees) * 100, 1) if total_employees > 0 else 0
+            }
+    
+    # ===== 6. PIPELINE HEALTH (Hot/Warm/Cold distribution) =====
+    pipeline_health = [
+        {"$match": {**base_filter, "enquiry_status": "Open"}},
+        {"$group": {
+            "_id": "$enquiry_type",
+            "count": {"$sum": 1},
+            "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+        }}
+    ]
+    health_data = await db.leads.aggregate(pipeline_health).to_list(10)
+    health_map = {h["_id"]: {"count": h["count"], "kva": round(h["total_kva"], 1)} for h in health_data}
+    
+    total_open = sum(h["count"] for h in health_data)
+    result["pipeline_health"] = {
+        "hot": health_map.get("Hot", {"count": 0, "kva": 0}),
+        "warm": health_map.get("Warm", {"count": 0, "kva": 0}),
+        "cold": health_map.get("Cold", {"count": 0, "kva": 0}),
+        "total_open": total_open,
+        "distribution": {
+            "hot_pct": round((health_map.get("Hot", {}).get("count", 0) / total_open * 100) if total_open > 0 else 0, 1),
+            "warm_pct": round((health_map.get("Warm", {}).get("count", 0) / total_open * 100) if total_open > 0 else 0, 1),
+            "cold_pct": round((health_map.get("Cold", {}).get("count", 0) / total_open * 100) if total_open > 0 else 0, 1)
+        }
+    }
+    
+    # ===== 7. LEAD AGE DISTRIBUTION =====
+    age_pipeline = [
+        {"$match": {**base_filter, "enquiry_status": "Open"}},
+        {"$addFields": {
+            "lead_age": {
+                "$dateDiff": {
+                    "startDate": {
+                        "$cond": {
+                            "if": {"$eq": [{"$type": "$enquiry_date"}, "date"]},
+                            "then": "$enquiry_date",
+                            "else": {"$dateFromString": {"dateString": "$enquiry_date", "onError": None}}
+                        }
+                    },
+                    "endDate": "$$NOW",
+                    "unit": "day"
+                }
+            }
+        }},
+        {"$match": {"lead_age": {"$ne": None}}},
+        {"$bucket": {
+            "groupBy": "$lead_age",
+            "boundaries": [0, 31, 61, 91, 10000],
+            "default": "90+",
+            "output": {
+                "count": {"$sum": 1},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+            }
+        }}
+    ]
+    
+    age_data = await db.leads.aggregate(age_pipeline).to_list(10)
+    age_buckets = {
+        "0-30": {"count": 0, "kva": 0},
+        "31-60": {"count": 0, "kva": 0},
+        "61-90": {"count": 0, "kva": 0},
+        "90+": {"count": 0, "kva": 0}
+    }
+    
+    for a in age_data:
+        bucket_id = a["_id"]
+        if bucket_id == 0:
+            age_buckets["0-30"] = {"count": a["count"], "kva": round(a["total_kva"], 1)}
+        elif bucket_id == 31:
+            age_buckets["31-60"] = {"count": a["count"], "kva": round(a["total_kva"], 1)}
+        elif bucket_id == 61:
+            age_buckets["61-90"] = {"count": a["count"], "kva": round(a["total_kva"], 1)}
+        elif bucket_id == 91 or bucket_id == "90+":
+            age_buckets["90+"] = {"count": a["count"], "kva": round(a["total_kva"], 1)}
+    
+    result["lead_age_distribution"] = age_buckets
+    
+    # ===== 8. TOP SEGMENTS =====
+    segment_pipeline = [
+        {"$match": base_filter},
+        {"$group": {
+            "_id": "$segment",
+            "total_leads": {"$sum": 1},
+            "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}},
+            "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+        }},
+        {"$addFields": {
+            "conversion_rate": {
+                "$cond": [
+                    {"$gt": ["$total_leads", 0]},
+                    {"$multiply": [{"$divide": ["$won_leads", "$total_leads"]}, 100]},
+                    0
+                ]
+            }
+        }},
+        {"$sort": {"won_leads": -1}},
+        {"$limit": 10}
+    ]
+    
+    segment_data = await db.leads.aggregate(segment_pipeline).to_list(10)
+    result["top_segments"] = [{
+        "segment": s["_id"] or "Unknown",
+        "total_leads": s["total_leads"],
+        "won_leads": s["won_leads"],
+        "total_kva": round(s["total_kva"], 1),
+        "conversion_rate": round(s["conversion_rate"], 1)
+    } for s in segment_data]
+    
+    # ===== 9. RECENT ACTIVITY (Last 10 leads) =====
+    recent_leads = await db.leads.find(
+        {filter_field: entity_id, "is_deleted": {"$ne": True}},
+        {"_id": 0, "enquiry_no": 1, "name": 1, "enquiry_date": 1, "enquiry_stage": 1, 
+         "enquiry_type": 1, "kva": 1, "segment": 1, "phone_number": 1}
+    ).sort("enquiry_date", -1).limit(10).to_list(10)
+    
+    result["recent_activity"] = recent_leads
+    
+    # ===== 10. DIMENSION BREAKDOWN (based on breakdown_by param) =====
+    breakdown_field_map = {
+        "segment": "$segment",
+        "employee": "$employee_name",
+        "dealer": "$dealer",
+        "source": "$source",
+        "kva": "$kva",
+        "district": "$district"
+    }
+    
+    breakdown_field = breakdown_field_map.get(breakdown_by, "$segment")
+    
+    breakdown_pipeline = [
+        {"$match": base_filter},
+        {"$group": {
+            "_id": breakdown_field,
+            "total_leads": {"$sum": 1},
+            "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}},
+            "lost_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", LOST_STAGES]}, 1, 0]}},
+            "open_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+            "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
+        }},
+        {"$addFields": {
+            "conversion_rate": {
+                "$cond": [
+                    {"$gt": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                    {"$multiply": [{"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]}, 100]},
+                    0
+                ]
+            }
+        }},
+        {"$sort": {"total_leads": -1}},
+        {"$limit": 20}
+    ]
+    
+    breakdown_data = await db.leads.aggregate(breakdown_pipeline).to_list(20)
+    result["breakdown"] = {
+        "by": breakdown_by,
+        "data": [{
+            "name": b["_id"] if b["_id"] else "Unknown",
+            "total_leads": b["total_leads"],
+            "won_leads": b["won_leads"],
+            "lost_leads": b["lost_leads"],
+            "open_leads": b["open_leads"],
+            "total_kva": round(b["total_kva"], 1),
+            "conversion_rate": round(b["conversion_rate"], 1)
+        } for b in breakdown_data]
+    }
+    
+    return result
