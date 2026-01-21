@@ -377,7 +377,7 @@ async def run_backtest(
         {"$group": {
             "_id": "$month",
             "total_enquiries": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}},
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}},
             "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
         }},
         {"$sort": {"_id": 1}}
@@ -543,7 +543,7 @@ async def get_forecast_factors(
     monthly_pipeline = [
         {"$match": {"enquiry_date": {"$exists": True, "$ne": None, "$ne": ""}}},
         {"$addFields": {"month": {"$substr": ["$enquiry_date", 0, 7]}}},
-        {"$group": {"_id": "$month", "total": {"$sum": 1}, "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}}},
+        {"$group": {"_id": "$month", "total": {"$sum": 1}, "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}}},
         {"$sort": {"_id": 1}}
     ]
     monthly_data = await db.leads.aggregate(monthly_pipeline).to_list(100)
@@ -676,7 +676,7 @@ async def generate_forecast(
         {"$group": {
             "_id": "$month",
             "total_enquiries": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}},
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}},
             "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
         }},
         {"$sort": {"_id": 1}}
@@ -699,7 +699,7 @@ async def generate_forecast(
         {"$group": {
             "_id": "$kva", 
             "count": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
         }},
         {"$sort": {"_id": 1}}
     ]
@@ -715,7 +715,7 @@ async def generate_forecast(
         {"$group": {
             "_id": "$state", 
             "count": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
         }},
         {"$sort": {"count": -1}}
     ]
@@ -730,7 +730,7 @@ async def generate_forecast(
         {"$group": {
             "_id": "$dealer", 
             "count": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
         }},
         {"$sort": {"count": -1}}
     ]
@@ -745,7 +745,7 @@ async def generate_forecast(
         {"$group": {
             "_id": "$added_by", 
             "count": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
         }},
         {"$sort": {"count": -1}}
     ]
@@ -760,7 +760,7 @@ async def generate_forecast(
         {"$group": {
             "_id": "$segment", 
             "count": {"$sum": 1},
-            "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+            "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
         }},
         {"$sort": {"count": -1}}
     ]
@@ -1256,7 +1256,7 @@ async def compare_forecast_with_actuals(
             {"$group": {
                 "_id": None,
                 "total_leads": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}},
+                "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}},
                 "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}}
             }}
         ]
@@ -1329,7 +1329,7 @@ async def compare_forecast_with_actuals(
             {"$group": {
                 "_id": "$kva",
                 "count": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
             }}
         ]
         kva_actuals = await db.leads.aggregate(kva_actual_pipeline).to_list(100)
@@ -1356,7 +1356,7 @@ async def compare_forecast_with_actuals(
             {"$group": {
                 "_id": "$state",
                 "count": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
             }}
         ]
         state_actuals = await db.leads.aggregate(state_actual_pipeline).to_list(100)
@@ -1383,7 +1383,7 @@ async def compare_forecast_with_actuals(
             {"$group": {
                 "_id": "$dealer",
                 "count": {"$sum": 1},
-                "won": {"$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Won"]}, 1, 0]}}
+                "won": {"$sum": {"$cond": [{WON_CONDITION}, 1, 0]}}
             }}
         ]
         dealer_actuals = await db.leads.aggregate(dealer_actual_pipeline).to_list(100)
