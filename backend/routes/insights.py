@@ -2181,17 +2181,17 @@ async def get_lead_age_analysis(
                 "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
                 "hot_leads": {
                     "$sum": {
-                        "$cond": [{"$in": ["$enquiry_stage", ["Proposal", "Negotiation"]]}, 1, 0]
+                        "$cond": [{"$eq": ["$enquiry_type", "Hot"]}, 1, 0]
                     }
                 },
                 "warm_leads": {
                     "$sum": {
-                        "$cond": [{"$eq": ["$enquiry_stage", "Qualified"]}, 1, 0]
+                        "$cond": [{"$eq": ["$enquiry_type", "Warm"]}, 1, 0]
                     }
                 },
                 "cold_leads": {
                     "$sum": {
-                        "$cond": [{"$eq": ["$enquiry_stage", "Prospecting"]}, 1, 0]
+                        "$cond": [{"$eq": ["$enquiry_type", "Cold"]}, 1, 0]
                     }
                 },
                 # Age buckets
