@@ -55,7 +55,7 @@ const UserManagement = () => {
   const loadUsers = useCallback(async () => {
     try {
       const res = await axios.get(`${API}/admin/users`, { withCredentials: true });
-      setUsers(res.data.users || []);
+      setUsers(Array.isArray(res.data) ? res.data : res.data.users || []);
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Failed to load users');
