@@ -539,12 +539,41 @@ const Forecast = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Sparkles className="h-8 w-8 text-primary" />
-          AI-Powered Forecast
-        </h1>
-        <p className="text-muted-foreground mt-1">Generate intelligent predictions with KVA breakdown and accuracy testing</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Sparkles className="h-8 w-8 text-primary" />
+            AI-Powered Forecast
+          </h1>
+          <p className="text-muted-foreground mt-1">Generate intelligent predictions with KVA breakdown and accuracy testing</p>
+        </div>
+        {forecast && (
+          <ExportButton
+            data={forecast.monthly_predictions?.map(p => ({
+              period: p.period,
+              predicted: p.predicted,
+              lower_bound: p.lower_bound,
+              upper_bound: p.upper_bound,
+              lkva: p.kva_breakdown?.lkva || 0,
+              mkva: p.kva_breakdown?.mkva || 0,
+              hkva: p.kva_breakdown?.hkva || 0
+            })) || []}
+            filename="forecast_predictions"
+            sheetName="Forecast"
+            columns={[
+              { key: 'period', header: 'Period', width: 15 },
+              { key: 'predicted', header: 'Predicted', width: 12 },
+              { key: 'lower_bound', header: 'Lower Bound', width: 15 },
+              { key: 'upper_bound', header: 'Upper Bound', width: 15 },
+              { key: 'lkva', header: 'LKVA', width: 10 },
+              { key: 'mkva', header: 'MKVA', width: 10 },
+              { key: 'hkva', header: 'HKVA', width: 10 }
+            ]}
+            size="sm"
+          >
+            Export Forecast
+          </ExportButton>
+        )}
       </div>
 
       {/* Configuration */}
