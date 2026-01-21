@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import { useFilters } from '@/context/FilterContext';
@@ -25,7 +25,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Trophy, Users, Building, MapPin, XCircle, AlertTriangle, CheckCircle2, HelpCircle, RefreshCw, LayoutGrid, TrendingUp, TrendingDown, Lightbulb, Download, History, ArrowUpRight, ArrowDownRight, Minus, Globe, Zap, ChevronRight, ArrowLeft, Flame, Clock } from 'lucide-react';
+import { Trophy, Users, Building, MapPin, XCircle, AlertTriangle, CheckCircle2, HelpCircle, RefreshCw, LayoutGrid, TrendingUp, TrendingDown, Lightbulb, Download, History, ArrowUpRight, ArrowDownRight, Minus, Globe, Zap, ChevronRight, ArrowLeft, Flame, Clock, Image } from 'lucide-react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,6 +39,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
+import { ExportButton } from '@/components/ui/export-button';
+import { exportChartAsImage } from '@/utils/exportUtils';
 
 // Import refactored components
 import { SummaryBuilder, TopPerformers, TemperatureAnalysis, LeadAgeAnalysis } from '@/components/insights';
