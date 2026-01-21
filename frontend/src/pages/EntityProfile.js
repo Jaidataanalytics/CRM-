@@ -76,6 +76,10 @@ const EntityProfile = () => {
   const [loadingEnhanced, setLoadingEnhanced] = useState(false);
   const [timeFrame, setTimeFrame] = useState('monthly');
   const [breakdownBy, setBreakdownBy] = useState('segment');
+  
+  // Chart refs for image export
+  const pipelineChartRef = useRef(null);
+  const yoyChartRef = useRef(null);
 
   const entityIcons = {
     state: MapPin,
