@@ -171,22 +171,6 @@ const Insights = () => {
     }
   };
 
-  const loadSummaryBuilder = async () => {
-    setSummaryLoading(true);
-    try {
-      const queryParams = buildQueryParams();
-      const res = await axios.get(
-        `${API}/insights/summary-builder?metric=${summaryMetric}&time_frame=${summaryTimeFrame}&dimension=${summaryDimension}&compare_historical=${compareHistorical}&${queryParams}`,
-        { withCredentials: true }
-      );
-      setSummaryData(res.data);
-    } catch (error) {
-      console.error('Error loading summary builder:', error);
-    } finally {
-      setSummaryLoading(false);
-    }
-  };
-
   const loadSourceAnalysis = async () => {
     setSourceLoading(true);
     try {
@@ -210,32 +194,6 @@ const Insights = () => {
       console.error('Error loading KVA analysis:', error);
     } finally {
       setKvaLoading(false);
-    }
-  };
-
-  const loadTemperatureAnalysis = async () => {
-    setTemperatureLoading(true);
-    try {
-      const queryParams = buildQueryParams();
-      const res = await axios.get(`${API}/insights/temperature-analysis?${queryParams}&dimension=${temperatureDimension}`, { withCredentials: true });
-      setTemperatureData(res.data);
-    } catch (error) {
-      console.error('Error loading temperature analysis:', error);
-    } finally {
-      setTemperatureLoading(false);
-    }
-  };
-
-  const loadLeadAgeAnalysis = async () => {
-    setLeadAgeLoading(true);
-    try {
-      const queryParams = buildQueryParams();
-      const res = await axios.get(`${API}/insights/lead-age-analysis?${queryParams}&dimension=${leadAgeDimension}`, { withCredentials: true });
-      setLeadAgeData(res.data);
-    } catch (error) {
-      console.error('Error loading lead age analysis:', error);
-    } finally {
-      setLeadAgeLoading(false);
     }
   };
 
