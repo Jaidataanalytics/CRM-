@@ -222,14 +222,14 @@ const Insights = () => {
     }
   };
 
-  const loadDrilldown = async (analysisType, level, value, parentDealer, parentLocation) => {
+  const loadDrilldown = async (analysisType, level, value, parentDealer, parentDistrict) => {
     setDrilldownLoading(true);
     try {
       const queryParams = buildQueryParams();
       let url = `${API}/insights/analysis-drilldown?analysis_type=${analysisType}&level=${level}&${queryParams}`;
       if (value) url += `&value=${encodeURIComponent(value)}`;
       if (parentDealer) url += `&parent_dealer=${encodeURIComponent(parentDealer)}`;
-      if (parentLocation) url += `&parent_location=${encodeURIComponent(parentLocation)}`;
+      if (parentDistrict) url += `&parent_district=${encodeURIComponent(parentDistrict)}`;
       
       const res = await axios.get(url, { withCredentials: true });
       setDrilldownData(res.data);
@@ -249,12 +249,12 @@ const Insights = () => {
       newPath.push({ level: 1, label: item.name || item.segment || item.source || item.category, value: item.name || item.segment || item.source || item.category });
       loadDrilldown(analysisType, 2, item.name || item.segment || item.source || item.category, null, null);
     } else if (currentLevel === 2) {
-      // Drilldown from dealer to location
+      // Drilldown from dealer to district
       newPath.push({ level: 2, label: item.name, value: item.name, type: 'dealer' });
       loadDrilldown(analysisType, 3, drilldownPath[0]?.value, item.name, null);
     } else if (currentLevel === 3) {
-      // Drilldown from location to employee
-      newPath.push({ level: 3, label: item.name, value: item.name, type: 'location' });
+      // Drilldown from district to employee
+      newPath.push({ level: 3, label: item.name, value: item.name, type: 'district' });
       const parentDealer = drilldownPath.find(p => p.type === 'dealer')?.value;
       loadDrilldown(analysisType, 4, drilldownPath[0]?.value, parentDealer, item.name);
     }
@@ -277,8 +277,8 @@ const Insights = () => {
       const analysisType = drilldownData?.analysis_type;
       const value = newPath[0]?.value;
       const parentDealer = newPath.find(p => p.type === 'dealer')?.value;
-      const parentLocation = newPath.find(p => p.type === 'location')?.value;
-      loadDrilldown(analysisType, toLevel + 1, value, parentDealer, parentLocation);
+      const parentDistrict = newPath.find(p => p.type === 'district')?.value;
+      loadDrilldown(analysisType, toLevel + 1, value, parentDealer, parentDistrict);
     }
   };
 
