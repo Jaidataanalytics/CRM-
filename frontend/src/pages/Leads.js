@@ -1045,14 +1045,34 @@ const Leads = () => {
     return false; // Let normal update continue
   };
 
-  // Transfer lead to dealer
-  const handleTransferLead = async (lead) => {
+  // Transfer lead to dealer - open modal
+  const openTransferModal = (lead) => {
+    setTransferLead(lead);
+    setTransferData({
+      target_dealer: lead.dealer || '',
+      transferred_by_employee: lead.employee_name || '',
+      transfer_notes: ''
+    });
+    setShowTransferModal(true);
+  };
+  
+  // Execute transfer
+  const handleTransferLead = async () => {
+    if (!transferLead || !transferData.target_dealer || !transferData.transferred_by_employee) {
+      toast.error('Please select target dealer and original generator');
+      return;
+    }
+    
     setTransferring(true);
     try {
-      await axios.post(`${API}/leads/${lead.lead_id}/transfer`, {}, { withCredentials: true });
+      await axios.post(`${API}/leads/${transferLead.lead_id}/transfer`, transferData, { withCredentials: true });
       toast.success('Lead transferred to dealer successfully');
+      setShowTransferModal(false);
+      setTransferLead(null);
       setShowLeadDetail(false);
       setSelectedLead(null);
+      setEditDialogOpen(false);
+      setEditingLead(null);
       loadLeads();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to transfer lead');
@@ -1064,7 +1084,8 @@ const Leads = () => {
   // Check if lead can be transferred (all leads can now be transferred)
   const canTransferLead = (lead) => {
     // All leads can be transferred - removed BDM restriction
-    return lead && lead.lead_id;
+    // But not if already transferred
+    return lead && lead.lead_id && !lead.is_transferred;
   };
 
   const getCallStatusBadge = (status) => {
