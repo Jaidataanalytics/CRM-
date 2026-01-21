@@ -322,6 +322,23 @@ const Comparison = () => {
           <p className="text-muted-foreground mt-1">Compare sales against market potential</p>
         </div>
         <div className="flex gap-2">
+          <ExportButton
+            data={comparisonData}
+            filename="market_comparison"
+            sheetName="Market Comparison"
+            columns={[
+              { key: 'name', header: 'Name', width: 25 },
+              { key: 'current_sales', header: 'Current Sales', width: 15 },
+              { key: 'last_year_sales', header: 'Last Year Sales', width: 18 },
+              { key: 'potential', header: 'Market Potential', width: 18 },
+              { key: 'market_share', header: 'Market Share %', width: 15 },
+              { key: 'yoy_growth', header: 'YoY Growth %', width: 15 },
+              { key: 'gap', header: 'Gap', width: 12 }
+            ]}
+            size="sm"
+          >
+            Export Data
+          </ExportButton>
           <Button variant="outline" onClick={handleDownloadTemplate} data-testid="download-template-btn">
             <Download className="h-4 w-4 mr-2" />
             Download Template
