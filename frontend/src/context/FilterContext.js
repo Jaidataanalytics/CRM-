@@ -36,6 +36,7 @@ const initialFilters = {
   enquiryType: '',
   kvaMin: '',
   kvaMax: '',
+  maxLeadAge: '',
   ...getIndianFYDates()
 };
 
