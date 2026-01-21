@@ -563,15 +563,48 @@ const Dashboard = () => {
             {kpis?.date_range?.start_date} to {kpis?.date_range?.end_date}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowKpiSettings(true)}
-          className="gap-2"
-        >
-          <Settings className="h-4 w-4" />
-          KPI Settings
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            data={kpis ? [
+              { metric: 'Total Leads', value: kpis.total_leads || 0 },
+              { metric: 'Won Leads', value: kpis.won_leads || 0, qty: kpis.won_qty || 0 },
+              { metric: 'Lost Leads', value: kpis.lost_leads || 0 },
+              { metric: 'Open Leads', value: kpis.open_leads || 0 },
+              { metric: 'Open LKVA', value: kpis.lkva_open || 0 },
+              { metric: 'Open MKVA', value: kpis.mkva_open || 0 },
+              { metric: 'Open HKVA', value: kpis.hkva_open || 0 },
+              { metric: 'Hot Leads', value: kpis.hot_leads || 0 },
+              { metric: 'Warm Leads', value: kpis.warm_leads || 0 },
+              { metric: 'Cold Leads', value: kpis.cold_leads || 0 },
+              { metric: 'Conversion Rate', value: `${(kpis.conversion_rate || 0).toFixed(1)}%` },
+              { metric: 'Calls Placed', value: kpis.calls_placed || 0 },
+              { metric: 'Not Called', value: kpis.not_called || 0 },
+              { metric: 'Qualified Leads', value: kpis.qualified_leads || 0 },
+              { metric: 'Transferred Leads', value: kpis.transferred_leads || 0 },
+              { metric: 'Pending Dispatch', value: kpis.pending_dispatch || 0 },
+              { metric: 'Dispatched', value: kpis.dispatched || 0 }
+            ] : []}
+            filename="dashboard_kpis"
+            sheetName="KPI Summary"
+            columns={[
+              { key: 'metric', header: 'Metric', width: 25 },
+              { key: 'value', header: 'Value', width: 15 },
+              { key: 'qty', header: 'Quantity', width: 15 }
+            ]}
+            size="sm"
+          >
+            Export KPIs
+          </ExportButton>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowKpiSettings(true)}
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            KPI Settings
+          </Button>
+        </div>
       </div>
 
       {/* KPI Settings Dialog */}
