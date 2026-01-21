@@ -2178,16 +2178,42 @@ async def get_lead_age_analysis(
         }
         group_field = dimension_map.get(dimension, "$dealer")
     
-    # Pipeline for lead age analysis
+    # Pipeline for lead age analysis - calculate lead_age dynamically
     pipeline = [
         {"$match": query},
+        # Add lead_age calculation: days since enquiry_date
+        {
+            "$addFields": {
+                "calculated_lead_age": {
+                    "$dateDiff": {
+                        "startDate": {
+                            "$cond": {
+                                "if": {"$eq": [{"$type": "$enquiry_date"}, "date"]},
+                                "then": "$enquiry_date",
+                                "else": {"$dateFromString": {"dateString": "$enquiry_date", "onError": None}}
+                            }
+                        },
+                        "endDate": "$$NOW",
+                        "unit": "day"
+                    }
+                }
+            }
+        },
+        # Handle null calculated_lead_age by using stored lead_age as fallback
+        {
+            "$addFields": {
+                "final_lead_age": {
+                    "$ifNull": ["$calculated_lead_age", {"$ifNull": ["$lead_age", 0]}]
+                }
+            }
+        },
         {
             "$group": {
                 "_id": group_field,
                 "total_open_leads": {"$sum": 1},
-                "avg_lead_age": {"$avg": {"$ifNull": ["$lead_age", 0]}},
-                "min_lead_age": {"$min": {"$ifNull": ["$lead_age", 0]}},
-                "max_lead_age": {"$max": {"$ifNull": ["$lead_age", 0]}},
+                "avg_lead_age": {"$avg": "$final_lead_age"},
+                "min_lead_age": {"$min": "$final_lead_age"},
+                "max_lead_age": {"$max": "$final_lead_age"},
                 "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
                 "hot_leads": {
                     "$sum": {
@@ -2206,22 +2232,22 @@ async def get_lead_age_analysis(
                 },
                 # Age buckets
                 "age_0_30": {
-                    "$sum": {"$cond": [{"$lte": [{"$ifNull": ["$lead_age", 0]}, 30]}, 1, 0]}
+                    "$sum": {"$cond": [{"$lte": ["$final_lead_age", 30]}, 1, 0]}
                 },
                 "age_31_60": {
                     "$sum": {"$cond": [{"$and": [
-                        {"$gt": [{"$ifNull": ["$lead_age", 0]}, 30]},
-                        {"$lte": [{"$ifNull": ["$lead_age", 0]}, 60]}
+                        {"$gt": ["$final_lead_age", 30]},
+                        {"$lte": ["$final_lead_age", 60]}
                     ]}, 1, 0]}
                 },
                 "age_61_90": {
                     "$sum": {"$cond": [{"$and": [
-                        {"$gt": [{"$ifNull": ["$lead_age", 0]}, 60]},
-                        {"$lte": [{"$ifNull": ["$lead_age", 0]}, 90]}
+                        {"$gt": ["$final_lead_age", 60]},
+                        {"$lte": ["$final_lead_age", 90]}
                     ]}, 1, 0]}
                 },
                 "age_90_plus": {
-                    "$sum": {"$cond": [{"$gt": [{"$ifNull": ["$lead_age", 0]}, 90]}, 1, 0]}
+                    "$sum": {"$cond": [{"$gt": ["$final_lead_age", 90]}, 1, 0]}
                 }
             }
         },
