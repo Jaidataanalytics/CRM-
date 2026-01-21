@@ -15,8 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { 
   Truck, Package, Clock, CheckCircle2, Search, 
   RefreshCw, Calendar, MapPin, User, Phone,
-  AlertCircle, History, ChevronLeft, ChevronRight
+  AlertCircle, History, ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
+import { ExportButton } from '@/components/ui/export-button';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
