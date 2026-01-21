@@ -139,6 +139,16 @@ const Leads = () => {
   
   // Transfer state
   const [transferring, setTransferring] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferLead, setTransferLead] = useState(null);
+  const [transferData, setTransferData] = useState({
+    target_dealer: '',
+    transferred_by_employee: '',
+    transfer_notes: ''
+  });
+  
+  // Dealers list for transfer modal
+  const [dealersList, setDealersList] = useState([]);
   
   // New filter states for Lead Type and Follow-up Date
   const [selectedLeadTypes, setSelectedLeadTypes] = useState([]);
