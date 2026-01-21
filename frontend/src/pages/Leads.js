@@ -3037,33 +3037,27 @@ const Leads = () => {
               {/* Target Dealer */}
               <div className="space-y-2">
                 <Label htmlFor="target_dealer">Target Dealer <span className="text-red-500">*</span></Label>
-                <select
-                  id="target_dealer"
+                <SearchableSelect
+                  options={dealersList}
                   value={transferData.target_dealer}
-                  onChange={(e) => setTransferData({...transferData, target_dealer: e.target.value})}
-                  className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background"
-                >
-                  <option value="">Select dealer...</option>
-                  {dealersList.map((dealer, idx) => (
-                    <option key={idx} value={dealer}>{dealer}</option>
-                  ))}
-                </select>
+                  onValueChange={(value) => setTransferData({...transferData, target_dealer: value})}
+                  placeholder="Search and select dealer..."
+                  searchPlaceholder="Type to search dealers..."
+                  emptyText="No dealers found."
+                />
               </div>
               
               {/* Original Generator (Transferred By Employee) */}
               <div className="space-y-2">
                 <Label htmlFor="transferred_by_employee">Original Generator (Employee who generated this lead) <span className="text-red-500">*</span></Label>
-                <select
-                  id="transferred_by_employee"
+                <SearchableSelect
+                  options={usersList.map(u => ({ value: u.name || u.email, label: u.name || u.email }))}
                   value={transferData.transferred_by_employee}
-                  onChange={(e) => setTransferData({...transferData, transferred_by_employee: e.target.value})}
-                  className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background"
-                >
-                  <option value="">Select employee...</option>
-                  {usersList.map((user, idx) => (
-                    <option key={idx} value={user.name || user.email}>{user.name || user.email}</option>
-                  ))}
-                </select>
+                  onValueChange={(value) => setTransferData({...transferData, transferred_by_employee: value})}
+                  placeholder="Search and select employee..."
+                  searchPlaceholder="Type to search employees..."
+                  emptyText="No employees found."
+                />
               </div>
               
               {/* Transfer Notes */}
