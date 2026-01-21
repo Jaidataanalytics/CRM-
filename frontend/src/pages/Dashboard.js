@@ -754,7 +754,7 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* KPI Cards - Row 3: Call & Quotation Tracking */}
+      {/* KPI Cards - Row 3: Call Tracking */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {kpiVisibility.calls_placed && (
           <KPICard
@@ -762,22 +762,6 @@ const Dashboard = () => {
             value={kpis?.calls_placed || 0}
             icon={PhoneCall}
             color="text-cyan-500"
-          />
-        )}
-        {kpiVisibility.quotations_sent && (
-          <KPICard
-            title="Quotations Sent"
-            value={kpis?.quotations_sent || 0}
-            icon={FileText}
-            color="text-emerald-500"
-          />
-        )}
-        {kpiVisibility.call_to_quotation_rate && (
-          <KPICard
-            title="Call to Quotation Rate"
-            value={`${kpis?.call_to_quotation_rate || 0}%`}
-            icon={Percent}
-            color="text-indigo-500"
           />
         )}
         {kpiVisibility.not_called && (
