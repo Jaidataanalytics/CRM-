@@ -53,6 +53,7 @@ import {
   Filler
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
+import { ExportButton } from '@/components/ui/export-button';
 
 ChartJS.register(
   CategoryScale,
