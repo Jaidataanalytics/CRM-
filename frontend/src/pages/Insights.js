@@ -89,7 +89,7 @@ const Insights = () => {
 
   useEffect(() => {
     loadData();
-  }, [buildQueryParams, performerType, metric]);
+  }, [buildQueryParams]);
 
   useEffect(() => {
     loadClosureAnalysis();
@@ -118,24 +118,14 @@ const Insights = () => {
     loadClosureAnalysis();
   }, [closureCompareYoy]);
 
-  useEffect(() => {
-    loadTemperatureAnalysis();
-  }, [temperatureDimension, buildQueryParams]);
-
-  useEffect(() => {
-    loadLeadAgeAnalysis();
-  }, [leadAgeDimension, buildQueryParams]);
-
   const loadData = async () => {
     setLoading(true);
     try {
       const queryParams = buildQueryParams();
-      const [performersRes, conversionRes, segmentRes] = await Promise.all([
-        axios.get(`${API}/insights/top-performers?by=${performerType}&metric=${metric}&${queryParams}`, { withCredentials: true }),
+      const [conversionRes, segmentRes] = await Promise.all([
         axios.get(`${API}/insights/conversion-vs-followups?${queryParams}`, { withCredentials: true }),
         axios.get(`${API}/insights/segment-analysis?${queryParams}&compare_yoy=${segmentCompareYoy}`, { withCredentials: true })
       ]);
-      setPerformers(performersRes.data.performers || []);
       setConversionData(conversionRes.data.data || []);
       setSegmentData(segmentRes.data.segments || []);
     } catch (error) {
