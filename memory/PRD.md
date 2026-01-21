@@ -170,7 +170,7 @@ None currently
 ### P1 - High Priority
 1. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
 2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
-3. **Complete searchable dropdowns** - Apply SearchableSelect to remaining large dropdowns in Insights.js and Admin.js (currently done for FilterBar.js and key Leads.js fields)
+3. **Complete searchable dropdowns** - Apply SearchableSelect to remaining large dropdowns in Insights.js and Admin.js
 
 ### P2 - Medium Priority
 1. **Refactor Large Components** - Break down Insights.js (~2500 lines), Admin.js (~3000 lines), Leads.js (~3000 lines)
