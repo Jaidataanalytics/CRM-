@@ -40,6 +40,9 @@ import {
 } from 'chart.js';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 
+// Import refactored components
+import { SummaryBuilder, TopPerformers, TemperatureAnalysis, LeadAgeAnalysis } from '@/components/insights';
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
