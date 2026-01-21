@@ -39,4 +39,4 @@ class UserResponse(BaseModel):
     name: str
     picture: Optional[str] = None
     role: UserRole
-    is_active: bool
+    is_active: bool = True  # Default to True if not present
