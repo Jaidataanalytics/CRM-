@@ -30,7 +30,8 @@ import {
   GitMerge,
   Database,
   Zap,
-  Timer
+  Timer,
+  Download
 } from 'lucide-react';
 import {
   Dialog,
@@ -52,6 +53,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
+import { ExportButton } from '@/components/ui/export-button';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
