@@ -95,6 +95,10 @@ const DuplicateLeads = () => {
   const [wonNoSoSearchQuery, setWonNoSoSearchQuery] = useState('');
   const [wonNoSoSummary, setWonNoSoSummary] = useState(null);
   
+  // Analytics state
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  
   // Load all counts on mount
   useEffect(() => {
     loadAllCounts();
