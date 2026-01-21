@@ -382,6 +382,10 @@ const DuplicateLeads = () => {
             <GitMerge className="h-4 w-4" />
             Merge History ({totalMerged})
           </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
           <TabsTrigger value="time-punch" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Order Time Punch ({totalTimePunch})
