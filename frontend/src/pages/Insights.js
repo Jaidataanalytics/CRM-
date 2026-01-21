@@ -538,7 +538,6 @@ const Insights = () => {
                 <SelectItem value="won">Won Leads</SelectItem>
                 <SelectItem value="total">Total Leads</SelectItem>
                 <SelectItem value="conversion_rate">Conversion Rate</SelectItem>
-                <SelectItem value="kva">Total KVA</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -554,8 +553,7 @@ const Insights = () => {
               <div className="space-y-4">
                 {performers.map((p, idx) => {
                   const value = metric === 'conversion_rate' ? p.conversion_rate : 
-                               metric === 'won' ? p.won_leads : 
-                               metric === 'kva' ? p.total_kva : p.total_leads;
+                               metric === 'won' ? p.won_leads : p.total_leads;
                   const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
                   
                   return (
