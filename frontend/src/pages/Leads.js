@@ -1597,16 +1597,19 @@ const Leads = () => {
                   </div>
                   <div className="space-y-2">
                     <Label>Employee</Label>
-                    <Select value={formData.employee_name || ''} onValueChange={(v) => handleInputChange('employee_name', v)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select employee" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(dropdownOptions.employee_name || []).slice(0, 100).map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={[
+                        ...new Set([
+                          ...(dropdownOptions.employee_name || []),
+                          ...usersList.map(u => u.name || u.email).filter(Boolean)
+                        ])
+                      ].sort()}
+                      value={formData.employee_name || ''}
+                      onValueChange={(v) => handleInputChange('employee_name', v)}
+                      placeholder="Search and select employee..."
+                      searchPlaceholder="Type to search..."
+                      emptyText="No employees found."
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="kva">KVA</Label>
