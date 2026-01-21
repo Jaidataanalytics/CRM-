@@ -183,7 +183,7 @@ async def get_conversion_vs_followups(
                 "_id": "$no_of_followups",
                 "total": {"$sum": 1},
                 "won": {
-                    "$sum": {"$cond": [{{"$in": ["$enquiry_stage", WON_STAGES]}}, 1, 0]}
+                    "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}
                 },
                 "lost": {
                     "$sum": {"$cond": [{"$eq": ["$enquiry_stage", "Closed-Lost"]}, 1, 0]}
