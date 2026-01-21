@@ -2067,7 +2067,7 @@ const Insights = () => {
                           {summaryData.historical_comparison.rows.length > 20 && (
                             <TableRow>
                               <TableCell colSpan={summaryData.historical_comparison.columns.length * 3 + 4} className="text-center text-muted-foreground text-sm">
-                                ... and {summaryData.historical_comparison.rows.length - 20} more rows (export to CSV for full data)
+                                ... and {summaryData.historical_comparison.rows.length - 20} more rows (export to Excel for full data)
                               </TableCell>
                             </TableRow>
                           )}
@@ -2166,7 +2166,7 @@ const Insights = () => {
                           {summaryData.pivot_table.rows.length > 25 && (
                             <TableRow>
                               <TableCell colSpan={summaryData.pivot_table.columns.length + 2} className="text-center text-muted-foreground text-sm">
-                                ... and {summaryData.pivot_table.rows.length - 25} more rows (export to CSV for full data)
+                                ... and {summaryData.pivot_table.rows.length - 25} more rows (export to Excel for full data)
                               </TableCell>
                             </TableRow>
                           )}
