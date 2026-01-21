@@ -332,77 +332,86 @@ const Insights = () => {
     loadSummaryBuilder();
   }, [buildQueryParams, summaryMetric, summaryTimeFrame, summaryDimension, compareHistorical]);
 
-  const exportSummaryToCSV = () => {
+  const exportSummaryToExcel = () => {
     if (!summaryData?.pivot_table) return;
     
     const dimension = summaryData.meta.dimension;
+    let exportData = [];
     
     // Check if we have historical comparison data
     if (compareHistorical && summaryData.historical_comparison) {
       const { columns, rows, column_totals, grand_total } = summaryData.historical_comparison;
       
-      // Build header: Dimension, Period1 (Current), Period1 (Prev), YoY%, ...
-      let headers = [dimension.charAt(0).toUpperCase() + dimension.slice(1)];
+      // Build header row
+      let headerRow = { [dimension.charAt(0).toUpperCase() + dimension.slice(1)]: '' };
       columns.forEach(col => {
-        headers.push(`${col.current} (Current)`);
-        headers.push(`${col.historical || 'N/A'} (Prev)`);
-        headers.push('YoY %');
+        headerRow[`${col.current} (Current)`] = '';
+        headerRow[`${col.historical || 'N/A'} (Prev)`] = '';
+        headerRow[`${col.current} YoY %`] = '';
       });
-      headers.push('Total (Current)', 'Total (Prev)', 'YoY %');
+      headerRow['Total (Current)'] = '';
+      headerRow['Total (Prev)'] = '';
+      headerRow['Total YoY %'] = '';
       
-      let csv = headers.join(',') + '\n';
-      
+      // Build data rows
       rows.forEach(row => {
-        let values = [`"${row.dimension}"`];
+        let dataRow = { [dimension.charAt(0).toUpperCase() + dimension.slice(1)]: row.dimension };
         columns.forEach(col => {
           const periodData = row.periods[col.current] || { current: 0, historical: 0, yoy_change: 0 };
-          values.push(periodData.current, periodData.historical, `${periodData.yoy_change}%`);
+          dataRow[`${col.current} (Current)`] = periodData.current;
+          dataRow[`${col.historical || 'N/A'} (Prev)`] = periodData.historical;
+          dataRow[`${col.current} YoY %`] = periodData.yoy_change;
         });
-        values.push(row.total, row.hist_total, `${row.yoy_change}%`);
-        csv += values.join(',') + '\n';
+        dataRow['Total (Current)'] = row.total;
+        dataRow['Total (Prev)'] = row.hist_total;
+        dataRow['Total YoY %'] = row.yoy_change;
+        exportData.push(dataRow);
       });
       
       // Add totals row
-      let totalValues = ['Total'];
+      let totalRow = { [dimension.charAt(0).toUpperCase() + dimension.slice(1)]: 'Total' };
       columns.forEach(col => {
         const totals = column_totals[col.current] || { current: 0, historical: 0, yoy_change: 0 };
-        totalValues.push(totals.current, totals.historical, `${totals.yoy_change}%`);
+        totalRow[`${col.current} (Current)`] = totals.current;
+        totalRow[`${col.historical || 'N/A'} (Prev)`] = totals.historical;
+        totalRow[`${col.current} YoY %`] = totals.yoy_change;
       });
-      totalValues.push(grand_total.current, grand_total.historical, `${grand_total.yoy_change}%`);
-      csv += totalValues.join(',') + '\n';
-      
-      // Download
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `summary_${summaryDimension}_${summaryMetric}_${summaryTimeFrame}_yoy.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      totalRow['Total (Current)'] = grand_total.current;
+      totalRow['Total (Prev)'] = grand_total.historical;
+      totalRow['Total YoY %'] = grand_total.yoy_change;
+      exportData.push(totalRow);
     } else {
       const { columns, rows, column_totals, grand_total } = summaryData.pivot_table;
       
-      // Build CSV content
-      let csv = `${dimension.charAt(0).toUpperCase() + dimension.slice(1)},${columns.join(',')},Total\n`;
-      
+      // Build data rows
       rows.forEach(row => {
-        const values = columns.map(col => row.periods[col] || 0);
-        csv += `"${row.dimension}",${values.join(',')},${row.total}\n`;
+        let dataRow = { [dimension.charAt(0).toUpperCase() + dimension.slice(1)]: row.dimension };
+        columns.forEach(col => {
+          dataRow[col] = row.periods[col] || 0;
+        });
+        dataRow['Total'] = row.total;
+        exportData.push(dataRow);
       });
       
       // Add totals row
-      const totalValues = columns.map(col => column_totals[col] || 0);
-      csv += `Total,${totalValues.join(',')},${grand_total}\n`;
-      
-      // Download
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `summary_${summaryDimension}_${summaryMetric}_${summaryTimeFrame}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      let totalRow = { [dimension.charAt(0).toUpperCase() + dimension.slice(1)]: 'Total' };
+      columns.forEach(col => {
+        totalRow[col] = column_totals[col] || 0;
+      });
+      totalRow['Total'] = grand_total;
+      exportData.push(totalRow);
     }
+    
+    // Create workbook and worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+    
+    // Download Excel file
+    const filename = compareHistorical 
+      ? `summary_${summaryDimension}_${summaryMetric}_${summaryTimeFrame}_yoy.xlsx`
+      : `summary_${summaryDimension}_${summaryMetric}_${summaryTimeFrame}.xlsx`;
+    XLSX.writeFile(wb, filename);
   };
 
   const conversionChartData = {
