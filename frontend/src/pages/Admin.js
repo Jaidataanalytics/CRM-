@@ -37,12 +37,15 @@ import { Users, Activity, Settings, Shield, UserX, UserCheck, ChevronLeft, Chevr
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 
+// Import refactored components
+import { UserManagement, ActivityLogs } from '@/components/admin';
+
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const Admin = () => {
   const [stats, setStats] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [logs, setLogs] = useState([]);
+  // Users and logs state now managed by components
+  const [closureQuestions, setClosureQuestions] = useState([]);
   const [closureQuestions, setClosureQuestions] = useState([]);
   const [qualificationQuestions, setQualificationQuestions] = useState([]);
   const [qualificationSettings, setQualificationSettings] = useState({ threshold_score: 0 });
