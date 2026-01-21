@@ -1549,9 +1549,10 @@ const Insights = () => {
                     <SelectItem value="employee">Employee</SelectItem>
                     <SelectItem value="dealer">Dealer</SelectItem>
                     <SelectItem value="state">State</SelectItem>
-                    <SelectItem value="location">Location</SelectItem>
+                    <SelectItem value="district">District</SelectItem>
                     <SelectItem value="segment">Segment</SelectItem>
                     <SelectItem value="source">Source</SelectItem>
+                    <SelectItem value="kva">KVA Range</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
