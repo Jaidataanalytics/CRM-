@@ -699,7 +699,6 @@ const EntityProfile = () => {
                       <TableHead className="text-xs text-right">Lost</TableHead>
                       <TableHead className="text-xs text-right">Open</TableHead>
                       <TableHead className="text-xs text-right">Conv %</TableHead>
-                      <TableHead className="text-xs text-right">KVA</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -711,12 +710,11 @@ const EntityProfile = () => {
                         <TableCell className="text-xs text-right text-red-600">{row.lost_leads}</TableCell>
                         <TableCell className="text-xs text-right text-blue-600">{row.open_leads}</TableCell>
                         <TableCell className="text-xs text-right">{row.conversion_rate}%</TableCell>
-                        <TableCell className="text-xs text-right">{row.total_kva}</TableCell>
                       </TableRow>
                     ))}
                     {(!enhancedData.breakdown?.data || enhancedData.breakdown.data.length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground text-xs">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground text-xs">
                           No breakdown data available
                         </TableCell>
                       </TableRow>
