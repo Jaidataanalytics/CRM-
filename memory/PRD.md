@@ -44,7 +44,17 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 
 ## What's Been Implemented (as of Jan 2026)
 
-### Transfer to Dealer Feature (NEW)
+### Searchable Dropdowns (NEW - Jan 21, 2026)
+- [x] Created reusable `SearchableSelect` component at `/app/frontend/src/components/ui/searchable-select.jsx`
+- [x] Implemented in FilterBar.js - State, Dealer, Employee, Segment dropdowns now searchable
+- [x] Implemented in Leads.js - Dealer and Employee fields in edit form and transfer modal
+
+### Lead Age Analysis Fix (NEW - Jan 21, 2026)
+- [x] Fixed dynamic calculation of `lead_age` in `/app/backend/routes/insights.py`
+- [x] Lead age now calculated in real-time using MongoDB's `$dateDiff` instead of relying on a stored field
+- [x] Age buckets (0-30d, 31-60d, 61-90d, 90+d) working correctly
+
+### Transfer to Dealer Feature
 - [x] Transfer Modal with Target Dealer, Original Generator, Notes
 - [x] Transferred Leads Page with summary cards and analytics
 - [x] By Employee / By Dealer breakdown tabs
