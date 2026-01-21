@@ -942,7 +942,6 @@ const Insights = () => {
                         <TableHead>{competitorDimension === 'competitor' ? 'Competitor' : competitorDimension === 'lost_reason' ? 'Lost Reason' : 'Lost Remarks'}</TableHead>
                         <TableHead className="text-right">Count</TableHead>
                         <TableHead className="text-right">%</TableHead>
-                        <TableHead className="text-right">Total KVA</TableHead>
                         <TableHead className="text-right">States</TableHead>
                         <TableHead className="text-right">Dealers</TableHead>
                       </TableRow>
@@ -958,14 +957,13 @@ const Insights = () => {
                           <TableCell className="text-right">
                             <Badge variant="outline">{item.percentage}%</Badge>
                           </TableCell>
-                          <TableCell className="text-right">{item.total_kva?.toLocaleString() || 0}</TableCell>
                           <TableCell className="text-right">{item.unique_states || 0}</TableCell>
                           <TableCell className="text-right">{item.unique_dealers || 0}</TableCell>
                         </TableRow>
                       ))}
                       {(!competitorAnalysis.analysis || competitorAnalysis.analysis.length === 0) && (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                             No {competitorDimension} data available for lost leads
                           </TableCell>
                         </TableRow>
@@ -975,12 +973,12 @@ const Insights = () => {
                 </CardContent>
               </Card>
 
-              {/* Top by KVA */}
+              {/* Top by Count */}
               {competitorAnalysis.top_by_kva?.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Top by KVA Lost</CardTitle>
-                    <CardDescription>Highest value losses</CardDescription>
+                    <CardTitle className="text-lg">Top by Lost Count</CardTitle>
+                    <CardDescription>Highest loss counts</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -991,8 +989,7 @@ const Insights = () => {
                             <span className="font-medium">{item.value}</span>
                           </div>
                           <div className="text-right">
-                            <p className="font-bold text-red-600">{item.total_kva?.toLocaleString()} KVA</p>
-                            <p className="text-sm text-muted-foreground">{item.count} leads</p>
+                            <p className="font-bold text-red-600">{item.count} leads</p>
                           </div>
                         </div>
                       ))}
