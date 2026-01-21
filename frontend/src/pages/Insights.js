@@ -89,6 +89,16 @@ const Insights = () => {
   const [kvaLoading, setKvaLoading] = useState(false);
   const [kvaCompareYoy, setKvaCompareYoy] = useState(false);
   
+  // Temperature (Hot/Warm/Cold) Analysis state
+  const [temperatureData, setTemperatureData] = useState(null);
+  const [temperatureLoading, setTemperatureLoading] = useState(false);
+  const [temperatureDimension, setTemperatureDimension] = useState('dealer');
+  
+  // Lead Age Analysis state
+  const [leadAgeData, setLeadAgeData] = useState(null);
+  const [leadAgeLoading, setLeadAgeLoading] = useState(false);
+  const [leadAgeDimension, setLeadAgeDimension] = useState('dealer');
+  
   // Drill-down state
   const [drilldownData, setDrilldownData] = useState(null);
   const [drilldownLoading, setDrilldownLoading] = useState(false);
