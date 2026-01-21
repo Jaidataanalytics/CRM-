@@ -3000,6 +3000,98 @@ const Leads = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer to Dealer Modal */}
+      <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowLeftRight className="h-5 w-5" />
+              Transfer Lead to Dealer
+            </DialogTitle>
+            <DialogDescription>
+              Transfer this lead to a dealer. Once transferred, it will be excluded from KPIs until the dealer re-uploads it.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {transferLead && (
+            <div className="space-y-4 py-4">
+              {/* Lead Info */}
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <p className="text-sm font-medium">{transferLead.name || transferLead.corporate_name}</p>
+                <p className="text-xs text-muted-foreground">{transferLead.enquiry_no} | {transferLead.phone_number}</p>
+              </div>
+              
+              {/* Target Dealer */}
+              <div className="space-y-2">
+                <Label htmlFor="target_dealer">Target Dealer <span className="text-red-500">*</span></Label>
+                <select
+                  id="target_dealer"
+                  value={transferData.target_dealer}
+                  onChange={(e) => setTransferData({...transferData, target_dealer: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background"
+                >
+                  <option value="">Select dealer...</option>
+                  {dealersList.map((dealer, idx) => (
+                    <option key={idx} value={dealer}>{dealer}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Original Generator (Transferred By Employee) */}
+              <div className="space-y-2">
+                <Label htmlFor="transferred_by_employee">Original Generator (Employee who generated this lead) <span className="text-red-500">*</span></Label>
+                <select
+                  id="transferred_by_employee"
+                  value={transferData.transferred_by_employee}
+                  onChange={(e) => setTransferData({...transferData, transferred_by_employee: e.target.value})}
+                  className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background"
+                >
+                  <option value="">Select employee...</option>
+                  {usersList.map((user, idx) => (
+                    <option key={idx} value={user.name || user.email}>{user.name || user.email}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Transfer Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="transfer_notes">Transfer Notes (Optional)</Label>
+                <textarea
+                  id="transfer_notes"
+                  value={transferData.transfer_notes}
+                  onChange={(e) => setTransferData({...transferData, transfer_notes: e.target.value})}
+                  placeholder="Add any notes about this transfer..."
+                  className="w-full min-h-[80px] px-3 py-2 text-sm rounded-md border border-input bg-background resize-none"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTransferModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleTransferLead}
+              disabled={transferring || !transferData.target_dealer || !transferData.transferred_by_employee}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {transferring ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Transferring...
+                </>
+              ) : (
+                <>
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  Transfer Lead
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
