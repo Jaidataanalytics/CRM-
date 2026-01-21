@@ -774,6 +774,107 @@ const DuplicateLeads = () => {
           </Card>
         </TabsContent>
 
+        {/* Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5 text-purple-500" />
+                    Duplicate & Merge Analytics
+                  </CardTitle>
+                  <CardDescription>
+                    Analysis of which dealers, employees, districts have the most duplicates
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={loadAnalytics} disabled={analyticsLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${analyticsLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {analyticsLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-64 w-full" />
+                </div>
+              ) : analyticsData ? (
+                <div className="space-y-6">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-orange-600 font-medium">Total Duplicates</div>
+                        <div className="text-3xl font-bold text-orange-700">{analyticsData.total_duplicates?.toLocaleString()}</div>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                      <CardContent className="p-4">
+                        <div className="text-sm text-green-600 font-medium">Total Merged</div>
+                        <div className="text-3xl font-bold text-green-700">{analyticsData.total_merged?.toLocaleString()}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Duplicate Analytics */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Duplicates by Dimension</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(analyticsData.duplicate_by_dimension || {}).map(([dim, data]) => (
+                        <Card key={dim}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm capitalize">{dim.replace('_', ' ')}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {data.slice(0, 10).map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-sm">
+                                  <span className="truncate flex-1 mr-2">{item.name}</span>
+                                  <Badge variant="outline" className="bg-orange-50 text-orange-700">{item.count}</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Merged Analytics */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Merged Leads by Dimension</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(analyticsData.merged_by_dimension || {}).map(([dim, data]) => (
+                        <Card key={dim}>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm capitalize">{dim.replace('_', ' ')}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {data.slice(0, 10).map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-sm">
+                                  <span className="truncate flex-1 mr-2">{item.name}</span>
+                                  <Badge variant="outline" className="bg-green-50 text-green-700">{item.count}</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-8">
+                  No analytics data available
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Order Time Punch Tab */}
         <TabsContent value="time-punch" className="space-y-4">
           <div className="flex items-center justify-between">
