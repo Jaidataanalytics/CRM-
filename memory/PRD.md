@@ -187,12 +187,22 @@ None currently
 ### P1 - High Priority
 1. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
 2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
-3. **Complete Component Integration** - Integrate admin and leads components into main pages to further reduce file sizes
+3. **Financial Year Standardization** - Full audit of all YoY calculations to use Indian FY (Apr 1 - Mar 31)
 
 ### P2 - Medium Priority
-1. **Continue Refactor** - Admin.js (3462 lines) and Leads.js (3106 lines) still need more component extraction
+1. **Continue Refactor** - Admin.js (3154 lines) and Leads.js (3107 lines) still need more component extraction
 2. **Lead Velocity & ROI Analysis** - How fast leads move through stages
 3. **Dashboard customization** - User-configurable widgets
+
+## Export Components Structure
+```
+/app/frontend/src/
+├── utils/
+│   └── exportUtils.js          # Export utility functions (exportToExcel, exportChartAsImage, etc.)
+└── components/
+    └── ui/
+        └── export-button.jsx   # Reusable ExportButton with Excel and image export options
+```
 
 ## Refactored Components Structure
 ```
