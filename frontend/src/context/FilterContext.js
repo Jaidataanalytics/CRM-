@@ -98,6 +98,7 @@ export const FilterProvider = ({ children }) => {
     if (active.enquiryStage) params.append('enquiry_stage', active.enquiryStage);
     if (active.kvaMin) params.append('kva_min', active.kvaMin);
     if (active.kvaMax) params.append('kva_max', active.kvaMax);
+    if (active.maxLeadAge) params.append('max_lead_age', active.maxLeadAge);
     if (active.startDate) params.append('start_date', active.startDate);
     if (active.endDate) params.append('end_date', active.endDate);
     
