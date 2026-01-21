@@ -114,9 +114,19 @@ async def get_dispatch_list(
     db = await get_db(request)
     
     # Base query for won orders (Closed-Won or Order Booked)
+    # STANDARDIZED: Match KPI page query filters for consistency
     query = {
         "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
-        "deleted_at": {"$exists": False}
+        "deleted_at": {"$exists": False},
+        "is_deleted": {"$ne": True},
+        "has_so_record": True,
+        "$and": [
+            {"$or": [
+                {"is_transferred": {"$exists": False}},
+                {"is_transferred": False},
+                {"is_transferred": None}
+            ]}
+        ]
     }
     
     if dispatch_status:
@@ -130,7 +140,8 @@ async def get_dispatch_list(
     if segment:
         query["segment"] = segment
     if start_date and end_date:
-        query["eo_po_date"] = {"$gte": start_date, "$lte": end_date}
+        # Use enquiry_date for consistency with KPI page
+        query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
     # Search
     if search and search.strip():
