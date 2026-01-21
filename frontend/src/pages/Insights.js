@@ -1552,7 +1552,7 @@ const Insights = () => {
                     <SelectItem value="district">District</SelectItem>
                     <SelectItem value="segment">Segment</SelectItem>
                     <SelectItem value="source">Source</SelectItem>
-                    <SelectItem value="kva">KVA Range</SelectItem>
+                    <SelectItem value="kva">KVA</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
