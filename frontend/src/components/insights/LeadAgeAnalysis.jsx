@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
 const LeadAgeAnalysis = ({ buildQueryParams }) => {
   const [leadAgeData, setLeadAgeData] = useState(null);
