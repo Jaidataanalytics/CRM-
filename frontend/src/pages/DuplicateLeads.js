@@ -150,6 +150,8 @@ const DuplicateLeads = () => {
     } else if (activeTab === 'won-no-so') {
       loadWonNoSoLeads();
       loadWonNoSoSummary();
+    } else if (activeTab === 'analytics') {
+      loadAnalytics();
     }
   }, [activeTab, page, searchQuery, mergePage, mergeSearchQuery, timePunchPage, timePunchSearchQuery, wonNoSoPage, wonNoSoSearchQuery]);
 
