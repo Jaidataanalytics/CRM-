@@ -22,6 +22,7 @@ async def get_top_performers(
     metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva", "open", "lost", "calls_placed", "quotations_sent", "call_to_quotation_rate"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    max_lead_age: Optional[int] = None,
     limit: int = Query(10, ge=1, le=50)
 ):
     """Get top performers by various metrics"""
@@ -35,6 +36,10 @@ async def get_top_performers(
         "enquiry_date": {"$gte": start_date, "$lte": end_date},
         "deleted_at": {"$exists": False}
     }
+    
+    # Apply max lead age filter
+    if max_lead_age:
+        base_match["lead_age"] = {"$lte": max_lead_age}
     
     group_field = {
         "employee": "$employee_name",
