@@ -1898,13 +1898,13 @@ const Insights = () => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={exportSummaryToCSV}
+              onClick={exportSummaryToExcel}
               disabled={!summaryData?.pivot_table?.rows?.length}
               className="mt-5"
-              data-testid="export-summary-csv"
+              data-testid="export-summary-excel"
             >
               <Download className="h-4 w-4 mr-2" />
-              Export CSV
+              Export Excel
             </Button>
           </div>
 
