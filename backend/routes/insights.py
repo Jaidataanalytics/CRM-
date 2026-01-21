@@ -18,7 +18,7 @@ async def get_db(request: Request):
 async def get_top_performers(
     request: Request,
     current_user: User = Depends(get_current_user),
-    by: str = Query("employee", enum=["employee", "dealer", "state", "location", "source"]),
+    by: str = Query("employee", enum=["employee", "dealer", "state", "district", "source"]),
     metric: str = Query("won", enum=["won", "total", "conversion_rate", "kva", "open", "lost", "calls_placed", "quotations_sent", "call_to_quotation_rate"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
@@ -40,7 +40,7 @@ async def get_top_performers(
         "employee": "$employee_name",
         "dealer": "$dealer",
         "state": "$state",
-        "location": "$location",
+        "district": "$district",
         "source": "$source"
     }.get(by, "$employee_name")
     
@@ -950,7 +950,7 @@ async def get_summary_builder(
     current_user: User = Depends(get_current_user),
     metric: str = Query("leads", enum=["leads", "qty", "won_leads", "lost_leads", "conversion_rate"]),
     time_frame: str = Query("monthly", enum=["monthly", "quarterly", "yearly"]),
-    dimension: str = Query("employee", enum=["employee", "dealer", "state", "location", "segment", "source"]),
+    dimension: str = Query("employee", enum=["employee", "dealer", "state", "district", "segment", "source", "kva"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     compare_historical: bool = Query(False, description="Show YoY comparison side by side")
@@ -988,14 +988,26 @@ async def get_summary_builder(
         "deleted_at": {"$exists": False}
     }
     
+    # KVA category expression for aggregation
+    kva_category_expr = {
+        "$switch": {
+            "branches": [
+                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
+                {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"},
+            ],
+            "default": "HKVA (≥250)"
+        }
+    }
+    
     # Dimension field mapping
     dimension_field_map = {
         "employee": "$employee_name",
         "dealer": "$dealer",
         "state": "$state",
-        "location": "$location",
+        "district": "$district",
         "segment": "$segment",
-        "source": "$source"
+        "source": "$source",
+        "kva": kva_category_expr
     }
     dimension_field = dimension_field_map.get(dimension, "$employee_name")
     
