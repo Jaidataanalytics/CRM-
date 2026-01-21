@@ -119,6 +119,27 @@ const EntityProfile = () => {
     }
   };
 
+  const loadEnhancedAnalytics = async () => {
+    setLoadingEnhanced(true);
+    try {
+      const params = new URLSearchParams();
+      if (dateRange?.from) params.append('start_date', dateRange.from);
+      if (dateRange?.to) params.append('end_date', dateRange.to);
+      params.append('time_frame', timeFrame);
+      params.append('breakdown_by', breakdownBy);
+      
+      const res = await axios.get(
+        `${API}/entity/enhanced-analytics/${entityType}/${encodeURIComponent(entityId)}?${params}`,
+        { withCredentials: true }
+      );
+      setEnhancedData(res.data);
+    } catch (err) {
+      console.error('Failed to load enhanced analytics:', err);
+    } finally {
+      setLoadingEnhanced(false);
+    }
+  };
+
   const loadRecentLeads = async () => {
     setLoadingLeads(true);
     try {
