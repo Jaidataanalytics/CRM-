@@ -1084,7 +1084,7 @@ async def save_forecast(
     request: Request,
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
 ):
-    """Save a generated forecast projection to the database"""
+    """Save a generated forecast projection to the database with all breakdown data"""
     db = await get_db(request)
     body = await request.json()
     
@@ -1092,7 +1092,7 @@ async def save_forecast(
     if not forecast_data:
         raise HTTPException(status_code=400, detail="No forecast data provided")
     
-    # Create projection document
+    # Create projection document with full data preservation
     projection = {
         "saved_at": datetime.now(timezone.utc).isoformat(),
         "saved_by": current_user.name or current_user.email,
@@ -1102,7 +1102,14 @@ async def save_forecast(
         "summary": forecast_data.get("forecast", {}).get("summary", ""),
         "predictions": forecast_data.get("forecast", {}).get("predictions", []),
         "model_info": forecast_data.get("model_info", {}),
-        "generated_at": forecast_data.get("generated_at", "")
+        "generated_at": forecast_data.get("generated_at", ""),
+        # Preserve additional breakdown and analysis data
+        "source_of_truth": forecast_data.get("source_of_truth", {}),
+        "accuracy_info": forecast_data.get("accuracy_info", {}),
+        "historical_data": forecast_data.get("historical_data", []),
+        "notes": forecast_data.get("notes", ""),
+        # Store the full forecast object for complete restoration
+        "full_forecast_data": forecast_data
     }
     
     result = await db.saved_forecasts.insert_one(projection)
