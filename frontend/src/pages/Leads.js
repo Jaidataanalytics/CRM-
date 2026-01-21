@@ -1522,11 +1522,11 @@ const Leads = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Location</Label>
+                    <Label>District</Label>
                     <Input
-                      value={formData.location || ''}
-                      onChange={(e) => handleInputChange('location', e.target.value)}
-                      placeholder="Enter location (city/district)"
+                      value={formData.district || formData.location || ''}
+                      onChange={(e) => handleInputChange('district', e.target.value)}
+                      placeholder="Enter district"
                     />
                   </div>
                   <div className="space-y-2">
