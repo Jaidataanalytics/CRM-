@@ -46,7 +46,6 @@ const Admin = () => {
   const [stats, setStats] = useState(null);
   // Users and logs state now managed by components
   const [closureQuestions, setClosureQuestions] = useState([]);
-  const [closureQuestions, setClosureQuestions] = useState([]);
   const [qualificationQuestions, setQualificationQuestions] = useState([]);
   const [qualificationSettings, setQualificationSettings] = useState({ threshold_score: 0 });
   const [loading, setLoading] = useState(true);
