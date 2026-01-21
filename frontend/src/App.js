@@ -15,7 +15,7 @@ import Insights from '@/pages/Insights';
 import Leads from '@/pages/Leads';
 import Forecast from '@/pages/Forecast';
 import Dispatch from '@/pages/Dispatch';
-import Quotations from '@/pages/Quotations';
+// Quotations page removed per user request
 import Comparison from '@/pages/Comparison';
 import CompareForecasts from '@/pages/CompareForecasts';
 import Admin from '@/pages/Admin';
@@ -113,7 +113,7 @@ const AppRouter = () => {
             <DuplicateLeads />
           </ProtectedRoute>
         } />
-        <Route path="/quotations" element={<Quotations />} />
+        {/* Quotations route removed per user request */}
         
         {/* Manager+ only */}
         <Route path="/forecast" element={
