@@ -1893,6 +1893,340 @@ async def get_kva_analysis(
     results = await db.leads.aggregate(pipeline).to_list(10)
     
     # Get last year data if YoY comparison enabled
+
+
+@router.get("/temperature-analysis")
+async def get_temperature_analysis(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    dimension: str = Query("dealer", enum=["dealer", "segment", "source", "employee", "district", "state", "kva", "kva_range"]),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    segment: Optional[str] = None,
+    max_lead_age: Optional[int] = None
+):
+    """
+    Hot/Warm/Cold analysis - shows lead temperature distribution by various dimensions.
+    Allows filtering by max lead age to exclude older leads.
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build base query
+    query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False}
+        ]
+    }
+    
+    # Apply filters
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if segment:
+        query["segment"] = segment
+    
+    # Apply max lead age filter
+    if max_lead_age:
+        query["lead_age"] = {"$lte": max_lead_age}
+    
+    # Dimension field mapping
+    if dimension == "kva_range":
+        # KVA range grouping
+        group_field = {
+            "$switch": {
+                "branches": [
+                    {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
+                    {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"},
+                ],
+                "default": "HKVA (≥250)"
+            }
+        }
+    elif dimension == "kva":
+        group_field = {"$toString": {"$ifNull": ["$kva", 0]}}
+    else:
+        dimension_map = {
+            "dealer": "$dealer",
+            "segment": "$segment",
+            "source": "$source",
+            "employee": "$employee_name",
+            "district": "$district",
+            "state": "$state"
+        }
+        group_field = dimension_map.get(dimension, "$dealer")
+    
+    # Pipeline for temperature analysis
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": group_field,
+                "total_leads": {"$sum": 1},
+                "hot_leads": {
+                    "$sum": {
+                        "$cond": [
+                            {"$and": [
+                                {"$eq": ["$enquiry_status", "Open"]},
+                                {"$in": ["$enquiry_stage", ["Proposal", "Negotiation"]]}
+                            ]},
+                            1, 0
+                        ]
+                    }
+                },
+                "warm_leads": {
+                    "$sum": {
+                        "$cond": [
+                            {"$and": [
+                                {"$eq": ["$enquiry_status", "Open"]},
+                                {"$eq": ["$enquiry_stage", "Qualified"]}
+                            ]},
+                            1, 0
+                        ]
+                    }
+                },
+                "cold_leads": {
+                    "$sum": {
+                        "$cond": [
+                            {"$and": [
+                                {"$eq": ["$enquiry_status", "Open"]},
+                                {"$eq": ["$enquiry_stage", "Prospecting"]}
+                            ]},
+                            1, 0
+                        ]
+                    }
+                },
+                "open_leads": {"$sum": {"$cond": [{"$eq": ["$enquiry_status", "Open"]}, 1, 0]}},
+                "won_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Won", "Order Booked"]]}, 1, 0]}},
+                "lost_leads": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", ["Closed-Lost", "Closed-Dropped"]]}, 1, 0]}},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "avg_lead_age": {"$avg": {"$ifNull": ["$lead_age", 0]}}
+            }
+        },
+        {"$sort": {"hot_leads": -1, "total_leads": -1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(500)
+    
+    data = []
+    for r in results:
+        if r["_id"]:
+            open_total = r["open_leads"]
+            hot_pct = round((r["hot_leads"] / open_total * 100), 1) if open_total > 0 else 0
+            warm_pct = round((r["warm_leads"] / open_total * 100), 1) if open_total > 0 else 0
+            cold_pct = round((r["cold_leads"] / open_total * 100), 1) if open_total > 0 else 0
+            
+            data.append({
+                "name": str(r["_id"]),
+                "total_leads": r["total_leads"],
+                "hot_leads": r["hot_leads"],
+                "warm_leads": r["warm_leads"],
+                "cold_leads": r["cold_leads"],
+                "open_leads": open_total,
+                "won_leads": r["won_leads"],
+                "lost_leads": r["lost_leads"],
+                "hot_percentage": hot_pct,
+                "warm_percentage": warm_pct,
+                "cold_percentage": cold_pct,
+                "total_kva": round(r["total_kva"], 2),
+                "avg_lead_age": round(r["avg_lead_age"], 1)
+            })
+    
+    # Calculate totals
+    totals = {
+        "total_leads": sum(d["total_leads"] for d in data),
+        "hot_leads": sum(d["hot_leads"] for d in data),
+        "warm_leads": sum(d["warm_leads"] for d in data),
+        "cold_leads": sum(d["cold_leads"] for d in data),
+        "open_leads": sum(d["open_leads"] for d in data),
+        "won_leads": sum(d["won_leads"] for d in data),
+        "lost_leads": sum(d["lost_leads"] for d in data)
+    }
+    
+    return {
+        "dimension": dimension,
+        "data": data,
+        "totals": totals,
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "state": state,
+            "dealer": dealer,
+            "segment": segment,
+            "max_lead_age": max_lead_age
+        }
+    }
+
+
+@router.get("/lead-age-analysis")
+async def get_lead_age_analysis(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    dimension: str = Query("dealer", enum=["dealer", "segment", "source", "employee", "district", "state", "kva", "kva_range"]),
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    state: Optional[str] = None,
+    dealer: Optional[str] = None,
+    segment: Optional[str] = None,
+    max_lead_age: Optional[int] = None
+):
+    """
+    Lead age analysis - shows average lead age by various dimensions.
+    Helps identify which dealers/segments/sources have the oldest leads.
+    """
+    db = await get_db(request)
+    
+    if not start_date or not end_date:
+        start_date, end_date = get_indian_fy_dates()
+    
+    # Build base query - only open leads for lead age analysis
+    query = {
+        "enquiry_date": {"$gte": start_date, "$lte": end_date},
+        "enquiry_status": "Open",
+        "deleted_at": {"$exists": False},
+        "$or": [
+            {"is_duplicate": {"$exists": False}},
+            {"is_duplicate": False}
+        ]
+    }
+    
+    # Apply filters
+    if state:
+        query["state"] = state
+    if dealer:
+        query["dealer"] = dealer
+    if segment:
+        query["segment"] = segment
+    if max_lead_age:
+        query["lead_age"] = {"$lte": max_lead_age}
+    
+    # Dimension field mapping
+    if dimension == "kva_range":
+        group_field = {
+            "$switch": {
+                "branches": [
+                    {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 82.5]}, "then": "LKVA (<82.5)"},
+                    {"case": {"$lt": [{"$ifNull": ["$kva", 0]}, 250]}, "then": "MKVA (82.5-249)"},
+                ],
+                "default": "HKVA (≥250)"
+            }
+        }
+    elif dimension == "kva":
+        group_field = {"$toString": {"$ifNull": ["$kva", 0]}}
+    else:
+        dimension_map = {
+            "dealer": "$dealer",
+            "segment": "$segment",
+            "source": "$source",
+            "employee": "$employee_name",
+            "district": "$district",
+            "state": "$state"
+        }
+        group_field = dimension_map.get(dimension, "$dealer")
+    
+    # Pipeline for lead age analysis
+    pipeline = [
+        {"$match": query},
+        {
+            "$group": {
+                "_id": group_field,
+                "total_open_leads": {"$sum": 1},
+                "avg_lead_age": {"$avg": {"$ifNull": ["$lead_age", 0]}},
+                "min_lead_age": {"$min": {"$ifNull": ["$lead_age", 0]}},
+                "max_lead_age": {"$max": {"$ifNull": ["$lead_age", 0]}},
+                "total_kva": {"$sum": {"$ifNull": ["$kva", 0]}},
+                "hot_leads": {
+                    "$sum": {
+                        "$cond": [{"$in": ["$enquiry_stage", ["Proposal", "Negotiation"]]}, 1, 0]
+                    }
+                },
+                "warm_leads": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$enquiry_stage", "Qualified"]}, 1, 0]
+                    }
+                },
+                "cold_leads": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$enquiry_stage", "Prospecting"]}, 1, 0]
+                    }
+                },
+                # Age buckets
+                "age_0_30": {
+                    "$sum": {"$cond": [{"$lte": [{"$ifNull": ["$lead_age", 0]}, 30]}, 1, 0]}
+                },
+                "age_31_60": {
+                    "$sum": {"$cond": [{"$and": [
+                        {"$gt": [{"$ifNull": ["$lead_age", 0]}, 30]},
+                        {"$lte": [{"$ifNull": ["$lead_age", 0]}, 60]}
+                    ]}, 1, 0]}
+                },
+                "age_61_90": {
+                    "$sum": {"$cond": [{"$and": [
+                        {"$gt": [{"$ifNull": ["$lead_age", 0]}, 60]},
+                        {"$lte": [{"$ifNull": ["$lead_age", 0]}, 90]}
+                    ]}, 1, 0]}
+                },
+                "age_90_plus": {
+                    "$sum": {"$cond": [{"$gt": [{"$ifNull": ["$lead_age", 0]}, 90]}, 1, 0]}
+                }
+            }
+        },
+        {"$sort": {"avg_lead_age": -1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(500)
+    
+    data = []
+    for r in results:
+        if r["_id"]:
+            data.append({
+                "name": str(r["_id"]),
+                "total_open_leads": r["total_open_leads"],
+                "avg_lead_age": round(r["avg_lead_age"], 1),
+                "min_lead_age": round(r["min_lead_age"], 1),
+                "max_lead_age": round(r["max_lead_age"], 1),
+                "total_kva": round(r["total_kva"], 2),
+                "hot_leads": r["hot_leads"],
+                "warm_leads": r["warm_leads"],
+                "cold_leads": r["cold_leads"],
+                "age_0_30": r["age_0_30"],
+                "age_31_60": r["age_31_60"],
+                "age_61_90": r["age_61_90"],
+                "age_90_plus": r["age_90_plus"]
+            })
+    
+    # Calculate overall stats
+    total_leads = sum(d["total_open_leads"] for d in data)
+    overall_avg = round(sum(d["avg_lead_age"] * d["total_open_leads"] for d in data) / total_leads, 1) if total_leads > 0 else 0
+    
+    return {
+        "dimension": dimension,
+        "data": data,
+        "overall_stats": {
+            "total_open_leads": total_leads,
+            "overall_avg_lead_age": overall_avg,
+            "age_0_30": sum(d["age_0_30"] for d in data),
+            "age_31_60": sum(d["age_31_60"] for d in data),
+            "age_61_90": sum(d["age_61_90"] for d in data),
+            "age_90_plus": sum(d["age_90_plus"] for d in data)
+        },
+        "filters": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "state": state,
+            "dealer": dealer,
+            "segment": segment,
+            "max_lead_age": max_lead_age
+        }
+    }
+
     ly_data = {}
     if compare_yoy and ly_start and ly_end:
         ly_query = {**query, "enquiry_date": {"$gte": ly_start, "$lte": ly_end}}
