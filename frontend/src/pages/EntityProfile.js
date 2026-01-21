@@ -642,7 +642,7 @@ const EntityProfile = () => {
                         <TableHead className="text-xs">Segment</TableHead>
                         <TableHead className="text-xs text-right">Total</TableHead>
                         <TableHead className="text-xs text-right">Won</TableHead>
-                        <TableHead className="text-xs text-right">KVA</TableHead>
+                        <TableHead className="text-xs text-right">Conv %</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -651,7 +651,7 @@ const EntityProfile = () => {
                           <TableCell className="text-xs font-medium">{row.segment}</TableCell>
                           <TableCell className="text-xs text-right">{row.total_leads}</TableCell>
                           <TableCell className="text-xs text-right text-green-600">{row.won_leads}</TableCell>
-                          <TableCell className="text-xs text-right">{row.total_kva}</TableCell>
+                          <TableCell className="text-xs text-right">{row.conversion_rate}%</TableCell>
                         </TableRow>
                       ))}
                       {(!enhancedData.top_segments || enhancedData.top_segments.length === 0) && (
