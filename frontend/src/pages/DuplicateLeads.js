@@ -372,6 +372,25 @@ const DuplicateLeads = () => {
             Manage duplicate leads and view data consolidation history
           </p>
         </div>
+        <ExportButton
+          data={duplicateGroups.flatMap(g => g.leads)}
+          filename="duplicate_leads"
+          sheetName="Duplicate Leads"
+          columns={[
+            { key: 'enquiry_no', header: 'Enquiry No', width: 15 },
+            { key: 'name', header: 'Customer Name', width: 20 },
+            { key: 'phone_number', header: 'Phone', width: 15 },
+            { key: 'employee_name', header: 'Employee', width: 20 },
+            { key: 'dealer', header: 'Dealer', width: 20 },
+            { key: 'state', header: 'State', width: 15 },
+            { key: 'kva', header: 'KVA', width: 10 },
+            { key: 'enquiry_date', header: 'Enquiry Date', width: 15 },
+            { key: 'enquiry_status', header: 'Status', width: 15 }
+          ]}
+          size="sm"
+        >
+          Export Duplicates
+        </ExportButton>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
