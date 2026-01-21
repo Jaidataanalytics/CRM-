@@ -171,12 +171,12 @@ None currently
 1. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
 2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
 3. **Complete searchable dropdowns** - Apply SearchableSelect to remaining large dropdowns in Insights.js and Admin.js
+4. **Complete Component Refactoring** - Integrate extracted components into Insights.js to reduce file size
 
 ### P2 - Medium Priority
-1. **Refactor Large Components** - Break down Insights.js (~2500 lines), Admin.js (~3000 lines), Leads.js (~3000 lines)
+1. **Continue Refactor** - Break down Admin.js (~3462 lines) and Leads.js (~3106 lines)
 2. **Lead Velocity & ROI Analysis** - How fast leads move through stages
 3. **Dashboard customization** - User-configurable widgets
-4. **Export to Excel** - All pages
 
 ### P3 - Low Priority
 1. **Verify Per-Dimension Forecast Accuracy**
