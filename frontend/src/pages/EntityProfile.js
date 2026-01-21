@@ -426,15 +426,6 @@ const EntityProfile = () => {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Total KVA</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">{enhancedData.yoy_comparison?.current_year?.total_kva || 0}</span>
-                      <Badge variant={enhancedData.yoy_comparison?.yoy_change?.total_kva >= 0 ? "default" : "destructive"} className="text-xs">
-                        {enhancedData.yoy_comparison?.yoy_change?.total_kva >= 0 ? '+' : ''}{enhancedData.yoy_comparison?.yoy_change?.total_kva || 0}%
-                      </Badge>
-                    </div>
-                  </div>
                   <div className="pt-2 border-t text-xs text-muted-foreground">
                     vs Last Year: {enhancedData.yoy_comparison?.last_year?.won_leads || 0} wins
                   </div>
