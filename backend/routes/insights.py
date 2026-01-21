@@ -2000,7 +2000,7 @@ async def get_temperature_analysis(
         }
         group_field = dimension_map.get(dimension, "$dealer")
     
-    # Pipeline for temperature analysis
+    # Pipeline for temperature analysis - based on enquiry_type field
     pipeline = [
         {"$match": query},
         {
@@ -2012,7 +2012,7 @@ async def get_temperature_analysis(
                         "$cond": [
                             {"$and": [
                                 {"$eq": ["$enquiry_status", "Open"]},
-                                {"$in": ["$enquiry_stage", ["Proposal", "Negotiation"]]}
+                                {"$eq": ["$enquiry_type", "Hot"]}
                             ]},
                             1, 0
                         ]
@@ -2023,7 +2023,7 @@ async def get_temperature_analysis(
                         "$cond": [
                             {"$and": [
                                 {"$eq": ["$enquiry_status", "Open"]},
-                                {"$eq": ["$enquiry_stage", "Qualified"]}
+                                {"$eq": ["$enquiry_type", "Warm"]}
                             ]},
                             1, 0
                         ]
@@ -2034,7 +2034,7 @@ async def get_temperature_analysis(
                         "$cond": [
                             {"$and": [
                                 {"$eq": ["$enquiry_status", "Open"]},
-                                {"$eq": ["$enquiry_stage", "Prospecting"]}
+                                {"$eq": ["$enquiry_type", "Cold"]}
                             ]},
                             1, 0
                         ]
