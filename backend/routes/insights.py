@@ -1003,27 +1003,64 @@ async def get_summary_builder(
     }
     dimension_field = dimension_field_map.get(dimension, "$employee_name")
     
-    # Time frame extraction
+    # Time frame extraction - using Indian Financial Year (April-March)
+    # Financial Year: Apr=Q1, May=Q1, Jun=Q1, Jul=Q2, Aug=Q2, Sep=Q2, Oct=Q3, Nov=Q3, Dec=Q3, Jan=Q4, Feb=Q4, Mar=Q4
     time_frame_map = {
         "monthly": {"$substr": ["$enquiry_date", 0, 7]},  # YYYY-MM
         "quarterly": {
             "$concat": [
-                {"$substr": ["$enquiry_date", 0, 4]},  # Year
+                # Financial Year: If month is Jan-Mar, use previous calendar year
+                {
+                    "$cond": {
+                        "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                        "then": {"$toString": {"$subtract": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}},
+                        "else": {"$substr": ["$enquiry_date", 0, 4]}
+                    }
+                },
+                "-",
+                # Financial Year end year
+                {
+                    "$cond": {
+                        "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                        "then": {"$substr": ["$enquiry_date", 2, 2]},
+                        "else": {"$toString": {"$mod": [{"$add": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}, 100]}}
+                    }
+                },
                 "-Q",
                 {
                     "$switch": {
                         "branches": [
-                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]}, "then": "1"},
-                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["04", "05", "06"]]}, "then": "2"},
-                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["07", "08", "09"]]}, "then": "3"},
-                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["10", "11", "12"]]}, "then": "4"}
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["04", "05", "06"]]}, "then": "1"},
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["07", "08", "09"]]}, "then": "2"},
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["10", "11", "12"]]}, "then": "3"},
+                            {"case": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]}, "then": "4"}
                         ],
                         "default": "1"
                     }
                 }
             ]
         },
-        "yearly": {"$substr": ["$enquiry_date", 0, 4]}  # YYYY
+        "yearly": {
+            # Financial Year format: FY2024-25 (Apr 2024 - Mar 2025)
+            "$concat": [
+                "FY",
+                {
+                    "$cond": {
+                        "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                        "then": {"$toString": {"$subtract": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}},
+                        "else": {"$substr": ["$enquiry_date", 0, 4]}
+                    }
+                },
+                "-",
+                {
+                    "$cond": {
+                        "if": {"$in": [{"$substr": ["$enquiry_date", 5, 2]}, ["01", "02", "03"]]},
+                        "then": {"$substr": ["$enquiry_date", 2, 2]},
+                        "else": {"$toString": {"$mod": [{"$add": [{"$toInt": {"$substr": ["$enquiry_date", 0, 4]}}, 1]}, 100]}}
+                    }
+                }
+            ]
+        }
     }
     time_extraction = time_frame_map.get(time_frame, time_frame_map["monthly"])
     
