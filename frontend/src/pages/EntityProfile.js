@@ -354,6 +354,193 @@ const EntityProfile = () => {
         </Card>
       </div>
 
+      {/* Enhanced Analytics Section */}
+      {enhancedData && (
+        <>
+          {/* Market Share + YoY + Rank */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Market Share Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <PieChartIcon className="h-4 w-4" />
+                  Market Share
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Company Share</span>
+                    <span className="text-lg font-bold text-primary">{enhancedData.market_share?.share_of_company || 0}%</span>
+                  </div>
+                  {enhancedData.market_share?.share_of_state !== undefined && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">State Share ({enhancedData.market_share?.state})</span>
+                      <span className="text-lg font-bold text-blue-600">{enhancedData.market_share?.share_of_state || 0}%</span>
+                    </div>
+                  )}
+                  {enhancedData.market_share?.share_of_district !== undefined && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">District Share ({enhancedData.market_share?.district})</span>
+                      <span className="text-lg font-bold text-violet-600">{enhancedData.market_share?.share_of_district || 0}%</span>
+                    </div>
+                  )}
+                  {enhancedData.market_share?.share_of_dealer !== undefined && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Dealer Share</span>
+                      <span className="text-lg font-bold text-emerald-600">{enhancedData.market_share?.share_of_dealer || 0}%</span>
+                    </div>
+                  )}
+                  <div className="pt-2 border-t text-xs text-muted-foreground">
+                    {enhancedData.market_share?.entity_wins || 0} wins / {enhancedData.market_share?.company_wins || 0} company total
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* YoY Comparison Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Year-over-Year
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total Leads</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{enhancedData.yoy_comparison?.current_year?.total_leads || 0}</span>
+                      <Badge variant={enhancedData.yoy_comparison?.yoy_change?.total_leads >= 0 ? "default" : "destructive"} className="text-xs">
+                        {enhancedData.yoy_comparison?.yoy_change?.total_leads >= 0 ? '+' : ''}{enhancedData.yoy_comparison?.yoy_change?.total_leads || 0}%
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Won Leads</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-green-600">{enhancedData.yoy_comparison?.current_year?.won_leads || 0}</span>
+                      <Badge variant={enhancedData.yoy_comparison?.yoy_change?.won_leads >= 0 ? "default" : "destructive"} className="text-xs">
+                        {enhancedData.yoy_comparison?.yoy_change?.won_leads >= 0 ? '+' : ''}{enhancedData.yoy_comparison?.yoy_change?.won_leads || 0}%
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Total KVA</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{enhancedData.yoy_comparison?.current_year?.total_kva || 0}</span>
+                      <Badge variant={enhancedData.yoy_comparison?.yoy_change?.total_kva >= 0 ? "default" : "destructive"} className="text-xs">
+                        {enhancedData.yoy_comparison?.yoy_change?.total_kva >= 0 ? '+' : ''}{enhancedData.yoy_comparison?.yoy_change?.total_kva || 0}%
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t text-xs text-muted-foreground">
+                    vs Last Year: {enhancedData.yoy_comparison?.last_year?.won_leads || 0} wins
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Rank Card */}
+            {enhancedData.rank && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Rank & Position
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center">
+                    <div className="text-4xl font-bold text-primary">#{enhancedData.rank.position}</div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      out of {enhancedData.rank.total} {entityType === 'dealer' ? 'dealers' : 'employees'}
+                    </p>
+                    {enhancedData.rank.within && (
+                      <p className="text-xs text-muted-foreground">within {enhancedData.rank.within}</p>
+                    )}
+                    <div className="mt-3 flex items-center justify-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        Top {100 - enhancedData.rank.percentile}%
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Pipeline Health + Lead Age Distribution */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Pipeline Health */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Pipeline Health (Open Leads)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <span className="text-sm">Hot</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{enhancedData.pipeline_health?.hot?.count || 0}</span>
+                      <span className="text-xs text-muted-foreground">({enhancedData.pipeline_health?.distribution?.hot_pct || 0}%)</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-amber-500" />
+                      <span className="text-sm">Warm</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{enhancedData.pipeline_health?.warm?.count || 0}</span>
+                      <span className="text-xs text-muted-foreground">({enhancedData.pipeline_health?.distribution?.warm_pct || 0}%)</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      <span className="text-sm">Cold</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold">{enhancedData.pipeline_health?.cold?.count || 0}</span>
+                      <span className="text-xs text-muted-foreground">({enhancedData.pipeline_health?.distribution?.cold_pct || 0}%)</span>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t flex justify-between">
+                    <span className="text-sm text-muted-foreground">Total Open</span>
+                    <span className="font-bold">{enhancedData.pipeline_health?.total_open || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lead Age Distribution */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Lead Age Distribution (Open)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Object.entries(enhancedData.lead_age_distribution || {}).map(([bucket, data]) => (
+                    <div key={bucket} className="flex items-center justify-between">
+                      <span className="text-sm">{bucket} days</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{data.count}</span>
+                        <span className="text-xs text-muted-foreground">({data.kva} KVA)</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
+
       {/* Month-over-Month + Follow-up Status */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
