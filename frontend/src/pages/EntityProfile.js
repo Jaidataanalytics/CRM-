@@ -287,10 +287,31 @@ const EntityProfile = () => {
             )}
           </div>
         </div>
-        <Button onClick={handleExport} disabled={exporting}>
-          <Download className="h-4 w-4 mr-2" />
-          {exporting ? 'Exporting...' : 'Export Data'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            data={recentLeads.leads}
+            filename={`${entityType}_${entityId}_analytics`}
+            sheetName="Entity Data"
+            columns={[
+              { key: 'enquiry_no', header: 'Enquiry No', width: 15 },
+              { key: 'name', header: 'Customer Name', width: 20 },
+              { key: 'phone_number', header: 'Phone', width: 15 },
+              { key: 'kva', header: 'KVA', width: 10 },
+              { key: 'enquiry_status', header: 'Status', width: 15 },
+              { key: 'enquiry_stage', header: 'Stage', width: 15 },
+              { key: 'enquiry_date', header: 'Enquiry Date', width: 15 },
+              { key: 'segment', header: 'Segment', width: 15 }
+            ]}
+            chartRef={pipelineChartRef.current}
+            size="sm"
+          >
+            Export
+          </ExportButton>
+          <Button onClick={handleExport} disabled={exporting} variant="outline" size="sm">
+            <Download className="h-4 w-4 mr-2" />
+            {exporting ? 'Exporting...' : 'Export All'}
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
