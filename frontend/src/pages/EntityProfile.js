@@ -394,23 +394,18 @@ const EntityProfile = () => {
                   <PieChartIcon className="h-4 w-4" />
                   Market Share
                 </CardTitle>
+                <CardDescription className="text-xs">Based on market potential</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Company Share</span>
+                    <span className="text-sm text-muted-foreground">Overall Share</span>
                     <span className="text-lg font-bold text-primary">{enhancedData.market_share?.share_of_company || 0}%</span>
                   </div>
                   {enhancedData.market_share?.share_of_state !== undefined && (
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">State Share ({enhancedData.market_share?.state})</span>
+                      <span className="text-sm text-muted-foreground">State: {enhancedData.market_share?.state}</span>
                       <span className="text-lg font-bold text-blue-600">{enhancedData.market_share?.share_of_state || 0}%</span>
-                    </div>
-                  )}
-                  {enhancedData.market_share?.share_of_district !== undefined && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">District Share ({enhancedData.market_share?.district})</span>
-                      <span className="text-lg font-bold text-violet-600">{enhancedData.market_share?.share_of_district || 0}%</span>
                     </div>
                   )}
                   {enhancedData.market_share?.share_of_dealer !== undefined && (
@@ -420,7 +415,7 @@ const EntityProfile = () => {
                     </div>
                   )}
                   <div className="pt-2 border-t text-xs text-muted-foreground">
-                    {enhancedData.market_share?.entity_wins || 0} wins / {enhancedData.market_share?.company_wins || 0} company total
+                    {enhancedData.market_share?.entity_wins || 0} wins / {enhancedData.market_share?.total_market_potential || 0} market potential
                   </div>
                 </div>
               </CardContent>
