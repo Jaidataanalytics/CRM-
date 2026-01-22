@@ -220,8 +220,9 @@ const EntityProfile = () => {
     );
   }
 
-  const { kpis, stage_breakdown, source_breakdown, segment_performance, trend, 
-          mom_comparison, sub_entities, top_performers, followup_status, activity_timeline } = profile;
+  const { kpis, source_breakdown, segment_performance, trend, 
+          mom_comparison, sub_entities, top_performers, followup_status, activity_timeline,
+          duplicate_leads_count, order_time_punch_count } = profile;
 
   return (
     <div className="space-y-6">
