@@ -1044,12 +1044,12 @@ const EntityProfile = () => {
             </Card>
           )}
 
-          {sub_entities.cities && (
+          {sub_entities.districts && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  Cities ({sub_entities.cities.length})
+                  Districts ({sub_entities.districts.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1057,26 +1057,21 @@ const EntityProfile = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>City</TableHead>
+                        <TableHead>District</TableHead>
                         <TableHead className="text-right">Leads</TableHead>
                         <TableHead className="text-right">Won</TableHead>
                         <TableHead className="text-right">Conv %</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sub_entities.cities.map((city, idx) => (
-                        <TableRow key={idx} className="cursor-pointer hover:bg-muted/50" onClick={() => navigateToEntity('city', city.name)}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2">
-                              {city.name}
-                              <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">{city.total}</TableCell>
-                          <TableCell className="text-right text-green-600">{city.won}</TableCell>
+                      {sub_entities.districts.map((district, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{district.name}</TableCell>
+                          <TableCell className="text-right">{district.total}</TableCell>
+                          <TableCell className="text-right text-green-600">{district.won}</TableCell>
                           <TableCell className="text-right">
-                            <Badge variant={city.conversion_rate > 20 ? 'default' : 'outline'}>
-                              {city.conversion_rate}%
+                            <Badge variant={district.conversion_rate > 20 ? 'default' : 'outline'}>
+                              {district.conversion_rate}%
                             </Badge>
                           </TableCell>
                         </TableRow>
