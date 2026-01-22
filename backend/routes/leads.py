@@ -977,18 +977,17 @@ async def get_duplicate_analytics(
     Get analytics on duplicate leads - which dealer/employee/district/segment/source
     has the most duplicates.
     """
-    from routes.kpis import get_indian_fy_dates
     db = await get_db(request)
     
-    if not start_date or not end_date:
-        start_date, end_date = get_indian_fy_dates()
-    
-    # Base query for duplicates
+    # Base query for duplicates - NO date filter by default to match duplicates tab
     base_query = {
         "deleted_at": {"$exists": False},
-        "is_duplicate": True,
-        "enquiry_date": {"$gte": start_date, "$lte": end_date}
+        "is_duplicate": True
     }
+    
+    # Only apply date filter if explicitly provided
+    if start_date and end_date:
+        base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
     
     # Total duplicates
     total_duplicates = await db.leads.count_documents(base_query)
