@@ -612,6 +612,47 @@ const EntityProfile = () => {
             </CardContent>
           </Card>
 
+          {/* District Market Share Breakdown (for dealers) */}
+          {enhancedData.market_share?.district_breakdown && enhancedData.market_share.district_breakdown.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  District-wise Market Share ({enhancedData.market_share.district_breakdown.length} Districts)
+                </CardTitle>
+                <CardDescription className="text-xs">Won leads vs market potential per district</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">District</TableHead>
+                        <TableHead className="text-xs text-right">Won</TableHead>
+                        <TableHead className="text-xs text-right">Potential</TableHead>
+                        <TableHead className="text-xs text-right">Market Share</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {enhancedData.market_share.district_breakdown.map((dist) => (
+                        <TableRow key={dist.district}>
+                          <TableCell className="text-xs font-medium">{dist.district}</TableCell>
+                          <TableCell className="text-xs text-right text-green-600">{dist.won}</TableCell>
+                          <TableCell className="text-xs text-right text-muted-foreground">{dist.potential}</TableCell>
+                          <TableCell className="text-xs text-right">
+                            <Badge variant={dist.share >= 20 ? "default" : dist.share >= 10 ? "secondary" : "outline"}>
+                              {dist.share}%
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+
           {/* KVA Breakdown + Top Segments */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* KVA Breakdown */}
