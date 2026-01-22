@@ -293,15 +293,6 @@ async def get_entity_profile(
     profile["kpis"]["avg_lead_age"] = avg_lead_age
     profile["kpis"]["avg_closure_time"] = avg_closure_time
     
-    # Lead Stage Breakdown
-    stage_pipeline = [
-        {"$match": base_filter},
-        {"$group": {"_id": "$enquiry_stage", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
-    ]
-    stage_breakdown = await db.leads.aggregate(stage_pipeline).to_list(20)
-    profile["stage_breakdown"] = [{"stage": s["_id"], "count": s["count"]} for s in stage_breakdown if s["_id"]]
-    
     # Lead Source Breakdown
     source_pipeline = [
         {"$match": base_filter},
@@ -310,6 +301,18 @@ async def get_entity_profile(
     ]
     source_breakdown = await db.leads.aggregate(source_pipeline).to_list(20)
     profile["source_breakdown"] = [{"source": s["_id"] or "Unknown", "count": s["count"]} for s in source_breakdown]
+    
+    # Duplicate Leads Count
+    duplicate_count = await db.leads.count_documents({**base_filter, "is_duplicate": True})
+    profile["duplicate_leads_count"] = duplicate_count
+    
+    # Order Time Punch - leads with sales order data
+    order_punch_count = await db.leads.count_documents({
+        **base_filter,
+        "sales_order_no": {"$exists": True, "$ne": None, "$ne": ""},
+        "sales_order_date": {"$exists": True, "$ne": None, "$ne": ""}
+    })
+    profile["order_time_punch_count"] = order_punch_count
     
     # Segment Performance
     segment_pipeline = [
