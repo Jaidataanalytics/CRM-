@@ -836,34 +836,39 @@ const EntityProfile = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Stage Breakdown Pie Chart */}
+        {/* Data Quality Summary */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5" />
-              Lead Stage Breakdown
+              <AlertTriangle className="h-5 w-5" />
+              Data Quality Summary
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={stage_breakdown}
-                  dataKey="count"
-                  nameKey="stage"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  label={({ stage, percent }) => `${stage}: ${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                >
-                  {stage_breakdown.map((entry, idx) => (
-                    <Cell key={idx} fill={getStageColor(entry.stage)} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div>
+                  <p className="text-sm font-medium text-orange-800">Duplicate Leads Uploaded</p>
+                  <p className="text-xs text-orange-600">Leads flagged as duplicates</p>
+                </div>
+                <div className="text-3xl font-bold text-orange-600">{duplicate_leads_count || 0}</div>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Order Time Punch</p>
+                  <p className="text-xs text-blue-600">Leads with sales order data</p>
+                </div>
+                <div className="text-3xl font-bold text-blue-600">{order_time_punch_count || 0}</div>
+              </div>
+              <div className="text-xs text-muted-foreground pt-2 border-t">
+                {kpis?.total_leads ? (
+                  <>
+                    Duplicate rate: {((duplicate_leads_count || 0) / kpis.total_leads * 100).toFixed(1)}% • 
+                    Order capture rate: {((order_time_punch_count || 0) / kpis.total_leads * 100).toFixed(1)}%
+                  </>
+                ) : 'No lead data available'}
+              </div>
+            </div>
           </CardContent>
         </Card>
 
