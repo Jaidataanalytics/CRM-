@@ -1006,16 +1006,20 @@ async def get_duplicate_analytics(
         results = await db.leads.aggregate(pipeline).to_list(20)
         analytics[dim] = [{"name": r["_id"] or "Unknown", "count": r["count"]} for r in results if r["_id"]]
     
-    # Merged leads analytics
+    # Merged leads analytics - NO date filter by default
     merged_query = {
         "deleted_at": {"$exists": False},
-        "enquiry_date": {"$gte": start_date, "$lte": end_date},
         "$or": [
             {"merged_enquiries": {"$exists": True, "$ne": [], "$ne": None}},
             {"duplicate_enquiry_nos": {"$exists": True, "$ne": [], "$ne": None}},
             {"merged_from": {"$exists": True, "$ne": [], "$ne": None}}
         ]
     }
+    
+    # Only apply date filter if explicitly provided
+    if start_date and end_date:
+        merged_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
     total_merged = await db.leads.count_documents(merged_query)
     
     merged_analytics = {}
