@@ -1041,32 +1041,41 @@ async def get_enhanced_entity_analytics(
     
     # For dealers - get state and district market shares based on market potential
     if entity_type == "dealer":
+        # Get dealer's primary state from leads (most common state)
+        state_pipeline = [
+            {"$match": {filter_field: entity_id, "is_deleted": {"$ne": True}}},
+            {"$group": {"_id": "$state", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 1}
+        ]
+        state_result = await db.leads.aggregate(state_pipeline).to_list(1)
+        dealer_state = state_result[0]["_id"] if state_result else None
+        
         # Get dealer's allocated districts from market_potential_districts
         dealer_districts = await db.market_potential_districts.find(
             {"dealer": entity_id}
         ).to_list(100)
         
-        if dealer_districts:
-            # Calculate state potential (sum of all districts in dealer's state)
-            dealer_state = dealer_districts[0].get("state") if dealer_districts else None
-            if dealer_state:
-                state_potential = 0
-                async for doc in db.market_potential_districts.find({"state": dealer_state}):
-                    state_potential += doc.get("potential", 0)
-                
-                # Get dealer's won in that state
-                entity_state_won = await db.leads.count_documents({
-                    **base_filter,
-                    "state": dealer_state,
-                    "enquiry_stage": {"$in": WON_STAGES}
-                })
-                
-                market_share["state"] = dealer_state
-                market_share["state_potential"] = state_potential
-                market_share["state_wins"] = entity_state_won
-                market_share["share_of_state"] = round((entity_state_won / state_potential * 100) if state_potential > 0 else 0, 2)
+        if dealer_state:
+            # Calculate state potential (sum of all districts in dealer's primary state)
+            state_potential = 0
+            async for doc in db.market_potential_districts.find({"state": dealer_state}):
+                state_potential += doc.get("potential", 0)
             
-            # District-wise breakdown for dealer
+            # Get dealer's won in that state
+            entity_state_won = await db.leads.count_documents({
+                **base_filter,
+                "state": dealer_state,
+                "enquiry_stage": {"$in": WON_STAGES}
+            })
+            
+            market_share["state"] = dealer_state
+            market_share["state_potential"] = state_potential
+            market_share["state_wins"] = entity_state_won
+            market_share["share_of_state"] = round((entity_state_won / state_potential * 100) if state_potential > 0 else 0, 2)
+        
+        # District-wise breakdown for dealer (all allocated districts)
+        if dealer_districts:
             district_shares = []
             for dist_doc in dealer_districts:
                 district_name = dist_doc.get("district")
