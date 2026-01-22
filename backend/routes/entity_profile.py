@@ -472,26 +472,26 @@ async def get_entity_profile(
             } for e in employees if e["_id"]]
         }
         
-        # Cities covered by this dealer
-        city_pipeline = [
+        # Districts covered by this dealer
+        district_pipeline = [
             {"$match": base_filter},
             {"$group": {
-                "_id": "$area",
+                "_id": "$district",
                 "total": {"$sum": 1},
                 "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
                 "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
-            {"$sort": {"total": -1}},
+            {"$sort": {"won": -1}},
             {"$limit": 20}
         ]
-        cities = await db.leads.aggregate(city_pipeline).to_list(20)
-        profile["sub_entities"]["cities"] = [{
-            "name": c["_id"],
-            "total": c["total"],
-            "won": c["won"],
-            "lost": c["lost"],
-            "conversion_rate": round((c["won"] / (c["won"] + c["lost"]) * 100), 1) if (c["won"] + c["lost"]) > 0 else 0
-        } for c in cities if c["_id"]]
+        districts = await db.leads.aggregate(district_pipeline).to_list(20)
+        profile["sub_entities"]["districts"] = [{
+            "name": d["_id"],
+            "total": d["total"],
+            "won": d["won"],
+            "lost": d["lost"],
+            "conversion_rate": round((d["won"] / (d["won"] + d["lost"]) * 100), 1) if (d["won"] + d["lost"]) > 0 else 0
+        } for d in districts if d["_id"]]
         
     elif entity_type == "city":
         # Dealers in this city
