@@ -117,7 +117,7 @@ const EntityProfile = () => {
   useEffect(() => {
     loadProfile();
     loadEnhancedAnalytics();
-  }, [entityType, entityId, dateRange]);
+  }, [entityType, entityId, localDateRange]);
 
   useEffect(() => {
     if (profile) {
@@ -133,8 +133,8 @@ const EntityProfile = () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (dateRange?.from) params.append('start_date', dateRange.from);
-      if (dateRange?.to) params.append('end_date', dateRange.to);
+      if (localDateRange?.from) params.append('start_date', localDateRange.from);
+      if (localDateRange?.to) params.append('end_date', localDateRange.to);
       
       const res = await axios.get(
         `${API}/entity/profile/${entityType}/${encodeURIComponent(entityId)}?${params}`,
