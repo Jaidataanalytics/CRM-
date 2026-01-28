@@ -58,6 +58,7 @@ from routes.trash import router as trash_router
 from routes.dispatch import router as dispatch_router
 from routes.data_migration import router as data_migration_router
 from routes.market_potential import router as market_potential_router
+from routes.tenders import router as tenders_router
 
 # Include all routers
 api_router.include_router(auth_router)
@@ -77,6 +78,7 @@ api_router.include_router(trash_router)
 api_router.include_router(dispatch_router)
 api_router.include_router(data_migration_router)
 api_router.include_router(market_potential_router)
+api_router.include_router(tenders_router)
 
 # Health check endpoint
 @api_router.get("/")
