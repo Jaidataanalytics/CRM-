@@ -153,8 +153,8 @@ const EntityProfile = () => {
     setLoadingEnhanced(true);
     try {
       const params = new URLSearchParams();
-      if (dateRange?.from) params.append('start_date', dateRange.from);
-      if (dateRange?.to) params.append('end_date', dateRange.to);
+      if (localDateRange?.from) params.append('start_date', localDateRange.from);
+      if (localDateRange?.to) params.append('end_date', localDateRange.to);
       params.append('time_frame', timeFrame);
       params.append('breakdown_by', breakdownBy);
       
@@ -189,8 +189,8 @@ const EntityProfile = () => {
     setExporting(true);
     try {
       const params = new URLSearchParams();
-      if (dateRange?.from) params.append('start_date', dateRange.from);
-      if (dateRange?.to) params.append('end_date', dateRange.to);
+      if (localDateRange?.from) params.append('start_date', localDateRange.from);
+      if (localDateRange?.to) params.append('end_date', localDateRange.to);
       
       const res = await axios.get(
         `${API}/entity/export/${entityType}/${encodeURIComponent(entityId)}?${params}`,
