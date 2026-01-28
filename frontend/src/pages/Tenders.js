@@ -1,0 +1,1154 @@
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { toast } from 'sonner';
+import { 
+  FileText, Upload, Plus, Search, Filter, Calendar, Building2, 
+  IndianRupee, Clock, CheckCircle, XCircle, AlertCircle, 
+  TrendingUp, TrendingDown, Users, Eye, Edit, Trash2, Download,
+  ChevronLeft, ChevronRight, BarChart3, PieChart, RefreshCw,
+  FileUp, ExternalLink, Award, Target, Loader2
+} from 'lucide-react';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, BarChart, Bar, PieChart as RechartsPie, Pie, Cell
+} from 'recharts';
+import { ExportButton } from '@/components/ui/export-button';
+
+const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+const STATUS_COLORS = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  participated: 'bg-blue-100 text-blue-800',
+  won: 'bg-green-100 text-green-800',
+  lost: 'bg-red-100 text-red-800',
+  not_participated: 'bg-gray-100 text-gray-800',
+  cancelled: 'bg-gray-100 text-gray-800'
+};
+
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'participated', label: 'Participated' },
+  { value: 'won', label: 'Won' },
+  { value: 'lost', label: 'Lost' },
+  { value: 'not_participated', label: 'Not Participated' },
+  { value: 'cancelled', label: 'Cancelled' }
+];
+
+const DOCUMENT_TYPES = [
+  { value: 'bid_doc', label: 'Bid Document' },
+  { value: 'technical_spec', label: 'Technical Specifications' },
+  { value: 'boq', label: 'BOQ' },
+  { value: 'our_quotation', label: 'Our Quotation' },
+  { value: 'result_letter', label: 'Result Letter' },
+  { value: 'other', label: 'Other' }
+];
+
+const CHART_COLORS = ['#22c55e', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4'];
+
+const Tenders = () => {
+  const [activeTab, setActiveTab] = useState('list');
+  const [tenders, setTenders] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [competitors, setCompetitors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  
+  // Modal states
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDetailSheet, setShowDetailSheet] = useState(false);
+  const [selectedTender, setSelectedTender] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  
+  // Upload states
+  const [uploading, setUploading] = useState(false);
+  const [extractedData, setExtractedData] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState('');
+  
+  // Form state for new/edit tender
+  const [formData, setFormData] = useState({
+    bid_number: '',
+    dated: '',
+    bid_end_date: '',
+    bid_opening_date: '',
+    department_name: '',
+    total_quantity: 0,
+    estimated_value: 0,
+    beneficiary: '',
+    consignees: [],
+    emd_amount: 0,
+    item_specifications: '',
+    product_category: '',
+    delivery_period: 0,
+    warranty_period: '',
+    payment_terms: '',
+    status: 'pending',
+    our_bid_amount: 0,
+    assigned_employee: '',
+    notes: '',
+    winner_name: '',
+    winner_amount: 0,
+    result_date: '',
+    loss_reason: '',
+    competitors: []
+  });
+
+  const loadTenders = useCallback(async () => {
+    try {
+      const params = new URLSearchParams();
+      params.append('page', page);
+      params.append('limit', 20);
+      if (search) params.append('search', search);
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      
+      const res = await axios.get(`${API}/tenders?${params}`, { withCredentials: true });
+      setTenders(res.data.tenders || []);
+      setTotalPages(res.data.pages || 1);
+    } catch (error) {
+      console.error('Error loading tenders:', error);
+      toast.error('Failed to load tenders');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, search, statusFilter]);
+
+  const loadStats = async () => {
+    try {
+      const res = await axios.get(`${API}/tenders/stats`, { withCredentials: true });
+      setStats(res.data);
+    } catch (error) {
+      console.error('Error loading stats:', error);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      const res = await axios.get(`${API}/tenders/analytics`, { withCredentials: true });
+      setAnalytics(res.data);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    }
+  };
+
+  const loadCompetitors = async () => {
+    try {
+      const res = await axios.get(`${API}/tenders/competitors`, { withCredentials: true });
+      setCompetitors(res.data.competitors || []);
+    } catch (error) {
+      console.error('Error loading competitors:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadTenders();
+    loadStats();
+  }, [loadTenders]);
+
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      loadAnalytics();
+    } else if (activeTab === 'competitors') {
+      loadCompetitors();
+    }
+  }, [activeTab]);
+
+  const handleExtractPdf = async () => {
+    if (!pdfUrl) {
+      toast.error('Please enter a PDF URL');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const res = await axios.post(`${API}/tenders/extract-pdf`, 
+        { pdf_url: pdfUrl },
+        { withCredentials: true }
+      );
+      
+      if (res.data.success) {
+        setExtractedData(res.data.data);
+        setFormData(prev => ({ ...prev, ...res.data.data }));
+        toast.success('Data extracted successfully');
+      } else {
+        toast.error(res.data.error || 'Failed to extract data');
+      }
+    } catch (error) {
+      console.error('Error extracting PDF:', error);
+      toast.error('Failed to extract PDF data');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCreateTender = async () => {
+    try {
+      const res = await axios.post(`${API}/tenders`, formData, { withCredentials: true });
+      toast.success('Tender created successfully');
+      setShowUploadModal(false);
+      setExtractedData(null);
+      setPdfUrl('');
+      resetForm();
+      loadTenders();
+      loadStats();
+    } catch (error) {
+      console.error('Error creating tender:', error);
+      toast.error('Failed to create tender');
+    }
+  };
+
+  const handleUpdateTender = async () => {
+    if (!selectedTender) return;
+    
+    try {
+      await axios.put(`${API}/tenders/${selectedTender._id}`, formData, { withCredentials: true });
+      toast.success('Tender updated successfully');
+      setEditMode(false);
+      loadTenders();
+      loadStats();
+      // Refresh selected tender
+      const res = await axios.get(`${API}/tenders/${selectedTender._id}`, { withCredentials: true });
+      setSelectedTender(res.data);
+    } catch (error) {
+      console.error('Error updating tender:', error);
+      toast.error('Failed to update tender');
+    }
+  };
+
+  const handleDeleteTender = async (tenderId) => {
+    if (!window.confirm('Are you sure you want to delete this tender?')) return;
+    
+    try {
+      await axios.delete(`${API}/tenders/${tenderId}`, { withCredentials: true });
+      toast.success('Tender deleted successfully');
+      setShowDetailSheet(false);
+      loadTenders();
+      loadStats();
+    } catch (error) {
+      console.error('Error deleting tender:', error);
+      toast.error('Failed to delete tender');
+    }
+  };
+
+  const openTenderDetail = async (tender) => {
+    try {
+      const res = await axios.get(`${API}/tenders/${tender._id}`, { withCredentials: true });
+      setSelectedTender(res.data);
+      setFormData(res.data);
+      setShowDetailSheet(true);
+      setEditMode(false);
+    } catch (error) {
+      console.error('Error loading tender:', error);
+      toast.error('Failed to load tender details');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      bid_number: '',
+      dated: '',
+      bid_end_date: '',
+      bid_opening_date: '',
+      department_name: '',
+      total_quantity: 0,
+      estimated_value: 0,
+      beneficiary: '',
+      consignees: [],
+      emd_amount: 0,
+      item_specifications: '',
+      product_category: '',
+      delivery_period: 0,
+      warranty_period: '',
+      payment_terms: '',
+      status: 'pending',
+      our_bid_amount: 0,
+      assigned_employee: '',
+      notes: '',
+      winner_name: '',
+      winner_amount: 0,
+      result_date: '',
+      loss_reason: '',
+      competitors: []
+    });
+  };
+
+  const formatCurrency = (value) => {
+    if (!value) return '₹0';
+    return `₹${Number(value).toLocaleString('en-IN')}`;
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try {
+      return new Date(dateStr).toLocaleDateString('en-IN');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Add competitor to form
+  const addCompetitor = () => {
+    setFormData(prev => ({
+      ...prev,
+      competitors: [...prev.competitors, { name: '', bid_amount: 0, rank: prev.competitors.length + 1 }]
+    }));
+  };
+
+  const updateCompetitor = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...prev.competitors];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, competitors: updated };
+    });
+  };
+
+  const removeCompetitor = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      competitors: prev.competitors.filter((_, i) => i !== index)
+    }));
+  };
+
+  if (loading && tenders.length === 0) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight flex items-center gap-2">
+            <FileText className="h-8 w-8 text-primary" />
+            Tender Tracking
+          </h1>
+          <p className="text-muted-foreground mt-1">Track and manage government tenders</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ExportButton
+            data={tenders}
+            filename="tenders"
+            sheetName="Tenders"
+            columns={[
+              { key: 'bid_number', header: 'Bid Number', width: 20 },
+              { key: 'dated', header: 'Dated', width: 12 },
+              { key: 'bid_end_date', header: 'End Date', width: 12 },
+              { key: 'department_name', header: 'Department', width: 30 },
+              { key: 'estimated_value', header: 'Est. Value', width: 15 },
+              { key: 'status', header: 'Status', width: 12 },
+              { key: 'our_bid_amount', header: 'Our Bid', width: 15 },
+              { key: 'winner_name', header: 'Winner', width: 20 }
+            ]}
+            size="sm"
+          >
+            Export
+          </ExportButton>
+          <Button onClick={() => { resetForm(); setShowUploadModal(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Tender
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Tenders</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+                <FileText className="h-8 w-8 text-blue-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Won</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.won}</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Lost</p>
+                  <p className="text-2xl font-bold text-red-600">{stats.lost}</p>
+                </div>
+                <XCircle className="h-8 w-8 text-red-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                </div>
+                <Clock className="h-8 w-8 text-yellow-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Win Rate</p>
+                  <p className="text-2xl font-bold text-primary">{stats.win_rate}%</p>
+                </div>
+                <Target className="h-8 w-8 text-primary opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Won Value</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(stats.won_value)}</p>
+                </div>
+                <IndianRupee className="h-8 w-8 text-green-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="list">
+            <FileText className="h-4 w-4 mr-2" />
+            All Tenders
+          </TabsTrigger>
+          <TabsTrigger value="analytics">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="competitors">
+            <Users className="h-4 w-4 mr-2" />
+            Competitors
+          </TabsTrigger>
+        </TabsList>
+
+        {/* All Tenders Tab */}
+        <TabsContent value="list">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Tender List</CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search tenders..."
+                      value={search}
+                      onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                      className="pl-9 w-64"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      {STATUS_OPTIONS.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bid Number</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>End Date</TableHead>
+                    <TableHead className="text-right">Est. Value</TableHead>
+                    <TableHead className="text-right">Our Bid</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Winner</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tenders.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                        No tenders found. Click "Add Tender" to create one.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    tenders.map(tender => (
+                      <TableRow key={tender._id} className="cursor-pointer hover:bg-muted/50" onClick={() => openTenderDetail(tender)}>
+                        <TableCell className="font-medium">{tender.bid_number || '-'}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{tender.department_name || '-'}</TableCell>
+                        <TableCell>{formatDate(tender.bid_end_date)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(tender.estimated_value)}</TableCell>
+                        <TableCell className="text-right">{tender.our_bid_amount ? formatCurrency(tender.our_bid_amount) : '-'}</TableCell>
+                        <TableCell>
+                          <Badge className={STATUS_COLORS[tender.status] || 'bg-gray-100'}>
+                            {tender.status || 'pending'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{tender.winner_name || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openTenderDetail(tender); }}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Page {page} of {totalPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page <= 1}
+                      onClick={() => setPage(p => p - 1)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage(p => p + 1)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Analytics Tab */}
+        <TabsContent value="analytics">
+          {analytics ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Monthly Trend */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Monthly Trend</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={analytics.monthly_trend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="_id" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="total" stroke="#3b82f6" name="Total" />
+                      <Line type="monotone" dataKey="won" stroke="#22c55e" name="Won" />
+                      <Line type="monotone" dataKey="lost" stroke="#ef4444" name="Lost" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Win Rate by Value Range */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Win Rate by Value Range</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={analytics.by_value_range}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="range" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="total" fill="#3b82f6" name="Total" />
+                      <Bar dataKey="won" fill="#22c55e" name="Won" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* By Department */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle>Performance by Department</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Department</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="text-right">Won</TableHead>
+                        <TableHead className="text-right">Win Rate</TableHead>
+                        <TableHead className="text-right">Total Value</TableHead>
+                        <TableHead className="text-right">Won Value</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {analytics.by_department?.map((dept, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="max-w-[300px] truncate">{dept._id || 'Unknown'}</TableCell>
+                          <TableCell className="text-right">{dept.total}</TableCell>
+                          <TableCell className="text-right text-green-600">{dept.won}</TableCell>
+                          <TableCell className="text-right">
+                            <Badge variant={dept.win_rate >= 50 ? 'default' : 'outline'}>
+                              {dept.win_rate?.toFixed(1)}%
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{formatCurrency(dept.total_value)}</TableCell>
+                          <TableCell className="text-right text-green-600">{formatCurrency(dept.won_value)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Competitors Tab */}
+        <TabsContent value="competitors">
+          <Card>
+            <CardHeader>
+              <CardTitle>Competitor Analysis</CardTitle>
+              <CardDescription>Historical performance of competitors across all tenders</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Competitor Name</TableHead>
+                    <TableHead className="text-right">Participations</TableHead>
+                    <TableHead className="text-right">Wins</TableHead>
+                    <TableHead className="text-right">Win Rate</TableHead>
+                    <TableHead className="text-right">Avg. Bid</TableHead>
+                    <TableHead className="text-right">Total Bid Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {competitors.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No competitor data available yet. Add competitor information to tenders to see analysis.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    competitors.map((comp, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium">{comp._id}</TableCell>
+                        <TableCell className="text-right">{comp.participations}</TableCell>
+                        <TableCell className="text-right text-green-600">{comp.wins}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant={comp.win_rate >= 50 ? 'default' : 'outline'}>
+                            {comp.win_rate}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{formatCurrency(comp.avg_bid)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(comp.total_bid_value)}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Upload/Create Modal */}
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Tender</DialogTitle>
+            <DialogDescription>Upload a tender PDF to auto-extract data or enter manually</DialogDescription>
+          </DialogHeader>
+
+          {/* PDF Upload Section */}
+          <div className="space-y-4 border-b pb-4">
+            <Label>Extract from PDF (Optional)</Label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter PDF URL..."
+                value={pdfUrl}
+                onChange={(e) => setPdfUrl(e.target.value)}
+                className="flex-1"
+              />
+              <Button onClick={handleExtractPdf} disabled={uploading || !pdfUrl}>
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="h-4 w-4 mr-2" />}
+                Extract
+              </Button>
+            </div>
+            {extractedData && (
+              <p className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4" /> Data extracted successfully - review below
+              </p>
+            )}
+          </div>
+
+          {/* Form Fields */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            <div>
+              <Label>Bid Number *</Label>
+              <Input
+                value={formData.bid_number}
+                onChange={(e) => setFormData(prev => ({ ...prev, bid_number: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Department Name</Label>
+              <Input
+                value={formData.department_name}
+                onChange={(e) => setFormData(prev => ({ ...prev, department_name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Dated</Label>
+              <Input
+                type="date"
+                value={formData.dated}
+                onChange={(e) => setFormData(prev => ({ ...prev, dated: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Bid End Date</Label>
+              <Input
+                type="datetime-local"
+                value={formData.bid_end_date?.replace(' ', 'T')}
+                onChange={(e) => setFormData(prev => ({ ...prev, bid_end_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Bid Opening Date</Label>
+              <Input
+                type="datetime-local"
+                value={formData.bid_opening_date?.replace(' ', 'T')}
+                onChange={(e) => setFormData(prev => ({ ...prev, bid_opening_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Estimated Value (₹)</Label>
+              <Input
+                type="number"
+                value={formData.estimated_value}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimated_value: Number(e.target.value) }))}
+              />
+            </div>
+            <div>
+              <Label>Total Quantity</Label>
+              <Input
+                type="number"
+                value={formData.total_quantity}
+                onChange={(e) => setFormData(prev => ({ ...prev, total_quantity: Number(e.target.value) }))}
+              />
+            </div>
+            <div>
+              <Label>EMD Amount (₹)</Label>
+              <Input
+                type="number"
+                value={formData.emd_amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, emd_amount: Number(e.target.value) }))}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label>Beneficiary</Label>
+              <Input
+                value={formData.beneficiary}
+                onChange={(e) => setFormData(prev => ({ ...prev, beneficiary: e.target.value }))}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label>Item Specifications</Label>
+              <Textarea
+                value={formData.item_specifications}
+                onChange={(e) => setFormData(prev => ({ ...prev, item_specifications: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label>Delivery Period (Days)</Label>
+              <Input
+                type="number"
+                value={formData.delivery_period}
+                onChange={(e) => setFormData(prev => ({ ...prev, delivery_period: Number(e.target.value) }))}
+              />
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={formData.status} onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map(s => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Our Bid Amount (₹)</Label>
+              <Input
+                type="number"
+                value={formData.our_bid_amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, our_bid_amount: Number(e.target.value) }))}
+              />
+            </div>
+            <div>
+              <Label>Assigned Employee</Label>
+              <Input
+                value={formData.assigned_employee}
+                onChange={(e) => setFormData(prev => ({ ...prev, assigned_employee: e.target.value }))}
+              />
+            </div>
+            <div className="col-span-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+            <Button onClick={handleCreateTender}>Create Tender</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tender Detail Sheet */}
+      <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center justify-between">
+              <span>{selectedTender?.bid_number || 'Tender Details'}</span>
+              <Badge className={STATUS_COLORS[selectedTender?.status]}>
+                {selectedTender?.status}
+              </Badge>
+            </SheetTitle>
+            <SheetDescription>{selectedTender?.department_name}</SheetDescription>
+          </SheetHeader>
+
+          {selectedTender && (
+            <div className="mt-6 space-y-6">
+              {/* Quick Actions */}
+              <div className="flex gap-2">
+                <Button variant={editMode ? 'default' : 'outline'} size="sm" onClick={() => setEditMode(!editMode)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  {editMode ? 'Editing' : 'Edit'}
+                </Button>
+                <Button variant="outline" size="sm" className="text-red-600" onClick={() => handleDeleteTender(selectedTender._id)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
+
+              <Tabs defaultValue="details">
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="result">Result</TabsTrigger>
+                  <TabsTrigger value="competitors">Competitors</TabsTrigger>
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="details" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Bid Number</Label>
+                      {editMode ? (
+                        <Input value={formData.bid_number} onChange={(e) => setFormData(prev => ({ ...prev, bid_number: e.target.value }))} />
+                      ) : (
+                        <p className="font-medium">{selectedTender.bid_number}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Dated</Label>
+                      {editMode ? (
+                        <Input type="date" value={formData.dated} onChange={(e) => setFormData(prev => ({ ...prev, dated: e.target.value }))} />
+                      ) : (
+                        <p className="font-medium">{formatDate(selectedTender.dated)}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Bid End Date</Label>
+                      <p className="font-medium">{formatDate(selectedTender.bid_end_date)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Opening Date</Label>
+                      <p className="font-medium">{formatDate(selectedTender.bid_opening_date)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Estimated Value</Label>
+                      <p className="font-medium text-lg">{formatCurrency(selectedTender.estimated_value)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Our Bid</Label>
+                      {editMode ? (
+                        <Input type="number" value={formData.our_bid_amount} onChange={(e) => setFormData(prev => ({ ...prev, our_bid_amount: Number(e.target.value) }))} />
+                      ) : (
+                        <p className="font-medium text-lg">{selectedTender.our_bid_amount ? formatCurrency(selectedTender.our_bid_amount) : '-'}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Quantity</Label>
+                      <p className="font-medium">{selectedTender.total_quantity}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">EMD Amount</Label>
+                      <p className="font-medium">{formatCurrency(selectedTender.emd_amount)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Status</Label>
+                      {editMode ? (
+                        <Select value={formData.status} onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge className={STATUS_COLORS[selectedTender.status]}>{selectedTender.status}</Badge>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Assigned To</Label>
+                      {editMode ? (
+                        <Input value={formData.assigned_employee} onChange={(e) => setFormData(prev => ({ ...prev, assigned_employee: e.target.value }))} />
+                      ) : (
+                        <p className="font-medium">{selectedTender.assigned_employee || '-'}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Department</Label>
+                    <p className="font-medium">{selectedTender.department_name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Beneficiary</Label>
+                    <p className="font-medium">{selectedTender.beneficiary || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Item Specifications</Label>
+                    <p className="text-sm">{selectedTender.item_specifications || '-'}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Notes</Label>
+                    {editMode ? (
+                      <Textarea value={formData.notes} onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))} rows={3} />
+                    ) : (
+                      <p className="text-sm">{selectedTender.notes || '-'}</p>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="result" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Winner Name</Label>
+                      {editMode ? (
+                        <Input value={formData.winner_name} onChange={(e) => setFormData(prev => ({ ...prev, winner_name: e.target.value }))} />
+                      ) : (
+                        <p className="font-medium">{selectedTender.winner_name || '-'}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Winning Amount</Label>
+                      {editMode ? (
+                        <Input type="number" value={formData.winner_amount} onChange={(e) => setFormData(prev => ({ ...prev, winner_amount: Number(e.target.value) }))} />
+                      ) : (
+                        <p className="font-medium">{selectedTender.winner_amount ? formatCurrency(selectedTender.winner_amount) : '-'}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Result Date</Label>
+                      {editMode ? (
+                        <Input type="date" value={formData.result_date} onChange={(e) => setFormData(prev => ({ ...prev, result_date: e.target.value }))} />
+                      ) : (
+                        <p className="font-medium">{formatDate(selectedTender.result_date)}</p>
+                      )}
+                    </div>
+                  </div>
+                  {selectedTender.status === 'lost' && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Reason for Loss</Label>
+                      {editMode ? (
+                        <Textarea value={formData.loss_reason} onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))} rows={2} />
+                      ) : (
+                        <p className="text-sm">{selectedTender.loss_reason || '-'}</p>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="competitors" className="space-y-4 mt-4">
+                  {editMode && (
+                    <Button variant="outline" size="sm" onClick={addCompetitor}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Competitor
+                    </Button>
+                  )}
+                  {(editMode ? formData.competitors : selectedTender.competitors)?.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Rank</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead className="text-right">Bid Amount</TableHead>
+                          {editMode && <TableHead></TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(editMode ? formData.competitors : selectedTender.competitors).map((comp, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>
+                              {editMode ? (
+                                <Input type="number" value={comp.rank} onChange={(e) => updateCompetitor(idx, 'rank', Number(e.target.value))} className="w-16" />
+                              ) : (
+                                comp.rank
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {editMode ? (
+                                <Input value={comp.name} onChange={(e) => updateCompetitor(idx, 'name', e.target.value)} />
+                              ) : (
+                                comp.name
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {editMode ? (
+                                <Input type="number" value={comp.bid_amount} onChange={(e) => updateCompetitor(idx, 'bid_amount', Number(e.target.value))} />
+                              ) : (
+                                formatCurrency(comp.bid_amount)
+                              )}
+                            </TableCell>
+                            {editMode && (
+                              <TableCell>
+                                <Button variant="ghost" size="sm" onClick={() => removeCompetitor(idx)}>
+                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                </Button>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">No competitor data added yet</p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="timeline" className="mt-4">
+                  <ScrollArea className="h-64">
+                    {selectedTender.timeline?.length > 0 ? (
+                      <div className="space-y-4">
+                        {selectedTender.timeline.map((event, idx) => (
+                          <div key={idx} className="flex gap-3 items-start">
+                            <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                            <div>
+                              <p className="font-medium text-sm">{event.action}</p>
+                              <p className="text-xs text-muted-foreground">{event.details}</p>
+                              <p className="text-xs text-muted-foreground">{formatDate(event.date)} by {event.user}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-center py-8">No timeline events</p>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+
+              {editMode && (
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button variant="outline" onClick={() => { setEditMode(false); setFormData(selectedTender); }}>Cancel</Button>
+                  <Button onClick={handleUpdateTender}>Save Changes</Button>
+                </div>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+};
+
+export default Tenders;
