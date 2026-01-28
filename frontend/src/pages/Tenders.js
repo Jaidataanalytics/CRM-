@@ -200,8 +200,53 @@ const Tenders = () => {
       loadAnalytics();
     } else if (activeTab === 'competitors') {
       loadCompetitors();
+    } else if (activeTab === 'competitor-master') {
+      loadCompetitorMaster();
     }
   }, [activeTab]);
+
+  // Load competitor master list
+  const loadCompetitorMaster = async () => {
+    try {
+      const res = await axios.get(`${API}/tenders/competitor-master`, { withCredentials: true });
+      setCompetitorMaster(res.data.competitors || []);
+    } catch (error) {
+      console.error('Error loading competitor master:', error);
+    }
+  };
+
+  // Handle PDF file upload
+  const handleUploadPdf = async () => {
+    if (!pdfFile) {
+      toast.error('Please select a PDF file');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', pdfFile);
+      
+      const res = await axios.post(`${API}/tenders/upload-pdf`, formDataUpload, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      if (res.data.success) {
+        setExtractedData(res.data.data);
+        setFormData(prev => ({ ...prev, ...res.data.data }));
+        toast.success(`Data extracted from ${res.data.filename}`);
+        setPdfFile(null);
+      } else {
+        toast.error(res.data.error || 'Failed to extract data');
+      }
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast.error('Failed to upload and extract PDF');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleExtractPdf = async () => {
     if (!pdfUrl) {
