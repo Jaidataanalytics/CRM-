@@ -294,13 +294,14 @@ const UserManagement = () => {
                   </TableCell>
                   <TableCell>
                     <Select value={user.role} onValueChange={(v) => handleChangeRole(user.user_id, v)}>
-                      <SelectTrigger className="w-28">
+                      <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Admin">Admin</SelectItem>
                         <SelectItem value="Manager">Manager</SelectItem>
                         <SelectItem value="Employee">Employee</SelectItem>
+                        <SelectItem value="TenderUser">Tender User</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
