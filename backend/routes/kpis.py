@@ -147,7 +147,22 @@ async def get_kpis(
         won_base_query["kva"] = kva_filter
     
     base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
-    won_base_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    # WON LEADS: Use sales_order_date (fallback to enquiry_date) for filtering
+    # This ensures won leads appear in the period they were actually won, not when enquiry was made
+    won_base_query["$or"] = [
+        # Has sales_order_date within range
+        {"sales_order_date": {"$gte": start_date, "$lte": end_date}},
+        # OR no sales_order_date but enquiry_date within range (fallback)
+        {"$and": [
+            {"$or": [
+                {"sales_order_date": {"$exists": False}},
+                {"sales_order_date": None},
+                {"sales_order_date": ""}
+            ]},
+            {"enquiry_date": {"$gte": start_date, "$lte": end_date}}
+        ]}
+    ]
     
     # Total leads (excluding transferred and duplicates) - for pipeline counting
     # Run all count queries in PARALLEL using asyncio.gather for performance
