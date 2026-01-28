@@ -538,7 +538,11 @@ const Tenders = () => {
           </TabsTrigger>
           <TabsTrigger value="competitors">
             <Users className="h-4 w-4 mr-2" />
-            Competitors
+            Tender Competitors
+          </TabsTrigger>
+          <TabsTrigger value="competitor-master">
+            <Award className="h-4 w-4 mr-2" />
+            Competitor Master
           </TabsTrigger>
         </TabsList>
 
