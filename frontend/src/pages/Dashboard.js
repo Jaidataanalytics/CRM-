@@ -59,7 +59,7 @@ import { ExportButton } from '@/components/ui/export-button';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const KPICard = ({ title, value, qty, icon: Icon, color, onClick, onDoubleClick, active, trend, unit }) => {
+const KPICard = ({ title, value, qty, icon: Icon, color, onClick, onDoubleClick, active, trend, unit, subValue, subLabel, onSubClick }) => {
   const formatValue = (val) => {
     if (typeof val === 'string') return val;
     if (typeof val === 'number') {
@@ -98,6 +98,19 @@ const KPICard = ({ title, value, qty, icon: Icon, color, onClick, onDoubleClick,
             </>
           )}
         </div>
+        {/* Sub-value display for old enquiries closed */}
+        {subValue !== undefined && subValue > 0 && (
+          <div 
+            className="mt-1 text-xs text-blue-600 hover:text-blue-800 cursor-pointer hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onSubClick) onSubClick();
+            }}
+            title="Click to view old enquiries closed"
+          >
+            +{formatValue(subValue)} {subLabel || 'old enquiries closed'}
+          </div>
+        )}
         {trend !== undefined && (
           <div className={`flex items-center gap-1 mt-1 text-xs ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
             {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
