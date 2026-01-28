@@ -684,13 +684,16 @@ const Dashboard = () => {
         {kpiVisibility.won_leads && (
           <KPICard
             title="Won Leads"
-            value={kpis?.won_leads || 0}
-            qty={kpis?.won_qty || 0}
+            value={kpis?.fresh_won_leads || 0}
+            qty={kpis?.fresh_won_qty || 0}
             icon={CheckCircle}
             color="text-green-500"
             onClick={() => handleKPIClick('won')}
             onDoubleClick={() => handleKPINavigate('won')}
             active={selectedKPI === 'won'}
+            subValue={kpis?.old_enquiries_closed || 0}
+            subLabel="old enquiries closed"
+            onSubClick={() => handleKPINavigate('old_enquiries_closed')}
           />
         )}
         {kpiVisibility.lost_leads && (
