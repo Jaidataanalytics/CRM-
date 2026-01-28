@@ -44,7 +44,14 @@ const Login = () => {
       
       toast.success(`Welcome, ${response.data.name}!`);
       await checkAuth();
-      navigate('/dashboard');
+      
+      // Redirect based on role
+      const userRole = response.data.role;
+      if (userRole === 'TenderUser') {
+        navigate('/tenders');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.response?.data?.detail || 'Login failed');
