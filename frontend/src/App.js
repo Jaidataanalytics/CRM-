@@ -22,6 +22,7 @@ import Admin from '@/pages/Admin';
 import EntityProfile from '@/pages/EntityProfile';
 import TransferredLeads from '@/pages/TransferredLeads';
 import DuplicateLeads from '@/pages/DuplicateLeads';
+import Tenders from '@/pages/Tenders';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
