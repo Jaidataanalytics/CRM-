@@ -6,8 +6,13 @@ import uuid
 import os
 import httpx
 import base64
+import tempfile
 
 from models.user import User
+from models.tender import (
+    TenderCreate, TenderUpdate, ConsigneeModel, CompetitorBidModel,
+    CompetitorMasterCreate, CompetitorMasterUpdate
+)
 from routes.auth import get_current_user
 
 
