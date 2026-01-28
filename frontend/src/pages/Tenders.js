@@ -1123,6 +1123,47 @@ const Tenders = () => {
                 rows={2}
               />
             </div>
+            
+            {/* Consignees Section */}
+            <div className="col-span-2 border-t pt-4 mt-2">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-base font-semibold">Consignees / Reporting Officers</Label>
+                <Button variant="outline" size="sm" onClick={addConsignee} type="button">
+                  <Plus className="h-4 w-4 mr-1" /> Add Consignee
+                </Button>
+              </div>
+              {(formData.consignees || []).length === 0 ? (
+                <p className="text-sm text-muted-foreground py-2">No consignees added. Click "Add Consignee" to add delivery locations.</p>
+              ) : (
+                <div className="space-y-3">
+                  {formData.consignees.map((consignee, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted/50 rounded-lg">
+                      <div className="col-span-4">
+                        <Label className="text-xs">Name</Label>
+                        <Input value={consignee.name} onChange={(e) => updateConsignee(idx, 'name', e.target.value)} placeholder="Officer/Location name" />
+                      </div>
+                      <div className="col-span-4">
+                        <Label className="text-xs">Address</Label>
+                        <Input value={consignee.address} onChange={(e) => updateConsignee(idx, 'address', e.target.value)} placeholder="Full address" />
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-xs">Quantity</Label>
+                        <Input type="number" value={consignee.quantity} onChange={(e) => updateConsignee(idx, 'quantity', Number(e.target.value))} />
+                      </div>
+                      <div className="col-span-1">
+                        <Label className="text-xs">Days</Label>
+                        <Input type="number" value={consignee.delivery_days} onChange={(e) => updateConsignee(idx, 'delivery_days', Number(e.target.value))} />
+                      </div>
+                      <div className="col-span-1">
+                        <Button variant="ghost" size="sm" onClick={() => removeConsignee(idx)} className="text-red-600">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <DialogFooter className="mt-4">
