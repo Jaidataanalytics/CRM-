@@ -48,7 +48,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-// Public Route (redirect to dashboard if authenticated)
+// Public Route (redirect to appropriate page if authenticated)
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -61,6 +61,10 @@ const PublicRoute = ({ children }) => {
   }
 
   if (user) {
+    // Redirect based on role
+    if (user.role === 'TenderUser') {
+      return <Navigate to="/tenders" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
