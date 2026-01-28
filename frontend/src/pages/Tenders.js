@@ -106,6 +106,15 @@ const Tenders = () => {
   const [uploading, setUploading] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
   const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfFile, setPdfFile] = useState(null);
+  
+  // Competitor master list
+  const [competitorMaster, setCompetitorMaster] = useState([]);
+  const [showCompetitorModal, setShowCompetitorModal] = useState(false);
+  const [editingCompetitor, setEditingCompetitor] = useState(null);
+  const [competitorForm, setCompetitorForm] = useState({
+    name: '', contact_person: '', phone: '', email: '', address: '', notes: ''
+  });
   
   // Form state for new/edit tender
   const [formData, setFormData] = useState({
