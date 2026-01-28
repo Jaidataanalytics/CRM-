@@ -1272,6 +1272,15 @@ async def upload_sales_order(
                     merge_updates['has_so_record'] = True  # Mark as verified SO record for KPI counting
                     merge_updates['updated_at'] = now
                     
+                    # CRITICAL: Always update enquiry_date from SO file if provided
+                    # This ensures won leads appear in the correct time period
+                    if lead_data.get('enquiry_date'):
+                        merge_updates['enquiry_date'] = lead_data['enquiry_date']
+                    
+                    # Also update sales_order_date if provided
+                    if lead_data.get('sales_order_date'):
+                        merge_updates['sales_order_date'] = lead_data['sales_order_date']
+                    
                     if dispatch_date or 'ship' in so_status or 'invoice' in so_status:
                         merge_updates['dispatch_status'] = 'dispatched'
                         if dispatch_date:
