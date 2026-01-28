@@ -878,15 +878,7 @@ const Dashboard = () => {
             color="text-blue-600"
           />
         )}
-        {kpiVisibility.old_enquiries_closed && (
-          <KPICard
-            title="Old Enquiries Closed"
-            value={kpis?.old_enquiries_closed || 0}
-            qty={kpis?.old_enquiries_closed_qty || 0}
-            icon={History}
-            color="text-purple-600"
-          />
-        )}
+        {/* Old Enquiries Closed is now shown as sub-value in Won Leads card */}
         
         <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
