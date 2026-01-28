@@ -1425,6 +1425,58 @@ const Tenders = () => {
                   )}
                 </TabsContent>
 
+                {/* Documents Tab */}
+                <TabsContent value="documents" className="space-y-4 mt-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">Tender Documents</Label>
+                    <Button variant="outline" size="sm" onClick={() => { setDocumentForm({ name: '', type: 'other', url: '' }); setShowDocumentModal(true); }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Document
+                    </Button>
+                  </div>
+                  
+                  {selectedTender.documents?.length > 0 ? (
+                    <div className="space-y-2">
+                      {selectedTender.documents.map((doc) => (
+                        <div key={doc._id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <a href={doc.url} target="_blank" rel="noopener noreferrer" className="font-medium text-sm hover:underline text-blue-600">
+                                {doc.name || 'Untitled Document'}
+                              </a>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Badge variant="outline" className="text-xs">{DOCUMENT_TYPES.find(t => t.value === doc.type)?.label || doc.type}</Badge>
+                                <span>•</span>
+                                <span>{formatDate(doc.uploaded_at)}</span>
+                                {doc.uploaded_by && <><span>•</span><span>{doc.uploaded_by}</span></>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" asChild>
+                              <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="h-4 w-4" />
+                              </a>
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteDocument(doc._id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No documents attached</p>
+                      <p className="text-sm">Click "Add Document" to attach tender-related files</p>
+                    </div>
+                  )}
+                </TabsContent>
+
                 <TabsContent value="competitors" className="space-y-4 mt-4">
                   {editMode && (
                     <Button variant="outline" size="sm" onClick={addCompetitor}>
