@@ -404,6 +404,65 @@ const Tenders = () => {
     }));
   };
 
+  // Competitor Master CRUD
+  const handleSaveCompetitorMaster = async () => {
+    if (!competitorForm.name) {
+      toast.error('Company name is required');
+      return;
+    }
+    
+    try {
+      if (editingCompetitor) {
+        await axios.put(`${API}/tenders/competitor-master/${editingCompetitor._id}`, competitorForm, { withCredentials: true });
+        toast.success('Competitor updated');
+      } else {
+        await axios.post(`${API}/tenders/competitor-master`, competitorForm, { withCredentials: true });
+        toast.success('Competitor added');
+      }
+      setShowCompetitorModal(false);
+      loadCompetitorMaster();
+    } catch (error) {
+      console.error('Error saving competitor:', error);
+      toast.error(error.response?.data?.detail || 'Failed to save competitor');
+    }
+  };
+
+  const handleDeleteCompetitorMaster = async (id) => {
+    if (!window.confirm('Are you sure you want to deactivate this competitor?')) return;
+    
+    try {
+      await axios.delete(`${API}/tenders/competitor-master/${id}`, { withCredentials: true });
+      toast.success('Competitor deactivated');
+      loadCompetitorMaster();
+    } catch (error) {
+      console.error('Error deleting competitor:', error);
+      toast.error('Failed to deactivate competitor');
+    }
+  };
+
+  // Add consignee
+  const addConsignee = () => {
+    setFormData(prev => ({
+      ...prev,
+      consignees: [...(prev.consignees || []), { name: '', address: '', quantity: 0, delivery_days: 0 }]
+    }));
+  };
+
+  const updateConsignee = (index, field, value) => {
+    setFormData(prev => {
+      const updated = [...(prev.consignees || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, consignees: updated };
+    });
+  };
+
+  const removeConsignee = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      consignees: (prev.consignees || []).filter((_, i) => i !== index)
+    }));
+  };
+
   if (loading && tenders.length === 0) {
     return (
       <div className="space-y-6">
