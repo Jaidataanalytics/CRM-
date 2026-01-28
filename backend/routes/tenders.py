@@ -635,3 +635,208 @@ async def get_upcoming_deadlines(
         "tenders": [serialize_tender(t) for t in tenders],
         "count": len(tenders)
     }
+
+
+
+# ============ FILE UPLOAD ENDPOINT ============
+
+@router.post("/upload-pdf")
+async def upload_and_extract_pdf(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload PDF file and extract tender data using AI"""
+    
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    try:
+        # Read file content
+        content = await file.read()
+        
+        # Save to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        
+        # Use Gemini for PDF extraction
+        from emergentintegrations.llm.gemini import GeminiChat, GeminiConfig
+        
+        config = GeminiConfig(
+            api_key=os.environ.get("EMERGENT_LLM_KEY"),
+            model="gemini-2.0-flash"
+        )
+        chat = GeminiChat(config=config)
+        
+        extraction_prompt = """Extract the following fields from this tender/bid document PDF. Return ONLY a JSON object with these exact keys:
+
+{
+    "bid_number": "the bid/tender number",
+    "dated": "YYYY-MM-DD format",
+    "bid_end_date": "YYYY-MM-DD HH:MM:SS format",
+    "bid_opening_date": "YYYY-MM-DD HH:MM:SS format", 
+    "department_name": "full department name",
+    "total_quantity": number,
+    "estimated_value": number (in rupees, no commas),
+    "beneficiary": "beneficiary name and address",
+    "consignees": [{"name": "consignee/reporting officer name", "address": "full address", "quantity": number, "delivery_days": number}],
+    "emd_amount": number,
+    "item_specifications": "brief description of items being tendered",
+    "product_category": "product category like DG Set, Transformer, etc",
+    "delivery_period": number (in days),
+    "warranty_period": "warranty description",
+    "payment_terms": "payment terms summary"
+}
+
+Extract ALL consignees/reporting officers with their quantities. If a field is not found, use empty string for text, 0 for numbers, or empty array for arrays."""
+
+        response = await chat.send_message_async(
+            message=extraction_prompt,
+            file_paths=[tmp_path]
+        )
+        
+        # Clean up temp file
+        os.unlink(tmp_path)
+        
+        # Parse JSON from response
+        import json
+        import re
+        
+        response_text = response.text if hasattr(response, 'text') else str(response)
+        json_match = re.search(r'\{[\s\S]*\}', response_text)
+        
+        if json_match:
+            extracted_data = json.loads(json_match.group())
+            return {"success": True, "data": extracted_data, "filename": file.filename}
+        else:
+            return {"success": False, "error": "Could not parse JSON from response", "raw_response": response_text[:500]}
+            
+    except Exception as e:
+        # Clean up temp file if it exists
+        if 'tmp_path' in locals():
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
+        return {"success": False, "error": str(e)}
+
+
+# ============ COMPETITOR MASTER LIST ENDPOINTS ============
+
+def serialize_competitor(competitor):
+    """Convert MongoDB document to JSON-serializable dict"""
+    if competitor is None:
+        return None
+    competitor["_id"] = str(competitor["_id"])
+    return competitor
+
+
+@router.get("/competitor-master")
+async def list_competitor_master(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    search: Optional[str] = None,
+    active_only: bool = True
+):
+    """List all master competitors"""
+    db = await get_db(request)
+    
+    query = {}
+    if active_only:
+        query["is_active"] = True
+    if search:
+        query["name"] = {"$regex": search, "$options": "i"}
+    
+    competitors = await db.competitor_master.find(query).sort("name", 1).to_list(500)
+    
+    return {
+        "competitors": [serialize_competitor(c) for c in competitors],
+        "total": len(competitors)
+    }
+
+
+@router.post("/competitor-master")
+async def create_competitor_master(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new master competitor"""
+    db = await get_db(request)
+    data = await request.json()
+    
+    # Check if competitor with same name exists
+    existing = await db.competitor_master.find_one({"name": {"$regex": f"^{data.get('name', '')}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Competitor with this name already exists")
+    
+    competitor = {
+        "name": data.get("name", ""),
+        "contact_person": data.get("contact_person", ""),
+        "phone": data.get("phone", ""),
+        "email": data.get("email", ""),
+        "address": data.get("address", ""),
+        "notes": data.get("notes", ""),
+        "is_active": data.get("is_active", True),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    result = await db.competitor_master.insert_one(competitor)
+    competitor["_id"] = str(result.inserted_id)
+    
+    return competitor
+
+
+@router.put("/competitor-master/{competitor_id}")
+async def update_competitor_master(
+    request: Request,
+    competitor_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a master competitor"""
+    db = await get_db(request)
+    data = await request.json()
+    
+    try:
+        existing = await db.competitor_master.find_one({"_id": ObjectId(competitor_id)})
+    except:
+        raise HTTPException(status_code=400, detail="Invalid competitor ID")
+    
+    if not existing:
+        raise HTTPException(status_code=404, detail="Competitor not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    
+    allowed_fields = ["name", "contact_person", "phone", "email", "address", "notes", "is_active"]
+    for field in allowed_fields:
+        if field in data:
+            update_data[field] = data[field]
+    
+    await db.competitor_master.update_one({"_id": ObjectId(competitor_id)}, {"$set": update_data})
+    
+    updated = await db.competitor_master.find_one({"_id": ObjectId(competitor_id)})
+    return serialize_competitor(updated)
+
+
+@router.delete("/competitor-master/{competitor_id}")
+async def delete_competitor_master(
+    request: Request,
+    competitor_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a master competitor (soft delete by setting inactive)"""
+    db = await get_db(request)
+    
+    try:
+        result = await db.competitor_master.update_one(
+            {"_id": ObjectId(competitor_id)},
+            {"$set": {"is_active": False, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    except:
+        raise HTTPException(status_code=400, detail="Invalid competitor ID")
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Competitor not found")
+    
+    return {"message": "Competitor deactivated successfully"}
