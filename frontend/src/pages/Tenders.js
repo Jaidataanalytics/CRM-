@@ -116,6 +116,10 @@ const Tenders = () => {
     name: '', contact_person: '', phone: '', email: '', address: '', notes: ''
   });
   
+  // Document management
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [documentForm, setDocumentForm] = useState({ name: '', type: 'other', url: '' });
+  
   // Form state for new/edit tender
   const [formData, setFormData] = useState({
     bid_number: '',
