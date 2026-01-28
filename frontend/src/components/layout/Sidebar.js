@@ -36,7 +36,7 @@ const menuItems = [
   { path: '/transferred-leads', icon: ArrowLeftRight, label: 'Transferred Leads', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/duplicate-leads', icon: Copy, label: 'Data Management', roles: ['Admin', 'Manager'] },
   { path: '/dispatch', icon: Truck, label: 'Dispatch', roles: ['Admin', 'Manager', 'Employee'] },
-  { path: '/tenders', icon: FileText, label: 'Tenders', roles: ['Admin', 'Manager'] },
+  { path: '/tenders', icon: FileText, label: 'Tenders', roles: ['Admin', 'Manager', 'TenderUser'] },
   { path: '/comparison', icon: GitCompare, label: 'Comparison', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/forecast', icon: LineChart, label: 'Forecast', roles: ['Admin', 'Manager'] },
   { path: '/compare-forecasts', icon: Target, label: 'Compare Forecasts', roles: ['Admin', 'Manager'] },
