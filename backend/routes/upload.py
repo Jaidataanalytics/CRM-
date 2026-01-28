@@ -1269,6 +1269,7 @@ async def upload_sales_order(
                     merge_updates['won_qty'] = int(final_qty)  # Convert numpy int
                     merge_updates['sales_order_no'] = str(so_no)
                     merge_updates['so_upload_batch_id'] = upload_batch_id
+                    merge_updates['has_so_record'] = True  # Mark as verified SO record for KPI counting
                     merge_updates['updated_at'] = now
                     
                     if dispatch_date or 'ship' in so_status or 'invoice' in so_status:
