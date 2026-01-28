@@ -304,15 +304,28 @@ const EntityProfile = () => {
               {profile.state && entityType !== 'state' && `${profile.state}`}
               {profile.dealer && entityType === 'employee' && ` • ${profile.dealer}`}
             </p>
-            {profile.date_range && (
-              <p className="text-xs text-muted-foreground mt-1">
-                <Calendar className="inline h-3 w-3 mr-1" />
-                {profile.date_range.start_date} to {profile.date_range.end_date}
-              </p>
-            )}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Date Range Picker */}
+          <div className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={localDateRange.from}
+                onChange={(e) => setLocalDateRange(prev => ({ ...prev, from: e.target.value }))}
+                className="h-8 w-32 text-xs"
+              />
+              <span className="text-muted-foreground text-xs">to</span>
+              <Input
+                type="date"
+                value={localDateRange.to}
+                onChange={(e) => setLocalDateRange(prev => ({ ...prev, to: e.target.value }))}
+                className="h-8 w-32 text-xs"
+              />
+            </div>
+          </div>
           <ExportButton
             data={recentLeads.leads}
             filename={`${entityType}_${entityId}_analytics`}
