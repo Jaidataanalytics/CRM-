@@ -9,7 +9,11 @@ import base64
 
 from models.user import User
 from routes.auth import get_current_user
-from database import get_db
+
+
+async def get_db(request: Request):
+    """Get database from request state"""
+    return request.app.state.db
 
 router = APIRouter(prefix="/tenders", tags=["Tenders"])
 
