@@ -1566,6 +1566,52 @@ const Tenders = () => {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Add Document Modal */}
+      <Dialog open={showDocumentModal} onOpenChange={setShowDocumentModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Document</DialogTitle>
+            <DialogDescription>Add a URL link to a tender-related document</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div>
+              <Label>Document Name *</Label>
+              <Input 
+                value={documentForm.name} 
+                onChange={(e) => setDocumentForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Technical Specifications PDF"
+              />
+            </div>
+            <div>
+              <Label>Document Type</Label>
+              <Select value={documentForm.type} onValueChange={(v) => setDocumentForm(prev => ({ ...prev, type: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_TYPES.map(t => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Document URL *</Label>
+              <Input 
+                value={documentForm.url} 
+                onChange={(e) => setDocumentForm(prev => ({ ...prev, url: e.target.value }))}
+                placeholder="https://..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">Paste the link to the document (Google Drive, Dropbox, etc.)</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDocumentModal(false)}>Cancel</Button>
+            <Button onClick={handleAddDocument}>Add Document</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
