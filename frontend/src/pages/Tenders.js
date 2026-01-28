@@ -444,6 +444,47 @@ const Tenders = () => {
     }
   };
 
+  // Document management handlers
+  const handleAddDocument = async () => {
+    if (!documentForm.url) {
+      toast.error('Document URL is required');
+      return;
+    }
+    if (!selectedTender?._id) {
+      toast.error('No tender selected');
+      return;
+    }
+    
+    try {
+      const res = await axios.post(`${API}/tenders/${selectedTender._id}/documents`, documentForm, { withCredentials: true });
+      toast.success('Document added');
+      setShowDocumentModal(false);
+      setDocumentForm({ name: '', type: 'other', url: '' });
+      // Refresh the tender
+      const updatedTender = await axios.get(`${API}/tenders/${selectedTender._id}`, { withCredentials: true });
+      setSelectedTender(updatedTender.data);
+      loadTenders();
+    } catch (error) {
+      console.error('Error adding document:', error);
+      toast.error('Failed to add document');
+    }
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    if (!window.confirm('Are you sure you want to remove this document?')) return;
+    
+    try {
+      await axios.delete(`${API}/tenders/${selectedTender._id}/documents/${docId}`, { withCredentials: true });
+      toast.success('Document removed');
+      // Refresh the tender
+      const updatedTender = await axios.get(`${API}/tenders/${selectedTender._id}`, { withCredentials: true });
+      setSelectedTender(updatedTender.data);
+    } catch (error) {
+      console.error('Error removing document:', error);
+      toast.error('Failed to remove document');
+    }
+  };
+
   // Add consignee
   const addConsignee = () => {
     setFormData(prev => ({
