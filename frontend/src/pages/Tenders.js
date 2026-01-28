@@ -788,7 +788,108 @@ const Tenders = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Competitor Master Tab */}
+        <TabsContent value="competitor-master">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Competitor Master List</CardTitle>
+                  <CardDescription>Manage your list of known competitors</CardDescription>
+                </div>
+                <Button onClick={() => { setEditingCompetitor(null); setCompetitorForm({ name: '', contact_person: '', phone: '', email: '', address: '', notes: '' }); setShowCompetitorModal(true); }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Competitor
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact Person</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Notes</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {competitorMaster.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No competitors added yet. Click "Add Competitor" to create your master list.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    competitorMaster.map((comp) => (
+                      <TableRow key={comp._id}>
+                        <TableCell className="font-medium">{comp.name}</TableCell>
+                        <TableCell>{comp.contact_person || '-'}</TableCell>
+                        <TableCell>{comp.phone || '-'}</TableCell>
+                        <TableCell>{comp.email || '-'}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{comp.notes || '-'}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="sm" onClick={() => { setEditingCompetitor(comp); setCompetitorForm(comp); setShowCompetitorModal(true); }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDeleteCompetitorMaster(comp._id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Competitor Master Modal */}
+      <Dialog open={showCompetitorModal} onOpenChange={setShowCompetitorModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingCompetitor ? 'Edit Competitor' : 'Add Competitor'}</DialogTitle>
+            <DialogDescription>Add competitor details to your master list</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div>
+              <Label>Company Name *</Label>
+              <Input value={competitorForm.name} onChange={(e) => setCompetitorForm(prev => ({ ...prev, name: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Contact Person</Label>
+                <Input value={competitorForm.contact_person} onChange={(e) => setCompetitorForm(prev => ({ ...prev, contact_person: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Phone</Label>
+                <Input value={competitorForm.phone} onChange={(e) => setCompetitorForm(prev => ({ ...prev, phone: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Email</Label>
+              <Input type="email" value={competitorForm.email} onChange={(e) => setCompetitorForm(prev => ({ ...prev, email: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Address</Label>
+              <Input value={competitorForm.address} onChange={(e) => setCompetitorForm(prev => ({ ...prev, address: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Textarea value={competitorForm.notes} onChange={(e) => setCompetitorForm(prev => ({ ...prev, notes: e.target.value }))} rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCompetitorModal(false)}>Cancel</Button>
+            <Button onClick={handleSaveCompetitorMaster}>{editingCompetitor ? 'Update' : 'Create'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Upload/Create Modal */}
       <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
