@@ -1296,6 +1296,48 @@ const Tenders = () => {
                       <p className="text-sm">{selectedTender.notes || '-'}</p>
                     )}
                   </div>
+                  
+                  {/* Consignees Section in Detail View */}
+                  <div className="border-t pt-4 mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-sm font-semibold">Consignees / Delivery Locations</Label>
+                      {editMode && (
+                        <Button variant="outline" size="sm" onClick={addConsignee} type="button">
+                          <Plus className="h-3 w-3 mr-1" /> Add
+                        </Button>
+                      )}
+                    </div>
+                    {(editMode ? formData.consignees : selectedTender.consignees)?.length > 0 ? (
+                      <div className="space-y-2">
+                        {(editMode ? formData.consignees : selectedTender.consignees).map((consignee, idx) => (
+                          <div key={idx} className="p-2 bg-muted/50 rounded text-sm grid grid-cols-12 gap-2 items-center">
+                            {editMode ? (
+                              <>
+                                <Input className="col-span-4 h-8 text-xs" value={consignee.name} onChange={(e) => updateConsignee(idx, 'name', e.target.value)} placeholder="Name" />
+                                <Input className="col-span-4 h-8 text-xs" value={consignee.address} onChange={(e) => updateConsignee(idx, 'address', e.target.value)} placeholder="Address" />
+                                <Input className="col-span-2 h-8 text-xs" type="number" value={consignee.quantity} onChange={(e) => updateConsignee(idx, 'quantity', Number(e.target.value))} />
+                                <Input className="col-span-1 h-8 text-xs" type="number" value={consignee.delivery_days} onChange={(e) => updateConsignee(idx, 'delivery_days', Number(e.target.value))} />
+                                <Button variant="ghost" size="sm" onClick={() => removeConsignee(idx)} className="col-span-1 h-8 text-red-600 p-0">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <div className="col-span-5">
+                                  <span className="font-medium">{consignee.name}</span>
+                                  {consignee.address && <span className="text-muted-foreground ml-1">- {consignee.address}</span>}
+                                </div>
+                                <div className="col-span-3 text-right">Qty: {consignee.quantity}</div>
+                                <div className="col-span-4 text-right text-muted-foreground">{consignee.delivery_days} days delivery</div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-2">No consignees specified</p>
+                    )}
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="result" className="space-y-4 mt-4">
