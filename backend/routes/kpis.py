@@ -382,16 +382,25 @@ async def get_kpis(
         {"$group": {"_id": None, "total_qty": qty_sum_expr}}
     ]
     
-    # Run old enquiries count and qty in parallel
-    old_enquiries_results = await asyncio.gather(
+    fresh_won_qty_pipeline = [
+        {"$match": fresh_won_query},
+        {"$group": {"_id": None, "total_qty": qty_sum_expr}}
+    ]
+    
+    # Run fresh won and old enquiries count and qty in parallel
+    won_split_results = await asyncio.gather(
+        db.leads.count_documents(fresh_won_query),
         db.leads.count_documents(old_enquiries_closed_query),
+        db.leads.aggregate(fresh_won_qty_pipeline).to_list(1),
         db.leads.aggregate(old_enquiries_closed_qty_pipeline).to_list(1),
     )
     
-    old_enquiries_closed_count = old_enquiries_results[0]
-    old_enquiries_closed_qty = old_enquiries_results[1][0]["total_qty"] if old_enquiries_results[1] else 0
+    fresh_won_leads = won_split_results[0]
+    old_enquiries_closed_count = won_split_results[1]
+    fresh_won_qty = won_split_results[2][0]["total_qty"] if won_split_results[2] else 0
+    old_enquiries_closed_qty = won_split_results[3][0]["total_qty"] if won_split_results[3] else 0
     
-    # ============ END OLD ENQUIRIES CLOSED KPI ============
+    # ============ END WON LEADS SPLIT ============
     
     # Get conversion rate config (can be customized by admin)
     conversion_config = await get_metric_config(db, "conversion_rate")
