@@ -1309,6 +1309,9 @@ async def upload_sales_order(
                     # Ensure phone is stored
                     lead_data['phone_number'] = phone
                     
+                    # Mark as verified SO record for KPI counting
+                    lead_data['has_so_record'] = True
+                    
                     # Convert all numpy types to native Python types
                     lead_data = convert_numpy_types(lead_data)
                     
