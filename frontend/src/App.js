@@ -129,6 +129,13 @@ const AppRouter = () => {
           </ProtectedRoute>
         } />
         
+        {/* Tender Tracking */}
+        <Route path="/tenders" element={
+          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+            <Tenders />
+          </ProtectedRoute>
+        } />
+        
         {/* Admin only */}
         <Route path="/admin" element={
           <ProtectedRoute allowedRoles={['Admin']}>
