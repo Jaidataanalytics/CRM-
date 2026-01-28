@@ -71,7 +71,22 @@ const EntityProfile = () => {
   const { entityType, entityId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { dateRange } = useFilters();
+  
+  // Local date range state (independent of global filter)
+  const getDefaultDateRange = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    // Indian FY starts April 1
+    const fyStartYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+    return {
+      from: `${fyStartYear}-04-01`,
+      to: format(now, 'yyyy-MM-dd')
+    };
+  };
+  
+  const [localDateRange, setLocalDateRange] = useState(getDefaultDateRange());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
