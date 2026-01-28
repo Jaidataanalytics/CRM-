@@ -200,7 +200,25 @@ async def get_leads(
         if kva_max is not None:
             query["kva"]["$lte"] = kva_max
     
-    if start_date or end_date:
+    # Handle old_enquiries filter - for won leads with enquiry_date before start_date
+    # but sales_order_date within the date range
+    if old_enquiries and start_date and end_date:
+        # For old enquiries: enquiry_date is BEFORE start_date
+        # AND sales_order_date is within the date range
+        query["enquiry_date"] = {"$lt": start_date}
+        query["$or"] = [
+            {"sales_order_date": {"$gte": start_date, "$lte": end_date}},
+            # Fallback for leads without sales_order_date
+            {"$and": [
+                {"$or": [
+                    {"sales_order_date": {"$exists": False}},
+                    {"sales_order_date": None},
+                    {"sales_order_date": ""}
+                ]},
+                {"enquiry_date": {"$gte": start_date, "$lte": end_date}}
+            ]}
+        ]
+    elif start_date or end_date:
         query["enquiry_date"] = {}
         if start_date:
             query["enquiry_date"]["$gte"] = start_date
