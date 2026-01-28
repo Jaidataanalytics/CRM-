@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
@@ -31,15 +33,22 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import {
   PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
 import { 
   MapPin, Building2, User, Users, Target, CheckCircle, XCircle, Clock,
-  TrendingUp, TrendingDown, AlertTriangle, Calendar, Download, ExternalLink,
+  TrendingUp, TrendingDown, AlertTriangle, Calendar as CalendarIcon, Download, ExternalLink,
   ChevronRight, Activity, BarChart3, PieChartIcon, ArrowUpRight, ArrowDownRight, Image
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { ExportButton } from '@/components/ui/export-button';
 import { exportChartAsImage } from '@/utils/exportUtils';
 
