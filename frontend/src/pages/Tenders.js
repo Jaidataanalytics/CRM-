@@ -742,18 +742,38 @@ const Tenders = () => {
 
           {/* PDF Upload Section */}
           <div className="space-y-4 border-b pb-4">
-            <Label>Extract from PDF (Optional)</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter PDF URL..."
-                value={pdfUrl}
-                onChange={(e) => setPdfUrl(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={handleExtractPdf} disabled={uploading || !pdfUrl}>
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="h-4 w-4 mr-2" />}
-                Extract
-              </Button>
+            <Label className="font-semibold">Extract from PDF (Optional)</Label>
+            <div className="grid grid-cols-2 gap-4">
+              {/* File Upload */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Upload PDF File</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setPdfFile(e.target.files[0])}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleUploadPdf} disabled={uploading || !pdfFile} size="sm">
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+              {/* URL Input */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Or Enter PDF URL</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://..."
+                    value={pdfUrl}
+                    onChange={(e) => setPdfUrl(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleExtractPdf} disabled={uploading || !pdfUrl} size="sm">
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
             </div>
             {extractedData && (
               <p className="text-sm text-green-600 flex items-center gap-1">
