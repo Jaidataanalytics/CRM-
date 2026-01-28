@@ -114,7 +114,8 @@ async def get_leads(
     # KPI Navigation parameters (aliases for frontend compatibility)
     stage: Optional[str] = None,  # Maps to enquiry_stage
     status: Optional[str] = None,  # Maps to enquiry_status
-    lead_type: Optional[str] = None  # Maps to enquiry_type
+    lead_type: Optional[str] = None,  # Maps to enquiry_type
+    old_enquiries: Optional[bool] = None  # Filter for old enquiries closed (enquiry_date before start_date, won in period)
 ):
     """Get leads with filtering, search, and pagination"""
     db = await get_db(request)
