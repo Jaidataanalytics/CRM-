@@ -349,46 +349,33 @@ async def get_kpis(
     
     # ============ END QTY CALCULATIONS ============
     
-    # ============ OLD ENQUIRIES CLOSED KPI (RUN IN PARALLEL) ============
-    # This KPI shows leads that were WON within the selected date range
-    # but their original enquiry_date is from BEFORE the selected start_date
-    # This helps track sales from older pipeline leads
+    # ============ WON LEADS SPLIT: FRESH vs OLD ENQUIRIES ============
+    # Total won_leads = fresh_won_leads + old_enquiries_closed
+    # - fresh_won_leads: enquiry_date WITHIN the selected date range
+    # - old_enquiries_closed: enquiry_date BEFORE the selected start_date
+    # Both are filtered by sales_order_date (or fallback to enquiry_date)
     
-    old_enquiries_closed_query = {
-        "is_deleted": {"$ne": True},
-        "deleted_at": {"$exists": False},
-        "$and": [
-            {"$or": [
-                {"is_transferred": {"$exists": False}},
-                {"is_transferred": False},
-                {"is_transferred": None}
-            ]},
-            {"$or": [
-                {"is_duplicate": {"$exists": False}},
-                {"is_duplicate": False},
-                {"is_duplicate": None}
-            ]}
-        ],
-        "enquiry_stage": {"$in": ["Closed-Won", "Order Booked"]},
-        # Enquiry date is BEFORE the selected start_date
-        "enquiry_date": {"$lt": start_date},
-        # Won/closed within the selected date range (using won_date, invoice_date or sales_order_date)
-        "$or": [
-            {"won_date": {"$gte": start_date, "$lte": end_date}},
-            {"invoice_date": {"$gte": start_date, "$lte": end_date}},
-            {"sales_order_date": {"$gte": start_date, "$lte": end_date}}
-        ]
-    }
+    # Fresh won leads: won in period AND enquiry was also in period
+    fresh_won_query = copy.deepcopy(won_metric_query)
+    fresh_won_query["enquiry_date"] = {"$gte": start_date, "$lte": end_date}
+    
+    # Old enquiries closed: won in period BUT enquiry was before period
+    old_enquiries_closed_query = copy.deepcopy(won_metric_query)
+    old_enquiries_closed_query["enquiry_date"] = {"$lt": start_date}
     
     # Apply same filters as base query
     if state:
         old_enquiries_closed_query["state"] = state
+        fresh_won_query["state"] = state
     if dealer:
         old_enquiries_closed_query["dealer"] = dealer
+        fresh_won_query["dealer"] = dealer
     if employee_name:
         old_enquiries_closed_query["employee_name"] = employee_name
+        fresh_won_query["employee_name"] = employee_name
     if segment:
         old_enquiries_closed_query["segment"] = segment
+        fresh_won_query["segment"] = segment
     
     old_enquiries_closed_qty_pipeline = [
         {"$match": old_enquiries_closed_query},
