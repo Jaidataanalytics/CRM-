@@ -1246,9 +1246,10 @@ const Tenders = () => {
               </div>
 
               <Tabs defaultValue="details">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="result">Result</TabsTrigger>
+                  <TabsTrigger value="documents">Documents</TabsTrigger>
                   <TabsTrigger value="competitors">Competitors</TabsTrigger>
                   <TabsTrigger value="timeline">Timeline</TabsTrigger>
                 </TabsList>
