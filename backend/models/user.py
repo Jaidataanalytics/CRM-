@@ -9,6 +9,7 @@ class UserRole(str, Enum):
     ADMIN = "Admin"
     MANAGER = "Manager"
     EMPLOYEE = "Employee"
+    TENDER_USER = "TenderUser"  # Only has access to Tender page
 
 
 class User(BaseModel):
