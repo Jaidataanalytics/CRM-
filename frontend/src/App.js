@@ -131,7 +131,7 @@ const AppRouter = () => {
         
         {/* Tender Tracking */}
         <Route path="/tenders" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
+          <ProtectedRoute allowedRoles={['Admin', 'Manager', 'TenderUser']}>
             <Tenders />
           </ProtectedRoute>
         } />
