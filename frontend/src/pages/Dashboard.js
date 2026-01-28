@@ -519,6 +519,11 @@ const Dashboard = () => {
       params.append('status', 'Open');
       params.append('kva_min', '250');
     }
+    // Old enquiries closed - won leads with old enquiry dates
+    else if (filter === 'old_enquiries_closed') {
+      params.append('stage', 'Closed-Won');
+      params.append('old_enquiries', 'true');
+    }
     
     window.location.href = url + params.toString();
   };
