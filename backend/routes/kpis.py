@@ -629,8 +629,12 @@ async def get_kpis(
     return {
         "total_leads": total_leads,
         "total_qty": won_qty,  # Total qty sold = won qty
-        "won_leads": won_leads,
+        "won_leads": won_leads,  # Total won leads (fresh + old enquiries)
         "won_qty": won_qty,
+        "fresh_won_leads": fresh_won_leads,  # Won leads with enquiry_date in selected range
+        "fresh_won_qty": fresh_won_qty,
+        "old_enquiries_closed": old_enquiries_closed_count,  # Won leads with enquiry_date before selected range
+        "old_enquiries_closed_qty": old_enquiries_closed_qty,
         "lost_leads": lost_leads,
         "open_leads": open_leads,
         "closed_leads": closed_leads,
@@ -652,8 +656,6 @@ async def get_kpis(
         "dispatched": dispatched_count,
         "dispatched_qty": dispatched_qty,
         "needs_dispatch_migration": no_dispatch_status,
-        "old_enquiries_closed": old_enquiries_closed_count,
-        "old_enquiries_closed_qty": old_enquiries_closed_qty,
         # KVA Category breakdown for open leads
         "open_lkva": open_lkva,  # < 82.5 KVA
         "open_mkva": open_mkva,  # 82.5 - 249 KVA
