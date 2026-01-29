@@ -47,6 +47,7 @@ import { LeadTimeline } from '@/components/leads/LeadTimeline';
 import { LeadDetailPanel } from '@/components/leads';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import FileUpload from '@/components/FileUpload';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
