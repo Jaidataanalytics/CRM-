@@ -964,7 +964,8 @@ async def upload_lost_leads(
                         })
                     logger.info(f"Updated lead {existing['lead_id']} from '{existing_stage}' to Lost status with {len(merged_fields)} merged fields")
                 else:
-                    # Create new lead - set all lost status fields
+                    # Create new lead (either no existing or existing is CLOSED - repeat customer)
+                    # Set all lost status fields
                     lead_data['enquiry_stage'] = 'Closed-Lost'
                     lead_data['enquiry_status'] = 'Closed'
                     lead_data['closure_type'] = 'lost'
@@ -992,6 +993,12 @@ async def upload_lost_leads(
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
+                    
+                    # If this is a repeat customer, track the relationship
+                    if is_repeat_customer and previous_lead_id:
+                        lead_doc["is_repeat_customer"] = True
+                        lead_doc["previous_lead_id"] = previous_lead_id
+                        lead_doc["repeat_customer_note"] = f"New lost enquiry from customer with previous closed lead"
                     
                     await db.leads.insert_one(lead_doc)
                     created_count += 1
