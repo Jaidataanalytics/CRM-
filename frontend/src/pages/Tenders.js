@@ -1768,41 +1768,116 @@ const Tenders = () => {
                 </TabsContent>
 
                 <TabsContent value="result" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Winner Name</Label>
-                      {editMode ? (
-                        <Input value={formData.winner_name} onChange={(e) => setFormData(prev => ({ ...prev, winner_name: e.target.value }))} />
-                      ) : (
-                        <p className="font-medium">{selectedTender.winner_name || '-'}</p>
+                  {/* MLT Result Fields */}
+                  {selectedTender.tender_type !== 'dg' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Winner Name</Label>
+                          {editMode ? (
+                            <Input value={formData.winner_name} onChange={(e) => setFormData(prev => ({ ...prev, winner_name: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.winner_name || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Winning Amount</Label>
+                          {editMode ? (
+                            <Input type="number" value={formData.winner_amount} onChange={(e) => setFormData(prev => ({ ...prev, winner_amount: Number(e.target.value) }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.winner_amount ? formatCurrency(selectedTender.winner_amount) : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Result Date</Label>
+                          {editMode ? (
+                            <Input type="date" value={formData.result_date} onChange={(e) => setFormData(prev => ({ ...prev, result_date: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedTender.result_date)}</p>
+                          )}
+                        </div>
+                      </div>
+                      {selectedTender.status === 'lost' && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Reason for Loss</Label>
+                          {editMode ? (
+                            <Textarea value={formData.loss_reason} onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))} rows={2} />
+                          ) : (
+                            <p className="text-sm">{selectedTender.loss_reason || '-'}</p>
+                          )}
+                        </div>
                       )}
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Winning Amount</Label>
-                      {editMode ? (
-                        <Input type="number" value={formData.winner_amount} onChange={(e) => setFormData(prev => ({ ...prev, winner_amount: Number(e.target.value) }))} />
-                      ) : (
-                        <p className="font-medium">{selectedTender.winner_amount ? formatCurrency(selectedTender.winner_amount) : '-'}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Result Date</Label>
-                      {editMode ? (
-                        <Input type="date" value={formData.result_date} onChange={(e) => setFormData(prev => ({ ...prev, result_date: e.target.value }))} />
-                      ) : (
-                        <p className="font-medium">{formatDate(selectedTender.result_date)}</p>
-                      )}
-                    </div>
-                  </div>
-                  {selectedTender.status === 'lost' && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Reason for Loss</Label>
-                      {editMode ? (
-                        <Textarea value={formData.loss_reason} onChange={(e) => setFormData(prev => ({ ...prev, loss_reason: e.target.value }))} rows={2} />
-                      ) : (
-                        <p className="text-sm">{selectedTender.loss_reason || '-'}</p>
-                      )}
-                    </div>
+                    </>
+                  )}
+                  
+                  {/* DG Result Fields */}
+                  {selectedTender.tender_type === 'dg' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">L1 Price (₹)</Label>
+                          {editMode ? (
+                            <Input type="number" value={formData.l1_price} onChange={(e) => setFormData(prev => ({ ...prev, l1_price: Number(e.target.value) }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.l1_price ? formatCurrency(selectedTender.l1_price) : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">MM Price (₹)</Label>
+                          {editMode ? (
+                            <Input type="number" value={formData.mm_price} onChange={(e) => setFormData(prev => ({ ...prev, mm_price: Number(e.target.value) }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.mm_price ? formatCurrency(selectedTender.mm_price) : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Winning Brand</Label>
+                          {editMode ? (
+                            <Input value={formData.winning_brand} onChange={(e) => setFormData(prev => ({ ...prev, winning_brand: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.winning_brand || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Participation by M&M</Label>
+                          {editMode ? (
+                            <Select value={formData.participation_by_mm} onValueChange={(v) => setFormData(prev => ({ ...prev, participation_by_mm: v }))}>
+                              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="yes">Yes</SelectItem>
+                                <SelectItem value="no">No</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <p className="font-medium">{selectedTender.participation_by_mm === 'yes' ? 'Yes' : selectedTender.participation_by_mm === 'no' ? 'No' : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Win By</Label>
+                          {editMode ? (
+                            <Input value={formData.win_by} onChange={(e) => setFormData(prev => ({ ...prev, win_by: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.win_by || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Result Date</Label>
+                          {editMode ? (
+                            <Input type="date" value={formData.result_date} onChange={(e) => setFormData(prev => ({ ...prev, result_date: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{formatDate(selectedTender.result_date)}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Remark</Label>
+                        {editMode ? (
+                          <Textarea value={formData.remark} onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))} rows={2} />
+                        ) : (
+                          <p className="text-sm">{selectedTender.remark || '-'}</p>
+                        )}
+                      </div>
+                    </>
                   )}
                 </TabsContent>
 
