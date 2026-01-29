@@ -347,7 +347,11 @@ async def create_tender(
     db = await get_db(request)
     data = await request.json()
     
+    tender_type = data.get("tender_type", "mlt")
+    
     tender = {
+        # Core fields
+        "tender_type": tender_type,
         "bid_number": data.get("bid_number", ""),
         "dated": data.get("dated", ""),
         "bid_end_date": data.get("bid_end_date", ""),
@@ -382,16 +386,33 @@ async def create_tender(
         # Documents
         "documents": data.get("documents", []),
         
+        # DG-specific fields
+        "address": data.get("address", ""),
+        "state_name": data.get("state_name", ""),
+        "output_capacity_rating": data.get("output_capacity_rating", ""),
+        "control_panel": data.get("control_panel", ""),
+        "installation": data.get("installation", ""),
+        "is_eligible": data.get("is_eligible", True),
+        "eligibility_reason": data.get("eligibility_reason", ""),
+        "l1_price": data.get("l1_price", 0),
+        "mm_price": data.get("mm_price", 0),
+        "winning_brand": data.get("winning_brand", ""),
+        "participation_by_mm": data.get("participation_by_mm", ""),
+        "win_by": data.get("win_by", ""),
+        "remark": data.get("remark", ""),
+        
         # Timeline
         "timeline": [{
             "action": "created",
             "date": datetime.now(timezone.utc).isoformat(),
             "user": current_user.email,
-            "details": "Tender created"
+            "details": f"{'DG' if tender_type == 'dg' else 'MLT'} Tender created"
         }],
         
+        # Metadata
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user.email,
         "created_by": current_user.email
     }
     
@@ -431,15 +452,21 @@ async def update_tender(
     
     # Update fields
     update_data = {
-        "updated_at": datetime.now(timezone.utc).isoformat()
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": current_user.email
     }
     
     allowed_fields = [
+        # Core MLT fields
         "bid_number", "dated", "bid_end_date", "bid_opening_date", "department_name",
         "total_quantity", "estimated_value", "beneficiary", "consignees", "emd_amount",
         "item_specifications", "product_category", "delivery_period", "warranty_period",
         "payment_terms", "status", "our_bid_amount", "assigned_employee", "notes",
-        "winner_name", "winner_amount", "result_date", "loss_reason", "competitors"
+        "winner_name", "winner_amount", "result_date", "loss_reason", "competitors",
+        # DG-specific fields
+        "address", "state_name", "output_capacity_rating", "control_panel", "installation",
+        "is_eligible", "eligibility_reason", "l1_price", "mm_price", "winning_brand",
+        "participation_by_mm", "win_by", "remark"
     ]
     
     for field in allowed_fields:
