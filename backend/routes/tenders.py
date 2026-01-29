@@ -557,6 +557,7 @@ async def extract_pdf_data(
     data = await request.json()
     
     pdf_url = data.get("pdf_url")
+    tender_type = data.get("tender_type", "mlt")
     if not pdf_url:
         raise HTTPException(status_code=400, detail="PDF URL is required")
     
@@ -570,7 +571,27 @@ async def extract_pdf_data(
         )
         chat = GeminiChat(config=config)
         
-        extraction_prompt = """Extract the following fields from this tender/bid document PDF. Return ONLY a JSON object with these exact keys:
+        # Different extraction prompts for MLT vs DG tenders
+        if tender_type == 'dg':
+            extraction_prompt = """Extract the following fields from this DG (Diesel Generator) tender/bid document PDF. Return ONLY a JSON object with these exact keys:
+
+{
+    "bid_number": "the bid/tender number (e.g., GEM/2025/B/1234567)",
+    "dated": "YYYY-MM-DD format",
+    "bid_end_date": "YYYY-MM-DD HH:MM:SS format",
+    "bid_opening_date": "YYYY-MM-DD HH:MM:SS format", 
+    "department_name": "full department/ministry/organization name",
+    "address": "address from Consignees/Reporting Officer section",
+    "state_name": "state name extracted from address or consignee info",
+    "output_capacity_rating": "OUTPUT CAPACITY RATING / PHASE from technical specifications (e.g., '5 KVA / Single Phase' or '125 KVA / Three Phase')",
+    "control_panel": "control panel details from technical specifications",
+    "installation": "yes if 'with installation', 'no' if 'without installation' - look in specifications or title",
+    "total_quantity": number
+}
+
+Look for OUTPUT CAPACITY RATING in the Technical Specifications section. For state_name, extract from the consignee/delivery address. If a field is not found, use empty string for text or 0 for numbers."""
+        else:
+            extraction_prompt = """Extract the following fields from this tender/bid document PDF. Return ONLY a JSON object with these exact keys:
 
 {
     "bid_number": "the bid/tender number",
