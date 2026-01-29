@@ -798,7 +798,7 @@ const Tenders = () => {
                   {tenders.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={tenderType === 'dg' ? 10 : 10} className="text-center py-8 text-muted-foreground">
-                        No tenders found. Click "Add Tender" to create one.
+                        No tenders found. Click &quot;Add Tender&quot; to create one.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1049,7 +1049,7 @@ const Tenders = () => {
                   {competitorMaster.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No competitors added yet. Click "Add Competitor" to create your master list.
+                        No competitors added yet. Click &quot;Add Competitor&quot; to create your master list.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1454,7 +1454,7 @@ const Tenders = () => {
                       </Button>
                     </div>
                     {(formData.consignees || []).length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-2">No consignees added. Click "Add Consignee" to add delivery locations.</p>
+                      <p className="text-sm text-muted-foreground py-2">No consignees added. Click &quot;Add Consignee&quot; to add delivery locations.</p>
                     ) : (
                       <div className="space-y-3">
                         {formData.consignees.map((consignee, idx) => (
@@ -1927,7 +1927,7 @@ const Tenders = () => {
                     <div className="text-center py-8 text-muted-foreground">
                       <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
                       <p>No documents attached</p>
-                      <p className="text-sm">Click "Add Document" to attach tender-related files</p>
+                      <p className="text-sm">Click &quot;Add Document&quot; to attach tender-related files</p>
                     </div>
                   )}
                 </TabsContent>
