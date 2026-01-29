@@ -49,6 +49,7 @@ from routes.admin import router as admin_router
 from routes.forecast import router as forecast_router
 from routes.insights import router as insights_router
 from routes.upload import router as upload_router
+from routes.upload_v2 import router as upload_v2_router
 from routes.qualification import router as qualification_router
 from routes.lead_activity import router as lead_activity_router
 from routes.metric_settings import router as metric_settings_router
