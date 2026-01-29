@@ -1536,6 +1536,15 @@ const Tenders = () => {
                 </TabsList>
 
                 <TabsContent value="details" className="space-y-4 mt-4">
+                  {/* Last Updated Info */}
+                  {selectedTender.updated_at && (
+                    <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded flex items-center gap-2">
+                      <Clock className="h-3 w-3" />
+                      Last updated: {formatDate(selectedTender.updated_at)} {selectedTender.updated_by && `by ${selectedTender.updated_by}`}
+                    </div>
+                  )}
+                  
+                  {/* Common Fields */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-xs text-muted-foreground">Bid Number</Label>
@@ -1562,24 +1571,8 @@ const Tenders = () => {
                       <p className="font-medium">{formatDate(selectedTender.bid_opening_date)}</p>
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">Estimated Value</Label>
-                      <p className="font-medium text-lg">{formatCurrency(selectedTender.estimated_value)}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Our Bid</Label>
-                      {editMode ? (
-                        <Input type="number" value={formData.our_bid_amount} onChange={(e) => setFormData(prev => ({ ...prev, our_bid_amount: Number(e.target.value) }))} />
-                      ) : (
-                        <p className="font-medium text-lg">{selectedTender.our_bid_amount ? formatCurrency(selectedTender.our_bid_amount) : '-'}</p>
-                      )}
-                    </div>
-                    <div>
                       <Label className="text-xs text-muted-foreground">Quantity</Label>
                       <p className="font-medium">{selectedTender.total_quantity}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">EMD Amount</Label>
-                      <p className="font-medium">{formatCurrency(selectedTender.emd_amount)}</p>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Status</Label>
@@ -1594,27 +1587,132 @@ const Tenders = () => {
                         <Badge className={STATUS_COLORS[selectedTender.status]}>{selectedTender.status}</Badge>
                       )}
                     </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Assigned To</Label>
-                      {editMode ? (
-                        <Input value={formData.assigned_employee} onChange={(e) => setFormData(prev => ({ ...prev, assigned_employee: e.target.value }))} />
-                      ) : (
-                        <p className="font-medium">{selectedTender.assigned_employee || '-'}</p>
-                      )}
-                    </div>
                   </div>
+                  
                   <div>
                     <Label className="text-xs text-muted-foreground">Department</Label>
                     <p className="font-medium">{selectedTender.department_name}</p>
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Beneficiary</Label>
-                    <p className="font-medium">{selectedTender.beneficiary || '-'}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Item Specifications</Label>
-                    <p className="text-sm">{selectedTender.item_specifications || '-'}</p>
-                  </div>
+                  
+                  {/* DG-Specific Fields */}
+                  {selectedTender.tender_type === 'dg' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-2">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">State</Label>
+                          {editMode ? (
+                            <Input value={formData.state_name} onChange={(e) => setFormData(prev => ({ ...prev, state_name: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.state_name || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Address</Label>
+                          {editMode ? (
+                            <Input value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.address || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Output Capacity Rating / Phase</Label>
+                          {editMode ? (
+                            <Input value={formData.output_capacity_rating} onChange={(e) => setFormData(prev => ({ ...prev, output_capacity_rating: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.output_capacity_rating || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Control Panel</Label>
+                          {editMode ? (
+                            <Input value={formData.control_panel} onChange={(e) => setFormData(prev => ({ ...prev, control_panel: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.control_panel || '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Installation</Label>
+                          {editMode ? (
+                            <Select value={formData.installation} onValueChange={(v) => setFormData(prev => ({ ...prev, installation: v }))}>
+                              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="yes">Yes (With Installation)</SelectItem>
+                                <SelectItem value="no">No (Without Installation)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <p className="font-medium">{selectedTender.installation === 'yes' ? 'With Installation' : selectedTender.installation === 'no' ? 'Without Installation' : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Eligibility</Label>
+                          {editMode ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <input
+                                type="checkbox"
+                                checked={formData.is_eligible}
+                                onChange={(e) => setFormData(prev => ({ ...prev, is_eligible: e.target.checked }))}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-sm">Eligible</span>
+                            </div>
+                          ) : (
+                            <Badge variant={selectedTender.is_eligible === false ? 'destructive' : 'default'}>
+                              {selectedTender.is_eligible === false ? 'Not Eligible' : 'Eligible'}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {selectedTender.is_eligible === false && selectedTender.eligibility_reason && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Eligibility Reason</Label>
+                          <p className="text-sm text-red-600">{selectedTender.eligibility_reason}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {/* MLT-Specific Fields */}
+                  {selectedTender.tender_type !== 'dg' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Estimated Value</Label>
+                          <p className="font-medium text-lg">{formatCurrency(selectedTender.estimated_value)}</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Our Bid</Label>
+                          {editMode ? (
+                            <Input type="number" value={formData.our_bid_amount} onChange={(e) => setFormData(prev => ({ ...prev, our_bid_amount: Number(e.target.value) }))} />
+                          ) : (
+                            <p className="font-medium text-lg">{selectedTender.our_bid_amount ? formatCurrency(selectedTender.our_bid_amount) : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">EMD Amount</Label>
+                          <p className="font-medium">{formatCurrency(selectedTender.emd_amount)}</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Assigned To</Label>
+                          {editMode ? (
+                            <Input value={formData.assigned_employee} onChange={(e) => setFormData(prev => ({ ...prev, assigned_employee: e.target.value }))} />
+                          ) : (
+                            <p className="font-medium">{selectedTender.assigned_employee || '-'}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Beneficiary</Label>
+                        <p className="font-medium">{selectedTender.beneficiary || '-'}</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Item Specifications</Label>
+                        <p className="text-sm">{selectedTender.item_specifications || '-'}</p>
+                      </div>
+                    </>
+                  )}
+                  
                   <div>
                     <Label className="text-xs text-muted-foreground">Notes</Label>
                     {editMode ? (
@@ -1624,47 +1722,49 @@ const Tenders = () => {
                     )}
                   </div>
                   
-                  {/* Consignees Section in Detail View */}
-                  <div className="border-t pt-4 mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-semibold">Consignees / Delivery Locations</Label>
-                      {editMode && (
-                        <Button variant="outline" size="sm" onClick={addConsignee} type="button">
-                          <Plus className="h-3 w-3 mr-1" /> Add
-                        </Button>
+                  {/* Consignees Section in Detail View - Only for MLT */}
+                  {selectedTender.tender_type !== 'dg' && (
+                    <div className="border-t pt-4 mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-sm font-semibold">Consignees / Delivery Locations</Label>
+                        {editMode && (
+                          <Button variant="outline" size="sm" onClick={addConsignee} type="button">
+                            <Plus className="h-3 w-3 mr-1" /> Add
+                          </Button>
+                        )}
+                      </div>
+                      {(editMode ? formData.consignees : selectedTender.consignees)?.length > 0 ? (
+                        <div className="space-y-2">
+                          {(editMode ? formData.consignees : selectedTender.consignees).map((consignee, idx) => (
+                            <div key={idx} className="p-2 bg-muted/50 rounded text-sm grid grid-cols-12 gap-2 items-center">
+                              {editMode ? (
+                                <>
+                                  <Input className="col-span-4 h-8 text-xs" value={consignee.name} onChange={(e) => updateConsignee(idx, 'name', e.target.value)} placeholder="Name" />
+                                  <Input className="col-span-4 h-8 text-xs" value={consignee.address} onChange={(e) => updateConsignee(idx, 'address', e.target.value)} placeholder="Address" />
+                                  <Input className="col-span-2 h-8 text-xs" type="number" value={consignee.quantity} onChange={(e) => updateConsignee(idx, 'quantity', Number(e.target.value))} />
+                                  <Input className="col-span-1 h-8 text-xs" type="number" value={consignee.delivery_days} onChange={(e) => updateConsignee(idx, 'delivery_days', Number(e.target.value))} />
+                                  <Button variant="ghost" size="sm" onClick={() => removeConsignee(idx)} className="col-span-1 h-8 text-red-600 p-0">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="col-span-5">
+                                    <span className="font-medium">{consignee.name}</span>
+                                    {consignee.address && <span className="text-muted-foreground ml-1">- {consignee.address}</span>}
+                                  </div>
+                                  <div className="col-span-3 text-right">Qty: {consignee.quantity}</div>
+                                  <div className="col-span-4 text-right text-muted-foreground">{consignee.delivery_days} days delivery</div>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-2">No consignees specified</p>
                       )}
                     </div>
-                    {(editMode ? formData.consignees : selectedTender.consignees)?.length > 0 ? (
-                      <div className="space-y-2">
-                        {(editMode ? formData.consignees : selectedTender.consignees).map((consignee, idx) => (
-                          <div key={idx} className="p-2 bg-muted/50 rounded text-sm grid grid-cols-12 gap-2 items-center">
-                            {editMode ? (
-                              <>
-                                <Input className="col-span-4 h-8 text-xs" value={consignee.name} onChange={(e) => updateConsignee(idx, 'name', e.target.value)} placeholder="Name" />
-                                <Input className="col-span-4 h-8 text-xs" value={consignee.address} onChange={(e) => updateConsignee(idx, 'address', e.target.value)} placeholder="Address" />
-                                <Input className="col-span-2 h-8 text-xs" type="number" value={consignee.quantity} onChange={(e) => updateConsignee(idx, 'quantity', Number(e.target.value))} />
-                                <Input className="col-span-1 h-8 text-xs" type="number" value={consignee.delivery_days} onChange={(e) => updateConsignee(idx, 'delivery_days', Number(e.target.value))} />
-                                <Button variant="ghost" size="sm" onClick={() => removeConsignee(idx)} className="col-span-1 h-8 text-red-600 p-0">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                <div className="col-span-5">
-                                  <span className="font-medium">{consignee.name}</span>
-                                  {consignee.address && <span className="text-muted-foreground ml-1">- {consignee.address}</span>}
-                                </div>
-                                <div className="col-span-3 text-right">Qty: {consignee.quantity}</div>
-                                <div className="col-span-4 text-right text-muted-foreground">{consignee.delivery_days} days delivery</div>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">No consignees specified</p>
-                    )}
-                  </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="result" className="space-y-4 mt-4">
