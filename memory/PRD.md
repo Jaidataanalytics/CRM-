@@ -273,12 +273,68 @@ None currently
 - Use `is_duplicate: False` filter where applicable
 
 ## Credentials for Testing
-- Username: `admin`
-- Password: `admin123`
+- Admin: `admin` / `admin123`
+- TenderUser: `tender@example.com` / `password`
 
 ## Known Issues
 - Frontend build folder may disappear - fix: `yarn build && sudo supervisorctl restart frontend`
 
+## Tender System Data Model
+
+### Tender Document Fields:
+```javascript
+{
+  // Core Fields
+  tender_type: "mlt" | "dg",
+  bid_number: "GEM/2025/B/1234567",
+  dated: "2025-01-29",
+  bid_end_date: "2025-02-15 14:00:00",
+  bid_opening_date: "2025-02-15 15:00:00",
+  department_name: "Ministry of Health...",
+  total_quantity: 100,
+  status: "pending" | "participated" | "won" | "lost" | "not_participated" | "cancelled",
+  
+  // MLT-Specific Fields
+  estimated_value: 1500000,
+  our_bid_amount: 1400000,
+  emd_amount: 50000,
+  beneficiary: "...",
+  consignees: [{name, address, quantity, delivery_days}],
+  item_specifications: "...",
+  delivery_period: 60,
+  warranty_period: "2 years",
+  payment_terms: "...",
+  winner_name: "...",
+  winner_amount: 1350000,
+  
+  // DG-Specific Fields
+  address: "...",
+  state_name: "Rajasthan",
+  output_capacity_rating: "5 KVA / Single Phase",
+  control_panel: "...",
+  installation: "yes" | "no",
+  is_eligible: true,
+  eligibility_reason: "...",
+  l1_price: 250000,
+  mm_price: 280000,
+  winning_brand: "Kirloskar",
+  participation_by_mm: "yes" | "no",
+  win_by: "Mahindra",
+  remark: "...",
+  
+  // Metadata
+  created_at: "2025-01-29T10:00:00Z",
+  updated_at: "2025-01-29T12:00:00Z",
+  created_by: "admin@example.com",
+  updated_by: "admin@example.com",
+  
+  // Documents & Timeline
+  documents: [{_id, name, type, url, uploaded_at, uploaded_by}],
+  timeline: [{action, date, user, details}],
+  competitors: [{name, bid_amount, rank}]
+}
+```
+
 ---
-*Last Updated: Jan 21, 2026*
-*Latest Feature: Excel Export to All Pages*
+*Last Updated: Jan 29, 2026*
+*Latest Feature: Dual-Tender System (MLT vs DG)*
