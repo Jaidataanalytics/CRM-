@@ -433,35 +433,6 @@ const Tenders = () => {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      bid_number: '',
-      dated: '',
-      bid_end_date: '',
-      bid_opening_date: '',
-      department_name: '',
-      total_quantity: 0,
-      estimated_value: 0,
-      beneficiary: '',
-      consignees: [],
-      emd_amount: 0,
-      item_specifications: '',
-      product_category: '',
-      delivery_period: 0,
-      warranty_period: '',
-      payment_terms: '',
-      status: 'pending',
-      our_bid_amount: 0,
-      assigned_employee: '',
-      notes: '',
-      winner_name: '',
-      winner_amount: 0,
-      result_date: '',
-      loss_reason: '',
-      competitors: []
-    });
-  };
-
   const formatCurrency = (value) => {
     if (!value) return '₹0';
     return `₹${Number(value).toLocaleString('en-IN')}`;
