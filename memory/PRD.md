@@ -204,9 +204,10 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 None currently
 
 ### P1 - High Priority
-1. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
-2. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
-3. **Financial Year Standardization** - Full audit of all YoY calculations to use Indian FY (Apr 1 - Mar 31)
+1. **Refactor Tenders.js** - File has grown to 1900+ lines, needs component extraction
+2. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
+3. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
+4. **Financial Year Standardization** - Full audit of all YoY calculations to use Indian FY (Apr 1 - Mar 31)
 
 ### P2 - Medium Priority
 1. **Continue Refactor** - Admin.js (3154 lines) and Leads.js (3107 lines) still need more component extraction
