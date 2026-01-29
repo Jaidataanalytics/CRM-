@@ -46,6 +46,20 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 
 ## What's Been Implemented (as of Jan 2026)
 
+### Dual-Tender System (MLT vs DG) - NEW (Jan 29, 2026)
+- [x] **MLT/DG Toggle** - UI toggle to switch between MLT and DG tender types
+- [x] **Two-Step Tender Creation** - Step 1: Upload PDF for extraction, Step 2: Review and confirm data
+- [x] **DG-Specific Fields** - Added 12 new fields for DG tenders:
+  - `address`, `state_name`, `output_capacity_rating`, `control_panel`, `installation`
+  - `is_eligible`, `eligibility_reason`, `l1_price`, `mm_price`, `winning_brand`
+  - `participation_by_mm`, `win_by`, `remark`
+- [x] **Last Updated Tracking** - `updated_at` and `updated_by` stored and displayed
+- [x] **Conditional Table Columns** - Different columns for MLT vs DG:
+  - MLT: Bid Number, Department, End Date, Est. Value, Our Bid, Status, Winner, Last Updated
+  - DG: Bid Number, Department, State, KVA Rating, Qty, Eligible, Status, Winner Brand, Last Updated
+- [x] **Conditional Detail Sheet** - Shows DG-specific fields in Details and Result tabs
+- [x] **TenderUser Role** - Restricted user role with access only to Tenders page
+
 ### Win Count Standardization (NEW - Jan 21, 2026)
 - [x] Standardized all won queries across KPI, Dispatch, Comparison pages
 - [x] All pages now use `["Closed-Won", "Order Booked"]` for won stages
