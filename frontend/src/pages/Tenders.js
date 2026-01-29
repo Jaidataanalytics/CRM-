@@ -84,7 +84,16 @@ const DOCUMENT_TYPES = [
 
 const CHART_COLORS = ['#22c55e', '#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4'];
 
+// Tender types
+const TENDER_TYPES = [
+  { value: 'mlt', label: 'MLT Tenders' },
+  { value: 'dg', label: 'DG Tenders' }
+];
+
 const Tenders = () => {
+  // Tender type toggle
+  const [tenderType, setTenderType] = useState('mlt');
+  
   const [activeTab, setActiveTab] = useState('list');
   const [tenders, setTenders] = useState([]);
   const [stats, setStats] = useState(null);
@@ -102,7 +111,8 @@ const Tenders = () => {
   const [selectedTender, setSelectedTender] = useState(null);
   const [editMode, setEditMode] = useState(false);
   
-  // Upload states
+  // Upload flow states - Step 1: Extract, Step 2: Confirm
+  const [uploadStep, setUploadStep] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
   const [pdfUrl, setPdfUrl] = useState('');
@@ -120,8 +130,9 @@ const Tenders = () => {
   const [showDocumentModal, setShowDocumentModal] = useState(false);
   const [documentForm, setDocumentForm] = useState({ name: '', type: 'other', url: '' });
   
-  // Form state for new/edit tender
+  // Form state for new/edit tender (MLT fields)
   const [formData, setFormData] = useState({
+    tender_type: 'mlt',
     bid_number: '',
     dated: '',
     bid_end_date: '',
