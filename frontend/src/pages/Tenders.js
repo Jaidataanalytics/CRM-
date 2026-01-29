@@ -305,6 +305,7 @@ const Tenders = () => {
   };
 
   // Handle PDF file upload
+  // Handle PDF file upload - extract and move to step 2
   const handleUploadPdf = async () => {
     if (!pdfFile) {
       toast.error('Please select a PDF file');
@@ -315,6 +316,7 @@ const Tenders = () => {
     try {
       const formDataUpload = new FormData();
       formDataUpload.append('file', pdfFile);
+      formDataUpload.append('tender_type', tenderType);
       
       const res = await axios.post(`${API}/tenders/upload-pdf`, formDataUpload, {
         withCredentials: true,
@@ -323,8 +325,9 @@ const Tenders = () => {
       
       if (res.data.success) {
         setExtractedData(res.data.data);
-        setFormData(prev => ({ ...prev, ...res.data.data }));
-        toast.success(`Data extracted from ${res.data.filename}`);
+        setFormData(prev => ({ ...prev, tender_type: tenderType, ...res.data.data }));
+        toast.success(`Data extracted from ${res.data.filename} - Please review and confirm`);
+        setUploadStep(2);  // Move to confirmation step
         setPdfFile(null);
       } else {
         toast.error(res.data.error || 'Failed to extract data');
@@ -337,6 +340,7 @@ const Tenders = () => {
     }
   };
 
+  // Handle PDF URL extraction - extract and move to step 2
   const handleExtractPdf = async () => {
     if (!pdfUrl) {
       toast.error('Please enter a PDF URL');
@@ -346,14 +350,15 @@ const Tenders = () => {
     setUploading(true);
     try {
       const res = await axios.post(`${API}/tenders/extract-pdf`, 
-        { pdf_url: pdfUrl },
+        { pdf_url: pdfUrl, tender_type: tenderType },
         { withCredentials: true }
       );
       
       if (res.data.success) {
         setExtractedData(res.data.data);
-        setFormData(prev => ({ ...prev, ...res.data.data }));
-        toast.success('Data extracted successfully');
+        setFormData(prev => ({ ...prev, tender_type: tenderType, ...res.data.data }));
+        toast.success('Data extracted - Please review and confirm');
+        setUploadStep(2);  // Move to confirmation step
       } else {
         toast.error(res.data.error || 'Failed to extract data');
       }
@@ -367,11 +372,12 @@ const Tenders = () => {
 
   const handleCreateTender = async () => {
     try {
-      const res = await axios.post(`${API}/tenders`, formData, { withCredentials: true });
+      const res = await axios.post(`${API}/tenders`, { ...formData, tender_type: tenderType }, { withCredentials: true });
       toast.success('Tender created successfully');
       setShowUploadModal(false);
       setExtractedData(null);
       setPdfUrl('');
+      setUploadStep(1);
       resetForm();
       loadTenders();
       loadStats();
