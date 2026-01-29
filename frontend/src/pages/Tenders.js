@@ -275,6 +275,15 @@ const Tenders = () => {
     loadStats();
   }, [loadTenders]);
 
+  // Reload when tender type changes
+  useEffect(() => {
+    setPage(1);
+    setSearch('');
+    setStatusFilter('all');
+    loadTenders();
+    loadStats();
+  }, [tenderType]);
+
   useEffect(() => {
     if (activeTab === 'analytics') {
       loadAnalytics();
