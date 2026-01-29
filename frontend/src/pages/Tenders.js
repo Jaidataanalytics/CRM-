@@ -156,14 +156,79 @@ const Tenders = () => {
     winner_amount: 0,
     result_date: '',
     loss_reason: '',
-    competitors: []
+    competitors: [],
+    consignees: [],
+    // DG-specific fields
+    address: '',
+    state_name: '',
+    output_capacity_rating: '',
+    control_panel: '',
+    installation: '',  // 'yes' or 'no'
+    is_eligible: true,
+    eligibility_reason: '',
+    l1_price: 0,
+    mm_price: 0,
+    winning_brand: '',
+    participation_by_mm: '',
+    win_by: '',
+    remark: ''
   });
+
+  // Reset form based on tender type
+  const resetForm = (type = tenderType) => {
+    setFormData({
+      tender_type: type,
+      bid_number: '',
+      dated: '',
+      bid_end_date: '',
+      bid_opening_date: '',
+      department_name: '',
+      total_quantity: 0,
+      estimated_value: 0,
+      beneficiary: '',
+      consignees: [],
+      emd_amount: 0,
+      item_specifications: '',
+      product_category: '',
+      delivery_period: 0,
+      warranty_period: '',
+      payment_terms: '',
+      status: 'pending',
+      our_bid_amount: 0,
+      assigned_employee: '',
+      notes: '',
+      winner_name: '',
+      winner_amount: 0,
+      result_date: '',
+      loss_reason: '',
+      competitors: [],
+      // DG-specific fields
+      address: '',
+      state_name: '',
+      output_capacity_rating: '',
+      control_panel: '',
+      installation: '',
+      is_eligible: true,
+      eligibility_reason: '',
+      l1_price: 0,
+      mm_price: 0,
+      winning_brand: '',
+      participation_by_mm: '',
+      win_by: '',
+      remark: ''
+    });
+    setExtractedData(null);
+    setUploadStep(1);
+    setPdfUrl('');
+    setPdfFile(null);
+  };
 
   const loadTenders = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', 20);
+      params.append('tender_type', tenderType);
       if (search) params.append('search', search);
       if (statusFilter !== 'all') params.append('status', statusFilter);
       
@@ -176,11 +241,11 @@ const Tenders = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search, statusFilter]);
+  }, [page, search, statusFilter, tenderType]);
 
   const loadStats = async () => {
     try {
-      const res = await axios.get(`${API}/tenders/stats`, { withCredentials: true });
+      const res = await axios.get(`${API}/tenders/stats?tender_type=${tenderType}`, { withCredentials: true });
       setStats(res.data);
     } catch (error) {
       console.error('Error loading stats:', error);
