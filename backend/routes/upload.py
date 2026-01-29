@@ -451,8 +451,8 @@ async def upload_leads(
                     lead_data['needs_closure_questions'] = True
                     lead_data['closure_type'] = 'lost'
                 
-                if existing:
-                    # MERGE existing lead with incoming data using duplicate_detector logic
+                if existing and should_merge:
+                    # MERGE existing lead with incoming data (existing lead is OPEN)
                     merge_updates = duplicate_detector.merge_leads(existing, lead_data)
                     merge_updates["updated_at"] = datetime.now(timezone.utc).isoformat()
                     
@@ -501,7 +501,7 @@ async def upload_leads(
                             "field_count": len(merged_fields)
                         })
                 else:
-                    # Create new lead
+                    # Create new lead (either no existing or existing is CLOSED - repeat customer)
                     uploader_name = current_user.name or current_user.email or "Unknown User"
                     
                     # Calculate qualified status for new lead
@@ -516,6 +516,13 @@ async def upload_leads(
                         "created_at": datetime.now(timezone.utc).isoformat(),
                         "updated_at": datetime.now(timezone.utc).isoformat()
                     }
+                    
+                    # If this is a repeat customer, track the relationship
+                    if is_repeat_customer and previous_lead_id:
+                        lead_doc["is_repeat_customer"] = True
+                        lead_doc["previous_lead_id"] = previous_lead_id
+                        lead_doc["repeat_customer_note"] = f"New enquiry from customer with previous closed lead"
+                    
                     await db.leads.insert_one(lead_doc)
                     created_count += 1
                     
