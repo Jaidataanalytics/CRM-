@@ -24,16 +24,16 @@ class TestUploadV2:
     def setup(self):
         """Setup test session with authentication"""
         self.session = requests.Session()
-        self.session.headers.update({"Content-Type": "application/json"})
         
-        # Login to get session
+        # Login to get session - use JSON content type for login
         login_response = self.session.post(
             f"{BASE_URL}/api/auth/login",
-            json={"username": "admin", "password": "admin123"}
+            json={"username": "admin", "password": "admin123"},
+            headers={"Content-Type": "application/json"}
         )
         if login_response.status_code == 200:
             # Session cookie should be set automatically
-            pass
+            print(f"✓ Logged in successfully")
         else:
             pytest.skip(f"Authentication failed: {login_response.status_code}")
     
@@ -43,16 +43,15 @@ class TestUploadV2:
     
     def test_detect_template_lead(self):
         """Test template detection for LEAD upload file"""
-        # Use the sample lead file
         lead_file_path = "/tmp/lead_sample_new.xlsx"
         if not os.path.exists(lead_file_path):
             pytest.skip("Lead sample file not found")
         
         with open(lead_file_path, 'rb') as f:
-            files = {'file': ('lead_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+            # Don't set Content-Type header - let requests handle multipart
             response = self.session.post(
                 f"{BASE_URL}/api/upload/detect-template",
-                files=files
+                files={'file': ('lead_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             )
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -70,10 +69,9 @@ class TestUploadV2:
             pytest.skip("Lost sample file not found")
         
         with open(lost_file_path, 'rb') as f:
-            files = {'file': ('lost_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             response = self.session.post(
                 f"{BASE_URL}/api/upload/detect-template",
-                files=files
+                files={'file': ('lost_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             )
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -89,10 +87,9 @@ class TestUploadV2:
             pytest.skip("SO sample file not found")
         
         with open(so_file_path, 'rb') as f:
-            files = {'file': ('so_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             response = self.session.post(
                 f"{BASE_URL}/api/upload/detect-template",
-                files=files
+                files={'file': ('so_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             )
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -152,10 +149,9 @@ class TestUploadV2:
             pytest.skip("Lead sample file not found")
         
         with open(lead_file_path, 'rb') as f:
-            files = {'file': ('lead_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             response = self.session.post(
                 f"{BASE_URL}/api/upload/process",
-                files=files,
+                files={'file': ('lead_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')},
                 data={'template_type': 'LEAD'}
             )
         
@@ -176,10 +172,9 @@ class TestUploadV2:
             pytest.skip("Lost sample file not found")
         
         with open(lost_file_path, 'rb') as f:
-            files = {'file': ('lost_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             response = self.session.post(
                 f"{BASE_URL}/api/upload/process",
-                files=files,
+                files={'file': ('lost_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')},
                 data={'template_type': 'LOST'}
             )
         
@@ -198,10 +193,9 @@ class TestUploadV2:
             pytest.skip("SO sample file not found")
         
         with open(so_file_path, 'rb') as f:
-            files = {'file': ('so_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             response = self.session.post(
                 f"{BASE_URL}/api/upload/process",
-                files=files,
+                files={'file': ('so_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')},
                 data={'template_type': 'SO'}
             )
         
@@ -220,11 +214,10 @@ class TestUploadV2:
             pytest.skip("Lead sample file not found")
         
         with open(lead_file_path, 'rb') as f:
-            files = {'file': ('lead_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             # Don't provide template_type - should auto-detect
             response = self.session.post(
                 f"{BASE_URL}/api/upload/process",
-                files=files
+                files={'file': ('lead_sample.xlsx', f, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
             )
         
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
@@ -241,15 +234,14 @@ class TestUploadV2:
         """Test uploading invalid file format"""
         # Create a fake text file
         fake_content = b"This is not an Excel file"
-        files = {'file': ('test.txt', io.BytesIO(fake_content), 'text/plain')}
         
         response = self.session.post(
             f"{BASE_URL}/api/upload/detect-template",
-            files=files
+            files={'file': ('test.txt', io.BytesIO(fake_content), 'text/plain')}
         )
         
         # Should return 400 for unsupported format
-        assert response.status_code == 400, f"Expected 400 for invalid format, got {response.status_code}"
+        assert response.status_code == 400, f"Expected 400 for invalid format, got {response.status_code}: {response.text}"
         print(f"✓ Invalid file format correctly rejected")
     
     def test_download_invalid_template_type(self):
