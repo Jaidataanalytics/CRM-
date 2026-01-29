@@ -105,7 +105,7 @@ async def get_tender_stats(
     """Get tender statistics for dashboard"""
     db = await get_db(request)
     
-    base_query = {"deleted_at": {"$exists": False}}
+    base_query = {"deleted_at": {"$exists": False}, "tender_type": tender_type}
     if start_date:
         base_query["dated"] = {"$gte": start_date}
     if end_date:
