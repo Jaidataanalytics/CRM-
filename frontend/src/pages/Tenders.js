@@ -1282,7 +1282,7 @@ const Tenders = () => {
                         <Input value={formData.remark} onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))} />
                       </div>
                     </div>
-                  </div>
+                </div>
                 </div>
               ) : (
                 /* MLT Tender Form - Original fields */
@@ -1290,34 +1290,34 @@ const Tenders = () => {
                   <div>
                     <Label>Bid Number *</Label>
                     <Input
-                value={formData.bid_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, bid_number: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Department Name</Label>
-              <Input
-                value={formData.department_name}
-                onChange={(e) => setFormData(prev => ({ ...prev, department_name: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Dated</Label>
-              <Input
-                type="date"
-                value={formData.dated}
-                onChange={(e) => setFormData(prev => ({ ...prev, dated: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Bid End Date</Label>
-              <Input
-                type="datetime-local"
-                value={formData.bid_end_date?.replace(' ', 'T')}
-                onChange={(e) => setFormData(prev => ({ ...prev, bid_end_date: e.target.value }))}
-              />
-            </div>
-            <div>
+                      value={formData.bid_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bid_number: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Department Name</Label>
+                    <Input
+                      value={formData.department_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, department_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Dated</Label>
+                    <Input
+                      type="date"
+                      value={formData.dated}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dated: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Bid End Date</Label>
+                    <Input
+                      type="datetime-local"
+                      value={formData.bid_end_date?.replace(' ', 'T')}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bid_end_date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
               <Label>Bid Opening Date</Label>
               <Input
                 type="datetime-local"
