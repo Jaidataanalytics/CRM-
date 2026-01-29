@@ -374,7 +374,15 @@ async def upload_leads(
                 # ============================================
                 # PRIMARY: Match by phone number (normalized)
                 # SECONDARY: Match by enquiry_no if phone doesn't match
+                # 
+                # SMART LOGIC:
+                # - If existing lead is CLOSED (Won/Lost) → New lead is REPEAT CUSTOMER (create new)
+                # - If existing lead is OPEN → New lead is DUPLICATE (merge into existing)
+                # - If time gap > 1 year → New lead is RETURNING CUSTOMER (create new)
                 existing = None
+                should_merge = False  # Flag to determine if we should merge or create new
+                is_repeat_customer = False  # Flag for repeat/returning customers
+                previous_lead_id = None  # Reference to previous lead if repeat customer
                 
                 if phone_number:
                     # Normalize phone number for matching
@@ -402,6 +410,19 @@ async def upload_leads(
                         "enquiry_no": str(enquiry_no).strip(),
                         "deleted_at": {"$exists": False}
                     }, {"_id": 0})
+                
+                # SMART DUPLICATE LOGIC: Check if existing lead is CLOSED
+                if existing:
+                    is_dup, reason = duplicate_detector.should_be_duplicate(existing, lead_data)
+                    if is_dup:
+                        # Existing lead is OPEN - this is a true duplicate, merge
+                        should_merge = True
+                    else:
+                        # Existing lead is CLOSED or time gap > 1 year
+                        # This is a REPEAT/RETURNING customer - create NEW lead
+                        is_repeat_customer = True
+                        previous_lead_id = existing.get('lead_id')
+                        logger.info(f"Repeat customer detected: {reason}. Creating new lead instead of merging.")
                 
                 # Check if this is a lost/closure update that needs questions
                 # Won stages: Closed-Won, Order Booked
