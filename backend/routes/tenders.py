@@ -47,6 +47,7 @@ async def list_tenders(
     current_user: User = Depends(get_current_user),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    tender_type: str = Query("mlt"),  # 'mlt' or 'dg'
     status: Optional[str] = None,
     department: Optional[str] = None,
     start_date: Optional[str] = None,
@@ -58,7 +59,7 @@ async def list_tenders(
     """List all tenders with filters"""
     db = await get_db(request)
     
-    query = {"deleted_at": {"$exists": False}}
+    query = {"deleted_at": {"$exists": False}, "tender_type": tender_type}
     
     if status:
         query["status"] = status
@@ -76,7 +77,8 @@ async def list_tenders(
         query["$or"] = [
             {"bid_number": {"$regex": search, "$options": "i"}},
             {"department_name": {"$regex": search, "$options": "i"}},
-            {"beneficiary": {"$regex": search, "$options": "i"}}
+            {"beneficiary": {"$regex": search, "$options": "i"}},
+            {"state_name": {"$regex": search, "$options": "i"}}
         ]
     
     total = await db.tenders.count_documents(query)
@@ -96,6 +98,7 @@ async def list_tenders(
 async def get_tender_stats(
     request: Request,
     current_user: User = Depends(get_current_user),
+    tender_type: str = Query("mlt"),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None
 ):
