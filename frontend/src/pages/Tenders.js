@@ -1318,86 +1318,86 @@ const Tenders = () => {
                     />
                   </div>
                   <div>
-              <Label>Bid Opening Date</Label>
-              <Input
-                type="datetime-local"
-                value={formData.bid_opening_date?.replace(' ', 'T')}
-                onChange={(e) => setFormData(prev => ({ ...prev, bid_opening_date: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label>Estimated Value (₹)</Label>
-              <Input
-                type="number"
-                value={formData.estimated_value}
-                onChange={(e) => setFormData(prev => ({ ...prev, estimated_value: Number(e.target.value) }))}
-              />
-            </div>
-            <div>
-              <Label>Total Quantity</Label>
-              <Input
-                type="number"
-                value={formData.total_quantity}
-                onChange={(e) => setFormData(prev => ({ ...prev, total_quantity: Number(e.target.value) }))}
-              />
-            </div>
-            <div>
-              <Label>EMD Amount (₹)</Label>
-              <Input
-                type="number"
-                value={formData.emd_amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, emd_amount: Number(e.target.value) }))}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>Beneficiary</Label>
-              <Input
-                value={formData.beneficiary}
-                onChange={(e) => setFormData(prev => ({ ...prev, beneficiary: e.target.value }))}
-              />
-            </div>
-            <div className="col-span-2">
-              <Label>Item Specifications</Label>
-              <Textarea
-                value={formData.item_specifications}
-                onChange={(e) => setFormData(prev => ({ ...prev, item_specifications: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label>Delivery Period (Days)</Label>
-              <Input
-                type="number"
-                value={formData.delivery_period}
-                onChange={(e) => setFormData(prev => ({ ...prev, delivery_period: Number(e.target.value) }))}
-              />
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Our Bid Amount (₹)</Label>
-              <Input
-                type="number"
-                value={formData.our_bid_amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, our_bid_amount: Number(e.target.value) }))}
-              />
-            </div>
-            <div>
-              <Label>Assigned Employee</Label>
-              <Input
-                value={formData.assigned_employee}
-                onChange={(e) => setFormData(prev => ({ ...prev, assigned_employee: e.target.value }))}
+                    <Label>Bid Opening Date</Label>
+                    <Input
+                      type="datetime-local"
+                      value={formData.bid_opening_date?.replace(' ', 'T')}
+                      onChange={(e) => setFormData(prev => ({ ...prev, bid_opening_date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Estimated Value (₹)</Label>
+                    <Input
+                      type="number"
+                      value={formData.estimated_value}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estimated_value: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Total Quantity</Label>
+                    <Input
+                      type="number"
+                      value={formData.total_quantity}
+                      onChange={(e) => setFormData(prev => ({ ...prev, total_quantity: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>EMD Amount (₹)</Label>
+                    <Input
+                      type="number"
+                      value={formData.emd_amount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emd_amount: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Beneficiary</Label>
+                    <Input
+                      value={formData.beneficiary}
+                      onChange={(e) => setFormData(prev => ({ ...prev, beneficiary: e.target.value }))}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label>Item Specifications</Label>
+                    <Textarea
+                      value={formData.item_specifications}
+                      onChange={(e) => setFormData(prev => ({ ...prev, item_specifications: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Delivery Period (Days)</Label>
+                    <Input
+                      type="number"
+                      value={formData.delivery_period}
+                      onChange={(e) => setFormData(prev => ({ ...prev, delivery_period: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={formData.status} onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Our Bid Amount (₹)</Label>
+                    <Input
+                      type="number"
+                      value={formData.our_bid_amount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, our_bid_amount: Number(e.target.value) }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Assigned Employee</Label>
+                    <Input
+                      value={formData.assigned_employee}
+                      onChange={(e) => setFormData(prev => ({ ...prev, assigned_employee: e.target.value }))}
               />
             </div>
             <div className="col-span-2">
