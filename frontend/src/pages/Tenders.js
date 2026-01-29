@@ -775,18 +775,30 @@ const Tenders = () => {
                   <TableRow>
                     <TableHead>Bid Number</TableHead>
                     <TableHead>Department</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead className="text-right">Est. Value</TableHead>
-                    <TableHead className="text-right">Our Bid</TableHead>
+                    {tenderType === 'dg' ? (
+                      <>
+                        <TableHead>State</TableHead>
+                        <TableHead>KVA Rating</TableHead>
+                        <TableHead className="text-center">Qty</TableHead>
+                        <TableHead>Eligible</TableHead>
+                      </>
+                    ) : (
+                      <>
+                        <TableHead>End Date</TableHead>
+                        <TableHead className="text-right">Est. Value</TableHead>
+                        <TableHead className="text-right">Our Bid</TableHead>
+                      </>
+                    )}
                     <TableHead>Status</TableHead>
-                    <TableHead>Winner</TableHead>
+                    <TableHead>{tenderType === 'dg' ? 'Winner Brand' : 'Winner'}</TableHead>
+                    <TableHead>Last Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {tenders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={tenderType === 'dg' ? 10 : 10} className="text-center py-8 text-muted-foreground">
                         No tenders found. Click "Add Tender" to create one.
                       </TableCell>
                     </TableRow>
@@ -794,16 +806,41 @@ const Tenders = () => {
                     tenders.map(tender => (
                       <TableRow key={tender._id} className="cursor-pointer hover:bg-muted/50" onClick={() => openTenderDetail(tender)}>
                         <TableCell className="font-medium">{tender.bid_number || '-'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{tender.department_name || '-'}</TableCell>
-                        <TableCell>{formatDate(tender.bid_end_date)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(tender.estimated_value)}</TableCell>
-                        <TableCell className="text-right">{tender.our_bid_amount ? formatCurrency(tender.our_bid_amount) : '-'}</TableCell>
+                        <TableCell className="max-w-[180px] truncate">{tender.department_name || '-'}</TableCell>
+                        {tenderType === 'dg' ? (
+                          <>
+                            <TableCell>{tender.state_name || '-'}</TableCell>
+                            <TableCell>{tender.output_capacity_rating || '-'}</TableCell>
+                            <TableCell className="text-center">{tender.total_quantity || 0}</TableCell>
+                            <TableCell>
+                              {tender.is_eligible === false ? (
+                                <Badge variant="outline" className="text-red-600 border-red-200">No</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-green-600 border-green-200">Yes</Badge>
+                              )}
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell>{formatDate(tender.bid_end_date)}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(tender.estimated_value)}</TableCell>
+                            <TableCell className="text-right">{tender.our_bid_amount ? formatCurrency(tender.our_bid_amount) : '-'}</TableCell>
+                          </>
+                        )}
                         <TableCell>
                           <Badge className={STATUS_COLORS[tender.status] || 'bg-gray-100'}>
                             {tender.status || 'pending'}
                           </Badge>
                         </TableCell>
-                        <TableCell>{tender.winner_name || '-'}</TableCell>
+                        <TableCell>{tenderType === 'dg' ? (tender.winning_brand || '-') : (tender.winner_name || '-')}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {tender.updated_at ? (
+                            <div>
+                              <div>{formatDate(tender.updated_at)}</div>
+                              {tender.updated_by && <div className="text-xs">by {tender.updated_by}</div>}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openTenderDetail(tender); }}>
                             <Eye className="h-4 w-4" />
