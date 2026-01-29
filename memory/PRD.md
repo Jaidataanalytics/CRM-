@@ -219,12 +219,13 @@ None currently
 
 ### P1 - High Priority
 1. **Refactor Tenders.js** - File has grown to 1900+ lines, needs component extraction
-2. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
-3. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
-4. **Financial Year Standardization** - Full audit of all YoY calculations to use Indian FY (Apr 1 - Mar 31)
+2. **Refactor Leads.js** - File is over 3000 lines, needs component extraction
+3. **Funnel Analysis** - Conversion rates: Enquiry → Quotation → Won
+4. **Manual 'Qualified' Toggle** - UI to set lead's `is_qualified` status
+5. **Financial Year Standardization** - Full audit of all YoY calculations to use Indian FY (Apr 1 - Mar 31)
 
 ### P2 - Medium Priority
-1. **Continue Refactor** - Admin.js (3154 lines) and Leads.js (3107 lines) still need more component extraction
+1. **Continue Refactor** - Admin.js (3154 lines) still needs component extraction
 2. **Lead Velocity & ROI Analysis** - How fast leads move through stages
 3. **Dashboard customization** - User-configurable widgets
 
