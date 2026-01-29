@@ -613,7 +613,7 @@ const Tenders = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Tender Type Toggle */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading text-3xl font-bold tracking-tight flex items-center gap-2">
@@ -622,12 +622,39 @@ const Tenders = () => {
           </h1>
           <p className="text-muted-foreground mt-1">Track and manage government tenders</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          {/* Tender Type Toggle */}
+          <div className="flex items-center bg-muted rounded-lg p-1">
+            {TENDER_TYPES.map((type) => (
+              <Button
+                key={type.value}
+                variant={tenderType === type.value ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setTenderType(type.value)}
+                className={tenderType === type.value ? '' : 'text-muted-foreground'}
+              >
+                {type.label}
+              </Button>
+            ))}
+          </div>
           <ExportButton
             data={tenders}
-            filename="tenders"
-            sheetName="Tenders"
-            columns={[
+            filename={`${tenderType}-tenders`}
+            sheetName={tenderType === 'dg' ? 'DG Tenders' : 'MLT Tenders'}
+            columns={tenderType === 'dg' ? [
+              { key: 'bid_number', header: 'Bid Number', width: 20 },
+              { key: 'dated', header: 'Dated', width: 12 },
+              { key: 'bid_end_date', header: 'End Date', width: 12 },
+              { key: 'department_name', header: 'Department', width: 30 },
+              { key: 'state_name', header: 'State', width: 15 },
+              { key: 'output_capacity_rating', header: 'KVA', width: 10 },
+              { key: 'total_quantity', header: 'Qty', width: 8 },
+              { key: 'is_eligible', header: 'Eligible', width: 10 },
+              { key: 'l1_price', header: 'L1 Price', width: 12 },
+              { key: 'mm_price', header: 'MM Price', width: 12 },
+              { key: 'winning_brand', header: 'Winner', width: 15 },
+              { key: 'status', header: 'Status', width: 12 }
+            ] : [
               { key: 'bid_number', header: 'Bid Number', width: 20 },
               { key: 'dated', header: 'Dated', width: 12 },
               { key: 'bid_end_date', header: 'End Date', width: 12 },
@@ -641,9 +668,9 @@ const Tenders = () => {
           >
             Export
           </ExportButton>
-          <Button onClick={() => { resetForm(); setShowUploadModal(true); }}>
+          <Button onClick={() => { resetForm(tenderType); setShowUploadModal(true); }}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Tender
+            Add {tenderType === 'dg' ? 'DG' : 'MLT'} Tender
           </Button>
         </div>
       </div>
@@ -655,7 +682,7 @@ const Tenders = () => {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-muted-foreground">Total Tenders</p>
+                  <p className="text-xs text-muted-foreground">Total {tenderType.toUpperCase()} Tenders</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
                 <FileText className="h-8 w-8 text-blue-500 opacity-50" />
