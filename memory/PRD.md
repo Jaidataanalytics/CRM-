@@ -46,6 +46,20 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 
 ## What's Been Implemented (as of Jan 2026)
 
+### Unified File Upload System - NEW (Jan 29, 2026)
+- [x] **Single Upload Button** - Replaced 4 separate upload buttons with one "Upload File" button
+- [x] **Auto-Template Detection** - Automatically detects template type (LEAD, LOST, SO, REMARK) based on column names
+- [x] **Download Template Modal** - Single button opens modal with 4 template options, each with sample data
+- [x] **New Backend Logic** (`/app/backend/routes/upload_v2.py`):
+  - **Lead Upload**: Match by enquiry_no → Update fields. If no match, check phone+KVA: CLOSED = new lead, OPEN + same KVA = merge, different KVA = new lead
+  - **Lost Upload**: Match by enquiry_no → Check status. OPEN = close as lost, WON = skip, already LOST = keep. Phone match: OPEN + same KVA = merge & close, different KVA = new lost lead
+  - **SO Upload**: Match by enquiry_no → OPEN = close as won, WON no SO = add SO info, different SO = new lead. Phone match: same KVA = close as won, different = new lead
+  - **Remark Upload**: Match by enquiry_no only → Update follow-up info, add to followup_history
+- [x] **Column Mappings**: Win Reason → competitor, Win Remarks → lost_reason, Lost Remarks → lost_remarks
+- [x] **Duplicate Handling**: Skip duplicate rows in same file, keep one with more data/recent date
+- [x] **KVA Comparison**: Exact match only, blank = different (don't merge)
+- [x] **File Overwrites**: Incoming values overwrite existing (if not empty), empty values don't overwrite
+
 ### Dual-Tender System (MLT vs DG) - NEW (Jan 29, 2026)
 - [x] **MLT/DG Toggle** - UI toggle to switch between MLT and DG tender types
 - [x] **Two-Step Tender Creation** - Step 1: Upload PDF for extraction, Step 2: Review and confirm data
