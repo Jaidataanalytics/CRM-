@@ -157,7 +157,6 @@ const Tenders = () => {
     result_date: '',
     loss_reason: '',
     competitors: [],
-    consignees: [],
     // DG-specific fields
     address: '',
     state_name: '',
