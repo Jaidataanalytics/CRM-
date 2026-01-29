@@ -1113,61 +1113,212 @@ const Tenders = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Upload/Create Modal */}
-      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+      {/* Upload/Create Modal - Two Step Flow */}
+      <Dialog open={showUploadModal} onOpenChange={(open) => { setShowUploadModal(open); if (!open) { setUploadStep(1); setExtractedData(null); } }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Tender</DialogTitle>
-            <DialogDescription>Upload a tender PDF to auto-extract data or enter manually</DialogDescription>
+            <DialogTitle>Add New {tenderType === 'dg' ? 'DG' : 'MLT'} Tender</DialogTitle>
+            <DialogDescription>
+              {uploadStep === 1 
+                ? 'Step 1: Upload a tender PDF to auto-extract data' 
+                : 'Step 2: Review and confirm extracted data'}
+            </DialogDescription>
           </DialogHeader>
 
-          {/* PDF Upload Section */}
-          <div className="space-y-4 border-b pb-4">
-            <Label className="font-semibold">Extract from PDF (Optional)</Label>
-            <div className="grid grid-cols-2 gap-4">
-              {/* File Upload */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Upload PDF File</Label>
-                <div className="flex gap-2">
-                  <Input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => setPdfFile(e.target.files[0])}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleUploadPdf} disabled={uploading || !pdfFile} size="sm">
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  </Button>
+          {/* Step 1: PDF Upload Only */}
+          {uploadStep === 1 && (
+            <div className="space-y-6 py-4">
+              <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="font-medium mb-2">Upload Tender PDF</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload a PDF or provide a URL to auto-extract tender information
+                </p>
+                
+                <div className="flex flex-col gap-4 max-w-md mx-auto">
+                  <div className="flex gap-2">
+                    <Input
+                      type="file"
+                      accept=".pdf"
+                      onChange={(e) => setPdfFile(e.target.files[0])}
+                      className="flex-1"
+                    />
+                    <Button onClick={handleUploadPdf} disabled={uploading || !pdfFile}>
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                      Extract
+                    </Button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span className="text-xs text-muted-foreground">OR</span>
+                    <div className="flex-1 h-px bg-border"></div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Enter PDF URL..."
+                      value={pdfUrl}
+                      onChange={(e) => setPdfUrl(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Button onClick={handleExtractPdf} disabled={uploading || !pdfUrl}>
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="h-4 w-4 mr-2" />}
+                      Extract
+                    </Button>
+                  </div>
                 </div>
               </div>
-              {/* URL Input */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Or Enter PDF URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="https://..."
-                    value={pdfUrl}
-                    onChange={(e) => setPdfUrl(e.target.value)}
-                    className="flex-1"
-                  />
-                  <Button onClick={handleExtractPdf} disabled={uploading || !pdfUrl} size="sm">
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-                  </Button>
-                </div>
+              
+              <div className="text-center">
+                <Button variant="link" onClick={() => setUploadStep(2)}>
+                  Skip - Enter data manually →
+                </Button>
               </div>
             </div>
-            {extractedData && (
-              <p className="text-sm text-green-600 flex items-center gap-1">
-                <CheckCircle className="h-4 w-4" /> Data extracted successfully - review below
-              </p>
-            )}
-          </div>
+          )}
 
-          {/* Form Fields */}
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <Label>Bid Number *</Label>
-              <Input
+          {/* Step 2: Review/Edit Form */}
+          {uploadStep === 2 && (
+            <>
+              {extractedData && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4 flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="text-sm text-green-800">Data extracted successfully. Please review and edit if needed.</span>
+                </div>
+              )}
+
+              {/* DG Tender Form */}
+              {tenderType === 'dg' ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Bid Number *</Label>
+                    <Input value={formData.bid_number} onChange={(e) => setFormData(prev => ({ ...prev, bid_number: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Department Name</Label>
+                    <Input value={formData.department_name} onChange={(e) => setFormData(prev => ({ ...prev, department_name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Dated</Label>
+                    <Input type="date" value={formData.dated} onChange={(e) => setFormData(prev => ({ ...prev, dated: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Bid End Date/Time</Label>
+                    <Input type="datetime-local" value={formData.bid_end_date?.replace(' ', 'T')} onChange={(e) => setFormData(prev => ({ ...prev, bid_end_date: e.target.value.replace('T', ' ') }))} />
+                  </div>
+                  <div>
+                    <Label>Bid Opening Date/Time</Label>
+                    <Input type="datetime-local" value={formData.bid_opening_date?.replace(' ', 'T')} onChange={(e) => setFormData(prev => ({ ...prev, bid_opening_date: e.target.value.replace('T', ' ') }))} />
+                  </div>
+                  <div>
+                    <Label>Address</Label>
+                    <Input value={formData.address} onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>State Name</Label>
+                    <Input value={formData.state_name} onChange={(e) => setFormData(prev => ({ ...prev, state_name: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Output Capacity Rating / Phase</Label>
+                    <Input value={formData.output_capacity_rating} onChange={(e) => setFormData(prev => ({ ...prev, output_capacity_rating: e.target.value }))} placeholder="e.g., 5 KVA / Single Phase" />
+                  </div>
+                  <div>
+                    <Label>Control Panel</Label>
+                    <Input value={formData.control_panel} onChange={(e) => setFormData(prev => ({ ...prev, control_panel: e.target.value }))} />
+                  </div>
+                  <div>
+                    <Label>Installation</Label>
+                    <Select value={formData.installation} onValueChange={(v) => setFormData(prev => ({ ...prev, installation: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes (With Installation)</SelectItem>
+                        <SelectItem value="no">No (Without Installation)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Total Quantity</Label>
+                    <Input type="number" value={formData.total_quantity} onChange={(e) => setFormData(prev => ({ ...prev, total_quantity: Number(e.target.value) }))} />
+                  </div>
+                  <div>
+                    <Label>Status</Label>
+                    <Select value={formData.status} onValueChange={(v) => setFormData(prev => ({ ...prev, status: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {TENDER_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Eligibility Section */}
+                  <div className="col-span-2 border-t pt-4 mt-2">
+                    <div className="flex items-center gap-4 mb-2">
+                      <Label className="font-semibold">Eligibility</Label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id="is_eligible"
+                          checked={formData.is_eligible}
+                          onChange={(e) => setFormData(prev => ({ ...prev, is_eligible: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                        <label htmlFor="is_eligible" className="text-sm">We are eligible for this tender</label>
+                      </div>
+                    </div>
+                    {!formData.is_eligible && (
+                      <div>
+                        <Label>Reason for Ineligibility</Label>
+                        <Input value={formData.eligibility_reason} onChange={(e) => setFormData(prev => ({ ...prev, eligibility_reason: e.target.value }))} placeholder="Why are we not eligible?" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* DG Manual Fields */}
+                  <div className="col-span-2 border-t pt-4 mt-2">
+                    <Label className="font-semibold mb-2 block">Result Information (Fill after tender closes)</Label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label>L1 Price (₹)</Label>
+                        <Input type="number" value={formData.l1_price} onChange={(e) => setFormData(prev => ({ ...prev, l1_price: Number(e.target.value) }))} />
+                      </div>
+                      <div>
+                        <Label>MM Price (₹)</Label>
+                        <Input type="number" value={formData.mm_price} onChange={(e) => setFormData(prev => ({ ...prev, mm_price: Number(e.target.value) }))} />
+                      </div>
+                      <div>
+                        <Label>Winning Brand</Label>
+                        <Input value={formData.winning_brand} onChange={(e) => setFormData(prev => ({ ...prev, winning_brand: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Participation by M&M</Label>
+                        <Select value={formData.participation_by_mm} onValueChange={(v) => setFormData(prev => ({ ...prev, participation_by_mm: v }))}>
+                          <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="no">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Win By</Label>
+                        <Input value={formData.win_by} onChange={(e) => setFormData(prev => ({ ...prev, win_by: e.target.value }))} />
+                      </div>
+                      <div>
+                        <Label>Remark</Label>
+                        <Input value={formData.remark} onChange={(e) => setFormData(prev => ({ ...prev, remark: e.target.value }))} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* MLT Tender Form - Original fields */
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Bid Number *</Label>
+                    <Input
                 value={formData.bid_number}
                 onChange={(e) => setFormData(prev => ({ ...prev, bid_number: e.target.value }))}
               />
