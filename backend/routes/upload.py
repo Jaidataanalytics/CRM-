@@ -799,6 +799,9 @@ async def upload_lost_leads(
                 # Skip if phone_number OR enquiry_no already exists
                 # This is different from regular upload which uses AND logic
                 existing = None
+                should_merge = False  # Flag to determine if we should merge or create new
+                is_repeat_customer = False  # Flag for repeat/returning customers
+                previous_lead_id = None  # Reference to previous lead if repeat customer
                 
                 if normalized_phone and len(normalized_phone) >= 10:
                     # Build a comprehensive query to find matches
@@ -836,6 +839,19 @@ async def upload_lost_leads(
                         if existing:
                             logger.debug(f"Found duplicate by enquiry_no: {enquiry_str}")
                 
+                # SMART DUPLICATE LOGIC: Check if existing lead is CLOSED
+                if existing:
+                    is_dup, reason = duplicate_detector.should_be_duplicate(existing, lead_data)
+                    if is_dup:
+                        # Existing lead is OPEN - this is a true duplicate, merge/update to lost
+                        should_merge = True
+                    else:
+                        # Existing lead is CLOSED or time gap > 1 year
+                        # This is a REPEAT/RETURNING customer - create NEW lost lead
+                        is_repeat_customer = True
+                        previous_lead_id = existing.get('lead_id')
+                        logger.info(f"Lost leads upload - Repeat customer detected: {reason}. Creating new lost lead instead of merging.")
+                
                 # Set lost_date to today if not provided
                 if not lead_data.get('lost_date'):
                     lead_data['lost_date'] = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -844,7 +860,7 @@ async def upload_lost_leads(
                 won_stages = ['closed-won', 'order booked']
                 lost_stages = ['closed-lost', 'lost']
                 
-                if existing:
+                if existing and should_merge:
                     existing_stage = existing.get('enquiry_stage', '').lower()
                     lead_name = lead_data.get('name') or existing.get('name') or existing.get('corporate_name') or 'Unknown'
                     lead_phone = normalized_phone or phone_number
