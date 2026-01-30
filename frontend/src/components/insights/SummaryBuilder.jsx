@@ -24,7 +24,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Download, TrendingUp, TrendingDown, Minus, LayoutGrid } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const SummaryBuilder = ({ buildQueryParams }) => {
   const [summaryData, setSummaryData] = useState(null);

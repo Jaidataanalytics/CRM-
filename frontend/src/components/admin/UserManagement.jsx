@@ -31,7 +31,7 @@ import {
 import { toast } from 'sonner';
 import { Users, UserCheck, UserX, Plus, Trash2, Key } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);

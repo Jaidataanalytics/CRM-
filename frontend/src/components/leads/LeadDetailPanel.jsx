@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { X, User, Phone, Mail, MapPin, Calendar, Building, Package, MessageSquare, Clock, CheckCircle, XCircle } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const STAGE_COLORS = {
   'New': 'bg-blue-100 text-blue-800',

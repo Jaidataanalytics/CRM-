@@ -22,7 +22,7 @@ import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink, MapPin, 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 export const Header = () => {
   const navigate = useNavigate();
