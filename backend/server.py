@@ -19,14 +19,18 @@ logger = logging.getLogger(__name__)
 mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 db_name = os.environ.get('DB_NAME', 'lead_management')
 
+logger.info(f"Connecting to MongoDB at: {mongo_url[:30]}... DB: {db_name}")
+
 # Create client with connection timeout settings
 client = AsyncIOMotorClient(
     mongo_url,
-    serverSelectionTimeoutMS=10000,  # 10 second timeout
-    connectTimeoutMS=10000,
-    socketTimeoutMS=20000,
+    serverSelectionTimeoutMS=30000,  # 30 second timeout for production
+    connectTimeoutMS=30000,
+    socketTimeoutMS=60000,
     retryWrites=True,
-    retryReads=True
+    retryReads=True,
+    maxPoolSize=10,
+    minPoolSize=1
 )
 db = client[db_name]
 
