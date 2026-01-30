@@ -118,7 +118,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=cors_origins,
-    allow_origin_regex=r"https://.*\.emergentagent\.com",  # Allow all Emergent subdomains
+    allow_origin_regex=r"https://.*\.(emergentagent\.com|emergent\.host)",  # Allow all Emergent subdomains (both preview and deployed)
     allow_methods=["*"],
     allow_headers=["*"],
 )
