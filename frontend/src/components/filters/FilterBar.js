@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 export const FilterBar = () => {
   const { filters, updateFilter, resetFilters, getActiveFilters } = useFilters();

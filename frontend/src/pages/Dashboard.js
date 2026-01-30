@@ -57,7 +57,7 @@ import {
 } from 'lucide-react';
 import { ExportButton } from '@/components/ui/export-button';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const KPICard = ({ title, value, qty, icon: Icon, color, onClick, onDoubleClick, active, trend, unit, subValue, subLabel, onSubClick }) => {
   const formatValue = (val) => {

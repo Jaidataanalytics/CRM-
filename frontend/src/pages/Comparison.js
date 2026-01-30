@@ -51,7 +51,7 @@ import {
 } from 'recharts';
 import { ExportButton } from '@/components/ui/export-button';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const Comparison = () => {
   const { buildQueryParams } = useFilters();

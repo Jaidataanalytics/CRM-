@@ -11,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const activityIcons = {
   created: Plus,

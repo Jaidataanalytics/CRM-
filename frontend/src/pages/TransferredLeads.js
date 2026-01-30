@@ -33,7 +33,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ExportButton } from '@/components/ui/export-button';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const TransferredLeads = () => {
   const { dateRange } = useFilters();
