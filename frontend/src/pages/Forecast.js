@@ -1669,11 +1669,11 @@ const Forecast = () => {
                       Saved Projections
                     </CardTitle>
                     <CardDescription>
-                      {savedForecasts.total} projection{savedForecasts.total !== 1 ? 's' : ''} saved
+                      {savedForecasts.total || savedForecasts.projections?.length || 0} projection{(savedForecasts.total || savedForecasts.projections?.length || 0) !== 1 ? 's' : ''} saved
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {savedForecasts.forecasts?.length === 0 ? (
+                    {(savedForecasts.forecasts?.length === 0 && savedForecasts.projections?.length === 0) ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Archive className="h-12 w-12 mx-auto mb-4 opacity-50" />
                         <p>No saved projections yet</p>
@@ -1681,9 +1681,10 @@ const Forecast = () => {
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        {savedForecasts.forecasts?.map((saved, idx) => (
+                        {/* Support both old format (forecasts) and new format (projections) */}
+                        {(savedForecasts.projections || savedForecasts.forecasts)?.map((saved, idx) => (
                           <Collapsible
-                            key={idx}
+                            key={saved.projection_id || idx}
                             open={expandedSaved === idx}
                             onOpenChange={() => setExpandedSaved(expandedSaved === idx ? null : idx)}
                           >
@@ -1692,90 +1693,218 @@ const Forecast = () => {
                                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 cursor-pointer hover:from-gray-100 hover:to-slate-100">
                                   <div className="flex items-center gap-4">
                                     <div>
-                                      <p className="font-medium">Projection #{saved.index}</p>
+                                      <p className="font-medium">
+                                        {saved.projection_id ? `Projection ${saved.projection_id.slice(-6)}` : `Projection #${saved.index}`}
+                                      </p>
                                       <p className="text-xs text-muted-foreground">
-                                        Saved {new Date(saved.saved_at).toLocaleString()} by {saved.saved_by}
+                                        Saved {new Date(saved.saved_at).toLocaleString()} by {saved.saved_by?.name || saved.saved_by || 'Unknown'}
                                       </p>
                                     </div>
-                                    <Badge variant="secondary">{saved.horizon_months} months</Badge>
-                                    {saved.business_adjustments?.applied && (
-                                      <Badge className="bg-green-600">{saved.business_adjustments.total_adjustment}</Badge>
+                                    <Badge variant="secondary">
+                                      {saved.forecast_data?.horizon_months || saved.horizon_months || 3} months
+                                    </Badge>
+                                    {saved.version && saved.version > 1 && (
+                                      <Badge variant="outline">v{saved.version}</Badge>
+                                    )}
+                                    {saved.dealer_kva_forecast && (
+                                      <Badge className="bg-indigo-600">+ KVA</Badge>
+                                    )}
+                                    {saved.dealer_district_forecast && (
+                                      <Badge className="bg-green-600">+ District</Badge>
+                                    )}
+                                    {saved.scenarios && (
+                                      <Badge className="bg-purple-600">+ Scenarios</Badge>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-4">
-                                    <div className="text-right">
-                                      <p className="font-bold text-primary">
-                                        {saved.predictions?.[0]?.predicted_enquiries?.toLocaleString() || 0}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground">First month leads</p>
-                                    </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm('Are you sure you want to delete this projection?')) {
-                                          deleteSavedForecast(saved.index);
-                                        }
-                                      }}
-                                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                      data-testid={`delete-projection-${saved.index}`}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
                                     {expandedSaved === idx ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                                   </div>
                                 </div>
                               </CollapsibleTrigger>
                               
                               <CollapsibleContent>
-                                <div className="p-4 border-t bg-white space-y-4">
+                                <div className="p-4 border-t bg-white space-y-6">
                                   {/* Summary */}
-                                  <div className="p-3 bg-muted/50 rounded-lg">
-                                    <p className="text-sm">{saved.summary}</p>
-                                  </div>
-                                  
-                                  {/* Business Adjustments */}
-                                  {saved.business_adjustments?.applied && (
-                                    <div className="flex flex-wrap gap-2">
-                                      <span className="text-sm text-muted-foreground">Adjustments:</span>
-                                      {saved.business_adjustments.details?.map((detail, didx) => (
-                                        <Badge key={didx} variant="outline">{detail}</Badge>
-                                      ))}
+                                  {(saved.forecast_data?.forecast?.summary || saved.summary) && (
+                                    <div className="p-3 bg-muted/50 rounded-lg">
+                                      <p className="text-sm">{saved.forecast_data?.forecast?.summary || saved.summary}</p>
                                     </div>
                                   )}
                                   
                                   {/* Monthly Predictions Table */}
-                                  <div className="border rounded-lg overflow-hidden">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>Month</TableHead>
-                                          <TableHead className="text-right">Predicted Leads</TableHead>
-                                          <TableHead className="text-right">Predicted Closures</TableHead>
-                                          <TableHead className="text-right">Total KVA</TableHead>
-                                          <TableHead className="text-right">Conv. Rate</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {saved.predictions?.map((pred, pidx) => (
-                                          <TableRow key={pidx}>
-                                            <TableCell className="font-medium">{pred.month}</TableCell>
-                                            <TableCell className="text-right">{pred.predicted_enquiries?.toLocaleString()}</TableCell>
-                                            <TableCell className="text-right text-green-600 font-medium">{pred.predicted_closures?.toLocaleString()}</TableCell>
-                                            <TableCell className="text-right">{pred.predicted_total_kva?.toLocaleString()}</TableCell>
-                                            <TableCell className="text-right">{pred.overall_conversion_rate}%</TableCell>
-                                          </TableRow>
+                                  {(saved.forecast_data?.forecast?.predictions || saved.predictions) && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <Calendar className="h-4 w-4" />
+                                        Monthly Forecast
+                                      </h4>
+                                      <div className="border rounded-lg overflow-hidden">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead>Month</TableHead>
+                                              <TableHead className="text-right">Predicted Leads</TableHead>
+                                              <TableHead className="text-right">Predicted Closures</TableHead>
+                                              <TableHead className="text-right">Total KVA</TableHead>
+                                              <TableHead className="text-right">Conv. Rate</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {(saved.forecast_data?.forecast?.predictions || saved.predictions)?.map((pred, pidx) => (
+                                              <TableRow key={pidx}>
+                                                <TableCell className="font-medium">{pred.month || pred.forecast_month}</TableCell>
+                                                <TableCell className="text-right">{(pred.predicted_enquiries || pred.enquiries)?.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right text-green-600 font-medium">{(pred.predicted_closures || pred.closures)?.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right">{(pred.predicted_total_kva || pred.total_kva)?.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right">{pred.overall_conversion_rate || pred.conversion_rate}%</TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Scenario Summary */}
+                                  {saved.scenarios?.scenario_totals && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <Zap className="h-4 w-4" />
+                                        Forecast Scenarios
+                                      </h4>
+                                      <div className="grid grid-cols-3 gap-4">
+                                        <div className="p-3 bg-red-50 rounded-lg text-center">
+                                          <p className="text-xs text-red-600 font-medium">Pessimistic</p>
+                                          <p className="text-lg font-bold text-red-700">{saved.scenarios.scenario_totals.pessimistic?.total_leads}</p>
+                                          <p className="text-xs text-red-500">{saved.scenarios.scenario_totals.pessimistic?.total_won} won</p>
+                                        </div>
+                                        <div className="p-3 bg-indigo-50 rounded-lg text-center">
+                                          <p className="text-xs text-indigo-600 font-medium">Realistic</p>
+                                          <p className="text-lg font-bold text-indigo-700">{saved.scenarios.scenario_totals.realistic?.total_leads}</p>
+                                          <p className="text-xs text-indigo-500">{saved.scenarios.scenario_totals.realistic?.total_won} won</p>
+                                        </div>
+                                        <div className="p-3 bg-green-50 rounded-lg text-center">
+                                          <p className="text-xs text-green-600 font-medium">Optimistic</p>
+                                          <p className="text-lg font-bold text-green-700">{saved.scenarios.scenario_totals.optimistic?.total_leads}</p>
+                                          <p className="text-xs text-green-500">{saved.scenarios.scenario_totals.optimistic?.total_won} won</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Dealer-KVA Summary */}
+                                  {saved.dealer_kva_forecast?.dealer_forecasts && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <Layers className="h-4 w-4" />
+                                        Dealer-KVA Forecast ({saved.dealer_kva_forecast.grand_total_units} total units)
+                                      </h4>
+                                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead>Dealer</TableHead>
+                                              <TableHead className="text-right">Total Units</TableHead>
+                                              <TableHead className="text-right">KVA Breakdown</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {saved.dealer_kva_forecast.dealer_forecasts.slice(0, 10).map((d, didx) => (
+                                              <TableRow key={didx}>
+                                                <TableCell className="font-medium">{d.dealer}</TableCell>
+                                                <TableCell className="text-right">{d.total_units}</TableCell>
+                                                <TableCell className="text-right text-xs text-gray-500">
+                                                  {d.kva_breakdown?.slice(0, 3).map(k => `${k.kva}KVA:${k.predicted_units}`).join(', ')}
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Dealer-District Summary */}
+                                  {saved.dealer_district_forecast?.dealer_forecasts && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <MapPin className="h-4 w-4" />
+                                        Dealer-District Forecast ({saved.dealer_district_forecast.grand_total_units} total units)
+                                      </h4>
+                                      <div className="max-h-48 overflow-y-auto border rounded-lg">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead>Dealer</TableHead>
+                                              <TableHead className="text-right">Districts</TableHead>
+                                              <TableHead className="text-right">Total Units</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {saved.dealer_district_forecast.dealer_forecasts.slice(0, 10).map((d, didx) => (
+                                              <TableRow key={didx}>
+                                                <TableCell className="font-medium">{d.dealer}</TableCell>
+                                                <TableCell className="text-right">{d.districts_count || d.district_breakdown?.length}</TableCell>
+                                                <TableCell className="text-right">{d.total_units}</TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Seasonality Insights */}
+                                  {saved.seasonality && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <Calendar className="h-4 w-4" />
+                                        Seasonality Insights
+                                      </h4>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        {saved.seasonality.best_month && (
+                                          <div className="p-3 bg-green-50 rounded-lg">
+                                            <p className="text-xs text-green-600">Best Month</p>
+                                            <p className="font-bold text-green-700">{saved.seasonality.best_month.month_name}</p>
+                                            <p className="text-xs">Index: {saved.seasonality.best_month.seasonality_index}</p>
+                                          </div>
+                                        )}
+                                        {saved.seasonality.worst_month && (
+                                          <div className="p-3 bg-red-50 rounded-lg">
+                                            <p className="text-xs text-red-600">Weakest Month</p>
+                                            <p className="font-bold text-red-700">{saved.seasonality.worst_month.month_name}</p>
+                                            <p className="text-xs">Index: {saved.seasonality.worst_month.seasonality_index}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Audit Trail */}
+                                  {saved.audit_trail && saved.audit_trail.length > 0 && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Audit Trail
+                                      </h4>
+                                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                                        {saved.audit_trail.map((entry, aidx) => (
+                                          <div key={aidx} className="text-xs p-2 bg-gray-50 rounded flex justify-between">
+                                            <span className="font-medium">{entry.action}</span>
+                                            <span className="text-gray-500">
+                                              {entry.user} • {new Date(entry.timestamp).toLocaleString()}
+                                            </span>
+                                          </div>
                                         ))}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
+                                      </div>
+                                    </div>
+                                  )}
                                   
                                   {/* Metadata */}
                                   <div className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2 border-t">
-                                    <span>Model: {saved.model_info?.type}</span>
-                                    <span>Training: {saved.model_info?.training_months} months</span>
-                                    <span>Generated: {new Date(saved.generated_at).toLocaleString()}</span>
+                                    {saved.model_info?.type && <span>Model: {saved.model_info?.type}</span>}
+                                    {saved.model_info?.training_months && <span>Training: {saved.model_info?.training_months} months</span>}
+                                    {saved.version && <span>Version: {saved.version}</span>}
                                   </div>
                                 </div>
                               </CollapsibleContent>
