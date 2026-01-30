@@ -533,21 +533,34 @@ async def process_upload(
     """
     try:
         db = await get_db(request)
+        logger.info(f"Starting upload processing for file: {file.filename}")
+        
         content = await file.read()
+        file_size = len(content)
+        logger.info(f"File size: {file_size} bytes")
+        
+        # Check file size limit (10MB)
+        if file_size > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
         
         # Read Excel file
         if file.filename.endswith('.xlsx') or file.filename.endswith('.xls'):
+            logger.info("Reading Excel file...")
             df = pd.read_excel(io.BytesIO(content))
         elif file.filename.endswith('.csv'):
+            logger.info("Reading CSV file...")
             df = pd.read_csv(io.BytesIO(content))
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format. Use .xlsx, .xls, or .csv")
+        
+        logger.info(f"File loaded with {len(df)} rows and {len(df.columns)} columns")
         
         # Auto-detect template if not provided
         if not template_type:
             template_type = detect_template_type(df.columns.tolist())
         
         template_type = template_type.upper()
+        logger.info(f"Processing as template type: {template_type}")
         
         # Route to appropriate processor
         if template_type == 'LEAD':
@@ -564,7 +577,9 @@ async def process_upload(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Upload processing error: {e}")
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Upload processing error: {e}\n{error_trace}")
         raise HTTPException(status_code=500, detail=f"Failed to process upload: {str(e)}")
 
 
