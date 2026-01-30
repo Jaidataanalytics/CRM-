@@ -40,7 +40,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 // Import refactored components
 import { UserManagement, ActivityLogs } from '@/components/admin';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const Admin = () => {
   const [stats, setStats] = useState(null);

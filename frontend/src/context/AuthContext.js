@@ -3,7 +3,8 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+// Use relative URL so it works in both preview and deployed environments
+const API = '/api';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

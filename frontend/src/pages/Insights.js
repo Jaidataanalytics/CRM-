@@ -57,7 +57,7 @@ ChartJS.register(
   Legend
 );
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const Insights = () => {
   const { buildQueryParams } = useFilters();

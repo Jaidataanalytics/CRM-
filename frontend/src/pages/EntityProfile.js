@@ -52,7 +52,7 @@ import { format } from 'date-fns';
 import { ExportButton } from '@/components/ui/export-button';
 import { exportChartAsImage } from '@/utils/exportUtils';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const COLORS = ['#22c55e', '#ef4444', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
