@@ -476,11 +476,18 @@ const Forecast = () => {
   const loadSavedForecasts = async () => {
     setLoadingSaved(true);
     try {
-      const res = await axios.get(`${API}/forecast/saved`, { withCredentials: true });
+      // Try enhanced forecasts first, fall back to regular
+      let res;
+      try {
+        res = await axios.get(`${API}/forecast-enhanced/projections`, { withCredentials: true });
+      } catch {
+        res = await axios.get(`${API}/forecast/saved`, { withCredentials: true });
+      }
+      
       if (res.data.success) {
         setSavedForecasts(res.data);
         setActiveTab('saved');
-        toast.success(`${res.data.total} saved projections loaded`);
+        toast.success(`${res.data.total || res.data.projections?.length || 0} saved projections loaded`);
       }
     } catch (err) {
       toast.error('Failed to load saved projections');
