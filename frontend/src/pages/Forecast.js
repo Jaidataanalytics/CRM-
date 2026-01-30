@@ -579,31 +579,43 @@ const Forecast = () => {
           <p className="text-muted-foreground mt-1">Generate intelligent predictions with KVA breakdown and accuracy testing</p>
         </div>
         {forecast && (
-          <ExportButton
-            data={forecast.monthly_predictions?.map(p => ({
-              period: p.period,
-              predicted: p.predicted,
-              lower_bound: p.lower_bound,
-              upper_bound: p.upper_bound,
-              lkva: p.kva_breakdown?.lkva || 0,
-              mkva: p.kva_breakdown?.mkva || 0,
-              hkva: p.kva_breakdown?.hkva || 0
-            })) || []}
-            filename="forecast_predictions"
-            sheetName="Forecast"
-            columns={[
-              { key: 'period', header: 'Period', width: 15 },
-              { key: 'predicted', header: 'Predicted', width: 12 },
-              { key: 'lower_bound', header: 'Lower Bound', width: 15 },
-              { key: 'upper_bound', header: 'Upper Bound', width: 15 },
-              { key: 'lkva', header: 'LKVA', width: 10 },
-              { key: 'mkva', header: 'MKVA', width: 10 },
-              { key: 'hkva', header: 'HKVA', width: 10 }
-            ]}
-            size="sm"
-          >
-            Export Forecast
-          </ExportButton>
+          <div className="flex gap-2">
+            <ExportButton
+              data={forecast.monthly_predictions?.map(p => ({
+                period: p.period,
+                predicted: p.predicted,
+                lower_bound: p.lower_bound,
+                upper_bound: p.upper_bound,
+                lkva: p.kva_breakdown?.lkva || 0,
+                mkva: p.kva_breakdown?.mkva || 0,
+                hkva: p.kva_breakdown?.hkva || 0
+              })) || []}
+              filename="forecast_predictions"
+              sheetName="Forecast"
+              columns={[
+                { key: 'period', header: 'Period', width: 15 },
+                { key: 'predicted', header: 'Predicted', width: 12 },
+                { key: 'lower_bound', header: 'Lower Bound', width: 15 },
+                { key: 'upper_bound', header: 'Upper Bound', width: 15 },
+                { key: 'lkva', header: 'LKVA', width: 10 },
+                { key: 'mkva', header: 'MKVA', width: 10 },
+                { key: 'hkva', header: 'HKVA', width: 10 }
+              ]}
+              size="sm"
+            >
+              Export Basic
+            </ExportButton>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={exportFullForecast}
+              data-testid="export-full-btn"
+            >
+              <Download className="h-4 w-4" />
+              Export Full Report
+            </Button>
+          </div>
         )}
       </div>
 
