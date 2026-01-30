@@ -550,22 +550,12 @@ async def get_product_mix_trends(
                 "enquiry_date": {"$gte": start_date.strftime("%Y-%m-%d")},
                 "enquiry_stage": {"$in": WON_STAGES},
                 "deleted_at": {"$exists": False},
-                "kva": {"$exists": True, "$ne": None}
+                "kva": {"$exists": True, "$ne": None, "$ne": ""}
             }
         },
         {
             "$addFields": {
-                "year_half": {
-                    "$concat": [
-                        {"$substr": ["$enquiry_date", 0, 4]},
-                        "-H",
-                        {"$cond": [
-                            {"$lte": [{"$toInt": {"$substr": ["$enquiry_date", 5, 2]}}, 6]},
-                            "1",
-                            "2"
-                        ]}
-                    ]
-                }
+                "year_half": {"$substr": ["$enquiry_date", 0, 7]}  # Just use YYYY-MM
             }
         },
         {
