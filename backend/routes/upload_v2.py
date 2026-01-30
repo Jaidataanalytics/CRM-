@@ -1607,13 +1607,13 @@ async def download_template(
     else:
         raise HTTPException(status_code=400, detail=f"Unknown template type: {template_type}")
     
-    # Create DataFrame and write to Excel
-    df = pd.DataFrame([columns] + sample_data)
-    df.columns = df.iloc[0]
-    df = df[1:]
+    # Create DataFrame with proper structure
+    df = pd.DataFrame(sample_data, columns=columns)
     
     output = io.BytesIO()
-    df.to_excel(output, index=False)
+    # Use openpyxl engine explicitly for .xlsx files
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Template')
     output.seek(0)
     
     return StreamingResponse(
