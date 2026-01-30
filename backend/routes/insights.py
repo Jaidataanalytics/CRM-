@@ -1330,23 +1330,52 @@ async def get_summary_builder(
         # Build interleaved columns: F26Q1, F25Q1, F26Q2, F25Q2...
         # Map current periods to historical periods
         def get_historical_period(current_period):
-            """Convert 2025-Q1 to 2024-Q1 or 2025-01 to 2024-01"""
+            """Convert current period to historical period (1 year earlier)
+            Formats:
+            - Monthly: 2025-01 -> 2024-01
+            - Quarterly (FY): 2024-25-Q1 -> 2023-24-Q1
+            - Yearly (FY): FY2024-25 -> FY2023-24
+            """
             if not current_period:
                 return None
             try:
-                if '-Q' in current_period:
-                    # Quarterly: 2025-Q1 -> 2024-Q1
-                    year, q = current_period.split('-Q')
-                    return f"{int(year) - 1}-Q{q}"
-                elif len(current_period) == 7:
-                    # Monthly: 2025-01 -> 2024-01
+                # Yearly format: FY2024-25 -> FY2023-24
+                if current_period.startswith('FY'):
+                    # Extract years: FY2024-25 -> 2024, 25
+                    parts = current_period[2:].split('-')
+                    if len(parts) == 2:
+                        start_year = int(parts[0])
+                        end_year = int(parts[1])
+                        return f"FY{start_year - 1}-{str(end_year - 1).zfill(2)}"
+                
+                # Quarterly format: 2024-25-Q1 -> 2023-24-Q1
+                elif '-Q' in current_period:
+                    parts = current_period.split('-Q')
+                    if len(parts) == 2:
+                        quarter = parts[1]
+                        year_part = parts[0]  # Could be "2024-25" or "2025"
+                        
+                        if '-' in year_part:
+                            # FY format: 2024-25-Q1
+                            fy_parts = year_part.split('-')
+                            start_year = int(fy_parts[0])
+                            end_year = int(fy_parts[1])
+                            return f"{start_year - 1}-{str(end_year - 1).zfill(2)}-Q{quarter}"
+                        else:
+                            # Simple format: 2025-Q1
+                            return f"{int(year_part) - 1}-Q{quarter}"
+                
+                # Monthly format: 2025-01 -> 2024-01
+                elif len(current_period) == 7 and current_period[4] == '-':
                     year, month = current_period.split('-')
                     return f"{int(year) - 1}-{month}"
-                elif len(current_period) == 4:
-                    # Yearly: 2025 -> 2024
+                
+                # Simple yearly: 2025 -> 2024
+                elif len(current_period) == 4 and current_period.isdigit():
                     return str(int(current_period) - 1)
-            except:
-                pass
+                    
+            except Exception as e:
+                logger.warning(f"Could not convert period {current_period} to historical: {e}")
             return None
         
         # Create interleaved columns with YoY data
