@@ -1,62 +1,74 @@
 <analysis>**original_problem_statement:**
-The user's latest request is to build a new **Tender Tracking page**. This page should allow uploading tender documents, automatically extracting key information from a standard PDF format, and providing analytics on tenders.
+The user initiated a major refactor of the data upload functionality and reported several subsequent bugs. The core tasks are:
 
-Initial requirements for the Tender Tracking page:
-*   **Data Extraction from PDF**:
-    *   Parse uploaded PDFs to extract specific fields: , , , , , , , , .
-*   **Page Structure & Features**:
-    *   **Tender List View**: A main page with a searchable, sortable, and filterable table of all tenders.
-    *   **Upload Tender**: A modal or separate section to upload tender documents. The agent should use  to parse the PDF.
-    *   **Tender Detail View**: Clicking a tender opens a view to see all extracted data, edit fields, add new information (like status, winner, our bid value), and manage associated documents.
-    *   **Analytics Dashboard**: A tab with KPIs and charts analyzing tender data (e.g., win rate, participation rate, value by department, competitor analysis).
-*   **User Choices**:
-    *   **Analytics**: Focus on Win Rate, Participation Rate, Tender Value, and Competitor Insights.
-    *   **Data Entry**: A combination of automated extraction and manual editing.
-    *   **Search/Filter**: Advanced filtering on all key fields is required.
-    *   **Winner Info**: The winner should be selected from a list of pre-defined competitors.
-
-This new feature request takes precedence over previously planned refactoring tasks.
+1.  **New Upload Logic:** The user provided very specific business logic for four different types of file uploads: **Lead**, **Lost Leads**, **Sales Order (SO)**, and a new **Remark** upload. This logic involves a multi-step matching process using , , and , with different outcomes based on whether an existing lead is  or .
+2.  **UI Overhaul:**
+    *   Consolidate all separate upload buttons on the Manage Leads page into a single Upload File button.
+    *   Implement automatic template detection (Lead, Lost, SO, Remark) based on the columns in the uploaded file.
+    *   Display a confirmation modal to the user showing the detected file type before processing.
+    *   Create a single Download Template button that opens a modal with options to download any of the four templates.
+3.  **Bug Fixes:**
+    *   The user reported that uploading the same lead file twice was creating new leads instead of identifying them as duplicates.
+    *   The user reported that downloaded Excel templates were corrupted and could not be opened.
+    *   The user is currently reporting an error when trying to upload a PDF on the Tender Tracking page.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is largely functional. The agent has successfully implemented Excel and chart image exports across all relevant pages using a new reusable utility. Several critical bugs reported by the user have been fixed, including issues with the Insights page data, the Admin page crashing, and win count discrepancies on the Comparison page. The Entity Profile page has been significantly enhanced with a dedicated date picker and corrected market share calculations. The initial file structure for the new Tender Tracking feature has been created. An  user with password  exists for testing.
+The agent has successfully implemented the majority of the user's requests.
+- A new, robust backend service () has been created to handle the complex business logic for all four upload types.
+- The frontend Manage Leads page () has been updated with a new, unified UI component () that replaces the old separate buttons with a single Upload File and Download Template workflow.
+- Several critical bugs in the duplicate detection logic have been fixed, including an issue with phone number normalization from Excel files and a faulty database query that was not correctly comparing KVA values.
+- The agent has identified the cause of the Tender PDF upload error: a breaking change in the  library. The code is being updated to use the new API.
 
 **Last working item**:
-- **Last item agent was working**: The agent just began the implementation of the new **Tender Tracking page**. Based on the user's request and a provided sample PDF, the agent analyzed the document, extracted the required fields, and proposed a page structure. After user confirmation, the agent created the initial placeholder files:  and , and registered the new API router.
-- **Status**: NOT STARTED
+- **Last item agent was working**: Fixing the Tender PDF upload error. The  library API was updated, deprecating the  class. The agent identified that the new  class must be used. After consulting the  subagent, the agent updated the code in  to use the correct class, model name (), and file attachment method (). The fix has been written to the file but has not yet been tested.
+- **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: Both. The backend testing agent should be used to test the PDF parsing, CRUD API endpoints, and analytics logic. The frontend testing agent should be used to test the UI, upload functionality, data display, and form interactions.
+- **Which testing method agent to use?**: backend testing agent. Create a test script to call the  endpoint with a sample PDF and verify it returns a successful JSON response with extracted data.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-No pending issues. All recently reported bugs have been resolved.
+- **Issue 1 (P0): Fix Tender PDF Upload Error**
+    - **Attempted fixes**: The agent correctly diagnosed that an  library update caused the error. It updated the code in  to use the new  class, provider (), model (), and payload structure as per the integration playbook. The code changes have been applied.
+    - **Next debug checklist**:
+        1.  Restart the backend service with backend: stopped
+backend: started to ensure the latest changes are loaded.
+        2.  Execute a  command or a python script to send a test PDF file to the  endpoint.
+        3.  Inspect the response and backend logs (==> /var/log/supervisor/backend.err.log <==
+INFO:     Stopping reloader process [47]
+INFO:     Will watch for changes in these directories: ['/app/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+INFO:     Started reloader process [204] using WatchFiles
+INFO:     Started server process [206]
+INFO:     Waiting for application startup.
+INFO:server:Starting Lead Management Dashboard API...
+INFO:server:Successfully connected to MongoDB
+INFO:server:Running metric_settings migration...
+INFO:server:Found 14 existing metrics: {'conversion_rate', 'warm_leads', 'test_lead_duration', 'cold_leads', 'hot_lead_rate', 'closed_leads', 'avg_lead_age', 'test_win_rate', 'open_leads', 'won_leads', 'test_formula', 'lost_leads', 'hot_leads', 'avg_closure_time'}
+INFO:server:Migration complete: no updates needed
+INFO:server:Running data normalization migration...
+INFO:server:Data normalization complete: no duplicates found
+INFO:server:Running lost leads enquiry_date migration...
+INFO:server:Lost leads migration: No updates needed
+INFO:server:Running lost leads field mapping migration...
+
+==> /var/log/supervisor/backend.out.log <==) for any errors.
+        4.  Confirm the  is present in the environment.
+    - **Why fix this issue and what will be achieved with the fix?**: This is a critical feature for the Tender Tracking page. Fixing it will restore the ability to create tenders by auto-extracting data from PDFs.
+    - **Status**: IN PROGRESS
+    - **Is recurring issue?**: N
+    - **Should Test frontend/backend/both after fix?**: Backend
+    - **Blocked on other issue**: None
 
 **In progress Task List**:
-- **Task 1 (P0): Build the Tender Tracking Page**
-    - **Where to resume**:
-        1.  **Backend ()**:
-            *   Define the Pydantic models for a  in a new file . The model should include all extracted fields plus user-editable fields like  (e.g., 'Tracking', 'Participated', 'Won', 'Lost'), , , , etc.
-            *   Implement the  endpoint. This endpoint will receive the PDF file, use the  to parse it, and create a new tender document in the database.
-            *   Implement full CRUD endpoints (, , , ) for managing tenders.
-            *   Implement the analytics endpoint .
-        2.  **Frontend ()**:
-            *   Build the main list view with a table to display all tenders.
-            *   Create the Upload Tender modal with a file input.
-            *   Build the Tender Detail view/modal for viewing, editing, and adding information.
-            *   Create the Analytics tab with charts and KPIs.
-    - **What will be achieved with this?**: A complete, functional page for tracking and analyzing tenders as per the user's latest request.
-    - **Status**: IN PROGRESS
-    - **Should Test frontend/backend/both after fix?**: Both
-    - **Blocked on something**: No.
+No other tasks are in progress. All focus is on the above issue.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
-    *   **(P1) Complete the refactoring of Admin.js and Leads.js.** (Carried over from previous fork)
-        - ****: Extract the remaining tabs (Metrics, Mapping, etc.) into their own components in .
-        - ****: Extract the  and other sections into components in .
-*   **Future Tasks**: (From PRD/Handoff)
-    *   **(P2)** Financial Year Standardization: A full audit is still needed to ensure all date-based calculations correctly use the Indian Financial Year (Apr 1 - Mar 31).
+    *   **(P1) Refactor  and **: These large files should be broken down into smaller, more manageable components. (Carried over)
+*   **Future Tasks**:
+    *   **(P2)** Financial Year Standardization audit.
     *   **(P2)** Funnel Analysis visualization.
     *   **(P2)** Manual 'Qualified' toggle on the lead detail view.
     *   **(P2)** Lead Velocity & ROI Analysis.
@@ -65,123 +77,99 @@ No pending issues. All recently reported bugs have been resolved.
     *   **(P2)** Detailed Audit Logs.
 
 **Completed work in this session**
-- **Feature: Global Excel & Image Export**:
-    - Created a reusable export utility () and button component ().
-    - Added Export to Excel for table data and Export as Image for charts to all major pages: , , , , , , , and .
-    - Installed  for chart exporting.
-    - Verified functionality using the testing agent.
-- **Bug Fix: Insights Page Zero Data**:
-    - Fixed a Python syntax error () in  that was causing the API to fail.
-- **Bug Fix: Admin Page Crash & Errors**:
-    - Removed redundant state and  calls in  left over from a partial refactor.
-    - Fixed a  validation error by making the  field optional in the  model in .
-    - Corrected the data handling in  to correctly parse the user list from the API response.
-- **Bug Fix: Comparison Page Win Count Discrepancy**:
-    - Removed the  filter from the won leads query in  to align the count with the user's expectation and the Entity Profile page.
-- **Bug Fix: Top Performers Tab Not Working**:
-    - Corrected the API endpoint URL in all extracted  components (, , etc.) by adding the missing  prefix.
-- **Bug Fix: Summary Builder YoY Comparison**:
-    - Investigated user report and confirmed that the Year-over-Year comparison feature was already working correctly, showing previous year's data when the toggle is enabled.
-- **Bug Fix: Data Management Analytics Discrepancy**:
-    - Removed the default date filters from the  and  endpoints in  so the analytics tab count matches the main list view.
-- **Feature Enhancement: Entity Profile Page**:
-    - Added a dedicated date-range picker, making the page independent from the global date filter.
-    - Corrected the market share calculation to use market potential as the denominator.
-    - Implemented a District-wise Market Share table, breaking down performance by district.
-    - Replaced the Lead Stage Breakdown chart with a Data Quality Summary card showing duplicate lead counts and order time punch stats.
-- **Investigation: Login Issue**:
-    - Investigated user's report of being unable to log in. Analysis of the auth flow and logs suggests the system is working correctly and the issue is likely client-side (cache/cookies).
+- **Feature: Unified Data Upload System**:
+    - Architected and implemented a new backend service () to handle four different upload types (Lead, Lost, SO, Remark) with complex, user-defined business logic.
+    - Implemented a template auto-detection mechanism based on file headers.
+    - Created a unified frontend component () on the  page, replacing multiple buttons with a single Upload File button and a Download Template modal.
+- **Bug Fix: Incorrect Duplicate Lead Detection**:
+    - Resolved a critical bug where uploading an identical file twice created new leads. The root causes were:
+        1.  Incorrect phone number normalization from Excel floats (e.g.,  becoming ).
+        2.  A faulty database query that only checked the *first* matching lead for KVA, instead of all of them.
+- **Bug Fix: Corrupted Excel Template Downloads**:
+    - Fixed an issue where downloaded templates were invalid by correcting the API call in the frontend to include the  prefix, which is required by the environment's ingress routing.
 
 **Earlier issues found/mentioned but not fixed**
 - **Issue 1: Incomplete Refactoring**
-    - The refactoring of  and  was started in a previous session but is not complete. These files are still very large and difficult to maintain. This is now an Upcoming Task.
+    - The large files  and  have not yet been refactored into smaller components. This is noted in Upcoming Tasks.
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence in previous fork**: The frontend build folder () can disappear or become stale.
-- **Recurrence count**: 2 (Occurred again in this session).
-- **Status**: RESOLVED (workaround). The fix remains running yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.. This is an environmental issue.
+- **Issue recurrence in previous fork**: The frontend build folder () can become stale, causing 404 errors or showing an old UI.
+- **Recurrence count**: 4
+- **Status**: RESOLVED (workaround). The fix remains to run yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. when this occurs.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Reusable Export Utility**: A centralized JS module () and React component () were created to handle both data (Excel) and chart (image) exports, promoting DRY principles.
-- **Backend PDF Parsing**: The agent used the  to demonstrate the capability of automatically extracting structured data from a PDF file, which will be the core of the new tender upload feature.
-- **State Management for Refactored Components**: Debugged issues arising from incomplete state migration during component refactoring, reinforcing the need to fully encapsulate state and effects within new components.
-- **Scoped vs. Global State**: Implemented a component-specific date filter on the  page, decoupling it from the global date filter to provide more granular control.
+- **Business Logic Implementation**: Translated a complex set of user-defined rules for data ingestion into a robust backend service.
+- **UI Consolidation**: Replaced a repetitive and scattered UI with a single, reusable React component to improve maintainability and user experience.
+- **Systematic Debugging**: Successfully diagnosed and fixed multiple elusive bugs, including data corruption from type casting (Excel float to string) and incorrect database query logic.
+- **Integration API Adaptation**: Handled a breaking change in a third-party library () by investigating the new API and updating the application code accordingly.
 
 **key DB schema**
-- No new collections were added yet. A  collection is expected to be created.
-- : This collection was identified and used for market share calculations. It contains potential data per dealer/district/state.
-
-**changes in tech stack**
-- ****: Added to frontend dependencies () to enable exporting React components/charts as images.
+- ****: The schema now implicitly supports a  array of objects and a  string, which are managed by the new upload logic in .
+- ****: The schema is unchanged, but the routes that write to it are currently being fixed.
 
 **All files of reference**
-*   **/app/frontend/src/pages/Tenders.js**: New page for the upcoming feature.
-*   **/app/backend/routes/tenders.py**: New backend route for the upcoming feature.
-*   **/app/frontend/src/utils/exportUtils.js**: New reusable export utility.
-*   **/app/frontend/src/components/ui/export-button.jsx**: New reusable export button.
-*   **/app/frontend/src/pages/EntityProfile.js**: Heavily modified for new analytics and its own date picker.
-*   **/app/backend/routes/entity_profile.py**: Heavily modified for new market share logic.
-*   **/app/frontend/src/pages/Admin.js**: Still needs refactoring.
-*   **/app/frontend/src/pages/Leads.js**: Still needs refactoring.
-*   **/app/memory/PRD.md**: Updated with bug fixes and the new Excel export feature.
+-    (File being fixed for the PDF upload error)
+-    (The new, consolidated upload logic)
+-    (The new unified frontend component)
+-    (Where the new UI component is used)
+-    (Contains user requirements and completed tasks)
 
 **Areas that need refactoring**:
-*   ****: Still over 3000 lines. The remaining tabs (Metric Settings, Field Mapping, Data Upload, etc.) should be extracted into their own components.
-*   ****: Still over 3000 lines. The Lead Detail Panel, lead list, and various modals should be broken out into separate components.
+-   , , and  are still large files that should be broken down into smaller, single-responsibility components in the future.
 
 **key api endpoints**
-*   : (To be implemented) For uploading and parsing tender PDFs.
-*   , , etc.: (To be implemented) Full CRUD for tenders.
-*   : (Modified) Logic was updated significantly for market share, data quality, and district breakdowns.
-*   : (Modified) Removed default date filter.
-*   : (Investigated) YoY logic confirmed to be working correctly.
+-   **NEW Endpoints (in )**:
+    -   
+    -   
+    -   
+-   **Endpoints BEING FIXED (in )**:
+    -   
+    -   
 
 **Critical Info for New Agent**
-1.  **New Feature is Top Priority**: The immediate focus must be on building the **Tender Tracking page**. The user has provided clear requirements and approved the proposed structure. Begin by defining the backend model and implementing the PDF upload/parsing endpoint.
-2.  **PDF Parsing**: Use the  for parsing the tender documents as demonstrated. The extracted data should populate the new tender record.
-3.  **Refactoring is Lower Priority**: The refactoring of  and  is still an important background task but should only be addressed after significant progress is made on the Tender Tracking feature.
-4.  **Environmental Quirk**: Be aware that the frontend may stop working and require a yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.. This is a known issue with the environment.
+1.  **Priority #1: Test the Tender PDF Upload Fix.** The agent has just applied a fix to  to handle a breaking change in the  library. Your first action should be to restart the backend (backend: stopped
+backend: started) and then test the  endpoint to confirm the fix works.
+2.  **Upload Logic is Complex and Centralized.** All data upload functionality is now in . Do not modify the old . Before touching the new file, review the user's detailed logic requirements, as it is highly specific.
+3.  **Frontend Stale Build Issue is a Known Quirk.** If the UI appears broken or outdated (e.g., 404 errors), the standard fix is to run yarn run v1.22.22
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command..
 
 **documents and test reports created in this job**
-*   **/app/test_reports/iteration_29.json**: Test report confirming the successful implementation of the Export to Excel feature across multiple pages.
-*   **/app/memory/PRD.md**: Updated to reflect completed bug fixes and the new export feature.
+-   
+-   
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **User**: Requested a new Tender Tracking page, provided a sample PDF, and specified data to be extracted and features to be included. (IN PROGRESS)
-9.  **User**: Specified requirements for the tender page analytics, data entry, and winner selection. (COMPLETED)
-8.  **User**: Reported that the Entity Profile page should not use the global date filter and should have its own. Also reported the Summary Builder YoY comparison shows zero data. (COMPLETED - Date picker added, YoY was confirmed working)
-7.  **User**: Confirmed that the YoY comparison period should be the previous financial year. (COMPLETED)
-6.  **User**: Reported issues with the Entity Profile page: market share calculation is wrong, cities should be districts, and the lead stage breakdown should be removed. Also requested a summary of duplicate leads. Finally, reported a bug where the analytics tab on the duplicate leads page shows a different count. (COMPLETED)
-5.  **User**: Clarified requirements for the market share and district breakdown on the Entity Profile page. (COMPLETED)
-4.  **User**: Reported the Top Performers tab in Insights is not working. (COMPLETED)
-3.  **User**: Reported being unable to log in to the preview. (COMPLETED - Investigated, likely client-side issue)
-2.  **User**: Provided credentials for the preview environment. (COMPLETED)
-1.  **User**: Reported that the Insights page shows zero data, the Admin page throws an error, and the win count on the Comparison page is wrong. (COMPLETED)
+1.  **User**: Reports an error when uploading a PDF for a tender. **(IN PROGRESS)**
+2.  **User**: Reports the preview is not working. **(RESOLVED)**
+3.  **User**: Confirms the duplicate lead count is much better after the fix. **(COMPLETED)**
+4.  **Agent**: Explains the bug that caused the incorrect duplicate count. **(COMPLETED)**
+5.  **User**: Asks why uploading the same file twice created new leads. **(IN PROGRESS)**
+6.  **Agent**: Provides the incorrect results from the second upload. **(IN PROGRESS)**
+7.  **User**: Provides the same test sheet again. **(IN PROGRESS)**
+8.  **Agent**: Provides the results of the first upload. **(IN PROGRESS)**
+9.  **User**: Provides a test sheet to test the new logic. **(IN PROGRESS)**
+10. **Agent**: Confirms the new lead upload logic is implemented and ready to test. **(COMPLETED)**
 
 **Project Health Check:**
-*   **Broken**: None. All reported bugs and crashes have been fixed.
+*   **Broken**: The Tender PDF Upload functionality is currently broken, with a fix pending testing.
 *   **Mocked**: None.
 
 **3rd Party Integrations**
-*   **rapidfuzz**: Python library for fuzzy string matching.
-*   **pandas**: Python library for data analysis.
-*   **xlsx**: JavaScript library for creating Excel files.
-*   **html2canvas**: (New) JavaScript library for taking screenshots of components.
+*   **emergentintegrations**: Used for Gemini PDF extraction. The agent is currently fixing a breaking change in this library's API. The updated code uses .
+*   **pandas / openpyxl**: Used extensively in  to read and generate Excel files for the new upload system.
 
 **Testing status**
-- **Testing agent used after significant changes**: YES. Used to validate the global Export to Excel feature.
+- **Testing agent used after significant changes**: YES
 - **Troubleshoot agent used after agent stuck in loop**: NO
-- **Test files created**: None.
-- **Known regressions**: None.
+- **Test files created**: None
+- **Known regressions**: The Tender PDF upload functionality has regressed due to a library update.
 
 **Credentials to test flow:**
-*   **Username**: 
-*   **Password**: 
+*   **Admin User**:  / 
+*   **Tender User**:  / 
 
 **What agent forgot to execute**
-*   The agent did not continue with the refactoring of  and  from the previous handoff summary, as new bug reports and a high-priority feature request from the user took precedence. This task has been moved to Upcoming Tasks.</analysis>
+The agent has applied the code changes to fix the Tender PDF upload error but has not yet restarted the backend service and tested the fix. This is the immediate next step.</analysis>

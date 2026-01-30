@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class KPIMetricsEnhancementTester:
-    def __init__(self, base_url="https://tender-system-5.preview.emergentagent.com"):
+    def __init__(self, base_url="https://fileupload-wizard.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = None
         self.tests_run = 0
