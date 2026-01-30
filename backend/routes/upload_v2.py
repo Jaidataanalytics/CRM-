@@ -653,12 +653,12 @@ async def process_lead_upload(db, df: pd.DataFrame, current_user: User, filename
             if not existing and normalized_phone and len(normalized_phone) >= 10:
                 # Find by phone
                 phone_matches = await db.leads.find({
-                    "$or": [
-                        {"phone_number": normalized_phone},
-                        {"phone_number": {"$regex": f"{normalized_phone}$"}}
-                    ],
-                    "deleted_at": {"$exists": False},
                     "$and": [
+                        {"$or": [
+                            {"phone_number": normalized_phone},
+                            {"phone_number": {"$regex": f"{normalized_phone}$"}}
+                        ]},
+                        {"deleted_at": {"$exists": False}},
                         {"$or": [
                             {"is_duplicate": {"$exists": False}},
                             {"is_duplicate": False}
