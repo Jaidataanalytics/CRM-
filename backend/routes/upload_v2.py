@@ -563,9 +563,13 @@ async def process_lead_upload(db, df: pd.DataFrame, current_user: User, filename
     Process Lead Upload with logic:
     1. Match by Enquiry Number → Update different fields
     2. No match → Match by Phone
-       - CLOSED → Create NEW lead
-       - OPEN + KVA SAME → DUPLICATE (merge)
-       - OPEN + KVA DIFFERENT → Create NEW lead
+       - CLOSED lead:
+         - Incoming HAS enquiry_no → Create NEW lead (repeat customer)
+         - Incoming NO enquiry_no + KVA SAME → SKIP (duplicate of closed)
+         - Incoming NO enquiry_no + KVA DIFFERENT → Create NEW lead
+       - OPEN lead:
+         - KVA SAME → DUPLICATE (merge)
+         - KVA DIFFERENT → Create NEW lead
     3. No match at all → Create NEW lead
     """
     upload_batch_id = f"lead_upload_{uuid.uuid4().hex[:8]}"
