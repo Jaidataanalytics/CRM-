@@ -197,11 +197,13 @@ async def get_dealer_district_forecast(
     """
     Generate dealer-wise district split forecast.
     Uses last 12 months of historical data to predict future sales by dealer and district.
+    ONLY shows districts where each dealer has actually made sales (historical presence).
     """
     db = await get_db(request)
     start_date, end_date = get_last_12_months_range()
     
     # Get historical data grouped by dealer, district, and month
+    # This automatically filters to only dealer-district combinations that exist
     pipeline = [
         {
             "$match": {
@@ -233,10 +235,8 @@ async def get_dealer_district_forecast(
     
     results = await db.leads.aggregate(pipeline).to_list(5000)
     
-    # Process results
+    # Process results - only include dealer-district pairs that have historical data
     dealer_district_history = defaultdict(lambda: defaultdict(list))
-    all_districts = set()
-    all_dealers = set()
     
     for r in results:
         dealer = r["_id"]["dealer"]
@@ -249,22 +249,21 @@ async def get_dealer_district_forecast(
                 "month": month,
                 "units": units
             })
-            all_districts.add(district)
-            all_dealers.add(dealer)
     
-    # Generate forecasts
+    # Generate forecasts - each dealer only gets districts they've sold in
     forecasts = []
     
-    for dealer in sorted(all_dealers):
+    for dealer in sorted(dealer_district_history.keys()):
+        dealer_districts = dealer_district_history[dealer]
+        
         dealer_forecast = {
             "dealer": dealer,
             "district_breakdown": [],
-            "total_units": 0
+            "total_units": 0,
+            "districts_count": 0
         }
         
-        for district in sorted(all_districts):
-            history = dealer_district_history[dealer].get(district, [])
-            
+        for district, history in dealer_districts.items():
             if not history:
                 continue
             
@@ -284,13 +283,17 @@ async def get_dealer_district_forecast(
                 })
                 dealer_forecast["total_units"] += predicted_units
         
+        # Sort districts by predicted units
+        dealer_forecast["district_breakdown"].sort(key=lambda x: x["predicted_units"], reverse=True)
+        dealer_forecast["districts_count"] = len(dealer_forecast["district_breakdown"])
+        
         if dealer_forecast["district_breakdown"]:
             forecasts.append(dealer_forecast)
     
     # Sort by total units descending
     forecasts.sort(key=lambda x: x["total_units"], reverse=True)
     
-    # Calculate district totals
+    # Calculate district totals (across all dealers)
     district_totals = defaultdict(int)
     for f in forecasts:
         for db_item in f["district_breakdown"]:
@@ -308,7 +311,8 @@ async def get_dealer_district_forecast(
             for k, v in sorted(district_totals.items(), key=lambda x: x[1], reverse=True)
         ],
         "grand_total_units": grand_total,
-        "dealer_count": len(forecasts)
+        "dealer_count": len(forecasts),
+        "note": "Each dealer only shows districts where they have historical sales"
     }
 
 
