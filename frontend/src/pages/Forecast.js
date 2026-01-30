@@ -430,12 +430,34 @@ const Forecast = () => {
     }
     setLoadingSave(true);
     try {
-      const res = await axios.post(`${API}/forecast/save`, {
-        forecast_data: forecast
+      // Fetch all enhanced forecast data to save together
+      const [dealerKvaRes, dealerDistrictRes, scenariosRes, seasonalityRes, conversionRes, productTrendsRes, geoRes] = await Promise.all([
+        axios.get(`${API}/forecast-enhanced/dealer-kva-forecast?months_ahead=${horizon}`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/dealer-district-forecast?months_ahead=${horizon}`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/forecast-scenarios?months_ahead=${horizon}`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/seasonality-analysis`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/conversion-time-analysis`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/product-mix-trends`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/geographic-opportunities`, { withCredentials: true }).catch(() => ({ data: null }))
+      ]);
+
+      // Save with all enhanced data
+      const res = await axios.post(`${API}/forecast-enhanced/save-enhanced`, {
+        forecast_data: forecast,
+        dealer_kva_forecast: dealerKvaRes.data,
+        dealer_district_forecast: dealerDistrictRes.data,
+        scenarios: scenariosRes.data,
+        seasonality: seasonalityRes.data,
+        conversion_analysis: conversionRes.data,
+        product_trends: productTrendsRes.data,
+        geographic_opportunities: geoRes.data,
+        recommendations: forecast.forecast?.recommendations || [],
+        trends: forecast.forecast?.trend_analysis || {},
+        notes: ""
       }, { withCredentials: true });
       
       if (res.data.success) {
-        toast.success('Projection saved successfully!');
+        toast.success('Full projection saved with all analytics!');
         // Refresh saved forecasts list if viewing
         if (savedForecasts) {
           loadSavedForecasts();
@@ -444,6 +466,7 @@ const Forecast = () => {
         toast.error(res.data.message || 'Failed to save projection');
       }
     } catch (err) {
+      console.error('Save error:', err);
       toast.error(err.response?.data?.detail || 'Failed to save projection');
     } finally {
       setLoadingSave(false);
