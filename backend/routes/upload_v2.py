@@ -640,9 +640,11 @@ async def process_lead_upload(db, df: pd.DataFrame, current_user: User, filename
                         {"phone_number": {"$regex": f"{normalized_phone}$"}}
                     ],
                     "deleted_at": {"$exists": False},
-                    "$or": [
-                        {"is_duplicate": {"$exists": False}},
-                        {"is_duplicate": False}
+                    "$and": [
+                        {"$or": [
+                            {"is_duplicate": {"$exists": False}},
+                            {"is_duplicate": False}
+                        ]}
                     ]
                 }, {"_id": 0}).to_list(10)
                 
@@ -653,10 +655,24 @@ async def process_lead_upload(db, df: pd.DataFrame, current_user: User, filename
                         existing_kva = match.get('kva')
                         
                         if is_lead_closed(existing_stage):
-                            # CLOSED lead - this is a repeat customer, create NEW
-                            existing = None
-                            match_type = None
-                            break
+                            # CLOSED lead - check if incoming has enquiry_no
+                            if enquiry_no:
+                                # Has enquiry_no - this is a repeat customer, create NEW lead
+                                existing = None
+                                match_type = None
+                                break
+                            else:
+                                # No enquiry_no - check KVA
+                                if compare_kva(existing_kva, kva):
+                                    # Same KVA, no enquiry_no - SKIP as duplicate of closed lead
+                                    existing = match
+                                    match_type = "phone_closed_skip"
+                                    break
+                                else:
+                                    # Different KVA - create NEW lead
+                                    existing = None
+                                    match_type = None
+                                    break
                         else:
                             # OPEN lead - check KVA
                             if compare_kva(existing_kva, kva):
