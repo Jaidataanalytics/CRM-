@@ -37,7 +37,7 @@ import {
   Sparkles, TrendingUp, AlertCircle, Lightbulb, Calendar, 
   ChevronDown, ChevronRight, Zap, BarChart3, Target,
   CheckCircle2, XCircle, Info, FlaskConical, FileText,
-  MapPin, Building2, Users, Layers, Save, Archive, Trash2
+  MapPin, Building2, Users, Layers, Save, Archive, Trash2, Download
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -54,6 +54,7 @@ import {
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import { ExportButton } from '@/components/ui/export-button';
+import { EnhancedForecastTab } from '@/components/forecast/EnhancedForecast';
 
 ChartJS.register(
   CategoryScale,
