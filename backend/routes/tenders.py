@@ -590,13 +590,17 @@ async def extract_pdf_data(
     
     # Use Gemini for PDF extraction
     try:
-        from emergentintegrations.llm.gemini import GeminiChat, GeminiConfig
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent
         
-        config = GeminiConfig(
-            api_key=os.environ.get("EMERGENT_LLM_KEY"),
-            model="gemini-2.0-flash"
+        api_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not api_key:
+            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY not configured")
+        
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"tender_extract_{uuid.uuid4().hex[:8]}",
+            system_message="You are a tender document analyzer. Extract structured data from tender PDFs accurately."
         )
-        chat = GeminiChat(config=config)
         
         # Different extraction prompts for MLT vs DG tenders
         if tender_type == 'dg':
@@ -640,10 +644,21 @@ Look for OUTPUT CAPACITY RATING in the Technical Specifications section. For sta
 
 If a field is not found, use empty string for text, 0 for numbers, or empty array for arrays."""
 
-        response = await chat.send_message_async(
-            message=extraction_prompt,
-            file_paths=[pdf_url]
+        # Download PDF from URL and convert to base64
+        async with httpx.AsyncClient() as client:
+            pdf_response = await client.get(pdf_url, timeout=30)
+            if pdf_response.status_code != 200:
+                raise HTTPException(status_code=400, detail=f"Could not download PDF from URL: {pdf_response.status_code}")
+            pdf_content = pdf_response.content
+        
+        file_base64 = base64.b64encode(pdf_content).decode('utf-8')
+        
+        user_message = UserMessage(
+            text=extraction_prompt,
+            file_contents=[FileContent(content_type="application/pdf", file_content_base64=file_base64)]
         )
+        
+        response = chat.with_model("google", "gemini-2.0-flash-exp").send_message(user_message)
         
         # Parse JSON from response
         import json
