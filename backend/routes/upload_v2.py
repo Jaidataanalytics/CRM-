@@ -318,12 +318,26 @@ def normalize_phone(phone) -> str:
     """Normalize phone number - keep only last 10 digits"""
     if not phone:
         return ""
+    if pd.isna(phone):
+        return ""
+    
+    # Handle float conversion from Excel (6203180897.0 -> 6203180897)
+    if isinstance(phone, float):
+        phone = int(phone)
+    
     phone_str = str(phone).strip()
+    
+    # Remove .0 suffix if present (in case str conversion happened before int)
+    if phone_str.endswith('.0'):
+        phone_str = phone_str[:-2]
+    
     # Remove all non-digit characters
     normalized = ''.join(c for c in phone_str if c.isdigit())
+    
     # Handle country code prefixes (India: 91)
     if len(normalized) > 10 and normalized.startswith('91'):
         normalized = normalized[2:]
+    
     # Return last 10 digits
     return normalized[-10:] if len(normalized) >= 10 else normalized
 
