@@ -128,7 +128,7 @@ const FileUpload = ({ onUploadComplete, className = '' }) => {
   // Handle template download
   const handleDownloadTemplate = async (templateType) => {
     try {
-      const response = await axios.get(`${API}/upload/templates/${templateType}`, {
+      const response = await axios.get(`${API}/api/upload/templates/${templateType}`, {
         withCredentials: true,
         responseType: 'blob'
       });
