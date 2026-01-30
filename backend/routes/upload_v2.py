@@ -716,6 +716,10 @@ async def process_lead_upload(db, df: pd.DataFrame, current_user: User, filename
                 )
                 duplicate_count += 1
                 
+            elif existing and match_type == "phone_closed_skip":
+                # Phone + KVA match on CLOSED lead, no enquiry_no - SKIP as duplicate
+                skipped_count += 1
+                
             else:
                 # No match or CLOSED or different KVA - Create NEW lead
                 uploader_name = current_user.name or current_user.email or "Unknown"
