@@ -56,7 +56,7 @@ const FileUpload = ({ onUploadComplete, className = '' }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${API}/upload/detect-template`, formData, {
+      const response = await axios.post(`${API}/api/upload/detect-template`, formData, {
         withCredentials: true,
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -88,7 +88,7 @@ const FileUpload = ({ onUploadComplete, className = '' }) => {
       formData.append('file', selectedFile);
       formData.append('template_type', detectedTemplate.template_type);
 
-      const response = await axios.post(`${API}/upload/process`, formData, {
+      const response = await axios.post(`${API}/api/upload/process`, formData, {
         withCredentials: true,
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (progressEvent) => {
