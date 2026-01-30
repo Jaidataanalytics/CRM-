@@ -767,10 +767,18 @@ Look for OUTPUT CAPACITY RATING in the Technical Specifications section. For sta
 
 Extract ALL consignees/reporting officers with their quantities. If a field is not found, use empty string for text, 0 for numbers, or empty array for arrays."""
 
-        response = await chat.send_message_async(
-            message=extraction_prompt,
-            file_paths=[tmp_path]
+        # Read file as base64
+        file_base64 = base64.b64encode(content).decode('utf-8')
+        
+        # Create message with file
+        from emergentintegrations.llm.chat import UserMessage, FileContent
+        
+        user_message = UserMessage(
+            text=extraction_prompt,
+            file_contents=[FileContent(content_type="application/pdf", file_content_base64=file_base64)]
         )
+        
+        response = chat.with_model("google", "gemini-2.0-flash-exp").send_message(user_message)
         
         # Clean up temp file
         os.unlink(tmp_path)
@@ -779,7 +787,7 @@ Extract ALL consignees/reporting officers with their quantities. If a field is n
         import json
         import re
         
-        response_text = response.text if hasattr(response, 'text') else str(response)
+        response_text = response if isinstance(response, str) else str(response)
         json_match = re.search(r'\{[\s\S]*\}', response_text)
         
         if json_match:
