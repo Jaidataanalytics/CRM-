@@ -794,18 +794,18 @@ Look for OUTPUT CAPACITY RATING in the Technical Specifications section. For sta
 
 Extract ALL consignees/reporting officers with their quantities. If a field is not found, use empty string for text, 0 for numbers, or empty array for arrays."""
 
-        # Read file as base64
-        file_base64 = base64.b64encode(content).decode('utf-8')
-        
-        # Create message with file
-        from emergentintegrations.llm.chat import UserMessage, FileContent
+        # Create file content object for Gemini (requires file path)
+        pdf_file = FileContentWithMimeType(
+            file_path=tmp_path,
+            mime_type="application/pdf"
+        )
         
         user_message = UserMessage(
             text=extraction_prompt,
-            file_contents=[FileContent(content_type="application/pdf", file_content_base64=file_base64)]
+            file_contents=[pdf_file]
         )
         
-        response = await chat.with_model("google", "gemini-2.0-flash").send_message(user_message)
+        response = await chat.send_message(user_message)
         
         # Clean up temp file
         os.unlink(tmp_path)
