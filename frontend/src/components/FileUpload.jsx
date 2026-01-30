@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 
-const API = process.env.REACT_APP_BACKEND_URL;
+const API = '';
 
 /**
  * Unified File Upload Component
