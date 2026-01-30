@@ -766,6 +766,26 @@ async def startup_db_client():
         return
     
     try:
+        # Seed default admin user if not exists
+        existing_admin = await db.users.find_one({"username": "admin"})
+        if not existing_admin:
+            import hashlib
+            admin_password_hash = hashlib.sha256("admin123".encode()).hexdigest()
+            admin_user = {
+                "user_id": "user_admin_default",
+                "username": "admin",
+                "email": "admin@sharda.com",
+                "name": "Administrator",
+                "role": "admin",
+                "password_hash": admin_password_hash,
+                "is_active": True,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(admin_user)
+            logger.info("Default admin user created (username: admin, password: admin123)")
+        else:
+            logger.info("Admin user already exists")
+        
         # Run FAST migrations synchronously (these are quick and essential)
         await migrate_metric_settings()
         await migrate_normalize_duplicates()
