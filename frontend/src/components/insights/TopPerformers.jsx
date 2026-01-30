@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Users, Building, MapPin, Globe, ChevronRight } from 'lucide-react';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const TopPerformers = ({ buildQueryParams }) => {
   const navigate = useNavigate();
