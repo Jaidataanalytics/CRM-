@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const Quotations = () => {
   const navigate = useNavigate();

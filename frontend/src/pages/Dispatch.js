@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { ExportButton } from '@/components/ui/export-button';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const Dispatch = () => {
   const { filters, buildQueryParams } = useFilters();

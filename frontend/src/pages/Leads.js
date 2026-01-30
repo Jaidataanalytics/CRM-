@@ -49,7 +49,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import FileUpload from '@/components/FileUpload';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const initialFormData = {
   name: '',

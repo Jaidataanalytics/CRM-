@@ -42,7 +42,7 @@ import {
   Area
 } from 'recharts';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const CompareForecasts = () => {
   const [loading, setLoading] = useState(true);

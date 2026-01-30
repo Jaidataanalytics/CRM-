@@ -68,7 +68,7 @@ ChartJS.register(
   Filler
 );
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const API = '/api';
 
 const COLORS = [
   '#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', 
