@@ -93,7 +93,13 @@ async def root():
 
 @api_router.get("/health")
 async def health_check():
-    return {"status": "healthy", "database": "connected"}
+    try:
+        # Verify database connection is working
+        await db.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
 # Include the router in the main app
 app.include_router(api_router)
@@ -101,7 +107,12 @@ app.include_router(api_router)
 # Root-level health check endpoint for Kubernetes probes (without /api prefix)
 @app.get("/health")
 async def kubernetes_health_check():
-    return {"status": "healthy", "database": "connected"}
+    try:
+        await db.command('ping')
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        logger.error(f"Kubernetes health check failed: {e}")
+        return {"status": "unhealthy", "database": "disconnected", "error": str(e)}
 
 # Store db in app state for route access
 app.state.db = db
