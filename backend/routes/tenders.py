@@ -658,7 +658,7 @@ If a field is not found, use empty string for text, 0 for numbers, or empty arra
             file_contents=[FileContent(content_type="application/pdf", file_content_base64=file_base64)]
         )
         
-        response = await chat.with_model("google", "gemini-2.0-flash-exp").send_message(user_message)
+        response = await chat.with_model("google", "gemini-2.0-flash").send_message(user_message)
         
         # Parse JSON from response
         import json
@@ -793,7 +793,7 @@ Extract ALL consignees/reporting officers with their quantities. If a field is n
             file_contents=[FileContent(content_type="application/pdf", file_content_base64=file_base64)]
         )
         
-        response = await chat.with_model("google", "gemini-2.0-flash-exp").send_message(user_message)
+        response = await chat.with_model("google", "gemini-2.0-flash").send_message(user_message)
         
         # Clean up temp file
         os.unlink(tmp_path)
