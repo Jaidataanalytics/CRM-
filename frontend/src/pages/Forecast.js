@@ -794,9 +794,12 @@ const Forecast = () => {
       {/* Results Tabs */}
       {(forecast || backtest || factors || savedForecasts) && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
               <Sparkles className="h-4 w-4 mr-2" />Forecast
+            </TabsTrigger>
+            <TabsTrigger value="enhanced" data-testid="tab-enhanced">
+              <Layers className="h-4 w-4 mr-2" />Advanced
             </TabsTrigger>
             <TabsTrigger value="saved" disabled={!savedForecasts} data-testid="tab-saved">
               <Archive className="h-4 w-4 mr-2" />Saved ({savedForecasts?.total || 0})
@@ -808,6 +811,11 @@ const Forecast = () => {
               <FileText className="h-4 w-4 mr-2" />Factors
             </TabsTrigger>
           </TabsList>
+
+          {/* Enhanced Forecast Tab */}
+          <TabsContent value="enhanced" className="space-y-6 mt-6">
+            <EnhancedForecastTab monthsAhead={parseInt(horizon)} />
+          </TabsContent>
 
           {/* Forecast Tab */}
           <TabsContent value="forecast" className="space-y-6 mt-6">
