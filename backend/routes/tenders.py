@@ -740,7 +740,7 @@ async def upload_and_extract_pdf(
             tmp_path = tmp.name
         
         # Use Gemini for PDF extraction
-        from emergentintegrations.llm.chat import LlmChat, FileContent
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
         
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         if not api_key:
@@ -750,7 +750,7 @@ async def upload_and_extract_pdf(
             api_key=api_key,
             session_id=f"tender_extract_{uuid.uuid4().hex[:8]}",
             system_message="You are a tender document analyzer. Extract structured data from tender PDFs accurately."
-        )
+        ).with_model("gemini", "gemini-2.5-flash")
         
         # Different extraction prompts for MLT vs DG tenders
         if tender_type == 'dg':
