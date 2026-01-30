@@ -665,7 +665,7 @@ If a field is not found, use empty string for text, 0 for numbers, or empty arra
         import re
         
         # Try to extract JSON from response
-        response_text = response.text if hasattr(response, 'text') else str(response)
+        response_text = response if isinstance(response, str) else str(response)
         json_match = re.search(r'\{[\s\S]*\}', response_text)
         
         if json_match:
