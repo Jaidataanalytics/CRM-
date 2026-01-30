@@ -508,6 +508,65 @@ const Forecast = () => {
     }
   };
 
+  const exportFullForecast = async () => {
+    if (!forecast) {
+      toast.error('No forecast to export');
+      return;
+    }
+    
+    toast.info('Generating full report...');
+    
+    try {
+      // Fetch all enhanced data for export
+      const [dealerKvaRes, dealerDistrictRes, scenariosRes, seasonalityRes] = await Promise.all([
+        axios.get(`${API}/forecast-enhanced/dealer-kva-forecast?months_ahead=${horizon}`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/dealer-district-forecast?months_ahead=${horizon}`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/forecast-scenarios?months_ahead=${horizon}`, { withCredentials: true }).catch(() => ({ data: null })),
+        axios.get(`${API}/forecast-enhanced/seasonality-analysis`, { withCredentials: true }).catch(() => ({ data: null }))
+      ]);
+
+      // Export via backend
+      const response = await axios.post(
+        `${API}/forecast-enhanced/export-excel`,
+        {
+          forecast_data: {
+            ...forecast,
+            horizon_months: parseInt(horizon),
+            predictions: forecast.forecast?.predictions || [],
+            summary: forecast.forecast?.summary || ''
+          },
+          dealer_kva_forecast: dealerKvaRes.data,
+          dealer_district_forecast: dealerDistrictRes.data,
+          scenarios: scenariosRes.data,
+          seasonality: seasonalityRes.data,
+          include_charts: true
+        },
+        { 
+          withCredentials: true,
+          responseType: 'blob'
+        }
+      );
+
+      // Download the file
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `forecast_report_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Report downloaded successfully!');
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Failed to export report');
+    }
+  };
+
   // Chart data for predictions
   const predictionChartData = forecast?.forecast?.predictions ? {
     labels: forecast.forecast.predictions.map(p => p.month),
