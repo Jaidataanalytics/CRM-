@@ -680,7 +680,7 @@ async def get_geographic_opportunities(
         
         districts.append({
             "district": r["_id"]["district"],
-            "state": r["_id"]["state"],
+            "state": r["_id"].get("state") or "Unknown",
             "total_leads": total,
             "won_leads": won,
             "conversion_rate": round(conv_rate, 1),
