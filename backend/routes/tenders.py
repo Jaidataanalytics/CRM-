@@ -590,7 +590,7 @@ async def extract_pdf_data(
     
     # Use Gemini for PDF extraction
     try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContent
+        from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
         
         api_key = os.environ.get("EMERGENT_LLM_KEY")
         if not api_key:
@@ -600,7 +600,7 @@ async def extract_pdf_data(
             api_key=api_key,
             session_id=f"tender_extract_{uuid.uuid4().hex[:8]}",
             system_message="You are a tender document analyzer. Extract structured data from tender PDFs accurately."
-        )
+        ).with_model("gemini", "gemini-2.5-flash")
         
         # Different extraction prompts for MLT vs DG tenders
         if tender_type == 'dg':
@@ -644,21 +644,33 @@ Look for OUTPUT CAPACITY RATING in the Technical Specifications section. For sta
 
 If a field is not found, use empty string for text, 0 for numbers, or empty array for arrays."""
 
-        # Download PDF from URL and convert to base64
+        # Download PDF from URL and save to temp file
         async with httpx.AsyncClient() as client:
             pdf_response = await client.get(pdf_url, timeout=30)
             if pdf_response.status_code != 200:
                 raise HTTPException(status_code=400, detail=f"Could not download PDF from URL: {pdf_response.status_code}")
             pdf_content = pdf_response.content
         
-        file_base64 = base64.b64encode(pdf_content).decode('utf-8')
+        # Save to temp file for FileContentWithMimeType
+        tmp_path = f"/tmp/tender_pdf_{uuid.uuid4().hex[:8]}.pdf"
+        with open(tmp_path, 'wb') as f:
+            f.write(pdf_content)
+        
+        # Create file content object
+        pdf_file = FileContentWithMimeType(
+            file_path=tmp_path,
+            mime_type="application/pdf"
+        )
         
         user_message = UserMessage(
             text=extraction_prompt,
-            file_contents=[FileContent(content_type="application/pdf", file_content_base64=file_base64)]
+            file_contents=[pdf_file]
         )
         
-        response = await chat.with_model("google", "gemini-2.0-flash").send_message(user_message)
+        response = await chat.send_message(user_message)
+        
+        # Clean up temp file
+        os.unlink(tmp_path)
         
         # Parse JSON from response
         import json
