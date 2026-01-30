@@ -63,6 +63,7 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 ### Dual-Tender System (MLT vs DG) - NEW (Jan 29, 2026)
 - [x] **MLT/DG Toggle** - UI toggle to switch between MLT and DG tender types
 - [x] **Two-Step Tender Creation** - Step 1: Upload PDF for extraction, Step 2: Review and confirm data
+- [x] **PDF Upload Fixed** (Jan 30, 2026) - Updated emergentintegrations API usage from deprecated `FileContent` to `FileContentWithMimeType` with `gemini-2.5-flash` model
 - [x] **DG-Specific Fields** - Added 12 new fields for DG tenders:
   - `address`, `state_name`, `output_capacity_rating`, `control_panel`, `installation`
   - `is_eligible`, `eligibility_reason`, `l1_price`, `mm_price`, `winning_brand`
