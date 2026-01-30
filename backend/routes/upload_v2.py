@@ -667,41 +667,46 @@ async def process_lead_upload(db, df: pd.DataFrame, current_user: User, filename
                 }, {"_id": 0}).to_list(10)
                 
                 if phone_matches:
-                    # Check each match
+                    # Check ALL matches to find the best one
+                    # Priority: 1) OPEN lead with same KVA (merge)
+                    #           2) CLOSED lead with same KVA (skip)
+                    #           3) No KVA match (create new)
+                    
+                    open_same_kva = None
+                    closed_same_kva = None
+                    
                     for match in phone_matches:
                         existing_stage = match.get('enquiry_stage', '')
                         existing_kva = match.get('kva')
+                        kva_matches = compare_kva(existing_kva, kva)
                         
                         if is_lead_closed(existing_stage):
-                            # CLOSED lead - check if incoming has enquiry_no
-                            if enquiry_no:
-                                # Has enquiry_no - this is a repeat customer, create NEW lead
-                                existing = None
-                                match_type = None
-                                break
-                            else:
-                                # No enquiry_no - check KVA
-                                if compare_kva(existing_kva, kva):
-                                    # Same KVA, no enquiry_no - SKIP as duplicate of closed lead
-                                    existing = match
-                                    match_type = "phone_closed_skip"
-                                    break
-                                else:
-                                    # Different KVA - create NEW lead
-                                    existing = None
-                                    match_type = None
-                                    break
+                            if kva_matches and not closed_same_kva:
+                                closed_same_kva = match
                         else:
-                            # OPEN lead - check KVA
-                            if compare_kva(existing_kva, kva):
-                                # Same KVA - DUPLICATE
-                                existing = match
-                                match_type = "phone_kva"
-                                break
-                            else:
-                                # Different KVA - create NEW
-                                existing = None
-                                match_type = None
+                            # OPEN lead
+                            if kva_matches and not open_same_kva:
+                                open_same_kva = match
+                    
+                    # Decision logic
+                    if open_same_kva:
+                        # Found OPEN lead with same KVA - merge as duplicate
+                        existing = open_same_kva
+                        match_type = "phone_kva"
+                    elif closed_same_kva:
+                        # Found CLOSED lead with same KVA
+                        if enquiry_no:
+                            # Has enquiry_no - repeat customer, create NEW
+                            existing = None
+                            match_type = None
+                        else:
+                            # No enquiry_no - SKIP as duplicate of closed
+                            existing = closed_same_kva
+                            match_type = "phone_closed_skip"
+                    else:
+                        # No KVA match found - create NEW lead (different product)
+                        existing = None
+                        match_type = None
             
             # PROCESS based on match result
             if existing and match_type == "enquiry_no":
