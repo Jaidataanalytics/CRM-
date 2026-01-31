@@ -351,6 +351,36 @@ None currently
 }
 ```
 
+### DG Tender Import/Export - 25 Column GEM Tracker Template (Jan 31, 2026)
+- [x] **Import Endpoint**: `POST /api/tenders/import-dg-tenders` - Imports from user's GEM Tracker Excel format
+- [x] **Export Configuration**: Frontend ExportButton generates Excel matching GEM Tracker template
+- [x] **25 Columns Supported**:
+  1. S- No- (auto-generated)
+  2. BID Ref- → bid_number
+  3. BID Date/Entry Date → dated
+  4. Due Date → bid_end_date
+  5. Month → month
+  6. Cat I'd → category_id
+  7. Department Name /Segment → department_name
+  8. Department Name/ Address → department_address
+  9. State → state_name
+  10. Region → region
+  11. Rating → output_capacity_rating
+  12. Panel → panel_type
+  13. ITC Yes/No → itc_applicable (boolean)
+  14. Eligibility Y/N → is_eligible (boolean)
+  15. Reson for Not Eligibility → ineligibility_reason
+  16. Bid Qty → total_quantity
+  17. Participation by MM Yes / No → mm_participated (boolean)
+  18. M&M Participated Firm Name → mm_firm_name
+  19. Status → status
+  20. Order Qty → order_quantity
+  21. L1 Price (Rs-) → l1_price
+  22. MM Price → mm_price
+  23. Winning Brand → winning_brand
+  24. Win By → win_by
+  25. Remark → remark
+
 ---
-*Last Updated: Jan 29, 2026*
-*Latest Feature: Dual-Tender System (MLT vs DG)*
+*Last Updated: Jan 31, 2026*
+*Latest Feature: DG Tender 25-Column GEM Tracker Import/Export*
