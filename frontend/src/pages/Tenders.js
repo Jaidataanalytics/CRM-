@@ -638,6 +638,52 @@ const Tenders = () => {
           >
             Export
           </ExportButton>
+          {tenderType === 'dg' && (
+            <div className="relative">
+              <input
+                type="file"
+                id="import-dg-file"
+                className="hidden"
+                accept=".xlsx,.xls"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  
+                  toast.info('Importing DG tenders...');
+                  
+                  try {
+                    const res = await axios.post(`${API}/tenders/import-dg-tenders`, formData, {
+                      withCredentials: true,
+                      headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+                    
+                    if (res.data.success) {
+                      toast.success(`${res.data.message}`);
+                      loadTenders();
+                    } else {
+                      toast.error('Import failed');
+                    }
+                  } catch (err) {
+                    toast.error(err.response?.data?.detail || 'Import failed');
+                  }
+                  
+                  // Reset file input
+                  e.target.value = '';
+                }}
+              />
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => document.getElementById('import-dg-file')?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </div>
+          )}
           <Button onClick={() => { resetForm(tenderType); setShowUploadModal(true); }}>
             <Plus className="h-4 w-4 mr-2" />
             Add {tenderType === 'dg' ? 'DG' : 'MLT'} Tender
