@@ -1091,13 +1091,6 @@ async def import_dg_tenders(
                         value = str(value).strip() if value and not pd.isna(value) else ""
                     
                     tender_data[db_field] = value
-                    elif db_field == 'output_capacity_rating':
-                        # Ensure KVA is stored as string
-                        value = str(value) if value else ""
-                    else:
-                        value = str(value) if value else ""
-                    
-                    tender_data[db_field] = value
             
             # Check if tender already exists by bid_number
             bid_number = tender_data.get('bid_number', '')
