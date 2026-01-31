@@ -980,20 +980,36 @@ async def import_dg_tenders(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to read Excel file: {str(e)}")
     
-    # Map column names to database fields
+    # Map column names to database fields (GEM Tracker format)
     column_mapping = {
-        'Bid Number': 'bid_number',
-        'Dated': 'dated',
-        'End Date': 'bid_end_date',
-        'Department': 'department_name',
+        'S- No-': 'serial_no',
+        'BID Ref-': 'bid_number',
+        'BID Date/Entry Date': 'dated',
+        'Due Date': 'bid_end_date',
+        'Month': 'month',
+        'Cat I\'d': 'category_id',
+        'Department Name /Segment': 'department_name',
+        'Department Name/ Address': 'department_address',
         'State': 'state_name',
-        'KVA': 'output_capacity_rating',
-        'Qty': 'total_quantity',
-        'Eligible': 'is_eligible',
-        'L1 Price': 'l1_price',
+        'Region': 'region',
+        'Rating': 'output_capacity_rating',
+        'Rating ': 'output_capacity_rating',  # Handle trailing space
+        'Panel': 'panel_type',
+        'ITC Yes/No': 'itc_applicable',
+        'Eligibility Y/N': 'is_eligible',
+        'Reson for Not Eligibility': 'ineligibility_reason',
+        'Bid Qty': 'total_quantity',
+        'Participation by MM Yes / No': 'mm_participated',
+        'M&M Participated Firm Name': 'mm_firm_name',
+        'M&M Participated Firm Name ': 'mm_firm_name',  # Handle trailing space
+        'Status': 'status',
+        'Order Qty': 'order_quantity',
+        'L1 Price (Rs-)': 'l1_price',
         'MM Price': 'mm_price',
-        'Winner': 'winning_brand',
-        'Status': 'status'
+        'Winning Brand': 'winning_brand',
+        'Winning Brand ': 'winning_brand',  # Handle trailing space
+        'Win By': 'win_by',
+        'Remark': 'remark'
     }
     
     imported = 0
@@ -1013,7 +1029,7 @@ async def import_dg_tenders(
                     "action": "imported",
                     "date": datetime.now(timezone.utc).isoformat(),
                     "user": current_user.email,
-                    "details": "Imported from Excel"
+                    "details": "Imported from GEM Tracker Excel"
                 }]
             }
             
@@ -1022,12 +1038,16 @@ async def import_dg_tenders(
                 if excel_col in row.index:
                     value = row[excel_col]
                     
+                    # Skip serial_no - we don't need to store it
+                    if db_field == 'serial_no':
+                        continue
+                    
                     # Handle NaN values
                     if pd.isna(value):
-                        if db_field in ['l1_price', 'mm_price', 'total_quantity']:
+                        if db_field in ['l1_price', 'mm_price', 'total_quantity', 'order_quantity']:
                             value = 0
-                        elif db_field == 'is_eligible':
-                            value = True
+                        elif db_field in ['is_eligible', 'itc_applicable', 'mm_participated']:
+                            value = False
                         else:
                             value = ""
                     
@@ -1039,15 +1059,38 @@ async def import_dg_tenders(
                             value = str(value)[:10]
                     elif db_field == 'bid_end_date' and value:
                         if hasattr(value, 'strftime'):
-                            value = value.strftime('%Y-%m-%d %H:%M:%S')
+                            value = value.strftime('%Y-%m-%d')
                         else:
-                            value = str(value)
-                    elif db_field == 'is_eligible':
-                        value = bool(value) if not pd.isna(value) else True
+                            value = str(value)[:10] if value else ""
+                    elif db_field in ['is_eligible', 'itc_applicable']:
+                        # Handle YES/NO/Y/N values
+                        if isinstance(value, str):
+                            value = value.strip().upper() in ['YES', 'Y', 'TRUE', '1']
+                        else:
+                            value = bool(value) if not pd.isna(value) else False
+                    elif db_field == 'mm_participated':
+                        # Handle Yes/No values
+                        if isinstance(value, str):
+                            value = value.strip().lower() in ['yes', 'y', 'true', '1']
+                        else:
+                            value = bool(value) if not pd.isna(value) else False
                     elif db_field in ['l1_price', 'mm_price']:
-                        value = float(value) if value else 0
-                    elif db_field == 'total_quantity':
-                        value = int(value) if value else 0
+                        try:
+                            value = float(value) if value and not pd.isna(value) else 0
+                        except:
+                            value = 0
+                    elif db_field in ['total_quantity', 'order_quantity']:
+                        try:
+                            value = int(float(value)) if value and not pd.isna(value) else 0
+                        except:
+                            value = 0
+                    elif db_field == 'output_capacity_rating':
+                        # Ensure KVA/Rating is stored as string
+                        value = str(value).strip() if value else ""
+                    else:
+                        value = str(value).strip() if value and not pd.isna(value) else ""
+                    
+                    tender_data[db_field] = value
                     elif db_field == 'output_capacity_rating':
                         # Ensure KVA is stored as string
                         value = str(value) if value else ""
