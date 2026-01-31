@@ -1,72 +1,72 @@
 <analysis>**original_problem_statement:**
-The user initiated a major refactor of the data upload functionality and reported several subsequent bugs. The core tasks are:
+The user initiated a major refactor of data upload functionality, reported subsequent bugs, and then requested a series of significant feature enhancements and bug fixes. The core requirements include:
 
-1.  **New Upload Logic:** The user provided very specific business logic for four different types of file uploads: **Lead**, **Lost Leads**, **Sales Order (SO)**, and a new **Remark** upload. This logic involves a multi-step matching process using , , and , with different outcomes based on whether an existing lead is  or .
-2.  **UI Overhaul:**
-    *   Consolidate all separate upload buttons on the Manage Leads page into a single Upload File button.
-    *   Implement automatic template detection (Lead, Lost, SO, Remark) based on the columns in the uploaded file.
-    *   Display a confirmation modal to the user showing the detected file type before processing.
-    *   Create a single Download Template button that opens a modal with options to download any of the four templates.
-3.  **Bug Fixes:**
-    *   The user reported that uploading the same lead file twice was creating new leads instead of identifying them as duplicates.
-    *   The user reported that downloaded Excel templates were corrupted and could not be opened.
-    *   The user is currently reporting an error when trying to upload a PDF on the Tender Tracking page.
+1.  **Data Upload Refactor:** Implement complex, user-defined business logic for Lead, Lost Leads, SO, and Remark file uploads, including a consolidated UI with auto-detection.
+2.  **Forecast Enhancement:** Fix a Year-over-Year comparison bug and build a comprehensive new forecasting suite, including dealer-wise KVA forecasts, dealer-district splits, saving the complete forecast output (charts, trends), and an Excel export function.
+3.  **DG Tender Workflow:** Implement a data import/export system for DG Tenders, which later required a template change to a specific 25-column format provided by the user.
+4.  **Bug Fixes:**
+    *   Fix duplicate lead creation.
+    *   Fix corrupted Excel template downloads.
+    *   Fix PDF upload errors due to a library update.
+    *   **Critical/Recurring:** Fix repeated 520 errors in the deployed production environment.
+    *   Fix the Manage Leads export to respect active filters.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The agent has successfully implemented the majority of the user's requests.
-- A new, robust backend service () has been created to handle the complex business logic for all four upload types.
-- The frontend Manage Leads page () has been updated with a new, unified UI component () that replaces the old separate buttons with a single Upload File and Download Template workflow.
-- Several critical bugs in the duplicate detection logic have been fixed, including an issue with phone number normalization from Excel files and a faulty database query that was not correctly comparing KVA values.
-- The agent has identified the cause of the Tender PDF upload error: a breaking change in the  library. The code is being updated to use the new API.
+The agent has implemented a significant portion of the requests. The initial data upload refactor is complete. The new comprehensive forecast suite has been built, and bugs reported by the user (incorrect dealer-district logic, partial save, non-working export) have been fixed. Multiple critical bugs causing deployment failures (hardcoded URLs,  errors, CORS issues) have been identified and patched. An automatic admin user seeding mechanism was added to support fresh database deployments. The Manage Leads export now correctly applies filters. The agent is currently in the middle of updating the DG Tender import/export functionality to match a new, user-specified 25-column template.
 
 **Last working item**:
-- **Last item agent was working**: Fixing the Tender PDF upload error. The  library API was updated, deprecating the  class. The agent identified that the new  class must be used. After consulting the  subagent, the agent updated the code in  to use the correct class, model name (), and file attachment method (). The fix has been written to the file but has not yet been tested.
+- **Last item agent was working**: Updating the DG Tender import/export functionality to match a new 25-column Excel template (). The agent analyzed the new template, updated the frontend export configuration in , and started updating the backend import logic in . The work is not yet complete.
 - **Status**: IN PROGRESS
 - **Agent Testing Done**: N
-- **Which testing method agent to use?**: backend testing agent. Create a test script to call the  endpoint with a sample PDF and verify it returns a successful JSON response with extracted data.
+- **Which testing method agent to use?**: both. Use the backend testing agent to verify the import logic with the user-provided file. Use the frontend testing agent to verify the Export button on the Tenders page downloads a file with the correct 25-column format.
 - **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
-- **Issue 1 (P0): Fix Tender PDF Upload Error**
-    - **Attempted fixes**: The agent correctly diagnosed that an  library update caused the error. It updated the code in  to use the new  class, provider (), model (), and payload structure as per the integration playbook. The code changes have been applied.
+- **Issue 1 (P0): Complete DG Tender Template Update**
+    - **Description**: The user provided a new 25-column Excel template for DG tenders. The agent has only partially updated the backend import logic in . The remainder of the function must be adapted to the new column names and data mappings.
+    - **Attempted fixes**: The agent updated the frontend export config and the initial column mapping in the backend import function.
     - **Next debug checklist**:
-        1.  Restart the backend service with backend: stopped
-backend: started to ensure the latest changes are loaded.
-        2.  Execute a  command or a python script to send a test PDF file to the  endpoint.
-        3.  Inspect the response and backend logs (==> /var/log/supervisor/backend.err.log <==
-INFO:     Stopping reloader process [47]
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [204] using WatchFiles
-INFO:     Started server process [206]
-INFO:     Waiting for application startup.
-INFO:server:Starting Lead Management Dashboard API...
-INFO:server:Successfully connected to MongoDB
-INFO:server:Running metric_settings migration...
-INFO:server:Found 14 existing metrics: {'conversion_rate', 'warm_leads', 'test_lead_duration', 'cold_leads', 'hot_lead_rate', 'closed_leads', 'avg_lead_age', 'test_win_rate', 'open_leads', 'won_leads', 'test_formula', 'lost_leads', 'hot_leads', 'avg_closure_time'}
-INFO:server:Migration complete: no updates needed
-INFO:server:Running data normalization migration...
-INFO:server:Data normalization complete: no duplicates found
-INFO:server:Running lost leads enquiry_date migration...
-INFO:server:Lost leads migration: No updates needed
-INFO:server:Running lost leads field mapping migration...
-
-==> /var/log/supervisor/backend.out.log <==) for any errors.
-        4.  Confirm the  is present in the environment.
-    - **Why fix this issue and what will be achieved with the fix?**: This is a critical feature for the Tender Tracking page. Fixing it will restore the ability to create tenders by auto-extracting data from PDFs.
+        1.  Review , specifically the  endpoint.
+        2.  Finish modifying the logic from line ~1050 onwards to correctly process all columns from the new Excel file, paying close attention to date parsing, data type conversion, and field lookups.
+        3.  Restart the backend service.
+        4.  Test the import using the provided  file.
+        5.  Test the export from the Tenders page and verify the downloaded Excel has the correct 25 columns and data.
+    - **Why fix this issue and what will be achieved with the fix?**: This aligns the application's data format with the user's primary operational tracker, which is a critical workflow requirement.
     - **Status**: IN PROGRESS
     - **Is recurring issue?**: N
-    - **Should Test frontend/backend/both after fix?**: Backend
+    - **Should Test frontend/backend/both after fix?**: Both
+    - **Blocked on other issue**: None
+
+- **Issue 2 (P1): Recurring Deployment Failures (520 Error)**
+    - **Description**: The user has repeatedly experienced 520 errors in the deployed environment, indicating the backend server is crashing. The agent has fixed multiple potential causes (, hardcoded URLs, CORS,  format). The issue persists, and user confidence is low.
+    - **Attempted fixes**:
+        - Fixed  to correctly include  files.
+        - Replaced hardcoded frontend URLs with relative  paths.
+        - Updated the backend CORS policy to allow the  domain.
+        - Added default admin user seeding for new database environments.
+    - **Next debug checklist**:
+        1.  After completing the DG Tender task, ask the user to redeploy.
+        2.  If the 520 error recurs, **immediately** use the  to fetch production logs.
+        3.  Analyze the production logs for the exact crash reason. The most likely remaining culprits are environment-specific: an invalid  format for Atlas, a firewall/network issue blocking the DB connection, or another missing environment variable in the deployment configuration.
+    - **Why fix this issue and what will be achieved with the fix?**: This is a critical blocker preventing the user from using the application. Resolving it is essential for project success.
+    - **Status**: TESTING PENDING
+    - **Is recurring issue?**: Y
+    - **Should Test frontend/backend/both after fix?**: Backend (by checking deployment logs)
     - **Blocked on other issue**: None
 
 **In progress Task List**:
-No other tasks are in progress. All focus is on the above issue.
+- **Task 1: Complete DG Tender Template Update**
+    - **Where to resume**: In , continue updating the  function to correctly handle all 25 columns from the user's new template.
+    - **What will be achieved with this?**: The application will correctly import and export DG Tender data using the user's specified Excel format.
+    - **Status**: IN PROGRESS
+    - **Should Test frontend/backend/both after fix?**: Both
+    - **Blocked on something**: None
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks**:
-    *   **(P1) Refactor  and **: These large files should be broken down into smaller, more manageable components. (Carried over)
+    *   **(P1) Refactor Large Frontend Files**: , , and  are large and complex. They should be broken down into smaller, more manageable components to improve maintainability.
 *   **Future Tasks**:
     *   **(P2)** Financial Year Standardization audit.
     *   **(P2)** Funnel Analysis visualization.
@@ -77,23 +77,25 @@ No other tasks are in progress. All focus is on the above issue.
     *   **(P2)** Detailed Audit Logs.
 
 **Completed work in this session**
-- **Feature: Unified Data Upload System**:
-    - Architected and implemented a new backend service () to handle four different upload types (Lead, Lost, SO, Remark) with complex, user-defined business logic.
-    - Implemented a template auto-detection mechanism based on file headers.
-    - Created a unified frontend component () on the  page, replacing multiple buttons with a single Upload File button and a Download Template modal.
-- **Bug Fix: Incorrect Duplicate Lead Detection**:
-    - Resolved a critical bug where uploading an identical file twice created new leads. The root causes were:
-        1.  Incorrect phone number normalization from Excel floats (e.g.,  becoming ).
-        2.  A faulty database query that only checked the *first* matching lead for KVA, instead of all of them.
-- **Bug Fix: Corrupted Excel Template Downloads**:
-    - Fixed an issue where downloaded templates were invalid by correcting the API call in the frontend to include the  prefix, which is required by the environment's ingress routing.
+- **Feature: Comprehensive Forecast Enhancement**:
+    - Architected and implemented a new backend service () with multiple new endpoints (dealer-KVA, dealer-district, scenarios, etc.).
+    - Created a new frontend component () and integrated it into .
+    - Implemented a full Excel export for generated forecasts.
+    - Fixed the Save Projection feature to store and display all enhanced data.
+- **Bug Fix: Deployment Stability**:
+    - **Hardcoded URLs**: Refactored 28 frontend files to use relative  paths, fixing a critical cross-origin issue in deployment.
+    - **.gitignore**: Fixed rules that were incorrectly excluding essential  files from the deployment package.
+- **Bug Fix: Manage Leads Export**: Modified the backend endpoint () to correctly respect all active filters passed from the frontend.
+- **Feature: DG Tender Data Import**: Created a new backend endpoint and a corresponding UI button to allow importing of DG Tender data from an Excel file.
+- **Bug Fix: Summary Builder YoY:** Fixed a logic error in  that caused incorrect Year-over-Year calculations.
+- **Feature: Automatic Admin Seeding**: Added logic to  to automatically create a default admin user on startup if one doesn't exist, simplifying new deployments.
 
 **Earlier issues found/mentioned but not fixed**
 - **Issue 1: Incomplete Refactoring**
-    - The large files  and  have not yet been refactored into smaller components. This is noted in Upcoming Tasks.
+    - The large files , , and  have not yet been refactored. This is noted in Upcoming Tasks.
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence in previous fork**: The frontend build folder () can become stale, causing 404 errors or showing an old UI.
+- **Issue recurrence in previous fork**: Stale frontend build () can cause UI issues.
 - **Recurrence count**: 4
 - **Status**: RESOLVED (workaround). The fix remains to run yarn run v1.22.22
 info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command. when this occurs.
@@ -102,74 +104,77 @@ info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this comm
 
 
 **Key Technical Concepts**
-- **Business Logic Implementation**: Translated a complex set of user-defined rules for data ingestion into a robust backend service.
-- **UI Consolidation**: Replaced a repetitive and scattered UI with a single, reusable React component to improve maintainability and user experience.
-- **Systematic Debugging**: Successfully diagnosed and fixed multiple elusive bugs, including data corruption from type casting (Excel float to string) and incorrect database query logic.
-- **Integration API Adaptation**: Handled a breaking change in a third-party library () by investigating the new API and updating the application code accordingly.
+- **Deployment Debugging**: Systematically diagnosed and fixed multiple critical deployment blockers, including  misconfigurations, hardcoded frontend URLs, and CORS policies.
+- **Relative URL Refactoring**: Replaced absolute, environment-specific URLs in the frontend with relative paths () to ensure the application works in any environment (preview or production).
+- **Complex Data Aggregation (MongoDB)**: Implemented and debugged numerous complex aggregation pipelines for the new forecast features.
+- **Data Seeding**: Implemented an automatic admin user creation process on application startup to handle fresh database deployments.
+- **Data Import/Export (Pandas)**: Created backend logic to parse user-provided Excel files for data import and to generate complex, multi-sheet Excel reports.
 
 **key DB schema**
-- ****: The schema now implicitly supports a  array of objects and a  string, which are managed by the new upload logic in .
-- ****: The schema is unchanged, but the routes that write to it are currently being fixed.
+- ****: The schema supports fields required for the DG Tender workflow, such as , , , , , , , .
+- ****: The schema was updated to store a comprehensive  object, containing all new forecast analyses (dealer-KVA breakdowns, charts, recommendations, etc.).
 
 **All files of reference**
--    (File being fixed for the PDF upload error)
--    (The new, consolidated upload logic)
--    (The new unified frontend component)
--    (Where the new UI component is used)
--    (Contains user requirements and completed tasks)
+-    (File being modified for the new DG template)
+-    (Modified for the new DG export columns)
+-    (Contains all new forecast features)
+-    (Integrates all new forecast features)
+-    (Contains admin seeding logic)
+-    (Modified to fix a critical deployment issue)
+-    (Modified to fix the export filter bug)
+-    (New utility for relative API calls)
 
 **Areas that need refactoring**:
--   , , and  are still large files that should be broken down into smaller, single-responsibility components in the future.
+-   , , , and  are all very large and complex files that should be broken down into smaller, single-responsibility components to improve code quality and maintainability.
 
 **key api endpoints**
--   **NEW Endpoints (in )**:
+-   **NEW ()**:
     -   
     -   
     -   
--   **Endpoints BEING FIXED (in )**:
     -   
-    -   
+-   **MODIFIED ()**:
+    -    (Logic is currently being updated for the new template)
+-   **MODIFIED ()**:
+    -    (Now correctly applies all filters)
 
 **Critical Info for New Agent**
-1.  **Priority #1: Test the Tender PDF Upload Fix.** The agent has just applied a fix to  to handle a breaking change in the  library. Your first action should be to restart the backend (backend: stopped
-backend: started) and then test the  endpoint to confirm the fix works.
-2.  **Upload Logic is Complex and Centralized.** All data upload functionality is now in . Do not modify the old . Before touching the new file, review the user's detailed logic requirements, as it is highly specific.
-3.  **Frontend Stale Build Issue is a Known Quirk.** If the UI appears broken or outdated (e.g., 404 errors), the standard fix is to run yarn run v1.22.22
-info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command..
+1.  **Priority #1: Complete the DG Tender Template Update.** Your immediate task is to finish updating the backend import logic in  to correctly map and process the new 25-column format provided by the user. Test both the import and export thoroughly.
+2.  **Priority #2: Prepare for Deployment Verification.** The user has faced repeated 520 deployment errors and has low confidence. Multiple critical bugs have been fixed. After the DG tender task is complete, the user will redeploy. Be prepared to immediately investigate production logs via the  if the error persists. The root cause is likely environment-specific (e.g., MongoDB Atlas connection issues).
+3.  **Frontend API Calls are Now Relative.** All frontend files were refactored to use relative URLs (e.g., ). Do not reintroduce absolute URLs.
+4.  **Admin User is Seeded on Startup.** The / user is created automatically if it doesn't exist. This is crucial for testing in fresh deployment environments.
 
 **documents and test reports created in this job**
--   
--   
+None.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Reports an error when uploading a PDF for a tender. **(IN PROGRESS)**
-2.  **User**: Reports the preview is not working. **(RESOLVED)**
-3.  **User**: Confirms the duplicate lead count is much better after the fix. **(COMPLETED)**
-4.  **Agent**: Explains the bug that caused the incorrect duplicate count. **(COMPLETED)**
-5.  **User**: Asks why uploading the same file twice created new leads. **(IN PROGRESS)**
-6.  **Agent**: Provides the incorrect results from the second upload. **(IN PROGRESS)**
-7.  **User**: Provides the same test sheet again. **(IN PROGRESS)**
-8.  **Agent**: Provides the results of the first upload. **(IN PROGRESS)**
-9.  **User**: Provides a test sheet to test the new logic. **(IN PROGRESS)**
-10. **Agent**: Confirms the new lead upload logic is implemented and ready to test. **(COMPLETED)**
+1.  **User**: Provides a new Excel file () as the correct template for DG Tender exports and asks for changes. **(IN PROGRESS)**
+2.  **User**: Asks for 100% certainty that the next deployment will work. **(PENDING)**
+3.  **User**: Mentions a previous deployment failure was due to an indentation error preventing  files from loading. **(RESOLVED)**
+4.  **User**: Reports the deployed version has a 520 error again and the Manage Leads export ignores filters. **(PARTIALLY RESOLVED: Export fixed, deployment issue pending verification)**
+5.  **User**: Provides historical DG Tender data to be imported. **(SUPERSEDED by message #1)**
+6.  **User**: Reports issues with the new forecast feature (incomplete save, non-working export, incorrect district logic). **(RESOLVED)**
+7.  **User**: Provides answers to the agent's second set of clarifying questions on the forecast feature. **(COMPLETED)**
+8.  **User**: Provides answers to the agent's first set of clarifying questions on the forecast feature. **(COMPLETED)**
+9.  **User**: Reports a bug in the summary builder and requests a large suite of new forecast features. **(IN PROGRESS)**
+10. **User**: Reports that a file upload fails in deployment but works in preview. **(RESOLVED)**
 
 **Project Health Check:**
-*   **Broken**: The Tender PDF Upload functionality is currently broken, with a fix pending testing.
+*   **Broken**: The application is currently failing in the production environment with a 520 error, pending user verification of the latest fixes. The DG Tender import/export logic is partially implemented and non-functional until the update is complete.
 *   **Mocked**: None.
 
 **3rd Party Integrations**
-*   **emergentintegrations**: Used for Gemini PDF extraction. The agent is currently fixing a breaking change in this library's API. The updated code uses .
-*   **pandas / openpyxl**: Used extensively in  to read and generate Excel files for the new upload system.
+*   **emergentintegrations**: Used for Gemini PDF extraction.
+*   **pandas / openpyxl / xlsxwriter**: Used for all data import and export functionality (Leads, Tenders, Forecast).
 
 **Testing status**
-- **Testing agent used after significant changes**: YES
+- **Testing agent used after significant changes**: NO
 - **Troubleshoot agent used after agent stuck in loop**: NO
 - **Test files created**: None
-- **Known regressions**: The Tender PDF upload functionality has regressed due to a library update.
+- **Known regressions**: The application is not functional in the deployed environment.
 
 **Credentials to test flow:**
-*   **Admin User**:  / 
-*   **Tender User**:  / 
+*   **Admin User**:  /  (This user is now auto-seeded on startup if it doesn't exist).
 
 **What agent forgot to execute**
-The agent has applied the code changes to fix the Tender PDF upload error but has not yet restarted the backend service and tested the fix. This is the immediate next step.</analysis>
+The agent has only partially completed the update to the DG Tender import logic in . The function needs to be fully adapted to the new 25-column template before it will work correctly.</analysis>
