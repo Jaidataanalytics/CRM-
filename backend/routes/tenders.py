@@ -951,3 +951,155 @@ async def delete_competitor_master(
         raise HTTPException(status_code=404, detail="Competitor not found")
     
     return {"message": "Competitor deactivated successfully"}
+
+
+# ============================================
+# DG TENDER IMPORT FROM EXCEL
+# ============================================
+
+@router.post("/import-dg-tenders")
+async def import_dg_tenders(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Import DG tenders from Excel file.
+    Expected columns: Bid Number, Dated, End Date, Department, State, KVA, Qty, Eligible, L1 Price, MM Price, Winner, Status
+    """
+    import pandas as pd
+    import io
+    
+    db = await get_db(request)
+    
+    # Read file
+    content = await file.read()
+    
+    try:
+        df = pd.read_excel(io.BytesIO(content))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to read Excel file: {str(e)}")
+    
+    # Map column names to database fields
+    column_mapping = {
+        'Bid Number': 'bid_number',
+        'Dated': 'dated',
+        'End Date': 'bid_end_date',
+        'Department': 'department_name',
+        'State': 'state_name',
+        'KVA': 'output_capacity_rating',
+        'Qty': 'total_quantity',
+        'Eligible': 'is_eligible',
+        'L1 Price': 'l1_price',
+        'MM Price': 'mm_price',
+        'Winner': 'winning_brand',
+        'Status': 'status'
+    }
+    
+    imported = 0
+    updated = 0
+    errors = []
+    
+    for idx, row in df.iterrows():
+        try:
+            # Build tender document
+            tender_data = {
+                "tender_type": "dg",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "created_by": current_user.email,
+                "documents": [],
+                "timeline": [{
+                    "action": "imported",
+                    "date": datetime.now(timezone.utc).isoformat(),
+                    "user": current_user.email,
+                    "details": "Imported from Excel"
+                }]
+            }
+            
+            # Map each column
+            for excel_col, db_field in column_mapping.items():
+                if excel_col in row.index:
+                    value = row[excel_col]
+                    
+                    # Handle NaN values
+                    if pd.isna(value):
+                        if db_field in ['l1_price', 'mm_price', 'total_quantity']:
+                            value = 0
+                        elif db_field == 'is_eligible':
+                            value = True
+                        else:
+                            value = ""
+                    
+                    # Type conversions
+                    if db_field == 'dated' and value:
+                        if hasattr(value, 'strftime'):
+                            value = value.strftime('%Y-%m-%d')
+                        else:
+                            value = str(value)[:10]
+                    elif db_field == 'bid_end_date' and value:
+                        if hasattr(value, 'strftime'):
+                            value = value.strftime('%Y-%m-%d %H:%M:%S')
+                        else:
+                            value = str(value)
+                    elif db_field == 'is_eligible':
+                        value = bool(value) if not pd.isna(value) else True
+                    elif db_field in ['l1_price', 'mm_price']:
+                        value = float(value) if value else 0
+                    elif db_field == 'total_quantity':
+                        value = int(value) if value else 0
+                    elif db_field == 'output_capacity_rating':
+                        # Ensure KVA is stored as string
+                        value = str(value) if value else ""
+                    else:
+                        value = str(value) if value else ""
+                    
+                    tender_data[db_field] = value
+            
+            # Check if tender already exists by bid_number
+            bid_number = tender_data.get('bid_number', '')
+            if bid_number:
+                existing = await db.tenders.find_one({
+                    "bid_number": bid_number,
+                    "tender_type": "dg"
+                })
+                
+                if existing:
+                    # Update existing tender
+                    tender_data.pop('created_at', None)
+                    tender_data.pop('created_by', None)
+                    tender_data.pop('timeline', None)
+                    tender_data.pop('documents', None)
+                    
+                    await db.tenders.update_one(
+                        {"_id": existing["_id"]},
+                        {
+                            "$set": tender_data,
+                            "$push": {
+                                "timeline": {
+                                    "action": "updated",
+                                    "date": datetime.now(timezone.utc).isoformat(),
+                                    "user": current_user.email,
+                                    "details": "Updated from Excel import"
+                                }
+                            }
+                        }
+                    )
+                    updated += 1
+                else:
+                    # Insert new tender
+                    await db.tenders.insert_one(tender_data)
+                    imported += 1
+            else:
+                errors.append({"row": idx + 2, "error": "Missing Bid Number"})
+                
+        except Exception as e:
+            errors.append({"row": idx + 2, "error": str(e)})
+    
+    return {
+        "success": True,
+        "imported": imported,
+        "updated": updated,
+        "errors": errors,
+        "message": f"Imported {imported} new tenders, updated {updated} existing tenders"
+    }
