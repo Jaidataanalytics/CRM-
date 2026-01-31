@@ -309,29 +309,40 @@ async def export_leads(
     state: Optional[str] = None,
     dealer: Optional[str] = None,
     segment: Optional[str] = None,
+    employee_name: Optional[str] = None,
     enquiry_status: Optional[str] = None,
     enquiry_stage: Optional[str] = None,
     enquiry_type: Optional[str] = None,
+    kva_min: Optional[float] = None,
+    kva_max: Optional[float] = None,
+    max_lead_age: Optional[int] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     followup_start_date: Optional[str] = None,
     followup_end_date: Optional[str] = None,
     only_open_followups: Optional[bool] = None,
+    search: Optional[str] = None,
+    search_field: Optional[str] = None,
     format: str = Query("xlsx", regex="^(xlsx|csv)$")
 ):
-    """Export leads to Excel or CSV"""
+    """Export leads to Excel or CSV with ALL filters applied"""
     import pandas as pd
+    from datetime import datetime as dt, timedelta
     
     db = await get_db(request)
     
     # Build filter query - exclude soft-deleted leads
     query = {"deleted_at": {"$exists": False}}
+    
+    # Basic filters
     if state:
         query["state"] = state
     if dealer:
         query["dealer"] = dealer
     if segment:
         query["segment"] = segment
+    if employee_name:
+        query["employee_name"] = employee_name
     if enquiry_status:
         query["enquiry_status"] = enquiry_status
     if enquiry_stage:
@@ -345,8 +356,27 @@ async def export_leads(
         elif len(types) > 1:
             query["enquiry_type"] = {"$in": types}
     
+    # KVA range filter
+    if kva_min is not None or kva_max is not None:
+        kva_query = {}
+        if kva_min is not None:
+            kva_query["$gte"] = kva_min
+        if kva_max is not None:
+            kva_query["$lte"] = kva_max
+        if kva_query:
+            query["kva"] = kva_query
+    
+    # Lead age filter
+    if max_lead_age is not None:
+        cutoff_date = (dt.now() - timedelta(days=max_lead_age)).strftime("%Y-%m-%d")
+        if "enquiry_date" not in query:
+            query["enquiry_date"] = {}
+        query["enquiry_date"]["$gte"] = cutoff_date
+    
+    # Date range filter
     if start_date or end_date:
-        query["enquiry_date"] = {}
+        if "enquiry_date" not in query:
+            query["enquiry_date"] = {}
         if start_date:
             query["enquiry_date"]["$gte"] = start_date
         if end_date:
@@ -363,6 +393,23 @@ async def export_leads(
     # Only show open leads when filtering by follow-up (can't follow up on closed leads)
     if only_open_followups:
         query["enquiry_status"] = "Open"
+    
+    # Search filter
+    if search and search.strip():
+        search_term = search.strip()
+        if search_field and search_field != 'all':
+            # Search in specific field
+            query[search_field] = {"$regex": search_term, "$options": "i"}
+        else:
+            # Search across multiple fields
+            query["$or"] = [
+                {"name": {"$regex": search_term, "$options": "i"}},
+                {"phone_number": {"$regex": search_term, "$options": "i"}},
+                {"enquiry_no": {"$regex": search_term, "$options": "i"}},
+                {"email_address": {"$regex": search_term, "$options": "i"}},
+                {"corporate_name": {"$regex": search_term, "$options": "i"}},
+                {"dealer": {"$regex": search_term, "$options": "i"}}
+            ]
     
     # Get leads (max 50000 for export)
     leads = await db.leads.find(query, {"_id": 0}).to_list(50000)
