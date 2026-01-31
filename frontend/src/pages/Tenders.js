@@ -608,22 +608,41 @@ const Tenders = () => {
             ))}
           </div>
           <ExportButton
-            data={tenders}
+            data={tenders.map((t, idx) => ({
+              ...t,
+              serial_no: idx + 1,
+              eligibility_display: t.is_eligible ? 'YES' : 'NO',
+              itc_display: t.itc_applicable ? 'YES' : 'NO',
+              participation_display: t.mm_participated ? 'Yes' : 'No'
+            }))}
             filename={`${tenderType}-tenders`}
-            sheetName={tenderType === 'dg' ? 'DG Tenders' : 'MLT Tenders'}
+            sheetName={tenderType === 'dg' ? 'GEM Tracker' : 'MLT Tenders'}
             columns={tenderType === 'dg' ? [
-              { key: 'bid_number', header: 'Bid Number', width: 20 },
-              { key: 'dated', header: 'Dated', width: 12 },
-              { key: 'bid_end_date', header: 'End Date', width: 12 },
-              { key: 'department_name', header: 'Department', width: 30 },
+              { key: 'serial_no', header: 'S- No-', width: 8 },
+              { key: 'bid_number', header: 'BID Ref-', width: 22 },
+              { key: 'dated', header: 'BID Date/Entry Date', width: 18 },
+              { key: 'bid_end_date', header: 'Due Date', width: 12 },
+              { key: 'month', header: 'Month', width: 8 },
+              { key: 'category_id', header: 'Cat I\'d', width: 10 },
+              { key: 'department_name', header: 'Department Name /Segment', width: 30 },
+              { key: 'department_address', header: 'Department Name/ Address', width: 35 },
               { key: 'state_name', header: 'State', width: 15 },
-              { key: 'output_capacity_rating', header: 'KVA', width: 10 },
-              { key: 'total_quantity', header: 'Qty', width: 8 },
-              { key: 'is_eligible', header: 'Eligible', width: 10 },
-              { key: 'l1_price', header: 'L1 Price', width: 12 },
+              { key: 'region', header: 'Region', width: 10 },
+              { key: 'output_capacity_rating', header: 'Rating', width: 12 },
+              { key: 'panel_type', header: 'Panel', width: 10 },
+              { key: 'itc_display', header: 'ITC Yes/No', width: 12 },
+              { key: 'eligibility_display', header: 'Eligibility Y/N', width: 14 },
+              { key: 'ineligibility_reason', header: 'Reson for Not Eligibility', width: 25 },
+              { key: 'total_quantity', header: 'Bid Qty', width: 10 },
+              { key: 'participation_display', header: 'Participation by MM Yes / No', width: 25 },
+              { key: 'mm_firm_name', header: 'M&M Participated Firm Name', width: 28 },
+              { key: 'status', header: 'Status', width: 15 },
+              { key: 'order_quantity', header: 'Order Qty', width: 10 },
+              { key: 'l1_price', header: 'L1 Price (Rs-)', width: 15 },
               { key: 'mm_price', header: 'MM Price', width: 12 },
-              { key: 'winning_brand', header: 'Winner', width: 15 },
-              { key: 'status', header: 'Status', width: 12 }
+              { key: 'winning_brand', header: 'Winning Brand', width: 15 },
+              { key: 'win_by', header: 'Win By', width: 30 },
+              { key: 'remark', header: 'Remark', width: 40 }
             ] : [
               { key: 'bid_number', header: 'Bid Number', width: 20 },
               { key: 'dated', header: 'Dated', width: 12 },
