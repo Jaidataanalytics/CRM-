@@ -393,6 +393,14 @@ const Leads = () => {
       const queryParams = buildQueryParams();
       let url = `${API}/leads/export?${queryParams}&format=xlsx`;
       
+      // Add search filter
+      if (searchQuery && searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery.trim())}`;
+        if (searchField && searchField !== 'all') {
+          url += `&search_field=${encodeURIComponent(searchField)}`;
+        }
+      }
+      
       // Add lead type filter (Hot/Warm/Cold)
       if (selectedLeadTypes.length > 0) {
         url += `&enquiry_type=${encodeURIComponent(selectedLeadTypes.join(','))}`;
