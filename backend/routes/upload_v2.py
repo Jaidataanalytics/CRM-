@@ -93,8 +93,10 @@ LEAD_UPLOAD_MAPPING = {
     "Employee Status": "employee_status", "employee status": "employee_status",
     # Enquiry
     "Enquiry No": "enquiry_no", "enquiry no": "enquiry_no",
+    "Enquiry_No": "enquiry_no", "enquiry_no": "enquiry_no",  # Also handle underscore variants
     "Enquiry No s.o.": "enquiry_no", "enquiry no s.o.": "enquiry_no",
     "Enquiry Date": "enquiry_date", "enquiry date": "enquiry_date",
+    "Enquiry_Date": "enquiry_date", "enquiry_date": "enquiry_date",
     # Customer
     "Customer Type": "customer_type", "customer type": "customer_type",
     "Corporate Name": "corporate_name", "corporate name": "corporate_name",
