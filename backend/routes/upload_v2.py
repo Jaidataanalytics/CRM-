@@ -99,12 +99,16 @@ LEAD_UPLOAD_MAPPING = {
     "Enquiry_Date": "enquiry_date", "enquiry_date": "enquiry_date",
     # Customer
     "Customer Type": "customer_type", "customer type": "customer_type",
+    "customer_type": "customer_type",  # underscore variant
     "Corporate Name": "corporate_name", "corporate name": "corporate_name",
+    "corporate_name": "corporate_name",  # underscore variant
     "Name": "name", "name": "name",
     "Phone Number": "phone_number", "phone number": "phone_number",
+    "phone_number": "phone_number",  # underscore variant
     "Phone": "phone_number", "phone": "phone_number",
     "Mobile": "phone_number", "mobile": "phone_number",
     "Email Address": "email_address", "email address": "email_address",
+    "email_address": "email_address",  # underscore variant
     "Email": "email_address", "email": "email_address",
     "Address": "address", "address": "address",
     "PinCode": "pincode", "pincode": "pincode", "Pin Code": "pincode",
@@ -118,28 +122,44 @@ LEAD_UPLOAD_MAPPING = {
     "Remarks": "remarks", "remarks": "remarks",
     # Status
     "EnquiryStatus": "enquiry_status", "Enquiry Status": "enquiry_status", "enquiry status": "enquiry_status",
+    "enquiry_status": "enquiry_status",  # underscore variant
     "EnquiryType": "enquiry_type", "Enquiry Type": "enquiry_type", "enquiry type": "enquiry_type",
+    "enquiry_type": "enquiry_type",  # underscore variant
     "Enquiry Stage": "enquiry_stage", "enquiry stage": "enquiry_stage",
+    "enquiry_stage": "enquiry_stage",  # underscore variant
     # Dates
     "EO/PO Date": "eo_po_date", "eo/po date": "eo_po_date",
+    "eo_po_date": "eo_po_date",  # underscore variant
     "Planned Followup Date": "planned_followup_date", "planned followup date": "planned_followup_date",
     "LastFollowupDate": "last_followup_date", "Last Followup Date": "last_followup_date",
+    "last_followup_date": "last_followup_date",  # underscore variant
     "Enquiry Closure Date": "enquiry_closure_date", "enquiry closure date": "enquiry_closure_date",
+    "enquiry_closure_date": "enquiry_closure_date",  # underscore variant
     # Source
     "Source": "source", "source": "source",
     "Source From": "source_from", "source from": "source_from",
+    "source_from": "source_from",  # underscore variant
     "Events": "events", "events": "events",
     "No of Follow-ups": "no_of_followups", "no of follow-ups": "no_of_followups",
+    "no_of_followups": "no_of_followups",  # underscore variant
     # Segment
     "Segment": "segment", "segment": "segment",
     "SubSegment": "sub_segment", "Sub Segment": "sub_segment", "sub segment": "sub_segment",
+    "sub_segment": "sub_segment",  # underscore variant
     "DG Ownership": "dg_ownership", "dg ownership": "dg_ownership",
+    "dg_ownership": "dg_ownership",  # underscore variant
     # Other
     "Created By": "created_by", "created by": "created_by",
+    "created_by": "created_by",  # underscore variant
     "PAN NO.": "pan_no", "pan no.": "pan_no", "PAN": "pan_no",
     "Finance Required": "finance_required", "finance required": "finance_required",
+    "finance_required": "finance_required",  # underscore variant
     "Finance Company": "finance_company", "finance company": "finance_company",
     "Referred By": "referred_by", "referred by": "referred_by",
+    # Employee underscore variants
+    "employee_code": "employee_code",
+    "employee_name": "employee_name",
+    "employee_status": "employee_status",
 }
 
 LOST_UPLOAD_MAPPING = {
