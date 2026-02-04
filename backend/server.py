@@ -486,34 +486,16 @@ async def migrate_normalize_duplicates():
 
 async def migrate_detect_duplicates():
     """
-    Automatic migration to detect and flag duplicate leads in the database.
-    Runs on startup to ensure all duplicates are properly flagged.
+    DISABLED - Duplicate detection is now triggered manually from the Admin UI.
+    This function is kept for reference but does nothing on startup.
     
-    Duplicate criteria:
-    - Same phone number (exact match after normalization)
-    - Similar employee_name (fuzzy match)
-    - Similar corporate_name (fuzzy match)
-    
-    The NEWEST lead (by created_at) is kept as the "original",
-    all older matching leads are flagged as duplicates.
+    Manual trigger available at: Admin > Data Management > Duplicate Leads > Run Detection
+    API endpoint: POST /api/admin/run-duplicate-detection
     """
-    from utils.duplicate_detector import run_duplicate_detection_migration
-    from datetime import datetime, timezone, timedelta
-    
-    logger.info("Running duplicate lead detection migration...")
-    
-    try:
-        # Run duplicate detection (function handles its own caching/skip logic)
-        result = await run_duplicate_detection_migration(db)
-        
-        if result.get("skipped"):
-            logger.info("Duplicate detection skipped (ran recently)")
-        else:
-            logger.info(f"Duplicate detection complete: {result.get('duplicates_flagged', 0)} duplicates flagged out of {result.get('total_checked', 0)} leads")
-        
-    except Exception as e:
-        logger.error(f"Duplicate detection migration failed: {str(e)}")
-        # Don't raise - allow server to start even if migration fails
+    logger.info("Duplicate detection migration disabled - use manual trigger in Admin UI")
+    # Automatic duplicate detection on startup is disabled
+    # Users can trigger it manually from the Data Management page
+    pass
 
 
 async def migrate_lost_leads_enquiry_date():
