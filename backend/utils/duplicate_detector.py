@@ -277,14 +277,37 @@ async def run_duplicate_detection_migration(db):
     """
     Run duplicate detection on all existing leads and flag duplicates.
     Also merges data from duplicates into original leads.
+    
+    Note: This runs in background and is skipped if already ran in last 6 hours.
     """
     logger.info("Starting duplicate detection migration (phone-based)...")
     
     try:
-        # Get all leads that are not soft-deleted
+        # Check if we already ran recently (within 6 hours) to avoid running on every restart
+        from datetime import timedelta
+        last_run = await db.migration_status.find_one({"migration": "duplicate_detection_v2"})
+        if last_run and last_run.get("last_run"):
+            last_run_time = last_run.get("last_run")
+            if isinstance(last_run_time, str):
+                last_run_time = datetime.fromisoformat(last_run_time.replace('Z', '+00:00'))
+            if datetime.now(timezone.utc) - last_run_time < timedelta(hours=6):
+                logger.info("Duplicate detection already ran in last 6 hours, skipping...")
+                return {"duplicates_flagged": 0, "total_checked": 0, "merged": 0, "skipped": True}
+        
+        # Get all leads that are not soft-deleted - use projection to reduce memory
         leads = await db.leads.find(
             {"deleted_at": {"$exists": False}},
-            {"_id": 0}
+            {
+                "_id": 0, 
+                "lead_id": 1, 
+                "phone_number": 1, 
+                "enquiry_date": 1, 
+                "enquiry_stage": 1,
+                "name": 1,
+                "kva": 1,
+                "remarks": 1,
+                "address": 1
+            }
         ).to_list(100000)
         
         logger.info(f"Checking {len(leads)} leads for duplicates...")
@@ -300,6 +323,12 @@ async def run_duplicate_detection_migration(db):
         
         if not duplicates_to_flag:
             logger.info("No duplicates found.")
+            # Record successful run
+            await db.migration_status.update_one(
+                {"migration": "duplicate_detection_v2"},
+                {"$set": {"migration": "duplicate_detection_v2", "last_run": datetime.now(timezone.utc).isoformat(), "result": "no_duplicates"}},
+                upsert=True
+            )
             return {"duplicates_flagged": 0, "total_checked": len(leads), "merged": 0}
         
         logger.info(f"Found {len(duplicates_to_flag)} duplicate leads to flag and merge.")
