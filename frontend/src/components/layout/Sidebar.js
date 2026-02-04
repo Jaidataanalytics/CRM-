@@ -39,7 +39,7 @@ const menuItems = [
   { path: '/tenders', icon: FileText, label: 'Tenders', roles: ['Admin', 'Manager', 'TenderUser'] },
   { path: '/comparison', icon: GitCompare, label: 'Comparison', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/forecast', icon: LineChart, label: 'Forecast', roles: ['Admin', 'Manager'] },
-  { path: '/compare-forecasts', icon: Target, label: 'Compare Forecasts', roles: ['Admin', 'Manager'] },
+  // Compare Forecasts is now integrated into Forecast page as a tab
   { path: '/admin', icon: Settings, label: 'Admin', roles: ['Admin'] },
 ];
 
