@@ -1008,7 +1008,7 @@ async def process_lost_upload(db, df: pd.DataFrame, current_user: User, filename
                     )
                     updated_count += 1
                     
-            elif existing and match_type == "phone_kva":
+            elif existing and match_type == "phone_kva_open":
                 # OPEN lead with same KVA - merge & close as lost
                 updates = merge_lead_data(existing, lead_data)
                 updates['enquiry_stage'] = 'Closed-Lost'
@@ -1030,6 +1030,18 @@ async def process_lost_upload(db, df: pd.DataFrame, current_user: User, filename
                     {"$set": updates}
                 )
                 updated_count += 1
+            
+            elif existing and match_type == "phone_kva_closed_duplicate":
+                # CLOSED lead with same KVA - mark incoming as duplicate, merge any missing data
+                updates = merge_lead_data(existing, lead_data)
+                if updates:
+                    updates['updated_at'] = now
+                    await db.leads.update_one(
+                        {"lead_id": existing["lead_id"]},
+                        {"$set": updates}
+                    )
+                # Mark this as a duplicate (skip creating new)
+                duplicate_count += 1
                 
             else:
                 # No match or CLOSED or different KVA - Create NEW Closed-Lost lead
