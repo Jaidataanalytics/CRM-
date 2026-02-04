@@ -593,7 +593,7 @@ const AIForecastView = () => {
                   </>
                 )}
                 <span className="text-sm text-gray-500 ml-auto">
-                  Showing {filteredDealers.length} of {data.dealer_forecasts?.length || 0} dealers
+                  Showing {filteredDealers.length} of {Object.keys(data.dealer_forecasts || {}).length} dealers
                 </span>
               </div>
 
