@@ -918,38 +918,50 @@ async def process_lost_upload(db, df: pd.DataFrame, current_user: User, filename
             # STEP 2: If no enquiry match, try Phone
             if not existing and normalized_phone and len(normalized_phone) >= 10:
                 phone_matches = await db.leads.find({
-                    "$or": [
-                        {"phone_number": normalized_phone},
-                        {"phone_number": {"$regex": f"{normalized_phone}$"}}
-                    ],
-                    "deleted_at": {"$exists": False},
-                    "$or": [
-                        {"is_duplicate": {"$exists": False}},
-                        {"is_duplicate": False}
+                    "$and": [
+                        {"$or": [
+                            {"phone_number": normalized_phone},
+                            {"phone_number": {"$regex": f"{normalized_phone}$"}}
+                        ]},
+                        {"deleted_at": {"$exists": False}},
+                        {"$or": [
+                            {"is_duplicate": {"$exists": False}},
+                            {"is_duplicate": False}
+                        ]}
                     ]
                 }, {"_id": 0}).to_list(10)
                 
                 if phone_matches:
+                    open_same_kva = None
+                    closed_same_kva = None
+                    
                     for match in phone_matches:
                         existing_stage = match.get('enquiry_stage', '')
                         existing_kva = match.get('kva')
+                        kva_matches = compare_kva(existing_kva, kva)
                         
                         if is_lead_closed(existing_stage):
-                            # CLOSED - create NEW lost lead
-                            existing = None
-                            match_type = None
-                            break
+                            # CLOSED lead
+                            if kva_matches and not closed_same_kva:
+                                closed_same_kva = match
                         else:
-                            # OPEN - check KVA
-                            if compare_kva(existing_kva, kva):
-                                # Same KVA - merge & close both as lost
-                                existing = match
-                                match_type = "phone_kva"
-                                break
-                            else:
-                                # Different KVA - create NEW
-                                existing = None
-                                match_type = None
+                            # OPEN lead
+                            if kva_matches and not open_same_kva:
+                                open_same_kva = match
+                    
+                    # Decision logic for LOST upload
+                    if open_same_kva:
+                        # OPEN lead with same KVA - merge & close both as lost
+                        existing = open_same_kva
+                        match_type = "phone_kva_open"
+                    elif closed_same_kva:
+                        # CLOSED lead with same KVA - mark as duplicate
+                        existing = closed_same_kva
+                        match_type = "phone_kva_closed_duplicate"
+                    else:
+                        # No KVA match (different product) - create NEW lost lead
+                        existing = None
+                        match_type = None
             
             # PROCESS based on match result
             if existing and match_type == "enquiry_no":
