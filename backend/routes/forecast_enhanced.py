@@ -1151,23 +1151,50 @@ async def generate_comprehensive_forecast(
     - Consistency validation (all totals match)
     
     Two-level forecast:
-    - Level 1: Organization (total, by dealer, by KVA)
+    - Level 1: Organization (total, by dealer, by KVA, by district)
     - Level 2: Per dealer (by KVA, by district)
+    
+    Request body parameters:
+    - months_ahead: int (default 3) - Number of months to forecast
+    - include_current_month: bool (default True) - Include current month in predictions
+    - years_back: int (default 3) - Years of historical data to use for training
+    - force_model: str (optional) - Force a specific model instead of auto-selection
+      Options: "Simple Moving Average", "Weighted Moving Average", "Exponential Smoothing",
+               "Seasonal (Same-Month)", "Linear Trend", "ARIMA", "Random Forest",
+               "Gradient Boosting", "XGBoost", "Ensemble (Hybrid)"
     """
-    from routes.forecast_models import ModelOptimizer
+    from routes.forecast_models import (
+        ModelOptimizer, 
+        SimpleMovingAverage, 
+        WeightedMovingAverage,
+        ExponentialSmoothing,
+        SeasonalNaive,
+        LinearTrend,
+        ARIMAForecaster,
+        RandomForestForecaster,
+        GradientBoostingForecaster,
+        XGBoostForecaster,
+        EnsembleForecaster
+    )
     
     db = await get_db(request)
     body = await request.json()
     
     months_ahead = body.get("months_ahead", 3)
     include_current_month = body.get("include_current_month", True)
+    years_back = body.get("years_back", 3)  # User-configurable historical range
+    force_model = body.get("force_model")  # Optional: force a specific model
     
-    # Calculate date range - use all available data from FY 2022-2023
+    # Calculate date range based on years_back parameter
     now = datetime.now(timezone.utc)
     current_month = now.strftime("%Y-%m")
     
-    # Start from April 2022 (FY 2022-2023)
-    start_date = "2022-04-01"
+    # Calculate start date based on years_back (Indian FY starts April 1)
+    start_year = now.year - years_back
+    start_month = 4  # April
+    start_date = f"{start_year}-{start_month:02d}-01"
+    start_month_str = f"{start_year}-{start_month:02d}"
+    
     end_date = (now - relativedelta(months=1)).strftime("%Y-%m-%d") if include_current_month else now.strftime("%Y-%m-%d")
     
     # ===== STEP 1: Get historical monthly data =====
