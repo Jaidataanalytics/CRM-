@@ -379,6 +379,17 @@ async def run_duplicate_detection_migration(db):
         
         logger.info(f"Duplicate detection complete. Flagged {flagged_count}, merged data into {merged_count} originals.")
         
+        # Record successful completion
+        await db.migration_status.update_one(
+            {"migration": "duplicate_detection_v2"},
+            {"$set": {
+                "migration": "duplicate_detection_v2", 
+                "last_run": datetime.now(timezone.utc).isoformat(), 
+                "result": {"flagged": flagged_count, "merged": merged_count, "total": len(leads)}
+            }},
+            upsert=True
+        )
+        
         return {
             "duplicates_flagged": flagged_count,
             "total_checked": len(leads),
