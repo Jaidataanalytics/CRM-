@@ -409,6 +409,30 @@ None currently
   - `POST /api/admin/run-duplicate-detection` - Trigger manual detection
   - `GET /api/admin/duplicate-detection-status` - Get last run status
 
+### AI-Powered Comprehensive Forecast (Feb 4, 2026)
+- [x] **Multi-Model AI Forecasting**: Tests multiple ML models (ARIMA, XGBoost, Random Forest, etc.) and auto-selects the best
+- [x] **Model Performance Metrics**: Displays R², MAPE, MAE accuracy metrics for each tested model
+- [x] **Auto-Selection with Override**: System auto-selects best model, users can manually override
+- [x] **User-Configurable Training Data**: Default 3 years, user can select 1-5 years of historical data
+- [x] **Multi-Level Forecasts**:
+  - Organization-level totals (leads, closures)
+  - Dealer-level breakdown by KVA and district
+  - Full hierarchy: Org → Dealer → KVA / District
+- [x] **Consistency Validation**: Uses proportional scaling to ensure dealer totals match org totals
+- [x] **Dual View Modes**: 
+  - Tree View: Collapsible hierarchy for drill-down
+  - Table View: Filterable flat view with all dealers
+- [x] **Model Selection Performance**:
+  - Leads Model: Weighted Moving Average (88.2% accuracy)
+  - Closures Model: Exponential Smoothing (96.1% accuracy)
+- [x] **Frontend Components**:
+  - `/app/frontend/src/components/forecast/AIForecastView.jsx` - New comprehensive AI forecast component
+  - `/app/frontend/src/pages/Forecast.js` - Added "AI Forecast" as primary tab
+- [x] **Backend Endpoint**:
+  - `POST /api/forecast-enhanced/comprehensive-forecast`
+  - Parameters: months_ahead, years_back, include_current_month, force_model
+- [x] **Available Models**: Simple Moving Average, Weighted Moving Average, Exponential Smoothing, Seasonal (Same-Month), Linear Trend, ARIMA, Random Forest, Gradient Boosting, XGBoost, Ensemble (Hybrid)
+
 ---
 *Last Updated: Feb 4, 2026*
-*Latest Feature: Manual Duplicate Detection with Confirmation*
+*Latest Feature: AI-Powered Comprehensive Forecast with Multi-Model Selection*
