@@ -132,54 +132,12 @@ const AIForecastView = () => {
   };
 
   // Filter dealers based on search
-  // Note: dealer_forecasts is an object with dealer names as keys, convert to array
-  // Also aggregate totals and breakdowns from months data
+  // dealer_forecasts is now an array with pre-aggregated totals and breakdowns
   const filteredDealers = useMemo(() => {
     if (!data?.dealer_forecasts) return [];
-    // Convert object to array of dealer data with aggregated totals
-    const dealersArray = Object.entries(data.dealer_forecasts).map(([dealerName, dealerData]) => {
-      // Aggregate totals from all months
-      const months = dealerData.months || [];
-      const totals = {
-        leads: months.reduce((sum, m) => sum + (m.predicted_leads || 0), 0),
-        closures: months.reduce((sum, m) => sum + (m.predicted_closures || 0), 0)
-      };
-      
-      // Aggregate by_kva from all months
-      const by_kva = {};
-      months.forEach(m => {
-        (m.by_kva || []).forEach(kvaItem => {
-          const kvaKey = kvaItem.kva;
-          if (!by_kva[kvaKey]) {
-            by_kva[kvaKey] = { leads: 0, closures: 0 };
-          }
-          by_kva[kvaKey].leads += kvaItem.leads || 0;
-          by_kva[kvaKey].closures += kvaItem.closures || 0;
-        });
-      });
-      
-      // Aggregate by_district from all months
-      const by_district = {};
-      months.forEach(m => {
-        (m.by_district || []).forEach(distItem => {
-          const distKey = distItem.district;
-          if (!by_district[distKey]) {
-            by_district[distKey] = { leads: 0, closures: 0 };
-          }
-          by_district[distKey].leads += distItem.leads || 0;
-          by_district[distKey].closures += distItem.closures || 0;
-        });
-      });
-      
-      return {
-        dealer: dealerName,
-        ...dealerData,
-        totals,
-        by_kva,
-        by_district
-      };
-    });
-    return dealersArray.filter(dealer => {
+    
+    // dealer_forecasts is already an array with totals, by_kva, by_district pre-calculated
+    return data.dealer_forecasts.filter(dealer => {
       const matchDealer = !filterDealer || dealer.dealer.toLowerCase().includes(filterDealer.toLowerCase());
       return matchDealer;
     });
