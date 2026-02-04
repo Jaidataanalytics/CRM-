@@ -99,7 +99,7 @@ const AIForecastView = () => {
       const res = await axios.post(
         `${API}/forecast-enhanced/comprehensive-forecast`,
         payload,
-        { withCredentials: true }
+        { withCredentials: true, timeout: 120000 } // 2 minute timeout
       );
       
       if (res.data.success) {
@@ -119,9 +119,10 @@ const AIForecastView = () => {
     }
   };
 
-  useEffect(() => {
-    loadForecast();
-  }, []);
+  // REMOVED: Auto-load on mount - user must click "Generate Forecast"
+  // useEffect(() => {
+  //   loadForecast();
+  // }, []);
 
   const toggleDealer = (dealerName) => {
     setExpandedDealers(prev => ({
