@@ -131,9 +131,15 @@ const AIForecastView = () => {
   };
 
   // Filter dealers based on search
+  // Note: dealer_forecasts is an object with dealer names as keys, convert to array
   const filteredDealers = useMemo(() => {
     if (!data?.dealer_forecasts) return [];
-    return data.dealer_forecasts.filter(dealer => {
+    // Convert object to array of dealer data
+    const dealersArray = Object.entries(data.dealer_forecasts).map(([dealerName, dealerData]) => ({
+      dealer: dealerName,
+      ...dealerData
+    }));
+    return dealersArray.filter(dealer => {
       const matchDealer = !filterDealer || dealer.dealer.toLowerCase().includes(filterDealer.toLowerCase());
       return matchDealer;
     });
