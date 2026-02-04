@@ -331,7 +331,7 @@ const Forecast = () => {
   const [error, setError] = useState(null);
   const [expandedMonth, setExpandedMonth] = useState(null);
   const [expandedBreakdown, setExpandedBreakdown] = useState({});
-  const [activeTab, setActiveTab] = useState('forecast');
+  const [activeTab, setActiveTab] = useState('ai-forecast');
   const [expandedSaved, setExpandedSaved] = useState(null);
   
   // Toggle function for breakdown sections
