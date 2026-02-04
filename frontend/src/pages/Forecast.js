@@ -895,29 +895,28 @@ const Forecast = () => {
         </Card>
       )}
 
-      {/* Results Tabs */}
-      {(forecast || backtest || factors || savedForecasts) && (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="ai-forecast" data-testid="tab-ai-forecast">
-              <Zap className="h-4 w-4 mr-2" />AI Forecast
-            </TabsTrigger>
-            <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
-              <Sparkles className="h-4 w-4 mr-2" />Basic
-            </TabsTrigger>
-            <TabsTrigger value="enhanced" data-testid="tab-enhanced">
-              <Layers className="h-4 w-4 mr-2" />Advanced
-            </TabsTrigger>
-            <TabsTrigger value="compare" data-testid="tab-compare">
-              <GitCompare className="h-4 w-4 mr-2" />Compare
-            </TabsTrigger>
-            <TabsTrigger value="saved" disabled={!savedForecasts} data-testid="tab-saved">
-              <Archive className="h-4 w-4 mr-2" />Saved
-            </TabsTrigger>
-            <TabsTrigger value="backtest" disabled={!backtest} data-testid="tab-backtest">
-              <FlaskConical className="h-4 w-4 mr-2" />Backtest
-            </TabsTrigger>
-            <TabsTrigger value="factors" disabled={!factors} data-testid="tab-factors">
+      {/* Results Tabs - Always show since AI Forecast is standalone */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="ai-forecast" data-testid="tab-ai-forecast">
+            <Zap className="h-4 w-4 mr-2" />AI Forecast
+          </TabsTrigger>
+          <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
+            <Sparkles className="h-4 w-4 mr-2" />Basic
+          </TabsTrigger>
+          <TabsTrigger value="enhanced" data-testid="tab-enhanced">
+            <Layers className="h-4 w-4 mr-2" />Advanced
+          </TabsTrigger>
+          <TabsTrigger value="compare" data-testid="tab-compare">
+            <GitCompare className="h-4 w-4 mr-2" />Compare
+          </TabsTrigger>
+          <TabsTrigger value="saved" disabled={!savedForecasts} data-testid="tab-saved">
+            <Archive className="h-4 w-4 mr-2" />Saved
+          </TabsTrigger>
+          <TabsTrigger value="backtest" disabled={!backtest} data-testid="tab-backtest">
+            <FlaskConical className="h-4 w-4 mr-2" />Backtest
+          </TabsTrigger>
+          <TabsTrigger value="factors" disabled={!factors} data-testid="tab-factors">
               <FileText className="h-4 w-4 mr-2" />Factors
             </TabsTrigger>
           </TabsList>
