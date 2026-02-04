@@ -70,6 +70,13 @@ const DuplicateLeads = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [runningDetection, setRunningDetection] = useState(false);
   
+  // Manual Detection state
+  const [showDetectionDialog, setShowDetectionDialog] = useState(false);
+  const [detectionConfirmText, setDetectionConfirmText] = useState('');
+  const [detectionStatus, setDetectionStatus] = useState(null);
+  const [detectionReport, setDetectionReport] = useState(null);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  
   // Merge History state
   const [mergedLeads, setMergedLeads] = useState([]);
   const [mergeLoading, setMergeLoading] = useState(false);
