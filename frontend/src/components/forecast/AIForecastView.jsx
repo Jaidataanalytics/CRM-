@@ -528,7 +528,7 @@ const AIForecastView = () => {
                         <SelectValue placeholder="Filter KVA" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All KVAs</SelectItem>
+                        <SelectItem value="all">All KVAs</SelectItem>
                         {uniqueKvas.slice(0, 20).map(k => (
                           <SelectItem key={k} value={k}>{k} KVA</SelectItem>
                         ))}
@@ -539,7 +539,7 @@ const AIForecastView = () => {
                         <SelectValue placeholder="Filter District" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Districts</SelectItem>
+                        <SelectItem value="all">All Districts</SelectItem>
                         {uniqueDistricts.slice(0, 30).map(d => (
                           <SelectItem key={d} value={d}>{d}</SelectItem>
                         ))}
