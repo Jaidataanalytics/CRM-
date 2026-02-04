@@ -60,7 +60,7 @@ export const Sidebar = () => {
       }
     };
     fetchOverdueCount();
-    const interval = setInterval(fetchOverdueCount, 60000);
+    const interval = setInterval(fetchOverdueCount, 120000); // Poll every 2 minutes
     return () => clearInterval(interval);
   }, []);
 
