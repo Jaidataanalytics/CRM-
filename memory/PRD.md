@@ -400,6 +400,15 @@ None currently
 - [x] **CompareTab Component**: New component at `/app/frontend/src/components/forecast/CompareTab.jsx`
 - [x] **Features Preserved**: All comparison features (accuracy charts, monthly breakdown, insights) maintained
 
+### Manual Duplicate Detection (Feb 4, 2026)
+- [x] **Disabled Automatic Detection**: Removed duplicate detection from server startup
+- [x] **Manual Trigger**: Added "Run Detection" button in Data Management > Duplicate Leads tab
+- [x] **Written Confirmation**: Requires typing "RUN DUPLICATE DETECTION" to proceed
+- [x] **Detailed Report**: Shows summary with leads scanned, duplicates found, merge count, duplicate rate
+- [x] **API Endpoints**:
+  - `POST /api/admin/run-duplicate-detection` - Trigger manual detection
+  - `GET /api/admin/duplicate-detection-status` - Get last run status
+
 ---
 *Last Updated: Feb 4, 2026*
-*Latest Feature: Forecast & Compare Pages Merged*
+*Latest Feature: Manual Duplicate Detection with Confirmation*
