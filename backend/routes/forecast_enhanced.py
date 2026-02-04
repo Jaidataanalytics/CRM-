@@ -131,7 +131,7 @@ async def get_dealer_kva_forecast(
         },
         {
             "$addFields": {
-                "month": {"$substr": ["$enquiry_date", 0, 7]},
+                "month": get_month_extraction_pipeline(),
                 "kva_value": {
                     "$cond": [
                         {"$isNumber": "$kva"},
@@ -269,7 +269,7 @@ async def get_dealer_district_forecast(
         },
         {
             "$addFields": {
-                "month": {"$substr": ["$enquiry_date", 0, 7]}
+                "month": get_month_extraction_pipeline()
             }
         },
         {
@@ -795,7 +795,7 @@ async def get_forecast_scenarios(
         },
         {
             "$addFields": {
-                "month": {"$substr": ["$enquiry_date", 0, 7]}
+                "month": get_month_extraction_pipeline()
             }
         },
         {
@@ -953,7 +953,7 @@ async def get_monthly_detailed_forecast(
         },
         {
             "$addFields": {
-                "month": {"$substr": ["$enquiry_date", 0, 7]},
+                "month": get_month_extraction_pipeline(),
             }
         },
         {
@@ -988,7 +988,7 @@ async def get_monthly_detailed_forecast(
         },
         {
             "$addFields": {
-                "month": {"$substr": ["$enquiry_date", 0, 7]},
+                "month": get_month_extraction_pipeline(),
             }
         },
         {
