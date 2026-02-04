@@ -659,11 +659,11 @@ const AIForecastView = () => {
                       {filteredDealers.map((dealer) => {
                         const topKva = dealer.by_kva ? 
                           Object.entries(dealer.by_kva)
-                            .filter(([k]) => !filterKva || k === filterKva)
+                            .filter(([k]) => !filterKva || filterKva === 'all' || k === filterKva)
                             .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))[0] : null;
                         const topDistrict = dealer.by_district ?
                           Object.entries(dealer.by_district)
-                            .filter(([d]) => !filterDistrict || d === filterDistrict)
+                            .filter(([d]) => !filterDistrict || filterDistrict === 'all' || d === filterDistrict)
                             .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))[0] : null;
                         const conversion = dealer.totals?.leads > 0 
                           ? ((dealer.totals.closures / dealer.totals.leads) * 100).toFixed(1)
