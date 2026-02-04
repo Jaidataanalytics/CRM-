@@ -435,7 +435,8 @@ async def run_backtest(
     # Get all data
     pipeline = [
         {"$match": {"enquiry_date": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$addFields": {"month": {"$substr": ["$enquiry_date", 0, 7]}}},
+        {"$addFields": {"month": get_month_extraction_pipeline()}},
+        {"$match": {"month": {"$ne": "unknown"}}},
         {"$group": {
             "_id": "$month",
             "total_enquiries": {"$sum": 1},
