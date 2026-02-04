@@ -1621,7 +1621,30 @@ async def _generate_comprehensive_forecast_impl(
             
             dealer_forecast["months"].append(dm)
         
-        dealer_forecasts[dealer] = dealer_forecast
+        # Calculate totals for this dealer
+        dealer_forecast["totals"] = {
+            "leads": sum(m.get("predicted_leads", 0) for m in dealer_forecast["months"]),
+            "closures": sum(m.get("predicted_closures", 0) for m in dealer_forecast["months"])
+        }
+        
+        # Aggregate by_kva and by_district totals
+        dealer_forecast["by_kva"] = {}
+        dealer_forecast["by_district"] = {}
+        for dm in dealer_forecast["months"]:
+            for kb in dm.get("by_kva", []):
+                kva = str(kb["kva"])
+                if kva not in dealer_forecast["by_kva"]:
+                    dealer_forecast["by_kva"][kva] = {"leads": 0, "closures": 0}
+                dealer_forecast["by_kva"][kva]["leads"] += kb["leads"]
+                dealer_forecast["by_kva"][kva]["closures"] += kb["closures"]
+            for db in dm.get("by_district", []):
+                district = db["district"]
+                if district not in dealer_forecast["by_district"]:
+                    dealer_forecast["by_district"][district] = {"leads": 0, "closures": 0}
+                dealer_forecast["by_district"][district]["leads"] += db["leads"]
+                dealer_forecast["by_district"][district]["closures"] += db["closures"]
+        
+        dealer_forecasts.append(dealer_forecast)  # Changed from dict to list
     
     # ===== STEP 8: Consistency validation =====
     consistency_check = {"passed": True, "issues": []}
