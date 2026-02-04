@@ -343,23 +343,14 @@ const DuplicateLeads = () => {
     setPage(1);
   };
 
-  const handleRunDetection = async () => {
+  const handleRunDetection = () => {
     if (!isAdmin) {
       toast.error('Only admin can run duplicate detection');
       return;
     }
-    
-    setRunningDetection(true);
-    try {
-      const res = await axios.post(`${API}/leads/duplicates/run-detection`, {}, { withCredentials: true });
-      toast.success(`Detection complete: ${res.data.duplicates_flagged} duplicates found`);
-      loadDuplicates();
-    } catch (error) {
-      console.error('Error running detection:', error);
-      toast.error(error.response?.data?.detail || 'Failed to run duplicate detection');
-    } finally {
-      setRunningDetection(false);
-    }
+    // Open confirmation dialog
+    setDetectionConfirmText('');
+    setShowDetectionDialog(true);
   };
 
   const handleUnflag = async () => {
