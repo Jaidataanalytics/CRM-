@@ -106,11 +106,8 @@ const AppRouter = () => {
         } />
         <Route path="/leads" element={<Leads />} />
         <Route path="/comparison" element={<Comparison />} />
-        <Route path="/compare-forecasts" element={
-          <ProtectedRoute allowedRoles={['Admin', 'Manager']}>
-            <CompareForecasts />
-          </ProtectedRoute>
-        } />
+        {/* Compare Forecasts is now integrated into Forecast page - redirect old URL */}
+        <Route path="/compare-forecasts" element={<Navigate to="/forecast" replace />} />
         <Route path="/profile/:entityType/:entityId" element={<EntityProfile />} />
         <Route path="/transferred-leads" element={<TransferredLeads />} />
         <Route path="/duplicate-leads" element={
