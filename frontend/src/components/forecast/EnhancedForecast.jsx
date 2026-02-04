@@ -1290,13 +1290,17 @@ export const ConversionTimeAnalysis = () => {
 // ============================================
 // MAIN ENHANCED FORECAST TAB
 // ============================================
-export const EnhancedForecastTab = ({ monthsAhead = 3 }) => {
-  const [activeSubTab, setActiveSubTab] = useState('dealer-kva');
+export const EnhancedForecastTab = ({ monthsAhead = 3, includeCurrentMonth = true }) => {
+  const [activeSubTab, setActiveSubTab] = useState('monthly');
 
   return (
     <div className="space-y-6">
       <Tabs value={activeSubTab} onValueChange={setActiveSubTab}>
-        <TabsList className="grid grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-6 w-full">
+          <TabsTrigger value="monthly" className="text-xs">
+            <Calendar className="w-3 h-3 mr-1" />
+            Monthly
+          </TabsTrigger>
           <TabsTrigger value="dealer-kva" className="text-xs">
             <Layers className="w-3 h-3 mr-1" />
             Dealer-KVA
@@ -1306,7 +1310,7 @@ export const EnhancedForecastTab = ({ monthsAhead = 3 }) => {
             Dealer-District
           </TabsTrigger>
           <TabsTrigger value="seasonality" className="text-xs">
-            <Calendar className="w-3 h-3 mr-1" />
+            <Sun className="w-3 h-3 mr-1" />
             Seasonality
           </TabsTrigger>
           <TabsTrigger value="scenarios" className="text-xs">
@@ -1318,6 +1322,10 @@ export const EnhancedForecastTab = ({ monthsAhead = 3 }) => {
             Conversion
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="monthly" className="mt-6">
+          <MonthlyForecastView monthsAhead={monthsAhead} includeCurrentMonth={includeCurrentMonth} />
+        </TabsContent>
 
         <TabsContent value="dealer-kva" className="mt-6">
           <DealerKvaForecast monthsAhead={monthsAhead} />
