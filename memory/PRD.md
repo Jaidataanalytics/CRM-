@@ -386,6 +386,13 @@ None currently
 - [x] **Updated Mappings**: Added underscore variants to `LEAD_UPLOAD_MAPPING` for columns exported from the system
 - [x] **Columns Fixed**: `enquiry_no`, `enquiry_date`, `customer_type`, `corporate_name`, `phone_number`, `email_address`, `enquiry_status`, `enquiry_type`, `enquiry_stage`, `eo_po_date`, `last_followup_date`, `enquiry_closure_date`, `source_from`, `no_of_followups`, `sub_segment`, `dg_ownership`, `created_by`, `finance_required`, `employee_code`, `employee_name`, `employee_status`
 
+### Monthly Forecast Enhancement (Feb 4, 2026)
+- [x] **New API**: `GET /api/forecast-enhanced/monthly-forecast` - Returns monthly breakdown instead of combined totals
+- [x] **Current Month Prediction**: Set `include_current_month=true` to exclude current month's actual data and predict it
+- [x] **Monthly Breakdown**: Shows dealer/KVA/district breakdown for EACH month separately
+- [x] **New UI Tab**: "Monthly" tab added as first tab in Enhanced Forecast section
+- [x] **Chart Data**: Monthly bar charts showing totals and dealer comparisons across months
+
 ---
-*Last Updated: Feb 2, 2026*
-*Latest Feature: Lead Upload Underscore Column Fix*
+*Last Updated: Feb 4, 2026*
+*Latest Feature: Monthly Forecast Enhancement with Current Month Prediction*
