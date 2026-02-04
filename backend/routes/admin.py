@@ -1382,10 +1382,119 @@ async def fix_duplicate_values(
         "message": f"Fixed {total_updated} records",
         "fixes_applied": results
     }
+
+
+# ============================================
+# MANUAL DUPLICATE DETECTION
+# ============================================
+
+@router.post("/run-duplicate-detection")
+async def run_manual_duplicate_detection(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """
+    Manually trigger duplicate detection on all leads in the database.
+    This is a heavy operation that scans all leads and flags duplicates.
+    
+    Requires Admin role and confirmation code in request body.
+    """
+    from utils.duplicate_detector import run_duplicate_detection_migration
+    
+    db = await get_db(request)
+    body = await request.json()
+    
+    # Require confirmation code
+    confirmation = body.get("confirmation", "")
+    if confirmation != "RUN DUPLICATE DETECTION":
+        raise HTTPException(
+            status_code=400, 
+            detail="Invalid confirmation. Please type 'RUN DUPLICATE DETECTION' to proceed."
+        )
+    
+    logger.info(f"Manual duplicate detection triggered by user: {current_user.user_id}")
+    
+    try:
+        # Get lead count first
+        total_leads = await db.leads.count_documents({"deleted_at": {"$exists": False}})
+        
+        # Run the detection (bypass the time-based skip by removing the check)
+        # Force run by deleting the migration status first
+        await db.migration_status.delete_one({"migration": "duplicate_detection_v2"})
+        
+        # Run duplicate detection
+        result = await run_duplicate_detection_migration(db)
+        
+        # Build detailed report
+        report = {
+            "success": True,
+            "summary": {
+                "total_leads_scanned": result.get("total_checked", total_leads),
+                "duplicates_found": result.get("duplicates_flagged", 0),
+                "data_merged": result.get("merged", 0),
+                "duplicate_percentage": round(
+                    (result.get("duplicates_flagged", 0) / max(result.get("total_checked", 1), 1)) * 100, 2
+                )
+            },
+            "details": {
+                "detection_method": "Phone number matching with smart logic",
+                "smart_rules_applied": [
+                    "Same phone + open lead = Duplicate",
+                    "Same phone + closed lead = New lead (repeat customer)",
+                    "Same phone + gap > 1 year = New lead (returning customer)"
+                ]
+            },
+            "triggered_by": current_user.name or current_user.email,
+            "triggered_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Log activity
+        activity = ActivityLog(
+            user_id=current_user.user_id,
+            action="manual_duplicate_detection",
+            resource_type="leads",
+            resource_id="bulk",
+            details=report
+        )
+        activity_doc = activity.model_dump()
+        activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+        await db.activity_logs.insert_one(activity_doc)
+        
+        logger.info(f"Manual duplicate detection completed: {result.get('duplicates_flagged', 0)} duplicates found")
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Manual duplicate detection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Detection failed: {str(e)}")
+
+
+@router.get("/duplicate-detection-status")
+async def get_duplicate_detection_status(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """
+    Get the status of the last duplicate detection run.
+    """
+    db = await get_db(request)
+    
+    # Get last run status
+    last_run = await db.migration_status.find_one({"migration": "duplicate_detection_v2"})
+    
+    # Get current duplicate count
+    duplicate_count = await db.leads.count_documents({
+        "is_duplicate": True,
+        "deleted_at": {"$exists": False}
+    })
+    
+    total_leads = await db.leads.count_documents({"deleted_at": {"$exists": False}})
     
     return {
-        "status": "completed",
-        "message": f"Successfully normalized {updated_count} lead records",
-        "changes_summary": changes_summary,
-        "records_updated": updated_count
+        "last_run": last_run.get("last_run") if last_run else None,
+        "last_result": last_run.get("result") if last_run else None,
+        "current_duplicate_count": duplicate_count,
+        "total_leads": total_leads,
+        "duplicate_percentage": round((duplicate_count / max(total_leads, 1)) * 100, 2)
+    }
     }
