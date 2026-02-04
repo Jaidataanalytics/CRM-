@@ -393,6 +393,13 @@ None currently
 - [x] **New UI Tab**: "Monthly" tab added as first tab in Enhanced Forecast section
 - [x] **Chart Data**: Monthly bar charts showing totals and dealer comparisons across months
 
+### Forecast & Compare Pages Merged (Feb 4, 2026)
+- [x] **Unified Interface**: Compare functionality now integrated into Forecast page as a "Compare" tab
+- [x] **Tab Structure**: Forecast | Advanced | Compare | Saved | Backtest | Factors
+- [x] **Sidebar Cleanup**: Removed separate "Compare Forecasts" link (redirects to /forecast)
+- [x] **CompareTab Component**: New component at `/app/frontend/src/components/forecast/CompareTab.jsx`
+- [x] **Features Preserved**: All comparison features (accuracy charts, monthly breakdown, insights) maintained
+
 ---
 *Last Updated: Feb 4, 2026*
-*Latest Feature: Monthly Forecast Enhancement with Current Month Prediction*
+*Latest Feature: Forecast & Compare Pages Merged*
