@@ -1206,7 +1206,7 @@ async def generate_comprehensive_forecast(
             }
         },
         {"$addFields": {"month": get_month_extraction_pipeline()}},
-        {"$match": {"month": {"$ne": "unknown", "$gte": "2022-04"}}},
+        {"$match": {"month": {"$ne": "unknown", "$gte": start_month_str}}},
         {
             "$group": {
                 "_id": "$month",
@@ -1221,7 +1221,7 @@ async def generate_comprehensive_forecast(
     monthly_data = await db.leads.aggregate(monthly_pipeline).to_list(100)
     
     if len(monthly_data) < 12:
-        return {"success": False, "message": f"Need at least 12 months of data. Found {len(monthly_data)}."}
+        return {"success": False, "message": f"Need at least 12 months of data. Found {len(monthly_data)}. Try increasing years_back parameter."}
     
     # ===== STEP 2: Get dealer/KVA/district breakdown =====
     breakdown_pipeline = [
