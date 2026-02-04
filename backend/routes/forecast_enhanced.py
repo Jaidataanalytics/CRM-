@@ -1285,24 +1285,64 @@ async def generate_comprehensive_forecast(
     leads_series = [{"month": d["_id"], "value": d["leads"]} for d in monthly_data]
     closures_series = [{"month": d["_id"], "value": d["closures"]} for d in monthly_data]
     
-    # Test models for leads
-    leads_optimizer = ModelOptimizer(leads_series)
-    leads_result = leads_optimizer.optimize()
+    # Model mapping for forced model selection
+    MODEL_MAP = {
+        "Simple Moving Average": SimpleMovingAverage,
+        "Weighted Moving Average": WeightedMovingAverage,
+        "Exponential Smoothing": ExponentialSmoothing,
+        "Seasonal (Same-Month)": SeasonalNaive,
+        "Linear Trend": LinearTrend,
+        "ARIMA": ARIMAForecaster,
+        "Random Forest": RandomForestForecaster,
+        "Gradient Boosting": GradientBoostingForecaster,
+        "XGBoost": XGBoostForecaster,
+        "Ensemble (Hybrid)": EnsembleForecaster
+    }
     
-    # Test models for closures
-    closures_optimizer = ModelOptimizer(closures_series)
-    closures_result = closures_optimizer.optimize()
-    
-    # ===== STEP 4: Generate predictions using best models =====
-    future_months = []
-    start_month = now if include_current_month else now + relativedelta(months=1)
-    for i in range(months_ahead):
-        m = start_month + relativedelta(months=i)
-        future_months.append(m.strftime("%Y-%m"))
-    
-    # Get predictions from best models
-    leads_predictions = leads_optimizer.best_model.forecast(months_ahead) if leads_optimizer.best_model else []
-    closures_predictions = closures_optimizer.best_model.forecast(months_ahead) if closures_optimizer.best_model else []
+    if force_model and force_model in MODEL_MAP:
+        # Use forced model instead of auto-selection
+        ForcedModel = MODEL_MAP[force_model]
+        
+        # Initialize and fit leads model
+        forced_leads_model = ForcedModel()
+        forced_leads_model.fit([d["value"] for d in leads_series])
+        leads_predictions = forced_leads_model.forecast(months_ahead)
+        
+        # Initialize and fit closures model
+        forced_closures_model = ForcedModel()
+        forced_closures_model.fit([d["value"] for d in closures_series])
+        closures_predictions = forced_closures_model.forecast(months_ahead)
+        
+        # Create dummy optimizer results for metrics
+        leads_optimizer = type('obj', (object,), {
+            'best_model': forced_leads_model,
+            'best_model_name': force_model,
+            'best_accuracy': None,
+            'best_mape': None,
+            'results': [{"model": force_model, "accuracy": None, "mape": None, "note": "User selected"}]
+        })()
+        closures_optimizer = type('obj', (object,), {
+            'best_model': forced_closures_model,
+            'best_model_name': force_model,
+            'best_accuracy': None,
+            'best_mape': None,
+            'results': [{"model": force_model, "accuracy": None, "mape": None, "note": "User selected"}]
+        })()
+        
+        model_selection_mode = "manual"
+    else:
+        # Auto-select best model
+        leads_optimizer = ModelOptimizer(leads_series)
+        leads_result = leads_optimizer.optimize()
+        
+        closures_optimizer = ModelOptimizer(closures_series)
+        closures_result = closures_optimizer.optimize()
+        
+        # Get predictions from best models
+        leads_predictions = leads_optimizer.best_model.forecast(months_ahead) if leads_optimizer.best_model else []
+        closures_predictions = closures_optimizer.best_model.forecast(months_ahead) if closures_optimizer.best_model else []
+        
+        model_selection_mode = "auto"
     
     # Calculate historical totals for proportional distribution
     total_historical_leads = sum(d["leads"] for d in monthly_data)
