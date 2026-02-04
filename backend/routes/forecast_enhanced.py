@@ -1502,6 +1502,30 @@ async def _generate_comprehensive_forecast_impl(
         org_forecast["totals"]["leads"] += pred_leads
         org_forecast["totals"]["closures"] += pred_closures
     
+    # ===== STEP 6b: Aggregate org-level breakdowns by dealer/kva/district =====
+    # Sum up all monthly breakdowns for organization totals
+    for month_data in org_forecast["months"]:
+        for db in month_data.get("dealer_breakdown", []):
+            dealer = db["dealer"]
+            if dealer not in org_forecast["by_dealer"]:
+                org_forecast["by_dealer"][dealer] = {"leads": 0, "closures": 0}
+            org_forecast["by_dealer"][dealer]["leads"] += db["predicted_leads"]
+            org_forecast["by_dealer"][dealer]["closures"] += db["predicted_closures"]
+        
+        for kb in month_data.get("kva_breakdown", []):
+            kva = str(kb["kva"])
+            if kva not in org_forecast["by_kva"]:
+                org_forecast["by_kva"][kva] = {"leads": 0, "closures": 0}
+            org_forecast["by_kva"][kva]["leads"] += kb["predicted_leads"]
+            org_forecast["by_kva"][kva]["closures"] += kb["predicted_closures"]
+        
+        for db in month_data.get("district_breakdown", []):
+            district = db["district"]
+            if district not in org_forecast["by_district"]:
+                org_forecast["by_district"][district] = {"leads": 0, "closures": 0}
+            org_forecast["by_district"][district]["leads"] += db["predicted_leads"]
+            org_forecast["by_district"][district]["closures"] += db["predicted_closures"]
+    
     # ===== STEP 7: Build Dealer-level forecasts =====
     dealer_forecasts = {}
     
