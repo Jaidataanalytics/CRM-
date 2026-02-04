@@ -1336,8 +1336,8 @@ async def generate_comprehensive_forecast(
         closures_result = closures_optimizer.optimize()
         
         # Get predictions from best models
-        leads_predictions = leads_optimizer.best_model.forecast(months_ahead) if leads_optimizer.best_model else []
-        closures_predictions = closures_optimizer.best_model.forecast(months_ahead) if closures_optimizer.best_model else []
+        leads_predictions = leads_optimizer.best_model.predict(months_ahead) if leads_optimizer.best_model else []
+        closures_predictions = closures_optimizer.best_model.predict(months_ahead) if closures_optimizer.best_model else []
         
         model_selection_mode = "auto"
     
