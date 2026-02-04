@@ -1937,7 +1937,6 @@ const Forecast = () => {
             )}
           </TabsContent>
         </Tabs>
-      )}
     </div>
   );
 };
