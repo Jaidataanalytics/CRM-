@@ -1344,6 +1344,13 @@ async def generate_comprehensive_forecast(
         
         model_selection_mode = "auto"
     
+    # ===== STEP 4: Generate future months =====
+    future_months = []
+    start_month_dt = now if include_current_month else now + relativedelta(months=1)
+    for i in range(months_ahead):
+        m = start_month_dt + relativedelta(months=i)
+        future_months.append(m.strftime("%Y-%m"))
+    
     # Calculate historical totals for proportional distribution
     total_historical_leads = sum(d["leads"] for d in monthly_data)
     total_historical_closures = sum(d["closures"] for d in monthly_data)
