@@ -233,7 +233,13 @@ const AIForecastView = () => {
     };
   }, [data]);
 
-  const availableModels = data?.model_metrics?.available_models || [];
+  // Default available models (shown before first forecast)
+  const defaultModels = [
+    "Simple Moving Average", "Weighted Moving Average", "Exponential Smoothing",
+    "Seasonal (Same-Month)", "Linear Trend", "ARIMA", "Random Forest",
+    "Gradient Boosting", "XGBoost", "Ensemble (Hybrid)"
+  ];
+  const availableModels = data?.model_metrics?.available_models || defaultModels;
 
   if (loading && !data) {
     return (
