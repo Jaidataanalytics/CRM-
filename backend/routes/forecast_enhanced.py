@@ -1232,7 +1232,7 @@ async def generate_comprehensive_forecast(
             }
         },
         {"$addFields": {"month": get_month_extraction_pipeline()}},
-        {"$match": {"month": {"$ne": "unknown", "$gte": "2022-04"}}},
+        {"$match": {"month": {"$ne": "unknown", "$gte": start_month_str}}},
         {
             "$group": {
                 "_id": {
