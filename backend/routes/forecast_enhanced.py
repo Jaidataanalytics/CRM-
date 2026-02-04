@@ -1527,7 +1527,7 @@ async def _generate_comprehensive_forecast_impl(
             org_forecast["by_district"][district]["closures"] += db["predicted_closures"]
     
     # ===== STEP 7: Build Dealer-level forecasts =====
-    dealer_forecasts = {}
+    dealer_forecasts = []  # Changed to list for frontend compatibility
     
     for dealer in dealer_history.keys():
         if dealer == "Unknown":
