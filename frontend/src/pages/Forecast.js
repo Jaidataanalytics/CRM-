@@ -895,17 +895,11 @@ const Forecast = () => {
         </Card>
       )}
 
-      {/* Results Tabs - Always show since AI Forecast is standalone */}
+      {/* Results Tabs - Consolidated view */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="ai-forecast" data-testid="tab-ai-forecast">
-            <Zap className="h-4 w-4 mr-2" />AI Forecast
-          </TabsTrigger>
-          <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
-            <Sparkles className="h-4 w-4 mr-2" />Basic
-          </TabsTrigger>
-          <TabsTrigger value="enhanced" data-testid="tab-enhanced">
-            <Layers className="h-4 w-4 mr-2" />Advanced
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="forecast" data-testid="tab-forecast">
+            <Sparkles className="h-4 w-4 mr-2" />Forecast
           </TabsTrigger>
           <TabsTrigger value="compare" data-testid="tab-compare">
             <GitCompare className="h-4 w-4 mr-2" />Compare
@@ -917,27 +911,22 @@ const Forecast = () => {
             <FlaskConical className="h-4 w-4 mr-2" />Backtest
           </TabsTrigger>
           <TabsTrigger value="factors" disabled={!factors} data-testid="tab-factors">
-              <FileText className="h-4 w-4 mr-2" />Factors
-            </TabsTrigger>
-          </TabsList>
+            <FileText className="h-4 w-4 mr-2" />Factors
+          </TabsTrigger>
+        </TabsList>
 
-          {/* AI Forecast Tab (NEW - Primary) */}
-          <TabsContent value="ai-forecast" className="space-y-6 mt-6">
-            <AIForecastView />
-          </TabsContent>
+        {/* Unified Forecast Tab - AI-Powered with all breakdowns */}
+        <TabsContent value="forecast" className="space-y-6 mt-6">
+          <AIForecastView />
+        </TabsContent>
 
-          {/* Enhanced Forecast Tab */}
-          <TabsContent value="enhanced" className="space-y-6 mt-6">
-            <EnhancedForecastTab monthsAhead={parseInt(horizon)} includeCurrentMonth={true} />
-          </TabsContent>
+        {/* Compare Tab */}
+        <TabsContent value="compare" className="space-y-6 mt-6">
+          <CompareTab />
+        </TabsContent>
 
-          {/* Compare Tab (NEW) */}
-          <TabsContent value="compare" className="space-y-6 mt-6">
-            <CompareTab />
-          </TabsContent>
-
-          {/* Forecast Tab */}
-          <TabsContent value="forecast" className="space-y-6 mt-6">
+        {/* Backtest Tab */}
+        <TabsContent value="backtest" className="space-y-6 mt-6">
             {forecast?.success && forecast.forecast && (
               <>
                 {/* Trend Analysis */}
