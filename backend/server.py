@@ -503,38 +503,13 @@ async def migrate_detect_duplicates():
     logger.info("Running duplicate lead detection migration...")
     
     try:
-        # Check if we've already run detection recently (within 1 hour)
-        # This prevents running on every server restart
-        last_detection = await db.migration_status.find_one({"migration": "duplicate_detection"})
-        
-        if last_detection:
-            last_run = last_detection.get("last_run")
-            if last_run:
-                if isinstance(last_run, str):
-                    last_run = datetime.fromisoformat(last_run.replace('Z', '+00:00'))
-                
-                # Skip if ran within last hour
-                if datetime.now(timezone.utc) - last_run < timedelta(hours=1):
-                    logger.info("Duplicate detection already ran recently, skipping...")
-                    return
-        
-        # Run duplicate detection
+        # Run duplicate detection (function handles its own caching/skip logic)
         result = await run_duplicate_detection_migration(db)
         
-        # Record that we ran the migration
-        await db.migration_status.update_one(
-            {"migration": "duplicate_detection"},
-            {
-                "$set": {
-                    "migration": "duplicate_detection",
-                    "last_run": datetime.now(timezone.utc).isoformat(),
-                    "result": result
-                }
-            },
-            upsert=True
-        )
-        
-        logger.info(f"Duplicate detection complete: {result.get('duplicates_flagged', 0)} duplicates flagged out of {result.get('total_checked', 0)} leads")
+        if result.get("skipped"):
+            logger.info("Duplicate detection skipped (ran recently)")
+        else:
+            logger.info(f"Duplicate detection complete: {result.get('duplicates_flagged', 0)} duplicates flagged out of {result.get('total_checked', 0)} leads")
         
     except Exception as e:
         logger.error(f"Duplicate detection migration failed: {str(e)}")
