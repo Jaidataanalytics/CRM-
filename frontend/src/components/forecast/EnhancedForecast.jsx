@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 import { 
   Download, TrendingUp, TrendingDown, MapPin, Building2, 
   Users, Layers, Calendar, BarChart3, ChevronDown, ChevronRight,
-  Sun, CloudRain, Target, ArrowRight, Clock, Zap, Map
+  Sun, CloudRain, Target, ArrowRight, Clock, Zap, Map, Info
 } from 'lucide-react';
 import {
   Chart as ChartJS,
