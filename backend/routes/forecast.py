@@ -605,7 +605,8 @@ async def get_forecast_factors(
     
     monthly_pipeline = [
         {"$match": {"enquiry_date": {"$exists": True, "$ne": None, "$ne": ""}}},
-        {"$addFields": {"month": {"$substr": ["$enquiry_date", 0, 7]}}},
+        {"$addFields": {"month": get_month_extraction_pipeline()}},
+        {"$match": {"month": {"$ne": "unknown"}}},
         {"$group": {"_id": "$month", "total": {"$sum": 1}, "won": {"$sum": {"$cond": [WON_CONDITION, 1, 0]}}}},
         {"$sort": {"_id": 1}}
     ]
