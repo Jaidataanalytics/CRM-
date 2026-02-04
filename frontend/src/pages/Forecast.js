@@ -898,9 +898,12 @@ const Forecast = () => {
       {/* Results Tabs */}
       {(forecast || backtest || factors || savedForecasts) && (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
+            <TabsTrigger value="ai-forecast" data-testid="tab-ai-forecast">
+              <Zap className="h-4 w-4 mr-2" />AI Forecast
+            </TabsTrigger>
             <TabsTrigger value="forecast" disabled={!forecast} data-testid="tab-forecast">
-              <Sparkles className="h-4 w-4 mr-2" />Forecast
+              <Sparkles className="h-4 w-4 mr-2" />Basic
             </TabsTrigger>
             <TabsTrigger value="enhanced" data-testid="tab-enhanced">
               <Layers className="h-4 w-4 mr-2" />Advanced
@@ -909,7 +912,7 @@ const Forecast = () => {
               <GitCompare className="h-4 w-4 mr-2" />Compare
             </TabsTrigger>
             <TabsTrigger value="saved" disabled={!savedForecasts} data-testid="tab-saved">
-              <Archive className="h-4 w-4 mr-2" />Saved ({savedForecasts?.total || 0})
+              <Archive className="h-4 w-4 mr-2" />Saved
             </TabsTrigger>
             <TabsTrigger value="backtest" disabled={!backtest} data-testid="tab-backtest">
               <FlaskConical className="h-4 w-4 mr-2" />Backtest
@@ -918,6 +921,11 @@ const Forecast = () => {
               <FileText className="h-4 w-4 mr-2" />Factors
             </TabsTrigger>
           </TabsList>
+
+          {/* AI Forecast Tab (NEW - Primary) */}
+          <TabsContent value="ai-forecast" className="space-y-6 mt-6">
+            <AIForecastView />
+          </TabsContent>
 
           {/* Enhanced Forecast Tab */}
           <TabsContent value="enhanced" className="space-y-6 mt-6">
