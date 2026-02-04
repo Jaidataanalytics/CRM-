@@ -58,8 +58,6 @@ export const MonthlyForecastView = ({ monthsAhead = 3, includeCurrentMonth = tru
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(null);
-  const [expandedDealer, setExpandedDealer] = useState(null);
-  const [viewMode, setViewMode] = useState('overview'); // overview, dealer, kva, district
 
   const loadData = async () => {
     setLoading(true);
@@ -102,22 +100,272 @@ export const MonthlyForecastView = ({ monthsAhead = 3, includeCurrentMonth = tru
 
   const selectedMonthData = data.monthly_forecasts?.find(mf => mf.month === selectedMonth);
 
-  // Chart: Monthly totals bar chart
-  const monthlyTotalsChart = {
-    labels: data.monthly_forecasts?.map(mf => mf.month_name) || [],
+  // Chart: Leads vs Closures bar chart
+  const leadsClosuresChart = {
+    labels: data.chart_data?.months || [],
+    datasets: [
+      {
+        label: 'Predicted Leads',
+        data: data.chart_data?.leads || [],
+        backgroundColor: '#6366f1',
+        borderRadius: 6
+      },
+      {
+        label: 'Predicted Closures',
+        data: data.chart_data?.closures || [],
+        backgroundColor: '#22c55e',
+        borderRadius: 6
+      }
+    ]
+  };
+
+  // Chart: Conversion rate line
+  const conversionChart = {
+    labels: data.chart_data?.months || [],
     datasets: [{
-      label: 'Predicted Units',
-      data: data.monthly_forecasts?.map(mf => mf.total_units) || [],
-      backgroundColor: data.monthly_forecasts?.map((mf, i) => 
-        mf.is_current_month ? '#f59e0b' : COLORS[i % COLORS.length]
-      ) || [],
-      borderRadius: 6
+      label: 'Conversion Rate %',
+      data: data.chart_data?.conversion_rates || [],
+      borderColor: '#f59e0b',
+      backgroundColor: 'rgba(245, 158, 11, 0.1)',
+      fill: true,
+      tension: 0.3
     }]
   };
 
-  // Chart: Top dealers by month
-  const topDealers = [...new Set(
-    data.monthly_forecasts?.flatMap(mf => 
+  return (
+    <div className="space-y-6">
+      {/* Summary Header */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <Users className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Predicted Leads</p>
+                <p className="text-2xl font-bold text-indigo-700">{data.grand_totals?.leads || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-white border-green-100">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Target className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Predicted Closures</p>
+                <p className="text-2xl font-bold text-green-700">{data.grand_totals?.closures || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Avg Conversion</p>
+                <p className="text-2xl font-bold text-amber-700">{data.grand_totals?.avg_conversion || 0}%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <Building2 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Active Dealers</p>
+                <p className="text-2xl font-bold text-purple-700">{data.summary?.total_dealers || 0}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Historical Averages Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+        <Info className="w-5 h-5 text-blue-600" />
+        <span className="text-blue-800 text-sm">
+          <strong>Based on {data.historical_period?.months_analyzed || 0} months of data:</strong>{' '}
+          Avg {data.historical_averages?.avg_leads_per_month || 0} leads/month, {' '}
+          Avg {data.historical_averages?.avg_closures_per_month || 0} closures/month, {' '}
+          Avg {data.historical_averages?.avg_conversion_rate || 0}% conversion
+        </span>
+      </div>
+
+      {/* Current Month Indicator */}
+      {data.include_current_month && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2">
+          <Sun className="w-5 h-5 text-amber-600" />
+          <span className="text-amber-800">
+            <strong>Current month ({data.current_month})</strong> prediction included - based on historical patterns
+          </span>
+        </div>
+      )}
+
+      {/* Leads vs Closures Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-indigo-500" />
+            Monthly Forecast: Leads vs Closures
+          </CardTitle>
+          <CardDescription>
+            Predicted new leads and closures for each month
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64">
+            <Bar
+              data={leadsClosuresChart}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                  y: { beginAtZero: true, title: { display: true, text: 'Count' } }
+                }
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Conversion Rate Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-amber-500" />
+            Conversion Rate Trend
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-48">
+            <Line
+              data={conversionChart}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: { 
+                    beginAtZero: true, 
+                    max: 100,
+                    title: { display: true, text: 'Conversion %' } 
+                  }
+                }
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Month Selector Tabs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-indigo-500" />
+            Detailed Monthly Breakdown
+          </CardTitle>
+          <CardDescription>Select a month to see dealer breakdown</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={selectedMonth} onValueChange={setSelectedMonth}>
+            <TabsList className="mb-4">
+              {data.monthly_forecasts?.map(mf => (
+                <TabsTrigger 
+                  key={mf.month} 
+                  value={mf.month}
+                  className={mf.is_current_month ? 'border-amber-400 border-2' : ''}
+                >
+                  {mf.month_name}
+                  {mf.is_current_month && <Sun className="w-3 h-3 ml-1 text-amber-500" />}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {data.monthly_forecasts?.map(mf => (
+              <TabsContent key={mf.month} value={mf.month}>
+                {/* Month Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="bg-indigo-50 rounded-lg p-4">
+                    <p className="text-sm text-indigo-600">Predicted Leads</p>
+                    <p className="text-3xl font-bold text-indigo-700">{mf.predicted_leads}</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <p className="text-sm text-green-600">Predicted Closures</p>
+                    <p className="text-3xl font-bold text-green-700">{mf.predicted_closures}</p>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-4">
+                    <p className="text-sm text-amber-600">Conversion Rate</p>
+                    <p className="text-3xl font-bold text-amber-700">{mf.conversion_rate}%</p>
+                  </div>
+                </div>
+
+                {/* Historical Reference */}
+                {mf.historical_same_month && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      <strong>Historical data for same month:</strong>{' '}
+                      Leads: {mf.historical_same_month.leads?.join(', ') || 'N/A'} | 
+                      Closures: {mf.historical_same_month.closures?.join(', ') || 'N/A'}
+                    </p>
+                  </div>
+                )}
+
+                {/* Dealer Breakdown Table */}
+                {mf.dealer_breakdown?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Building2 className="w-4 h-4" /> Top Dealers by Predicted Closures
+                    </h4>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Dealer</TableHead>
+                          <TableHead className="text-right">Predicted Closures</TableHead>
+                          <TableHead className="text-right">Historical Closures</TableHead>
+                          <TableHead className="text-right">Share %</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mf.dealer_breakdown.map((dealer, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell className="font-medium">{dealer.dealer}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant="secondary">{dealer.predicted_closures}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right text-gray-500">
+                              {dealer.historical_closures}
+                            </TableCell>
+                            <TableCell className="text-right text-gray-500">
+                              {dealer.share_percentage}%
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}; 
       mf.dealer_breakdown?.slice(0, 5).map(d => d.dealer) || []
     )
   )].slice(0, 5);
