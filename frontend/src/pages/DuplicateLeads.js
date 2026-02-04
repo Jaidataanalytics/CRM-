@@ -184,6 +184,54 @@ const DuplicateLeads = () => {
     }
   };
 
+  // Load detection status on mount
+  useEffect(() => {
+    loadDetectionStatus();
+  }, []);
+
+  const loadDetectionStatus = async () => {
+    try {
+      const res = await axios.get(`${API}/admin/duplicate-detection-status`, { withCredentials: true });
+      setDetectionStatus(res.data);
+    } catch (error) {
+      console.error('Error loading detection status:', error);
+    }
+  };
+
+  const runManualDetection = async () => {
+    if (detectionConfirmText !== 'RUN DUPLICATE DETECTION') {
+      toast.error('Please type the confirmation text exactly');
+      return;
+    }
+    
+    setRunningDetection(true);
+    setShowDetectionDialog(false);
+    
+    try {
+      toast.info('Running duplicate detection... This may take a few minutes.');
+      
+      const res = await axios.post(`${API}/admin/run-duplicate-detection`, {
+        confirmation: 'RUN DUPLICATE DETECTION'
+      }, { withCredentials: true });
+      
+      setDetectionReport(res.data);
+      setShowReportDialog(true);
+      
+      // Refresh data
+      loadAllCounts();
+      loadDuplicates();
+      loadDetectionStatus();
+      
+      toast.success(`Detection complete! Found ${res.data.summary?.duplicates_found || 0} duplicates.`);
+    } catch (error) {
+      console.error('Error running detection:', error);
+      toast.error(error.response?.data?.detail || 'Failed to run duplicate detection');
+    } finally {
+      setRunningDetection(false);
+      setDetectionConfirmText('');
+    }
+  };
+
   const loadMergeHistory = async () => {
     setMergeLoading(true);
     try {
