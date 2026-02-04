@@ -860,6 +860,240 @@ async def get_forecast_scenarios(
 
 
 # ============================================
+# MONTHLY DETAILED FORECAST (NEW)
+# ============================================
+
+@router.get("/monthly-forecast")
+async def get_monthly_detailed_forecast(
+    request: Request,
+    months_ahead: int = 3,
+    include_current_month: bool = True,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate detailed monthly forecast with dealer/KVA/district breakdown per month.
+    
+    - include_current_month: If True, excludes current month's actual data and predicts it
+    - Returns separate predictions for each month (not combined totals)
+    """
+    db = await get_db(request)
+    
+    # Calculate date ranges
+    now = datetime.now(timezone.utc)
+    current_month_str = now.strftime("%Y-%m")
+    
+    # Historical data: last 12 months, excluding current month if include_current_month is True
+    end_date = now - relativedelta(months=1) if include_current_month else now
+    start_date = end_date - relativedelta(months=12)
+    
+    start_str = start_date.strftime("%Y-%m-%d")
+    end_str = end_date.strftime("%Y-%m-%d")
+    
+    # Get historical data grouped by dealer, kva, district, and month
+    pipeline = [
+        {
+            "$match": {
+                "enquiry_date": {"$gte": start_str, "$lte": end_str},
+                "enquiry_stage": {"$in": WON_STAGES},
+                "deleted_at": {"$exists": False},
+                "dealer": {"$exists": True, "$ne": None, "$ne": ""},
+            }
+        },
+        {
+            "$addFields": {
+                "month": {"$substr": ["$enquiry_date", 0, 7]},
+                "kva_value": {
+                    "$cond": [
+                        {"$isNumber": "$kva"},
+                        "$kva",
+                        {"$toDouble": {"$ifNull": ["$kva", 0]}}
+                    ]
+                }
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "dealer": "$dealer",
+                    "kva": "$kva_value",
+                    "district": {"$ifNull": ["$district", "Unknown"]},
+                    "month": "$month"
+                },
+                "units_sold": {"$sum": {"$ifNull": ["$qty", 1]}},
+                "count": {"$sum": 1}
+            }
+        },
+        {"$sort": {"_id.month": 1}}
+    ]
+    
+    results = await db.leads.aggregate(pipeline).to_list(10000)
+    
+    # Build historical data structure
+    # Structure: dealer -> kva -> district -> [monthly data]
+    history = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+    all_months = set()
+    all_dealers = set()
+    all_kvas = set()
+    all_districts = set()
+    
+    for r in results:
+        dealer = r["_id"]["dealer"]
+        kva = r["_id"]["kva"]
+        district = r["_id"]["district"]
+        month = r["_id"]["month"]
+        units = r["units_sold"]
+        
+        if dealer and kva:
+            history[dealer][kva][district].append({
+                "month": month,
+                "units": units
+            })
+            all_months.add(month)
+            all_dealers.add(dealer)
+            all_kvas.add(kva)
+            all_districts.add(district)
+    
+    # Generate future months to predict
+    future_months = []
+    start_month = now if include_current_month else now + relativedelta(months=1)
+    for i in range(months_ahead):
+        m = start_month + relativedelta(months=i)
+        future_months.append(m.strftime("%Y-%m"))
+    
+    # Calculate seasonality factors from historical data
+    month_totals = defaultdict(int)
+    for r in results:
+        month_num = int(r["_id"]["month"].split("-")[1])
+        month_totals[month_num] += r["units_sold"]
+    
+    avg_monthly = mean(month_totals.values()) if month_totals else 1
+    seasonality = {m: month_totals[m] / avg_monthly if avg_monthly > 0 else 1 for m in month_totals}
+    
+    # Generate predictions for each month
+    monthly_forecasts = []
+    
+    for future_month in future_months:
+        month_num = int(future_month.split("-")[1])
+        season_factor = seasonality.get(month_num, 1.0)
+        
+        month_forecast = {
+            "month": future_month,
+            "month_name": datetime.strptime(future_month, "%Y-%m").strftime("%B %Y"),
+            "is_current_month": future_month == current_month_str,
+            "seasonality_factor": round(season_factor, 2),
+            "dealer_breakdown": [],
+            "kva_totals": defaultdict(int),
+            "district_totals": defaultdict(int),
+            "total_units": 0
+        }
+        
+        # For each dealer
+        for dealer in sorted(all_dealers):
+            dealer_data = {
+                "dealer": dealer,
+                "kva_breakdown": [],
+                "district_breakdown": [],
+                "total_units": 0
+            }
+            
+            kva_units = defaultdict(int)
+            district_units = defaultdict(int)
+            
+            # For each KVA the dealer sells
+            for kva in history[dealer]:
+                for district in history[dealer][kva]:
+                    hist_data = history[dealer][kva][district]
+                    if not hist_data:
+                        continue
+                    
+                    # Calculate average monthly and apply seasonality
+                    monthly_avg = mean([h["units"] for h in hist_data])
+                    predicted = int(round(monthly_avg * season_factor))
+                    
+                    if predicted > 0:
+                        kva_units[kva] += predicted
+                        district_units[district] += predicted
+                        dealer_data["total_units"] += predicted
+            
+            # Build KVA breakdown for this dealer
+            for kva, units in sorted(kva_units.items()):
+                dealer_data["kva_breakdown"].append({
+                    "kva": kva,
+                    "predicted_units": units
+                })
+                month_forecast["kva_totals"][kva] += units
+            
+            # Build district breakdown for this dealer
+            for district, units in sorted(district_units.items(), key=lambda x: x[1], reverse=True):
+                dealer_data["district_breakdown"].append({
+                    "district": district,
+                    "predicted_units": units
+                })
+                month_forecast["district_totals"][district] += units
+            
+            if dealer_data["total_units"] > 0:
+                month_forecast["dealer_breakdown"].append(dealer_data)
+                month_forecast["total_units"] += dealer_data["total_units"]
+        
+        # Sort dealers by total units
+        month_forecast["dealer_breakdown"].sort(key=lambda x: x["total_units"], reverse=True)
+        
+        # Convert defaultdicts to regular dicts for JSON serialization
+        month_forecast["kva_totals"] = dict(month_forecast["kva_totals"])
+        month_forecast["district_totals"] = dict(month_forecast["district_totals"])
+        
+        monthly_forecasts.append(month_forecast)
+    
+    # Calculate grand totals
+    grand_total = sum(mf["total_units"] for mf in monthly_forecasts)
+    
+    # Build chart data for monthly bars
+    chart_data = {
+        "months": [mf["month_name"] for mf in monthly_forecasts],
+        "totals": [mf["total_units"] for mf in monthly_forecasts],
+        "by_dealer": {},
+        "by_kva": {},
+        "by_district": {}
+    }
+    
+    # Aggregate for charts
+    for dealer in all_dealers:
+        chart_data["by_dealer"][dealer] = [
+            sum(d["total_units"] for d in mf["dealer_breakdown"] if d["dealer"] == dealer)
+            for mf in monthly_forecasts
+        ]
+    
+    for kva in all_kvas:
+        chart_data["by_kva"][str(kva)] = [
+            mf["kva_totals"].get(kva, 0)
+            for mf in monthly_forecasts
+        ]
+    
+    for district in all_districts:
+        chart_data["by_district"][district] = [
+            mf["district_totals"].get(district, 0)
+            for mf in monthly_forecasts
+        ]
+    
+    return {
+        "success": True,
+        "include_current_month": include_current_month,
+        "current_month": current_month_str,
+        "historical_period": {"start": start_str, "end": end_str},
+        "forecast_months": future_months,
+        "monthly_forecasts": monthly_forecasts,
+        "grand_total_units": grand_total,
+        "chart_data": chart_data,
+        "summary": {
+            "total_dealers": len(all_dealers),
+            "total_kvas": len(all_kvas),
+            "total_districts": len(all_districts),
+            "months_predicted": len(future_months)
+        }
+    }
+
+
+# ============================================
 # COMPREHENSIVE FORECAST EXPORT
 # ============================================
 
