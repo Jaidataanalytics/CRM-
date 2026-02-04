@@ -57,6 +57,7 @@ import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import { ExportButton } from '@/components/ui/export-button';
 import { EnhancedForecastTab } from '@/components/forecast/EnhancedForecast';
 import { CompareTab } from '@/components/forecast/CompareTab';
+import AIForecastView from '@/components/forecast/AIForecastView';
 
 ChartJS.register(
   CategoryScale,
