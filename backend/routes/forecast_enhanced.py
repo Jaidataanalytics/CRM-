@@ -1303,15 +1303,12 @@ async def generate_comprehensive_forecast(
         # Use forced model instead of auto-selection
         ForcedModel = MODEL_MAP[force_model]
         
-        # Initialize and fit leads model
-        forced_leads_model = ForcedModel()
-        forced_leads_model.fit([d["value"] for d in leads_series])
-        leads_predictions = forced_leads_model.forecast(months_ahead)
+        # Initialize models with the historical data
+        forced_leads_model = ForcedModel(leads_series)
+        leads_predictions = forced_leads_model.predict(months_ahead)
         
-        # Initialize and fit closures model
-        forced_closures_model = ForcedModel()
-        forced_closures_model.fit([d["value"] for d in closures_series])
-        closures_predictions = forced_closures_model.forecast(months_ahead)
+        forced_closures_model = ForcedModel(closures_series)
+        closures_predictions = forced_closures_model.predict(months_ahead)
         
         # Create dummy optimizer results for metrics
         leads_optimizer = type('obj', (object,), {
