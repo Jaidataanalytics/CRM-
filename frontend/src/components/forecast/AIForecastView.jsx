@@ -345,6 +345,26 @@ const AIForecastView = () => {
         </Card>
       )}
 
+      {/* Initial State - No forecast generated yet */}
+      {!data && !loading && !error && (
+        <Card className="border-2 border-dashed border-indigo-200 bg-indigo-50/30">
+          <CardContent className="p-12 text-center">
+            <Brain className="w-16 h-16 text-indigo-300 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">AI-Powered Forecast</h3>
+            <p className="text-gray-500 mb-4 max-w-md mx-auto">
+              Click "Generate Forecast" to analyze historical data and predict future leads and closures using machine learning models.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 text-sm text-gray-400">
+              <Badge variant="outline">ARIMA</Badge>
+              <Badge variant="outline">XGBoost</Badge>
+              <Badge variant="outline">Random Forest</Badge>
+              <Badge variant="outline">Exponential Smoothing</Badge>
+              <Badge variant="outline">+6 more</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {data && (
         <>
           {/* Model Performance Banner */}
@@ -356,7 +376,7 @@ const AIForecastView = () => {
                     <Cpu className="w-5 h-5 text-indigo-600" />
                     <span className="font-medium">Leads Model:</span>
                     <Badge variant="outline" className="bg-white">
-                      {data.model_metrics?.leads_model?.name}
+                      {data.model_metrics?.leads_model?.name || 'None'}
                     </Badge>
                     {data.model_metrics?.leads_model?.accuracy && (
                       <Badge className="bg-indigo-100 text-indigo-700">
