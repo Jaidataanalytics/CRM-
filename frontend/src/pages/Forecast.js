@@ -681,202 +681,26 @@ const Forecast = () => {
         )}
       </div>
 
-      {/* Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Forecast Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Basic Settings */}
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-2">
-              <Label>Forecast Horizon</Label>
-              <Select value={horizon} onValueChange={setHorizon}>
-                <SelectTrigger className="w-40" data-testid="horizon-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="3">3 Months</SelectItem>
-                  <SelectItem value="6">6 Months</SelectItem>
-                  <SelectItem value="12">12 Months</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>State (Optional)</Label>
-              <Input
-                placeholder="Filter by state..."
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                className="w-48"
-                data-testid="state-filter"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Dealer (Optional)</Label>
-              <Input
-                placeholder="Filter by dealer..."
-                value={dealer}
-                onChange={(e) => setDealer(e.target.value)}
-                className="w-48"
-                data-testid="dealer-filter"
-              />
-            </div>
-          </div>
-          
-          {/* Business Context Toggle */}
-          <div className="border-t pt-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => setShowBusinessContext(!showBusinessContext)}
-              className="w-full justify-between"
-              data-testid="toggle-business-context"
-            >
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
-                <span>Business Context Adjustments</span>
-                {(marketingEffort !== 'same' || campaignType !== 'none' || marketConditions !== 'stable' || seasonalFactor !== 'normal') && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-700">Active</Badge>
-                )}
-              </div>
-              {showBusinessContext ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            </Button>
-            
-            {showBusinessContext && (
-              <div className="mt-4 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Adjust predictions based on planned marketing activities and market conditions
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Marketing Effort */}
-                  <div className="space-y-2">
-                    <Label className="text-xs">Marketing Effort</Label>
-                    <Select value={marketingEffort} onValueChange={setMarketingEffort}>
-                      <SelectTrigger data-testid="marketing-effort-select">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="decreasing">Decreasing</SelectItem>
-                        <SelectItem value="same">Same as before</SelectItem>
-                        <SelectItem value="increasing">Increasing</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {marketingEffort !== 'same' && (
-                      <div className="pt-2">
-                        <Label className="text-xs text-muted-foreground">Intensity ({marketingIntensity}%)</Label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={marketingIntensity}
-                          onChange={(e) => setMarketingIntensity(e.target.value)}
-                          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Campaign Type */}
-                  <div className="space-y-2">
-                    <Label className="text-xs">Promotional Campaign</Label>
-                    <Select value={campaignType} onValueChange={setCampaignType}>
-                      <SelectTrigger data-testid="campaign-type-select">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No campaign</SelectItem>
-                        <SelectItem value="minor">Minor campaign (+10%)</SelectItem>
-                        <SelectItem value="major">Major campaign (+25%)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Market Conditions */}
-                  <div className="space-y-2">
-                    <Label className="text-xs">Market Conditions</Label>
-                    <Select value={marketConditions} onValueChange={setMarketConditions}>
-                      <SelectTrigger data-testid="market-conditions-select">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="challenging">Challenging (-10%)</SelectItem>
-                        <SelectItem value="stable">Stable</SelectItem>
-                        <SelectItem value="growing">Growing (+15%)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {/* Seasonal Factor */}
-                  <div className="space-y-2">
-                    <Label className="text-xs">Expected Demand</Label>
-                    <Select value={seasonalFactor} onValueChange={setSeasonalFactor}>
-                      <SelectTrigger data-testid="seasonal-factor-select">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low_demand">Low demand (-15%)</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="high_demand">High demand (+20%)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* Reset Button */}
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setMarketingEffort('same');
-                    setMarketingIntensity(50);
-                    setCampaignType('none');
-                    setMarketConditions('stable');
-                    setSeasonalFactor('normal');
-                  }}
-                  data-testid="reset-context-btn"
-                >
-                  Reset to Default
-                </Button>
-              </div>
-            )}
-          </div>
-          
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 pt-2">
-            <Button onClick={generateForecast} disabled={loading} className="gap-2" data-testid="generate-forecast-btn">
-              {loading ? 'Generating...' : <><Sparkles className="h-4 w-4" />Generate Forecast</>}
-            </Button>
-            {forecast && (
-              <Button onClick={saveProjection} disabled={loadingSave} variant="default" className="gap-2 bg-green-600 hover:bg-green-700" data-testid="save-projection-btn">
-                {loadingSave ? 'Saving...' : <><Save className="h-4 w-4" />Save Projection</>}
-              </Button>
-            )}
-            <Button variant="outline" onClick={loadSavedForecasts} disabled={loadingSaved} className="gap-2" data-testid="view-saved-btn">
-              {loadingSaved ? 'Loading...' : <><Archive className="h-4 w-4" />Saved Projections</>}
-            </Button>
-            <Button variant="outline" onClick={runBacktest} disabled={loadingBacktest} className="gap-2" data-testid="run-backtest-btn">
-              {loadingBacktest ? 'Testing...' : <><FlaskConical className="h-4 w-4" />Backtest</>}
-            </Button>
-            <Button variant="outline" onClick={loadFactors} disabled={loadingFactors} className="gap-2" data-testid="view-factors-btn">
-              {loadingFactors ? 'Loading...' : <><FileText className="h-4 w-4" />Factors</>}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Action Buttons for other features */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={loadSavedForecasts} disabled={loadingSaved} className="gap-2" data-testid="view-saved-btn">
+          {loadingSaved ? 'Loading...' : <><Archive className="h-4 w-4" />Saved Projections</>}
+        </Button>
+        <Button variant="outline" onClick={runBacktest} disabled={loadingBacktest} className="gap-2" data-testid="run-backtest-btn">
+          {loadingBacktest ? 'Testing...' : <><FlaskConical className="h-4 w-4" />Backtest</>}
+        </Button>
+        <Button variant="outline" onClick={loadFactors} disabled={loadingFactors} className="gap-2" data-testid="view-factors-btn">
+          {loadingFactors ? 'Loading...' : <><FileText className="h-4 w-4" />Factors</>}
+        </Button>
+      </div>
 
-      {/* Loading */}
-      {(loading || loadingBacktest) && (
+      {/* Loading for Backtest */}
+      {loadingBacktest && (
         <Card>
           <CardContent className="py-12">
             <div className="flex flex-col items-center justify-center gap-4">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              <p className="text-muted-foreground">
-                {loading ? 'AI is analyzing data and generating detailed forecast...' : 'Running rolling window backtest...'}
-              </p>
+              <p className="text-muted-foreground">Running rolling window backtest...</p>
               <p className="text-xs text-muted-foreground">This may take 30-60 seconds</p>
             </div>
           </CardContent>
