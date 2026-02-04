@@ -1134,6 +1134,467 @@ async def get_monthly_detailed_forecast(
 
 
 # ============================================
+# COMPREHENSIVE AI FORECAST WITH MODEL TESTING
+# ============================================
+
+@router.post("/comprehensive-forecast")
+async def generate_comprehensive_forecast(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate comprehensive AI-based forecast with:
+    - Multiple ML model testing (ARIMA, XGBoost, RandomForest, etc.)
+    - Model selection based on R², MAPE, MAE, RMSE
+    - Organization-level predictions (total leads, closures)
+    - Dealer-level breakdown with KVA and district splits
+    - Consistency validation (all totals match)
+    
+    Two-level forecast:
+    - Level 1: Organization (total, by dealer, by KVA)
+    - Level 2: Per dealer (by KVA, by district)
+    """
+    from routes.forecast_models import ModelOptimizer
+    
+    db = await get_db(request)
+    body = await request.json()
+    
+    months_ahead = body.get("months_ahead", 3)
+    include_current_month = body.get("include_current_month", True)
+    
+    # Calculate date range - use all available data from FY 2022-2023
+    now = datetime.now(timezone.utc)
+    current_month = now.strftime("%Y-%m")
+    
+    # Start from April 2022 (FY 2022-2023)
+    start_date = "2022-04-01"
+    end_date = (now - relativedelta(months=1)).strftime("%Y-%m-%d") if include_current_month else now.strftime("%Y-%m-%d")
+    
+    # ===== STEP 1: Get historical monthly data =====
+    monthly_pipeline = [
+        {
+            "$match": {
+                "enquiry_date": {"$exists": True, "$ne": None, "$ne": ""},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {"$addFields": {"month": get_month_extraction_pipeline()}},
+        {"$match": {"month": {"$ne": "unknown", "$gte": "2022-04"}}},
+        {
+            "$group": {
+                "_id": "$month",
+                "leads": {"$sum": 1},
+                "closures": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}},
+                "total_kva": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, {"$ifNull": ["$kva", 0]}, 0]}}
+            }
+        },
+        {"$sort": {"_id": 1}}
+    ]
+    
+    monthly_data = await db.leads.aggregate(monthly_pipeline).to_list(100)
+    
+    if len(monthly_data) < 12:
+        return {"success": False, "message": f"Need at least 12 months of data. Found {len(monthly_data)}."}
+    
+    # ===== STEP 2: Get dealer/KVA/district breakdown =====
+    breakdown_pipeline = [
+        {
+            "$match": {
+                "enquiry_date": {"$exists": True, "$ne": None, "$ne": ""},
+                "deleted_at": {"$exists": False}
+            }
+        },
+        {"$addFields": {"month": get_month_extraction_pipeline()}},
+        {"$match": {"month": {"$ne": "unknown", "$gte": "2022-04"}}},
+        {
+            "$group": {
+                "_id": {
+                    "month": "$month",
+                    "dealer": {"$ifNull": ["$dealer", "Unknown"]},
+                    "kva": {"$ifNull": ["$kva", 0]},
+                    "district": {"$ifNull": ["$district", "Unknown"]}
+                },
+                "leads": {"$sum": 1},
+                "closures": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}}
+            }
+        }
+    ]
+    
+    breakdown_data = await db.leads.aggregate(breakdown_pipeline).to_list(100000)
+    
+    # Build historical structures
+    dealer_history = defaultdict(lambda: {"leads": 0, "closures": 0, "months": set()})
+    kva_history = defaultdict(lambda: {"leads": 0, "closures": 0})
+    district_history = defaultdict(lambda: {"leads": 0, "closures": 0})
+    dealer_kva_history = defaultdict(lambda: defaultdict(lambda: {"leads": 0, "closures": 0}))
+    dealer_district_history = defaultdict(lambda: defaultdict(lambda: {"leads": 0, "closures": 0}))
+    
+    for r in breakdown_data:
+        dealer = r["_id"]["dealer"]
+        kva = r["_id"]["kva"]
+        district = r["_id"]["district"]
+        month = r["_id"]["month"]
+        leads = r["leads"]
+        closures = r["closures"]
+        
+        dealer_history[dealer]["leads"] += leads
+        dealer_history[dealer]["closures"] += closures
+        dealer_history[dealer]["months"].add(month)
+        
+        kva_history[kva]["leads"] += leads
+        kva_history[kva]["closures"] += closures
+        
+        district_history[district]["leads"] += leads
+        district_history[district]["closures"] += closures
+        
+        dealer_kva_history[dealer][kva]["leads"] += leads
+        dealer_kva_history[dealer][kva]["closures"] += closures
+        
+        dealer_district_history[dealer][district]["leads"] += leads
+        dealer_district_history[dealer][district]["closures"] += closures
+    
+    # ===== STEP 3: Run ML Model Selection =====
+    # Prepare data for model optimizer
+    leads_series = [{"month": d["_id"], "value": d["leads"]} for d in monthly_data]
+    closures_series = [{"month": d["_id"], "value": d["closures"]} for d in monthly_data]
+    
+    # Test models for leads
+    leads_optimizer = ModelOptimizer(leads_series)
+    leads_result = leads_optimizer.optimize()
+    
+    # Test models for closures
+    closures_optimizer = ModelOptimizer(closures_series)
+    closures_result = closures_optimizer.optimize()
+    
+    # ===== STEP 4: Generate predictions using best models =====
+    future_months = []
+    start_month = now if include_current_month else now + relativedelta(months=1)
+    for i in range(months_ahead):
+        m = start_month + relativedelta(months=i)
+        future_months.append(m.strftime("%Y-%m"))
+    
+    # Get predictions from best models
+    leads_predictions = leads_optimizer.best_model.forecast(months_ahead) if leads_optimizer.best_model else []
+    closures_predictions = closures_optimizer.best_model.forecast(months_ahead) if closures_optimizer.best_model else []
+    
+    # Calculate historical totals for proportional distribution
+    total_historical_leads = sum(d["leads"] for d in monthly_data)
+    total_historical_closures = sum(d["closures"] for d in monthly_data)
+    
+    # ===== STEP 5: Build Organization-level forecast =====
+    org_forecast = {
+        "months": [],
+        "totals": {
+            "leads": 0,
+            "closures": 0
+        },
+        "by_dealer": {},
+        "by_kva": {},
+        "by_district": {}
+    }
+    
+    # Calculate dealer/KVA/district shares for proportional distribution
+    dealer_lead_share = {d: h["leads"]/total_historical_leads for d, h in dealer_history.items() if total_historical_leads > 0}
+    dealer_closure_share = {d: h["closures"]/total_historical_closures for d, h in dealer_history.items() if total_historical_closures > 0}
+    
+    kva_lead_share = {k: h["leads"]/total_historical_leads for k, h in kva_history.items() if total_historical_leads > 0}
+    kva_closure_share = {k: h["closures"]/total_historical_closures for k, h in kva_history.items() if total_historical_closures > 0}
+    
+    district_lead_share = {d: h["leads"]/total_historical_leads for d, h in district_history.items() if total_historical_leads > 0}
+    district_closure_share = {d: h["closures"]/total_historical_closures for d, h in district_history.items() if total_historical_closures > 0}
+    
+    # ===== STEP 6: Generate monthly predictions with breakdowns =====
+    for i, month in enumerate(future_months):
+        pred_leads = int(round(leads_predictions[i])) if i < len(leads_predictions) else 0
+        pred_closures = int(round(closures_predictions[i])) if i < len(closures_predictions) else 0
+        
+        # Ensure closures don't exceed leads
+        pred_closures = min(pred_closures, pred_leads)
+        
+        conversion_rate = round((pred_closures / pred_leads * 100), 1) if pred_leads > 0 else 0
+        
+        month_data = {
+            "month": month,
+            "month_name": datetime.strptime(month, "%Y-%m").strftime("%B %Y"),
+            "is_current_month": month == current_month,
+            "predicted_leads": pred_leads,
+            "predicted_closures": pred_closures,
+            "conversion_rate": conversion_rate,
+            "dealer_breakdown": [],
+            "kva_breakdown": [],
+            "district_breakdown": []
+        }
+        
+        # Distribute to dealers proportionally
+        dealer_leads_sum = 0
+        dealer_closures_sum = 0
+        for dealer, share in sorted(dealer_lead_share.items(), key=lambda x: x[1], reverse=True):
+            d_leads = int(round(pred_leads * share))
+            d_closures = int(round(pred_closures * dealer_closure_share.get(dealer, share)))
+            d_closures = min(d_closures, d_leads)  # Can't close more than leads
+            
+            if d_leads > 0 or d_closures > 0:
+                dealer_leads_sum += d_leads
+                dealer_closures_sum += d_closures
+                month_data["dealer_breakdown"].append({
+                    "dealer": dealer,
+                    "predicted_leads": d_leads,
+                    "predicted_closures": d_closures,
+                    "conversion_rate": round((d_closures/d_leads*100), 1) if d_leads > 0 else 0,
+                    "share_pct": round(share * 100, 2)
+                })
+        
+        # Adjust for rounding errors
+        if dealer_leads_sum != pred_leads and month_data["dealer_breakdown"]:
+            month_data["dealer_breakdown"][0]["predicted_leads"] += (pred_leads - dealer_leads_sum)
+        if dealer_closures_sum != pred_closures and month_data["dealer_breakdown"]:
+            month_data["dealer_breakdown"][0]["predicted_closures"] += (pred_closures - dealer_closures_sum)
+        
+        # Distribute to KVA proportionally
+        kva_leads_sum = 0
+        kva_closures_sum = 0
+        for kva, share in sorted(kva_lead_share.items(), key=lambda x: x[1], reverse=True):
+            k_leads = int(round(pred_leads * share))
+            k_closures = int(round(pred_closures * kva_closure_share.get(kva, share)))
+            k_closures = min(k_closures, k_leads)
+            
+            if k_leads > 0 or k_closures > 0:
+                kva_leads_sum += k_leads
+                kva_closures_sum += k_closures
+                month_data["kva_breakdown"].append({
+                    "kva": kva,
+                    "predicted_leads": k_leads,
+                    "predicted_closures": k_closures,
+                    "share_pct": round(share * 100, 2)
+                })
+        
+        # Adjust for rounding errors
+        if kva_leads_sum != pred_leads and month_data["kva_breakdown"]:
+            month_data["kva_breakdown"][0]["predicted_leads"] += (pred_leads - kva_leads_sum)
+        if kva_closures_sum != pred_closures and month_data["kva_breakdown"]:
+            month_data["kva_breakdown"][0]["predicted_closures"] += (pred_closures - kva_closures_sum)
+        
+        # Distribute to districts proportionally
+        dist_leads_sum = 0
+        dist_closures_sum = 0
+        for district, share in sorted(district_lead_share.items(), key=lambda x: x[1], reverse=True):
+            di_leads = int(round(pred_leads * share))
+            di_closures = int(round(pred_closures * district_closure_share.get(district, share)))
+            di_closures = min(di_closures, di_leads)
+            
+            if di_leads > 0 or di_closures > 0:
+                dist_leads_sum += di_leads
+                dist_closures_sum += di_closures
+                month_data["district_breakdown"].append({
+                    "district": district,
+                    "predicted_leads": di_leads,
+                    "predicted_closures": di_closures,
+                    "share_pct": round(share * 100, 2)
+                })
+        
+        # Adjust for rounding errors
+        if dist_leads_sum != pred_leads and month_data["district_breakdown"]:
+            month_data["district_breakdown"][0]["predicted_leads"] += (pred_leads - dist_leads_sum)
+        if dist_closures_sum != pred_closures and month_data["district_breakdown"]:
+            month_data["district_breakdown"][0]["predicted_closures"] += (pred_closures - dist_closures_sum)
+        
+        org_forecast["months"].append(month_data)
+        org_forecast["totals"]["leads"] += pred_leads
+        org_forecast["totals"]["closures"] += pred_closures
+    
+    # ===== STEP 7: Build Dealer-level forecasts =====
+    dealer_forecasts = {}
+    
+    for dealer in dealer_history.keys():
+        if dealer == "Unknown":
+            continue
+            
+        dealer_total_leads = dealer_history[dealer]["leads"]
+        dealer_total_closures = dealer_history[dealer]["closures"]
+        
+        # Calculate KVA shares for this dealer
+        dealer_kva_shares = {}
+        for kva, data in dealer_kva_history[dealer].items():
+            if dealer_total_leads > 0:
+                dealer_kva_shares[kva] = {
+                    "lead_share": data["leads"] / dealer_total_leads,
+                    "closure_share": data["closures"] / dealer_total_closures if dealer_total_closures > 0 else 0
+                }
+        
+        # Calculate district shares for this dealer
+        dealer_district_shares = {}
+        for district, data in dealer_district_history[dealer].items():
+            if dealer_total_leads > 0:
+                dealer_district_shares[district] = {
+                    "lead_share": data["leads"] / dealer_total_leads,
+                    "closure_share": data["closures"] / dealer_total_closures if dealer_total_closures > 0 else 0
+                }
+        
+        dealer_forecast = {
+            "dealer": dealer,
+            "historical": {
+                "total_leads": dealer_total_leads,
+                "total_closures": dealer_total_closures,
+                "months_active": len(dealer_history[dealer]["months"]),
+                "conversion_rate": round((dealer_total_closures/dealer_total_leads*100), 1) if dealer_total_leads > 0 else 0
+            },
+            "months": []
+        }
+        
+        # Get this dealer's predictions from org forecast
+        for month_data in org_forecast["months"]:
+            dealer_month = next(
+                (d for d in month_data["dealer_breakdown"] if d["dealer"] == dealer),
+                {"predicted_leads": 0, "predicted_closures": 0}
+            )
+            
+            d_pred_leads = dealer_month["predicted_leads"]
+            d_pred_closures = dealer_month["predicted_closures"]
+            
+            dm = {
+                "month": month_data["month"],
+                "month_name": month_data["month_name"],
+                "predicted_leads": d_pred_leads,
+                "predicted_closures": d_pred_closures,
+                "conversion_rate": round((d_pred_closures/d_pred_leads*100), 1) if d_pred_leads > 0 else 0,
+                "by_kva": [],
+                "by_district": []
+            }
+            
+            # Distribute to KVA for this dealer
+            kva_sum_l, kva_sum_c = 0, 0
+            for kva, shares in sorted(dealer_kva_shares.items(), key=lambda x: x[1]["lead_share"], reverse=True):
+                k_leads = int(round(d_pred_leads * shares["lead_share"]))
+                k_closures = int(round(d_pred_closures * shares["closure_share"]))
+                k_closures = min(k_closures, k_leads)
+                if k_leads > 0 or k_closures > 0:
+                    kva_sum_l += k_leads
+                    kva_sum_c += k_closures
+                    dm["by_kva"].append({"kva": kva, "leads": k_leads, "closures": k_closures})
+            
+            # Adjust rounding
+            if dm["by_kva"] and kva_sum_l != d_pred_leads:
+                dm["by_kva"][0]["leads"] += (d_pred_leads - kva_sum_l)
+            if dm["by_kva"] and kva_sum_c != d_pred_closures:
+                dm["by_kva"][0]["closures"] += (d_pred_closures - kva_sum_c)
+            
+            # Distribute to districts for this dealer
+            dist_sum_l, dist_sum_c = 0, 0
+            for district, shares in sorted(dealer_district_shares.items(), key=lambda x: x[1]["lead_share"], reverse=True):
+                di_leads = int(round(d_pred_leads * shares["lead_share"]))
+                di_closures = int(round(d_pred_closures * shares["closure_share"]))
+                di_closures = min(di_closures, di_leads)
+                if di_leads > 0 or di_closures > 0:
+                    dist_sum_l += di_leads
+                    dist_sum_c += di_closures
+                    dm["by_district"].append({"district": district, "leads": di_leads, "closures": di_closures})
+            
+            # Adjust rounding
+            if dm["by_district"] and dist_sum_l != d_pred_leads:
+                dm["by_district"][0]["leads"] += (d_pred_leads - dist_sum_l)
+            if dm["by_district"] and dist_sum_c != d_pred_closures:
+                dm["by_district"][0]["closures"] += (d_pred_closures - dist_sum_c)
+            
+            dealer_forecast["months"].append(dm)
+        
+        dealer_forecasts[dealer] = dealer_forecast
+    
+    # ===== STEP 8: Consistency validation =====
+    consistency_check = {"passed": True, "issues": []}
+    
+    for month_data in org_forecast["months"]:
+        month = month_data["month"]
+        
+        # Check dealer totals match
+        dealer_lead_total = sum(d["predicted_leads"] for d in month_data["dealer_breakdown"])
+        dealer_closure_total = sum(d["predicted_closures"] for d in month_data["dealer_breakdown"])
+        
+        if dealer_lead_total != month_data["predicted_leads"]:
+            consistency_check["passed"] = False
+            consistency_check["issues"].append(f"{month}: Dealer leads total ({dealer_lead_total}) != org total ({month_data['predicted_leads']})")
+        
+        # Check KVA totals match
+        kva_lead_total = sum(k["predicted_leads"] for k in month_data["kva_breakdown"])
+        kva_closure_total = sum(k["predicted_closures"] for k in month_data["kva_breakdown"])
+        
+        if kva_lead_total != month_data["predicted_leads"]:
+            consistency_check["passed"] = False
+            consistency_check["issues"].append(f"{month}: KVA leads total ({kva_lead_total}) != org total ({month_data['predicted_leads']})")
+        
+        # Check district totals match
+        dist_lead_total = sum(d["predicted_leads"] for d in month_data["district_breakdown"])
+        
+        if dist_lead_total != month_data["predicted_leads"]:
+            consistency_check["passed"] = False
+            consistency_check["issues"].append(f"{month}: District leads total ({dist_lead_total}) != org total ({month_data['predicted_leads']})")
+    
+    # ===== STEP 9: Build model metrics =====
+    model_metrics = {
+        "leads_model": {
+            "name": leads_optimizer.best_model.name if leads_optimizer.best_model else "None",
+            "accuracy": round(leads_optimizer.best_accuracy, 2),
+            "all_models_tested": [
+                {
+                    "model": r["model"],
+                    "accuracy": round(r.get("accuracy", 0), 2),
+                    "mape": round(r.get("mape", 100), 2),
+                }
+                for r in leads_optimizer.results
+            ]
+        },
+        "closures_model": {
+            "name": closures_optimizer.best_model.name if closures_optimizer.best_model else "None",
+            "accuracy": round(closures_optimizer.best_accuracy, 2),
+            "all_models_tested": [
+                {
+                    "model": r["model"],
+                    "accuracy": round(r.get("accuracy", 0), 2),
+                    "mape": round(r.get("mape", 100), 2),
+                }
+                for r in closures_optimizer.results
+            ]
+        },
+        "data_quality": {
+            "months_analyzed": len(monthly_data),
+            "total_leads_in_training": total_historical_leads,
+            "total_closures_in_training": total_historical_closures,
+            "unique_dealers": len(dealer_history),
+            "unique_kvas": len(kva_history),
+            "unique_districts": len(district_history)
+        }
+    }
+    
+    # ===== STEP 10: Calculate summary statistics =====
+    historical_avg_leads = total_historical_leads / len(monthly_data)
+    historical_avg_closures = total_historical_closures / len(monthly_data)
+    historical_conversion = (total_historical_closures / total_historical_leads * 100) if total_historical_leads > 0 else 0
+    
+    return {
+        "success": True,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "forecast_horizon": months_ahead,
+        "include_current_month": include_current_month,
+        "model_metrics": model_metrics,
+        "consistency_check": consistency_check,
+        "historical_summary": {
+            "period": f"April 2022 to {end_date}",
+            "months_analyzed": len(monthly_data),
+            "avg_leads_per_month": round(historical_avg_leads, 1),
+            "avg_closures_per_month": round(historical_avg_closures, 1),
+            "avg_conversion_rate": round(historical_conversion, 1)
+        },
+        "organization_forecast": org_forecast,
+        "dealer_forecasts": dealer_forecasts,
+        "chart_data": {
+            "months": [m["month_name"] for m in org_forecast["months"]],
+            "leads": [m["predicted_leads"] for m in org_forecast["months"]],
+            "closures": [m["predicted_closures"] for m in org_forecast["months"]],
+            "conversion_rates": [m["conversion_rate"] for m in org_forecast["months"]]
+        }
+    }
+
+
+# ============================================
 # COMPREHENSIVE FORECAST EXPORT
 # ============================================
 
