@@ -1282,8 +1282,8 @@ async def generate_comprehensive_forecast(
     
     # ===== STEP 3: Run ML Model Selection =====
     # Prepare data for model optimizer
-    leads_series = [{"month": d["_id"], "value": d["leads"]} for d in monthly_data]
-    closures_series = [{"month": d["_id"], "value": d["closures"]} for d in monthly_data]
+    leads_series = [{"_id": d["_id"], "won": d["leads"], "total_enquiries": d["leads"]} for d in monthly_data]
+    closures_series = [{"_id": d["_id"], "won": d["closures"], "total_enquiries": d["leads"]} for d in monthly_data]
     
     # Model mapping for forced model selection
     MODEL_MAP = {
