@@ -1089,6 +1089,7 @@ async def process_lost_upload(db, df: pd.DataFrame, current_user: User, filename
             "filename": filename,
             "created": created_count,
             "updated": updated_count,
+            "duplicates": duplicate_count,
             "skipped_won": skipped_won_count,
             "skipped_already_lost": skipped_already_lost_count,
             "errors": len(errors)
@@ -1103,6 +1104,7 @@ async def process_lost_upload(db, df: pd.DataFrame, current_user: User, filename
         "template_type": "LOST",
         "created": created_count,
         "updated": updated_count,
+        "duplicates": duplicate_count,
         "skipped_won": skipped_won_count,
         "skipped_already_lost": skipped_already_lost_count,
         "total_rows": len(df),
