@@ -1604,26 +1604,33 @@ async def generate_comprehensive_forecast(
     
     # ===== STEP 9: Build model metrics =====
     model_metrics = {
+        "model_selection_mode": model_selection_mode,
+        "forced_model": force_model if model_selection_mode == "manual" else None,
+        "available_models": list(MODEL_MAP.keys()),
         "leads_model": {
-            "name": leads_optimizer.best_model.name if leads_optimizer.best_model else "None",
-            "accuracy": round(leads_optimizer.best_accuracy, 2),
+            "name": leads_optimizer.best_model.name if hasattr(leads_optimizer.best_model, 'name') else (force_model or "None"),
+            "accuracy": round(leads_optimizer.best_accuracy, 2) if leads_optimizer.best_accuracy else None,
+            "mape": round(leads_optimizer.best_mape, 2) if hasattr(leads_optimizer, 'best_mape') and leads_optimizer.best_mape else None,
             "all_models_tested": [
                 {
                     "model": r["model"],
-                    "accuracy": round(r.get("accuracy", 0), 2),
-                    "mape": round(r.get("mape", 100), 2),
+                    "accuracy": round(r.get("accuracy", 0), 2) if r.get("accuracy") else None,
+                    "mape": round(r.get("mape", 100), 2) if r.get("mape") else None,
+                    "note": r.get("note", "")
                 }
                 for r in leads_optimizer.results
             ]
         },
         "closures_model": {
-            "name": closures_optimizer.best_model.name if closures_optimizer.best_model else "None",
-            "accuracy": round(closures_optimizer.best_accuracy, 2),
+            "name": closures_optimizer.best_model.name if hasattr(closures_optimizer.best_model, 'name') else (force_model or "None"),
+            "accuracy": round(closures_optimizer.best_accuracy, 2) if closures_optimizer.best_accuracy else None,
+            "mape": round(closures_optimizer.best_mape, 2) if hasattr(closures_optimizer, 'best_mape') and closures_optimizer.best_mape else None,
             "all_models_tested": [
                 {
                     "model": r["model"],
-                    "accuracy": round(r.get("accuracy", 0), 2),
-                    "mape": round(r.get("mape", 100), 2),
+                    "accuracy": round(r.get("accuracy", 0), 2) if r.get("accuracy") else None,
+                    "mape": round(r.get("mape", 100), 2) if r.get("mape") else None,
+                    "note": r.get("note", "")
                 }
                 for r in closures_optimizer.results
             ]
@@ -1648,10 +1655,13 @@ async def generate_comprehensive_forecast(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "forecast_horizon": months_ahead,
         "include_current_month": include_current_month,
+        "years_back": years_back,
+        "model_selection_mode": model_selection_mode,
+        "forced_model": force_model if model_selection_mode == "manual" else None,
         "model_metrics": model_metrics,
         "consistency_check": consistency_check,
         "historical_summary": {
-            "period": f"April 2022 to {end_date}",
+            "period": f"{start_date} to {end_date}",
             "months_analyzed": len(monthly_data),
             "avg_leads_per_month": round(historical_avg_leads, 1),
             "avg_closures_per_month": round(historical_avg_closures, 1),
