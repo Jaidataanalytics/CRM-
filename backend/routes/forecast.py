@@ -33,6 +33,68 @@ WON_STAGES = ["Closed-Won", "Order Booked"]
 # Won condition for aggregation pipelines
 WON_CONDITION = {"$in": ["$enquiry_stage", WON_STAGES]}
 
+# Month name to number mapping for date parsing
+MONTH_MAP = {
+    "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04",
+    "May": "05", "Jun": "06", "Jul": "07", "Aug": "08",
+    "Sep": "09", "Oct": "10", "Nov": "11", "Dec": "12"
+}
+
+def get_month_extraction_pipeline():
+    """
+    Returns MongoDB aggregation expression to extract YYYY-MM from various date formats.
+    Handles: "DD Mon YYYY", "YYYY-MM-DD", "DD-MM-YYYY"
+    """
+    return {
+        "$switch": {
+            "branches": [
+                # Format: "DD Mon YYYY" (e.g., "01 Aug 2025")
+                {
+                    "case": {
+                        "$regexMatch": {
+                            "input": "$enquiry_date",
+                            "regex": "^\\d{2} [A-Za-z]{3} \\d{4}"
+                        }
+                    },
+                    "then": {
+                        "$concat": [
+                            {"$substr": ["$enquiry_date", 7, 4]},  # Year
+                            "-",
+                            {"$switch": {
+                                "branches": [
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Jan"]}, "then": "01"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Feb"]}, "then": "02"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Mar"]}, "then": "03"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Apr"]}, "then": "04"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "May"]}, "then": "05"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Jun"]}, "then": "06"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Jul"]}, "then": "07"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Aug"]}, "then": "08"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Sep"]}, "then": "09"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Oct"]}, "then": "10"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Nov"]}, "then": "11"},
+                                    {"case": {"$eq": [{"$substr": ["$enquiry_date", 3, 3]}, "Dec"]}, "then": "12"},
+                                ],
+                                "default": "00"
+                            }}
+                        ]
+                    }
+                },
+                # Format: "YYYY-MM-DD" (e.g., "2025-08-01")
+                {
+                    "case": {
+                        "$regexMatch": {
+                            "input": "$enquiry_date",
+                            "regex": "^\\d{4}-\\d{2}"
+                        }
+                    },
+                    "then": {"$substr": ["$enquiry_date", 0, 7]}
+                }
+            ],
+            "default": "unknown"
+        }
+    }
+
 async def get_db(request: Request):
     return request.app.state.db
 
