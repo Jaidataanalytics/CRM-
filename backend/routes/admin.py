@@ -1497,4 +1497,3 @@ async def get_duplicate_detection_status(
         "total_leads": total_leads,
         "duplicate_percentage": round((duplicate_count / max(total_leads, 1)) * 100, 2)
     }
-    }
