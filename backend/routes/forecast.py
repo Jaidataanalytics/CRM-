@@ -734,7 +734,8 @@ async def generate_forecast(
     
     pipeline = [
         {"$match": query},
-        {"$addFields": {"month": {"$substr": ["$enquiry_date", 0, 7]}}},
+        {"$addFields": {"month": get_month_extraction_pipeline()}},
+        {"$match": {"month": {"$ne": "unknown"}}},  # Filter out unparseable dates
         {"$group": {
             "_id": "$month",
             "total_enquiries": {"$sum": 1},
@@ -748,7 +749,7 @@ async def generate_forecast(
     complete_data = [d for d in historical_data if d.get('total_enquiries', 0) >= 50]
     
     if len(complete_data) < 6:
-        return {"success": False, "message": "Need at least 6 complete months of data."}
+        return {"success": False, "message": f"Need at least 6 complete months of data. Found {len(complete_data)} months with 50+ leads."}
     
     # Calculate overall conversion rate
     total_leads_all = await db.leads.count_documents(query)
