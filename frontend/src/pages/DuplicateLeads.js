@@ -1389,6 +1389,149 @@ const DuplicateLeads = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Manual Detection Confirmation Dialog */}
+      <Dialog open={showDetectionDialog} onOpenChange={setShowDetectionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              Run Duplicate Detection
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p>
+                This will scan <strong>all leads</strong> in the database and flag duplicates based on:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1 text-gray-600">
+                <li>Same phone number (exact match)</li>
+                <li>Smart logic: open leads vs closed leads</li>
+                <li>Time gap analysis (repeat vs returning customers)</li>
+              </ul>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-3">
+                <p className="text-sm text-amber-800">
+                  <strong>Warning:</strong> This is a heavy operation and may take several minutes 
+                  depending on the number of leads.
+                </p>
+              </div>
+              <div className="pt-3">
+                <p className="text-sm font-medium mb-2">
+                  Type <code className="bg-gray-100 px-2 py-1 rounded text-red-600">RUN DUPLICATE DETECTION</code> to confirm:
+                </p>
+                <Input
+                  value={detectionConfirmText}
+                  onChange={(e) => setDetectionConfirmText(e.target.value)}
+                  placeholder="Type confirmation here..."
+                  className="font-mono"
+                  data-testid="detection-confirm-input"
+                />
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDetectionDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={runManualDetection}
+              disabled={detectionConfirmText !== 'RUN DUPLICATE DETECTION' || runningDetection}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="confirm-detection-button"
+            >
+              {runningDetection ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4 mr-2" />
+                  Run Detection
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detection Report Dialog */}
+      <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              Duplicate Detection Complete
+            </DialogTitle>
+          </DialogHeader>
+          
+          {detectionReport && (
+            <div className="space-y-4">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-blue-700">
+                      {detectionReport.summary?.total_leads_scanned?.toLocaleString() || 0}
+                    </p>
+                    <p className="text-sm text-blue-600">Leads Scanned</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-orange-50 border-orange-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-orange-700">
+                      {detectionReport.summary?.duplicates_found?.toLocaleString() || 0}
+                    </p>
+                    <p className="text-sm text-orange-600">Duplicates Found</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-green-700">
+                      {detectionReport.summary?.data_merged?.toLocaleString() || 0}
+                    </p>
+                    <p className="text-sm text-green-600">Records Merged</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-3xl font-bold text-purple-700">
+                      {detectionReport.summary?.duplicate_percentage || 0}%
+                    </p>
+                    <p className="text-sm text-purple-600">Duplicate Rate</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Detection Rules */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  Detection Rules Applied
+                </h4>
+                <ul className="text-sm space-y-1 text-gray-600">
+                  {detectionReport.details?.smart_rules_applied?.map((rule, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-500" />
+                      {rule}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Footer Info */}
+              <div className="text-xs text-gray-500 pt-2 border-t">
+                <p>Triggered by: {detectionReport.triggered_by}</p>
+                <p>Completed at: {new Date(detectionReport.triggered_at).toLocaleString()}</p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button onClick={() => setShowReportDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
