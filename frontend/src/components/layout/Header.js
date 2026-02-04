@@ -53,10 +53,10 @@ export const Header = () => {
     employee: 'bg-orange-100 text-orange-700'
   };
 
-  // Fetch notification counts on mount and every 60 seconds
+  // Fetch notification counts on mount and every 2 minutes
   useEffect(() => {
     fetchNotificationCounts();
-    const interval = setInterval(fetchNotificationCounts, 60000);
+    const interval = setInterval(fetchNotificationCounts, 120000); // Poll every 2 minutes
     return () => clearInterval(interval);
   }, []);
 
