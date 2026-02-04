@@ -857,6 +857,7 @@ async def process_lost_upload(db, df: pd.DataFrame, current_user: User, filename
     
     created_count = 0
     updated_count = 0
+    duplicate_count = 0
     skipped_won_count = 0
     skipped_already_lost_count = 0
     errors = []
