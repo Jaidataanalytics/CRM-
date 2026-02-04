@@ -1162,7 +1162,36 @@ async def generate_comprehensive_forecast(
       Options: "Simple Moving Average", "Weighted Moving Average", "Exponential Smoothing",
                "Seasonal (Same-Month)", "Linear Trend", "ARIMA", "Random Forest",
                "Gradient Boosting", "XGBoost", "Ensemble (Hybrid)"
+    
+    Note: This endpoint has a 90-second timeout for model optimization.
     """
+    import asyncio
+    
+    try:
+        # Wrap the entire forecast generation in a timeout
+        return await asyncio.wait_for(
+            _generate_comprehensive_forecast_impl(request, current_user),
+            timeout=90.0  # 90 second timeout
+        )
+    except asyncio.TimeoutError:
+        return {
+            "success": False,
+            "message": "Forecast generation timed out. Try reducing years_back or months_ahead parameters.",
+            "error": "TIMEOUT"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Forecast generation failed: {str(e)}",
+            "error": str(e)
+        }
+
+
+async def _generate_comprehensive_forecast_impl(
+    request: Request,
+    current_user: User
+):
+    """Internal implementation of comprehensive forecast generation."""
     from routes.forecast_models import (
         ModelOptimizer, 
         SimpleMovingAverage, 
