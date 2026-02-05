@@ -744,9 +744,9 @@ const AIForecastView = () => {
                 </span>
               </div>
 
-              {/* Tree View */}
+              {/* Tree View with Nested Month Expansion */}
               {viewMode === 'tree' && (
-                <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                <div className="space-y-2 max-h-[700px] overflow-y-auto">
                   {filteredDealers.map((dealer, idx) => (
                     <Collapsible
                       key={dealer.dealer}
@@ -763,66 +763,147 @@ const AIForecastView = () => {
                             )}
                             <Building2 className="w-4 h-4 text-indigo-500" />
                             <span className="font-medium">{dealer.dealer}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {dealer.months?.length || 0} months
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-3">
                             <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                              {dealer.totals?.leads || 0} leads
+                              {dealer.totals?.leads || 0} total leads
                             </Badge>
                             <Badge variant="secondary" className="bg-green-100 text-green-700">
-                              {dealer.totals?.closures || 0} closures
+                              {dealer.totals?.closures || 0} total closures
                             </Badge>
                           </div>
                         </div>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <div className="ml-7 mt-2 p-4 bg-white border rounded-lg">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* KVA Breakdown */}
-                            <div>
-                              <h5 className="font-medium mb-3 flex items-center gap-2 text-indigo-700">
-                                <Layers className="w-4 h-4" /> By KVA
-                              </h5>
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {dealer.by_kva && Object.entries(dealer.by_kva)
-                                  .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))
-                                  .slice(0, 10)
-                                  .map(([kva, stats]) => (
-                                    <div key={kva} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                      <span className="text-sm">{kva} KVA</span>
-                                      <div className="flex gap-2">
-                                        <Badge variant="outline" className="text-xs">
-                                          {stats.leads || 0} leads
-                                        </Badge>
-                                        <Badge className="bg-green-100 text-green-700 text-xs">
-                                          {stats.closures || 0} closures
-                                        </Badge>
+                        <div className="ml-7 mt-2 space-y-2">
+                          {/* Month-wise breakdown */}
+                          {dealer.months?.map((monthData, midx) => (
+                            <Collapsible
+                              key={monthData.month}
+                              open={expandedMonths[`${dealer.dealer}_${monthData.month}`]}
+                              onOpenChange={() => toggleMonth(dealer.dealer, monthData.month)}
+                            >
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center justify-between p-3 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors border border-indigo-100">
+                                  <div className="flex items-center gap-3">
+                                    {expandedMonths[`${dealer.dealer}_${monthData.month}`] ? (
+                                      <ChevronDown className="w-4 h-4 text-indigo-500" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-indigo-500" />
+                                    )}
+                                    <Calendar className="w-4 h-4 text-indigo-600" />
+                                    <span className="font-medium text-indigo-800">{monthData.month_name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <Badge className="bg-indigo-100 text-indigo-700">
+                                      {monthData.predicted_leads || 0} leads
+                                    </Badge>
+                                    <Badge className="bg-green-100 text-green-700">
+                                      {monthData.predicted_closures || 0} closures
+                                    </Badge>
+                                    <Badge variant="outline">
+                                      {monthData.conversion_rate || 0}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="ml-7 mt-2 p-4 bg-white border rounded-lg">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* KVA Breakdown for this month */}
+                                    <div>
+                                      <h5 className="font-medium mb-3 flex items-center gap-2 text-indigo-700">
+                                        <Layers className="w-4 h-4" /> By KVA - {monthData.month_name}
+                                      </h5>
+                                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {monthData.by_kva && monthData.by_kva.length > 0 ? (
+                                          monthData.by_kva
+                                            .sort((a, b) => (b.closures || 0) - (a.closures || 0))
+                                            .slice(0, 10)
+                                            .map((item, kidx) => (
+                                              <div key={kidx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span className="text-sm">{item.kva} KVA</span>
+                                                <div className="flex gap-2">
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {item.leads || 0} leads
+                                                  </Badge>
+                                                  <Badge className="bg-green-100 text-green-700 text-xs">
+                                                    {item.closures || 0} closures
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                            ))
+                                        ) : (
+                                          <p className="text-sm text-gray-400 italic">No KVA data for this month</p>
+                                        )}
                                       </div>
                                     </div>
-                                  ))}
+                                    {/* District Breakdown for this month */}
+                                    <div>
+                                      <h5 className="font-medium mb-3 flex items-center gap-2 text-purple-700">
+                                        <MapPin className="w-4 h-4" /> By District - {monthData.month_name}
+                                      </h5>
+                                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {monthData.by_district && monthData.by_district.length > 0 ? (
+                                          monthData.by_district
+                                            .sort((a, b) => (b.closures || 0) - (a.closures || 0))
+                                            .slice(0, 10)
+                                            .map((item, didx) => (
+                                              <div key={didx} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                <span className="text-sm truncate max-w-[150px]">{item.district}</span>
+                                                <div className="flex gap-2">
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {item.leads || 0} leads
+                                                  </Badge>
+                                                  <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                                    {item.closures || 0} closures
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                            ))
+                                        ) : (
+                                          <p className="text-sm text-gray-400 italic">No district data for this month</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          ))}
+                          
+                          {/* Combined totals section */}
+                          <div className="p-3 bg-slate-100 rounded-lg mt-2">
+                            <p className="text-xs text-slate-600 font-medium mb-2">Combined Totals (All {dealer.months?.length || 0} Months)</p>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-xs text-slate-500">Top KVAs</p>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {dealer.by_kva && Object.entries(dealer.by_kva)
+                                    .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))
+                                    .slice(0, 3)
+                                    .map(([kva, stats]) => (
+                                      <Badge key={kva} variant="outline" className="text-xs">
+                                        {kva} KVA: {stats.closures || 0}
+                                      </Badge>
+                                    ))}
+                                </div>
                               </div>
-                            </div>
-                            {/* District Breakdown */}
-                            <div>
-                              <h5 className="font-medium mb-3 flex items-center gap-2 text-purple-700">
-                                <MapPin className="w-4 h-4" /> By District
-                              </h5>
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {dealer.by_district && Object.entries(dealer.by_district)
-                                  .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))
-                                  .slice(0, 10)
-                                  .map(([district, stats]) => (
-                                    <div key={district} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                      <span className="text-sm truncate max-w-[150px]">{district}</span>
-                                      <div className="flex gap-2">
-                                        <Badge variant="outline" className="text-xs">
-                                          {stats.leads || 0} leads
-                                        </Badge>
-                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
-                                          {stats.closures || 0} closures
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  ))}
+                              <div>
+                                <p className="text-xs text-slate-500">Top Districts</p>
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {dealer.by_district && Object.entries(dealer.by_district)
+                                    .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))
+                                    .slice(0, 3)
+                                    .map(([district, stats]) => (
+                                      <Badge key={district} variant="outline" className="text-xs">
+                                        {district}: {stats.closures || 0}
+                                      </Badge>
+                                    ))}
+                                </div>
                               </div>
                             </div>
                           </div>
