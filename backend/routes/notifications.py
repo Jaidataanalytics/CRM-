@@ -105,7 +105,8 @@ async def get_notifications(
     missed_leads = await db.leads.find(missed_query, {"_id": 0}).to_list(50)
     
     for lead in missed_leads:
-        days_overdue = (datetime.now(timezone.utc) - datetime.strptime(lead.get("planned_followup_date", today), "%Y-%m-%d").replace(tzinfo=timezone.utc)).days
+        followup_date_parsed = parse_date_safe(lead.get("planned_followup_date"), today)
+        days_overdue = (datetime.now(timezone.utc) - followup_date_parsed).days
         notifications.append({
             "id": f"missed_{lead.get('lead_id', '')}",
             "type": "critical",
