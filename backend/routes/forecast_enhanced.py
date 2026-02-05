@@ -2288,7 +2288,7 @@ async def list_projections(
     request: Request,
     current_user: User = Depends(get_current_user)
 ):
-    """List all saved projections."""
+    """List all saved projections with essential metadata."""
     db = await get_db(request)
     
     cursor = db.enhanced_forecasts.find(
@@ -2300,8 +2300,13 @@ async def list_projections(
             "saved_by": 1,
             "version": 1,
             "notes": 1,
-            "forecast_data.horizon_months": 1,
-            "forecast_data.summary": 1
+            "parameters": 1,
+            "model_selection": 1,
+            "model_selection_mode": 1,
+            "forecast_data.organization_forecast.totals": 1,
+            "forecast_data.organization_forecast.months": 1,
+            "dealer_forecasts": 1,  # Include full dealer data for saved tab
+            "model_metrics": 1
         }
     ).sort("saved_at", -1)
     
