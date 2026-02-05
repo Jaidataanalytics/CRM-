@@ -1945,11 +1945,27 @@ async def _generate_comprehensive_forecast_impl(
                 "by_district": []
             }
             
-            # Distribute to KVA for this dealer
+            # Get month number for seasonality lookup
+            month_num = int(month_data["month"][5:7])
+            
+            # ===== DISTRIBUTE TO KVA WITH SEASONALITY FOR THIS DEALER =====
             kva_sum_l, kva_sum_c = 0, 0
-            for kva, shares in sorted(dealer_kva_shares.items(), key=lambda x: x[1]["lead_share"], reverse=True):
-                k_leads = int(round(d_pred_leads * shares["lead_share"]))
-                k_closures = int(round(d_pred_closures * shares["closure_share"]))
+            kva_adjusted = {}
+            
+            for kva, shares in dealer_kva_shares.items():
+                # Get this KVA's seasonality for this month
+                kva_season = kva_seasonality.get(kva, {}).get(month_num, 1.0)
+                adj_share = shares["lead_share"] * kva_season
+                kva_adjusted[kva] = {"lead_share": adj_share, "closure_share": shares["closure_share"] * kva_season}
+            
+            # Normalize
+            total_kva_adj = sum(v["lead_share"] for v in kva_adjusted.values()) or 1
+            for kva in kva_adjusted:
+                kva_adjusted[kva]["lead_share"] /= total_kva_adj
+            
+            for kva, adj_shares in sorted(kva_adjusted.items(), key=lambda x: x[1]["lead_share"], reverse=True):
+                k_leads = int(round(d_pred_leads * adj_shares["lead_share"]))
+                k_closures = int(round(d_pred_closures * adj_shares["closure_share"] / (sum(v["closure_share"] for v in kva_adjusted.values()) or 1)))
                 k_closures = min(k_closures, k_leads)
                 if k_leads > 0 or k_closures > 0:
                     kva_sum_l += k_leads
@@ -1962,11 +1978,23 @@ async def _generate_comprehensive_forecast_impl(
             if dm["by_kva"] and kva_sum_c != d_pred_closures:
                 dm["by_kva"][0]["closures"] += (d_pred_closures - kva_sum_c)
             
-            # Distribute to districts for this dealer
+            # ===== DISTRIBUTE TO DISTRICTS WITH SEASONALITY FOR THIS DEALER =====
             dist_sum_l, dist_sum_c = 0, 0
-            for district, shares in sorted(dealer_district_shares.items(), key=lambda x: x[1]["lead_share"], reverse=True):
-                di_leads = int(round(d_pred_leads * shares["lead_share"]))
-                di_closures = int(round(d_pred_closures * shares["closure_share"]))
+            dist_adjusted = {}
+            
+            for district, shares in dealer_district_shares.items():
+                dist_season = district_seasonality.get(district, {}).get(month_num, 1.0)
+                adj_share = shares["lead_share"] * dist_season
+                dist_adjusted[district] = {"lead_share": adj_share, "closure_share": shares["closure_share"] * dist_season}
+            
+            # Normalize
+            total_dist_adj = sum(v["lead_share"] for v in dist_adjusted.values()) or 1
+            for district in dist_adjusted:
+                dist_adjusted[district]["lead_share"] /= total_dist_adj
+            
+            for district, adj_shares in sorted(dist_adjusted.items(), key=lambda x: x[1]["lead_share"], reverse=True):
+                di_leads = int(round(d_pred_leads * adj_shares["lead_share"]))
+                di_closures = int(round(d_pred_closures * adj_shares["closure_share"] / (sum(v["closure_share"] for v in dist_adjusted.values()) or 1)))
                 di_closures = min(di_closures, di_leads)
                 if di_leads > 0 or di_closures > 0:
                     dist_sum_l += di_leads
