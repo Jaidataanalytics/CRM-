@@ -144,7 +144,7 @@ const Comparison = () => {
 
   const loadTargets = async () => {
     try {
-      const res = await axios.get(`${API}/forecast-enhanced/targets?fiscal_year=${targetsFiscalYear}`, { withCredentials: true });
+      const res = await axios.get(`${API}/forecast-enhanced/targets?fiscal_year=${targetsFiscalYear}&entity_type=${entityType}&entity_id=${selectedEntityId}`, { withCredentials: true });
       if (res.data.success) {
         setTargets(res.data);
         if (res.data.targets) {
@@ -154,12 +154,54 @@ const Comparison = () => {
             quarterly: res.data.targets.quarterly || { Q1: { leads: 0, closures: 0 }, Q2: { leads: 0, closures: 0 }, Q3: { leads: 0, closures: 0 }, Q4: { leads: 0, closures: 0 } },
             monthly: res.data.targets.monthly || {}
           });
+        } else {
+          setEditTargets({
+            yearly: { leads: 0, closures: 0 },
+            half_yearly: { H1: { leads: 0, closures: 0 }, H2: { leads: 0, closures: 0 } },
+            quarterly: { Q1: { leads: 0, closures: 0 }, Q2: { leads: 0, closures: 0 }, Q3: { leads: 0, closures: 0 }, Q4: { leads: 0, closures: 0 } },
+            monthly: {}
+          });
         }
       }
     } catch (error) {
       console.error('Error loading targets:', error);
     }
   };
+
+  const loadAllTargets = async () => {
+    try {
+      const res = await axios.get(`${API}/forecast-enhanced/targets/all?fiscal_year=${targetsFiscalYear}`, { withCredentials: true });
+      if (res.data.success) {
+        setAllTargets(res.data.targets || { organization: [], dealer: [], employee: [] });
+      }
+    } catch (error) {
+      console.error('Error loading all targets:', error);
+    }
+  };
+
+  const loadDealersAndEmployees = async () => {
+    try {
+      const [dealersRes, employeesRes] = await Promise.all([
+        axios.get(`${API}/forecast-enhanced/targets/dealers`, { withCredentials: true }),
+        axios.get(`${API}/forecast-enhanced/targets/employees`, { withCredentials: true })
+      ]);
+      setDealersList(dealersRes.data.dealers || []);
+      setEmployeesList(employeesRes.data.employees || []);
+    } catch (error) {
+      console.error('Error loading dealers/employees:', error);
+    }
+  };
+
+  // Load targets when entity changes
+  useEffect(() => {
+    loadTargets();
+  }, [entityType, selectedEntityId, targetsFiscalYear]);
+
+  // Load dealers and employees list once
+  useEffect(() => {
+    loadDealersAndEmployees();
+    loadAllTargets();
+  }, [targetsFiscalYear]);
 
   const saveTargets = async () => {
     setSavingTargets(true);
