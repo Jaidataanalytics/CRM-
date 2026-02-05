@@ -2558,6 +2558,295 @@ async def update_projection(
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "user": current_user.name or current_user.email,
         "details": reason,
+
+
+# ============================================
+# TARGETS MANAGEMENT
+# ============================================
+
+@router.get("/targets")
+async def get_targets(
+    request: Request,
+    fiscal_year: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all targets for the specified fiscal year.
+    Fiscal year format: "2025-26" or "FY2025-26"
+    If not specified, returns current fiscal year targets.
+    """
+    db = await get_db(request)
+    
+    # Determine fiscal year (April to March)
+    if not fiscal_year:
+        now = datetime.now(timezone.utc)
+        if now.month >= 4:
+            fiscal_year = f"{now.year}-{str(now.year + 1)[2:]}"
+        else:
+            fiscal_year = f"{now.year - 1}-{str(now.year)[2:]}"
+    
+    # Clean up fiscal year format
+    fiscal_year = fiscal_year.replace("FY", "").strip()
+    
+    targets = await db.forecast_targets.find_one(
+        {"fiscal_year": fiscal_year},
+        {"_id": 0}
+    )
+    
+    if not targets:
+        # Return default empty structure
+        return {
+            "success": True,
+            "fiscal_year": fiscal_year,
+            "targets": {
+                "yearly": {"leads": 0, "closures": 0},
+                "half_yearly": {
+                    "H1": {"leads": 0, "closures": 0},  # Apr-Sep
+                    "H2": {"leads": 0, "closures": 0}   # Oct-Mar
+                },
+                "quarterly": {
+                    "Q1": {"leads": 0, "closures": 0},  # Apr-Jun
+                    "Q2": {"leads": 0, "closures": 0},  # Jul-Sep
+                    "Q3": {"leads": 0, "closures": 0},  # Oct-Dec
+                    "Q4": {"leads": 0, "closures": 0}   # Jan-Mar
+                },
+                "monthly": {}  # Will be populated with each month
+            },
+            "exists": False
+        }
+    
+    return {
+        "success": True,
+        "fiscal_year": fiscal_year,
+        "targets": targets.get("targets", {}),
+        "updated_at": targets.get("updated_at"),
+        "updated_by": targets.get("updated_by"),
+        "exists": True
+    }
+
+
+@router.post("/targets")
+async def save_targets(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """
+    Save or update targets for a fiscal year.
+    
+    Expected body:
+    {
+        "fiscal_year": "2025-26",
+        "targets": {
+            "yearly": {"leads": 5000, "closures": 1000},
+            "half_yearly": {
+                "H1": {"leads": 2500, "closures": 500},
+                "H2": {"leads": 2500, "closures": 500}
+            },
+            "quarterly": {
+                "Q1": {"leads": 1200, "closures": 240},
+                "Q2": {"leads": 1300, "closures": 260},
+                "Q3": {"leads": 1250, "closures": 250},
+                "Q4": {"leads": 1250, "closures": 250}
+            },
+            "monthly": {
+                "2025-04": {"leads": 400, "closures": 80},
+                "2025-05": {"leads": 400, "closures": 80},
+                ...
+            }
+        }
+    }
+    """
+    db = await get_db(request)
+    body = await request.json()
+    
+    fiscal_year = body.get("fiscal_year")
+    targets = body.get("targets", {})
+    
+    if not fiscal_year:
+        now = datetime.now(timezone.utc)
+        if now.month >= 4:
+            fiscal_year = f"{now.year}-{str(now.year + 1)[2:]}"
+        else:
+            fiscal_year = f"{now.year - 1}-{str(now.year)[2:]}"
+    
+    fiscal_year = fiscal_year.replace("FY", "").strip()
+    
+    # Validate and structure targets
+    structured_targets = {
+        "yearly": targets.get("yearly", {"leads": 0, "closures": 0}),
+        "half_yearly": targets.get("half_yearly", {
+            "H1": {"leads": 0, "closures": 0},
+            "H2": {"leads": 0, "closures": 0}
+        }),
+        "quarterly": targets.get("quarterly", {
+            "Q1": {"leads": 0, "closures": 0},
+            "Q2": {"leads": 0, "closures": 0},
+            "Q3": {"leads": 0, "closures": 0},
+            "Q4": {"leads": 0, "closures": 0}
+        }),
+        "monthly": targets.get("monthly", {})
+    }
+    
+    # Upsert the targets
+    result = await db.forecast_targets.update_one(
+        {"fiscal_year": fiscal_year},
+        {
+            "$set": {
+                "fiscal_year": fiscal_year,
+                "targets": structured_targets,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "updated_by": {
+                    "user_id": current_user.user_id,
+                    "name": current_user.name or current_user.email,
+                    "email": current_user.email
+                }
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "message": f"Targets saved for FY {fiscal_year}",
+        "fiscal_year": fiscal_year,
+        "modified": result.modified_count > 0,
+        "created": result.upserted_id is not None
+    }
+
+
+@router.get("/targets/compare/{projection_id}")
+async def compare_with_targets(
+    request: Request,
+    projection_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Compare a saved projection against targets and actual results.
+    Returns predicted vs target vs actual for each time period.
+    """
+    db = await get_db(request)
+    
+    # Get the projection
+    projection = await db.enhanced_forecasts.find_one({"projection_id": projection_id})
+    if not projection:
+        raise HTTPException(status_code=404, detail="Projection not found")
+    
+    # Get forecast months
+    forecast_data = projection.get("forecast_data", {})
+    org_forecast = forecast_data.get("organization_forecast", {})
+    forecast_months = org_forecast.get("months", [])
+    
+    if not forecast_months:
+        return {"success": False, "message": "No forecast data in projection"}
+    
+    # Determine fiscal year from first forecast month
+    first_month = forecast_months[0].get("month", "")
+    try:
+        year = int(first_month[:4])
+        month = int(first_month[5:7])
+        if month >= 4:
+            fiscal_year = f"{year}-{str(year + 1)[2:]}"
+        else:
+            fiscal_year = f"{year - 1}-{str(year)[2:]}"
+    except:
+        fiscal_year = None
+    
+    # Get targets for this fiscal year
+    targets_doc = await db.forecast_targets.find_one(
+        {"fiscal_year": fiscal_year},
+        {"_id": 0}
+    ) if fiscal_year else None
+    
+    targets = targets_doc.get("targets", {}) if targets_doc else {}
+    
+    # Build comparison for each month
+    monthly_comparison = []
+    total_predicted_leads = 0
+    total_predicted_closures = 0
+    total_target_leads = 0
+    total_target_closures = 0
+    total_actual_leads = 0
+    total_actual_closures = 0
+    
+    for fm in forecast_months:
+        month_str = fm.get("month")
+        predicted_leads = fm.get("predicted_leads", 0)
+        predicted_closures = fm.get("predicted_closures", 0)
+        
+        if not month_str:
+            continue
+        
+        # Get target for this month
+        monthly_targets = targets.get("monthly", {})
+        month_target = monthly_targets.get(month_str, {"leads": 0, "closures": 0})
+        target_leads = month_target.get("leads", 0)
+        target_closures = month_target.get("closures", 0)
+        
+        # Get actual data
+        try:
+            year, month = month_str.split("-")
+            start_date = datetime(int(year), int(month), 1)
+            if int(month) == 12:
+                end_date = datetime(int(year) + 1, 1, 1)
+            else:
+                end_date = datetime(int(year), int(month) + 1, 1)
+            
+            actual_leads = await db.leads.count_documents({
+                "enquiry_date": {"$gte": start_date, "$lt": end_date}
+            })
+            actual_closures = await db.leads.count_documents({
+                "enquiry_date": {"$gte": start_date, "$lt": end_date},
+                "status": "won"
+            })
+        except:
+            actual_leads = 0
+            actual_closures = 0
+        
+        monthly_comparison.append({
+            "month": month_str,
+            "month_name": fm.get("month_name", month_str),
+            "predicted": {"leads": predicted_leads, "closures": predicted_closures},
+            "target": {"leads": target_leads, "closures": target_closures},
+            "actual": {"leads": actual_leads, "closures": actual_closures},
+            "variance_vs_target": {
+                "leads": actual_leads - target_leads,
+                "closures": actual_closures - target_closures
+            },
+            "variance_vs_predicted": {
+                "leads": actual_leads - predicted_leads,
+                "closures": actual_closures - predicted_closures
+            },
+            "achievement_pct": {
+                "leads": round((actual_leads / target_leads * 100), 1) if target_leads > 0 else 0,
+                "closures": round((actual_closures / target_closures * 100), 1) if target_closures > 0 else 0
+            }
+        })
+        
+        total_predicted_leads += predicted_leads
+        total_predicted_closures += predicted_closures
+        total_target_leads += target_leads
+        total_target_closures += target_closures
+        total_actual_leads += actual_leads
+        total_actual_closures += actual_closures
+    
+    return {
+        "success": True,
+        "projection_id": projection_id,
+        "fiscal_year": fiscal_year,
+        "has_targets": bool(targets_doc),
+        "targets_summary": {
+            "yearly": targets.get("yearly", {}),
+            "quarterly": targets.get("quarterly", {}),
+            "half_yearly": targets.get("half_yearly", {})
+        },
+        "totals": {
+            "predicted": {"leads": total_predicted_leads, "closures": total_predicted_closures},
+            "target": {"leads": total_target_leads, "closures": total_target_closures},
+            "actual": {"leads": total_actual_leads, "closures": total_actual_closures}
+        },
+        "monthly_comparison": monthly_comparison
+    }
+
         "changes": {
             "before": {},
             "after": {}
