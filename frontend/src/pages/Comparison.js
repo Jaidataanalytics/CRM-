@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { 
-  TrendingUp, TrendingDown, Minus, Plus, MapPin, Building, Users, 
+  TrendingUp, TrendingDown, Minus, Plus, MapPin, Building, Users, User,
   Target, BarChart3, Trash2, Save, RefreshCw, Map, Globe, Download,
   Upload, FileSpreadsheet, Edit, X, Zap, AlertCircle
 } from 'lucide-react';
