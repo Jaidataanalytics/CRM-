@@ -667,6 +667,95 @@ const AIForecastView = () => {
             </Card>
           </div>
 
+          {/* Organization-wide KVA Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-500" />
+                Organization KVA Breakdown
+              </CardTitle>
+              <CardDescription>
+                Total gensets by KVA capacity across all dealers for {selectedMonthData?.label || 'selected period'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data?.organization_forecast?.by_kva && (
+                <div className="space-y-4">
+                  {/* KVA Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {Object.entries(data.organization_forecast.by_kva)
+                      .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))
+                      .slice(0, 12)
+                      .map(([kva, stats]) => (
+                        <div key={kva} className="p-3 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
+                          <p className="text-lg font-bold text-amber-700">{kva} KVA</p>
+                          <div className="mt-1 space-y-1">
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium text-indigo-600">{stats.leads || 0}</span> leads
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium text-green-600">{stats.closures || 0}</span> sales
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                  
+                  {/* Month-wise KVA Table */}
+                  {data?.organization_forecast?.months && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Month-wise KVA Distribution</p>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-slate-50">
+                              <TableHead>KVA</TableHead>
+                              {data.organization_forecast.months.map(m => (
+                                <TableHead key={m.month} className="text-center">{m.month_name?.split(' ')[0]}</TableHead>
+                              ))}
+                              <TableHead className="text-center bg-slate-100">Total</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {Object.entries(data.organization_forecast.by_kva)
+                              .sort(([,a], [,b]) => (b.closures || 0) - (a.closures || 0))
+                              .slice(0, 15)
+                              .map(([kva, totalStats]) => {
+                                // Get month-wise data for this KVA
+                                const monthlyKva = data.organization_forecast.months.map(m => {
+                                  const kvaData = m.kva_breakdown?.find(k => String(k.kva) === String(kva));
+                                  return kvaData || { predicted_leads: 0, predicted_closures: 0 };
+                                });
+                                
+                                return (
+                                  <TableRow key={kva}>
+                                    <TableCell className="font-medium">{kva} KVA</TableCell>
+                                    {monthlyKva.map((mk, idx) => (
+                                      <TableCell key={idx} className="text-center">
+                                        <span className="text-indigo-600">{mk.predicted_leads || 0}</span>
+                                        <span className="text-gray-400 mx-1">/</span>
+                                        <span className="text-green-600">{mk.predicted_closures || 0}</span>
+                                      </TableCell>
+                                    ))}
+                                    <TableCell className="text-center bg-slate-50 font-medium">
+                                      <span className="text-indigo-700">{totalStats.leads || 0}</span>
+                                      <span className="text-gray-400 mx-1">/</span>
+                                      <span className="text-green-700">{totalStats.closures || 0}</span>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                          </TableBody>
+                        </Table>
+                        <p className="text-xs text-gray-500 mt-2">Format: Leads / Sales</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* View Toggle and Filters */}
           <Card>
             <CardHeader>
