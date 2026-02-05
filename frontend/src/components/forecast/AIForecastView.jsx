@@ -475,6 +475,33 @@ const AIForecastView = () => {
             </CardContent>
           </Card>
 
+          {/* Month Selector for Summary */}
+          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <Calendar className="w-5 h-5 text-slate-500" />
+            <span className="text-sm font-medium text-slate-600">View data for:</span>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                size="sm"
+                variant={selectedMonth === 'all' ? 'default' : 'outline'}
+                onClick={() => setSelectedMonth('all')}
+                className={selectedMonth === 'all' ? 'bg-indigo-600' : ''}
+              >
+                All {monthsAhead} Months
+              </Button>
+              {availableMonths.map(m => (
+                <Button
+                  key={m.value}
+                  size="sm"
+                  variant={selectedMonth === m.value ? 'default' : 'outline'}
+                  onClick={() => setSelectedMonth(m.value)}
+                  className={selectedMonth === m.value ? 'bg-indigo-600' : ''}
+                >
+                  {m.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-to-br from-indigo-50 to-white border-indigo-100">
@@ -486,10 +513,10 @@ const AIForecastView = () => {
                   <div>
                     <p className="text-sm text-gray-500">Predicted Leads</p>
                     <p className="text-3xl font-bold text-indigo-700" data-testid="total-leads">
-                      {data.organization_forecast?.totals?.leads?.toLocaleString() || 0}
+                      {selectedMonthData?.leads?.toLocaleString() || 0}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Next {monthsAhead} month{monthsAhead > 1 ? 's' : ''}
+                      {selectedMonthData?.label || `Next ${monthsAhead} months`}
                     </p>
                   </div>
                 </div>
@@ -505,10 +532,10 @@ const AIForecastView = () => {
                   <div>
                     <p className="text-sm text-gray-500">Predicted Closures</p>
                     <p className="text-3xl font-bold text-green-700" data-testid="total-closures">
-                      {data.organization_forecast?.totals?.closures?.toLocaleString() || 0}
+                      {selectedMonthData?.closures?.toLocaleString() || 0}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Next {monthsAhead} month{monthsAhead > 1 ? 's' : ''}
+                      {selectedMonthData?.label || `Next ${monthsAhead} months`}
                     </p>
                   </div>
                 </div>
