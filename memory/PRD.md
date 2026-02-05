@@ -234,6 +234,21 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] Updated backend `/api/forecast-enhanced/save-enhanced` endpoint to handle new data structure
 - [x] Backend tested successfully - projections saved with full data
 
+### Month-wise Breakdown Feature (Feb 5, 2026)
+- [x] Added Month Selector for summary cards (shows per-month leads/closures)
+- [x] Implemented Nested Month Expansion in Tree View:
+  - Dealer → Month → KVA/District hierarchy
+  - Each month shows its own KVA and District breakdown
+  - Combined totals section at dealer level
+- [x] Updated Saved Projections view to display:
+  - Notes (if any)
+  - Organization-level totals with model info
+  - Monthly forecast table
+  - Dealer breakdown summary
+- [x] Backend already returns month-wise data:
+  - `dealer_forecasts[].months[]` with `by_kva` and `by_district` arrays per month
+  - `organization_forecast.months[]` for summary card selection
+
 ## Prioritized Backlog
 
 ### P0 - Critical
