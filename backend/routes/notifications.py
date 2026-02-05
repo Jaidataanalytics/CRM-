@@ -154,7 +154,7 @@ async def get_notifications(
     
     for lead in upcoming_leads:
         try:
-            followup_date = datetime.strptime(lead.get("planned_followup_date", tomorrow), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            followup_date = parse_date_safe(lead.get("planned_followup_date"), tomorrow)
             days_until = (followup_date - datetime.now(timezone.utc)).days + 1
         except Exception:
             days_until = 1
