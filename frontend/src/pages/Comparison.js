@@ -846,6 +846,225 @@ const Comparison = () => {
             </TabsContent>
           </Tabs>
         </TabsContent>
+
+        {/* Targets Tab */}
+        <TabsContent value="targets" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-amber-500" />
+                    Sales Targets for FY {targetsFiscalYear}
+                  </CardTitle>
+                  <CardDescription>
+                    Set leads and closures targets at yearly, half-yearly, quarterly, and monthly levels
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Select value={targetsFiscalYear} onValueChange={(v) => { setTargetsFiscalYear(v); setTimeout(loadTargets, 100); }}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2024-25">FY 2024-25</SelectItem>
+                      <SelectItem value="2025-26">FY 2025-26</SelectItem>
+                      <SelectItem value="2026-27">FY 2026-27</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={saveTargets} disabled={savingTargets}>
+                    {savingTargets ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                    Save Targets
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Tabs value={targetsTab} onValueChange={setTargetsTab}>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                  <TabsTrigger value="half_yearly">Half-Yearly</TabsTrigger>
+                  <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
+                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                </TabsList>
+
+                {/* Yearly Targets */}
+                <TabsContent value="yearly" className="pt-4">
+                  <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg text-amber-800">Annual Targets</CardTitle>
+                      <CardDescription>Set your total leads and closures target for FY {targetsFiscalYear}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label className="text-amber-700">Total Leads Target</Label>
+                          <Input
+                            type="number"
+                            value={editTargets.yearly?.leads || 0}
+                            onChange={(e) => updateTarget('yearly', null, 'leads', e.target.value)}
+                            className="text-lg font-bold"
+                            data-testid="yearly-leads-target"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-amber-700">Total Closures Target</Label>
+                          <Input
+                            type="number"
+                            value={editTargets.yearly?.closures || 0}
+                            onChange={(e) => updateTarget('yearly', null, 'closures', e.target.value)}
+                            className="text-lg font-bold"
+                            data-testid="yearly-closures-target"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Half-Yearly Targets */}
+                <TabsContent value="half_yearly" className="pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      { key: 'H1', label: 'H1 (April - September)', color: 'indigo' },
+                      { key: 'H2', label: 'H2 (October - March)', color: 'purple' }
+                    ].map(({ key, label, color }) => (
+                      <Card key={key} className={`bg-gradient-to-br from-${color}-50 to-white border-${color}-200`}>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">{label}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm">Leads Target</Label>
+                              <Input
+                                type="number"
+                                value={editTargets.half_yearly?.[key]?.leads || 0}
+                                onChange={(e) => updateTarget('half_yearly', key, 'leads', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Closures Target</Label>
+                              <Input
+                                type="number"
+                                value={editTargets.half_yearly?.[key]?.closures || 0}
+                                onChange={(e) => updateTarget('half_yearly', key, 'closures', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                {/* Quarterly Targets */}
+                <TabsContent value="quarterly" className="pt-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { key: 'Q1', label: 'Q1 (Apr-Jun)', color: 'emerald' },
+                      { key: 'Q2', label: 'Q2 (Jul-Sep)', color: 'blue' },
+                      { key: 'Q3', label: 'Q3 (Oct-Dec)', color: 'orange' },
+                      { key: 'Q4', label: 'Q4 (Jan-Mar)', color: 'rose' }
+                    ].map(({ key, label, color }) => (
+                      <Card key={key} className="bg-slate-50 border">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium">{label}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-500">Leads</Label>
+                            <Input
+                              type="number"
+                              value={editTargets.quarterly?.[key]?.leads || 0}
+                              onChange={(e) => updateTarget('quarterly', key, 'leads', e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-gray-500">Closures</Label>
+                            <Input
+                              type="number"
+                              value={editTargets.quarterly?.[key]?.closures || 0}
+                              onChange={(e) => updateTarget('quarterly', key, 'closures', e.target.value)}
+                              className="h-9"
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                {/* Monthly Targets */}
+                <TabsContent value="monthly" className="pt-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {getFiscalYearMonths().map(month => {
+                      const monthDate = new Date(month + '-01');
+                      const monthName = monthDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+                      return (
+                        <Card key={month} className="p-3 bg-gray-50">
+                          <p className="font-medium text-sm mb-2 text-gray-700">{monthName}</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-500">Leads</Label>
+                              <Input
+                                type="number"
+                                value={editTargets.monthly?.[month]?.leads || 0}
+                                onChange={(e) => updateTarget('monthly', month, 'leads', e.target.value)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-500">Closures</Label>
+                              <Input
+                                type="number"
+                                value={editTargets.monthly?.[month]?.closures || 0}
+                                onChange={(e) => updateTarget('monthly', month, 'closures', e.target.value)}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          {/* Target Summary */}
+          {targets?.exists && (
+            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-emerald-800">Current Saved Targets</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-3 bg-white rounded-lg">
+                    <p className="text-xs text-gray-500">Yearly Leads</p>
+                    <p className="text-2xl font-bold text-emerald-700">{targets.targets?.yearly?.leads?.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg">
+                    <p className="text-xs text-gray-500">Yearly Closures</p>
+                    <p className="text-2xl font-bold text-emerald-700">{targets.targets?.yearly?.closures?.toLocaleString() || 0}</p>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg">
+                    <p className="text-xs text-gray-500">Last Updated</p>
+                    <p className="text-sm font-medium text-gray-700">
+                      {targets.updated_at ? new Date(targets.updated_at).toLocaleDateString() : 'Not set'}
+                    </p>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg">
+                    <p className="text-xs text-gray-500">Updated By</p>
+                    <p className="text-sm font-medium text-gray-700">{targets.updated_by?.name || 'N/A'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Add Entry Dialog */}
