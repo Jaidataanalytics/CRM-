@@ -2869,40 +2869,6 @@ async def compare_with_targets(
         "monthly_comparison": monthly_comparison
     }
 
-        "changes": {
-            "before": {},
-            "after": {}
-        }
-    }
-    
-    # Track changes
-    update_fields = {}
-    for field, new_value in changes.items():
-        if field in existing:
-            audit_entry["changes"]["before"][field] = existing.get(field)
-            audit_entry["changes"]["after"][field] = new_value
-            update_fields[field] = new_value
-    
-    # Update version
-    new_version = existing.get("version", 1) + 1
-    update_fields["version"] = new_version
-    update_fields["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    # Push audit entry
-    await db.enhanced_forecasts.update_one(
-        {"projection_id": projection_id},
-        {
-            "$set": update_fields,
-            "$push": {"audit_trail": audit_entry}
-        }
-    )
-    
-    return {
-        "success": True,
-        "message": "Projection updated successfully",
-        "new_version": new_version
-    }
-
 
 @router.get("/projection/{projection_id}")
 async def get_projection(
