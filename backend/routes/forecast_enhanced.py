@@ -2740,28 +2740,19 @@ async def save_targets(
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
 ):
     """
-    Save or update targets for a fiscal year.
+    Save or update targets for a fiscal year and entity.
     
     Expected body:
     {
         "fiscal_year": "2025-26",
+        "entity_type": "organization" | "dealer" | "employee",
+        "entity_id": "dealer_name" or "user_id" (required for dealer/employee),
+        "entity_name": "Display name" (optional),
         "targets": {
             "yearly": {"leads": 5000, "closures": 1000},
-            "half_yearly": {
-                "H1": {"leads": 2500, "closures": 500},
-                "H2": {"leads": 2500, "closures": 500}
-            },
-            "quarterly": {
-                "Q1": {"leads": 1200, "closures": 240},
-                "Q2": {"leads": 1300, "closures": 260},
-                "Q3": {"leads": 1250, "closures": 250},
-                "Q4": {"leads": 1250, "closures": 250}
-            },
-            "monthly": {
-                "2025-04": {"leads": 400, "closures": 80},
-                "2025-05": {"leads": 400, "closures": 80},
-                ...
-            }
+            "half_yearly": {...},
+            "quarterly": {...},
+            "monthly": {...}
         }
     }
     """
@@ -2769,6 +2760,9 @@ async def save_targets(
     body = await request.json()
     
     fiscal_year = body.get("fiscal_year")
+    entity_type = body.get("entity_type", "organization")
+    entity_id = body.get("entity_id", "org")
+    entity_name = body.get("entity_name", "")
     targets = body.get("targets", {})
     
     if not fiscal_year:
@@ -2779,6 +2773,11 @@ async def save_targets(
             fiscal_year = f"{now.year - 1}-{str(now.year)[2:]}"
     
     fiscal_year = fiscal_year.replace("FY", "").strip()
+    
+    # For organization, always use "org" as entity_id
+    if entity_type == "organization":
+        entity_id = "org"
+        entity_name = "Organization"
     
     # Validate and structure targets
     structured_targets = {
@@ -2796,12 +2795,19 @@ async def save_targets(
         "monthly": targets.get("monthly", {})
     }
     
-    # Upsert the targets
+    # Upsert the targets - unique by fiscal_year + entity_type + entity_id
     result = await db.forecast_targets.update_one(
-        {"fiscal_year": fiscal_year},
+        {
+            "fiscal_year": fiscal_year,
+            "entity_type": entity_type,
+            "entity_id": entity_id
+        },
         {
             "$set": {
                 "fiscal_year": fiscal_year,
+                "entity_type": entity_type,
+                "entity_id": entity_id,
+                "entity_name": entity_name,
                 "targets": structured_targets,
                 "updated_at": datetime.now(timezone.utc).isoformat(),
                 "updated_by": {
@@ -2816,8 +2822,10 @@ async def save_targets(
     
     return {
         "success": True,
-        "message": f"Targets saved for FY {fiscal_year}",
+        "message": f"Targets saved for {entity_name or entity_id} (FY {fiscal_year})",
         "fiscal_year": fiscal_year,
+        "entity_type": entity_type,
+        "entity_id": entity_id,
         "modified": result.modified_count > 0,
         "created": result.upserted_id is not None
     }
