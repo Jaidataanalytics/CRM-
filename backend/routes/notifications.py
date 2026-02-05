@@ -10,6 +10,39 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
+def parse_date_safe(date_str: str, default_date: str = None) -> datetime:
+    """
+    Parse date string in multiple formats safely.
+    Returns default_date as datetime if parsing fails.
+    """
+    if not date_str:
+        if default_date:
+            return datetime.strptime(default_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc)
+    
+    date_str = str(date_str).strip()
+    
+    formats = [
+        "%Y-%m-%d",      # 2026-02-07
+        "%d %b %Y",      # 07 Feb 2026
+        "%d-%b-%Y",      # 07-Feb-2026
+        "%d/%m/%Y",      # 07/02/2026
+        "%Y/%m/%d",      # 2026/02/07
+        "%d %B %Y",      # 07 February 2026
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    
+    # Fallback to default
+    if default_date:
+        return datetime.strptime(default_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc)
+
+
 async def get_db(request: Request):
     return request.app.state.db
 
