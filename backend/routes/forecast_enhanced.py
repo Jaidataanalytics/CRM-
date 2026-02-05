@@ -2067,6 +2067,137 @@ async def save_enhanced_forecast(
     }
 
 
+@router.get("/compare/{projection_id}")
+async def compare_enhanced_projection(
+    request: Request,
+    projection_id: str,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """
+    Compare a saved enhanced projection against actual results.
+    """
+    db = await get_db(request)
+    
+    # Find the projection
+    projection = await db.enhanced_forecasts.find_one({"projection_id": projection_id})
+    if not projection:
+        raise HTTPException(status_code=404, detail="Projection not found")
+    
+    # Get the forecast data
+    forecast_data = projection.get("forecast_data", {})
+    org_forecast = forecast_data.get("organization_forecast", {})
+    forecast_months = org_forecast.get("months", [])
+    
+    if not forecast_months:
+        return {
+            "success": False,
+            "message": "No forecast months found in this projection"
+        }
+    
+    # Get actual data for those months
+    monthly_comparison = []
+    total_predicted_leads = 0
+    total_predicted_closures = 0
+    total_actual_leads = 0
+    total_actual_closures = 0
+    
+    for fm in forecast_months:
+        month_str = fm.get("month")  # Format: "2026-02"
+        predicted_leads = fm.get("predicted_leads", 0)
+        predicted_closures = fm.get("predicted_closures", 0)
+        
+        if not month_str:
+            continue
+        
+        # Parse month
+        try:
+            year, month = month_str.split("-")
+            start_date = datetime(int(year), int(month), 1)
+            if int(month) == 12:
+                end_date = datetime(int(year) + 1, 1, 1)
+            else:
+                end_date = datetime(int(year), int(month) + 1, 1)
+        except:
+            continue
+        
+        # Get actual leads count
+        actual_leads = await db.leads.count_documents({
+            "enquiry_date": {"$gte": start_date, "$lt": end_date}
+        })
+        
+        # Get actual closures count
+        actual_closures = await db.leads.count_documents({
+            "enquiry_date": {"$gte": start_date, "$lt": end_date},
+            "status": "won"
+        })
+        
+        # Calculate variance and accuracy
+        leads_variance = actual_leads - predicted_leads
+        closures_variance = actual_closures - predicted_closures
+        
+        leads_accuracy = (1 - abs(leads_variance) / max(predicted_leads, 1)) * 100 if predicted_leads > 0 else 0
+        closures_accuracy = (1 - abs(closures_variance) / max(predicted_closures, 1)) * 100 if predicted_closures > 0 else 0
+        
+        monthly_comparison.append({
+            "month": month_str,
+            "month_name": fm.get("month_name", month_str),
+            "predicted": {
+                "leads": predicted_leads,
+                "closures": predicted_closures
+            },
+            "actual": {
+                "leads": actual_leads,
+                "closures": actual_closures
+            },
+            "variance": {
+                "leads": leads_variance,
+                "closures": closures_variance
+            },
+            "accuracy": {
+                "leads": round(max(0, leads_accuracy), 1),
+                "closures": round(max(0, closures_accuracy), 1)
+            }
+        })
+        
+        total_predicted_leads += predicted_leads
+        total_predicted_closures += predicted_closures
+        total_actual_leads += actual_leads
+        total_actual_closures += actual_closures
+    
+    # Calculate overall accuracy
+    overall_leads_accuracy = (1 - abs(total_actual_leads - total_predicted_leads) / max(total_predicted_leads, 1)) * 100 if total_predicted_leads > 0 else 0
+    overall_closures_accuracy = (1 - abs(total_actual_closures - total_predicted_closures) / max(total_predicted_closures, 1)) * 100 if total_predicted_closures > 0 else 0
+    
+    return {
+        "success": True,
+        "projection_id": projection_id,
+        "saved_at": projection.get("saved_at"),
+        "saved_by": projection.get("saved_by"),
+        "model_selection": projection.get("model_selection"),
+        "parameters": projection.get("parameters"),
+        "overall_accuracy": {
+            "leads": round(max(0, overall_leads_accuracy), 1),
+            "closures": round(max(0, overall_closures_accuracy), 1),
+            "average": round((max(0, overall_leads_accuracy) + max(0, overall_closures_accuracy)) / 2, 1)
+        },
+        "totals": {
+            "predicted": {
+                "leads": total_predicted_leads,
+                "closures": total_predicted_closures
+            },
+            "actual": {
+                "leads": total_actual_leads,
+                "closures": total_actual_closures
+            },
+            "variance": {
+                "leads": total_actual_leads - total_predicted_leads,
+                "closures": total_actual_closures - total_predicted_closures
+            }
+        },
+        "monthly_comparison": monthly_comparison
+    }
+
+
 @router.put("/update-projection/{projection_id}")
 async def update_projection(
     request: Request,
