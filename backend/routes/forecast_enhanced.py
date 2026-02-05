@@ -2558,6 +2558,28 @@ async def update_projection(
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "user": current_user.name or current_user.email,
         "details": reason,
+        "changes": changes
+    }
+    
+    # Update the projection
+    update_doc = {
+        "$set": {
+            **changes,
+            "version": existing.get("version", 1) + 1
+        },
+        "$push": {"audit_trail": audit_entry}
+    }
+    
+    await db.enhanced_forecasts.update_one(
+        {"projection_id": projection_id},
+        update_doc
+    )
+    
+    return {
+        "success": True,
+        "message": "Projection updated",
+        "new_version": existing.get("version", 1) + 1
+    }
 
 
 # ============================================
