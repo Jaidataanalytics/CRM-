@@ -81,6 +81,22 @@ const Comparison = () => {
     kva_range: '',
     market_size: ''
   });
+  
+  // Targets state
+  const [targets, setTargets] = useState(null);
+  const [targetsFiscalYear, setTargetsFiscalYear] = useState(() => {
+    const now = new Date();
+    if (now.getMonth() >= 3) return `${now.getFullYear()}-${String(now.getFullYear() + 1).slice(2)}`;
+    return `${now.getFullYear() - 1}-${String(now.getFullYear()).slice(2)}`;
+  });
+  const [savingTargets, setSavingTargets] = useState(false);
+  const [editTargets, setEditTargets] = useState({
+    yearly: { leads: 0, closures: 0 },
+    half_yearly: { H1: { leads: 0, closures: 0 }, H2: { leads: 0, closures: 0 } },
+    quarterly: { Q1: { leads: 0, closures: 0 }, Q2: { leads: 0, closures: 0 }, Q3: { leads: 0, closures: 0 }, Q4: { leads: 0, closures: 0 } },
+    monthly: {}
+  });
+  const [targetsTab, setTargetsTab] = useState('yearly');
 
   useEffect(() => {
     loadPotentialSummary();
