@@ -1819,12 +1819,27 @@ async def _generate_comprehensive_forecast_impl(
         if kva_closures_sum != pred_closures and month_data["kva_breakdown"]:
             month_data["kva_breakdown"][0]["predicted_closures"] += (pred_closures - kva_closures_sum)
         
-        # Distribute to districts proportionally
+        # ===== DISTRIBUTE TO DISTRICTS WITH SEASONALITY ADJUSTMENT =====
         dist_leads_sum = 0
         dist_closures_sum = 0
-        for district, share in sorted(district_lead_share.items(), key=lambda x: x[1], reverse=True):
-            di_leads = int(round(pred_leads * share))
-            di_closures = int(round(pred_closures * district_closure_share.get(district, share)))
+        dist_adjusted_shares = {}
+        
+        for district, base_share in district_lead_share.items():
+            dist_season_idx = district_seasonality.get(district, {}).get(month_num, 1.0)
+            adjusted_share = base_share * dist_season_idx
+            dist_adjusted_shares[district] = adjusted_share
+        
+        # Normalize
+        total_dist_adj = sum(dist_adjusted_shares.values()) or 1
+        for district in dist_adjusted_shares:
+            dist_adjusted_shares[district] /= total_dist_adj
+        
+        for district, adj_share in sorted(dist_adjusted_shares.items(), key=lambda x: x[1], reverse=True):
+            di_leads = int(round(pred_leads * adj_share))
+            di_closures = int(round(pred_closures * district_closure_share.get(district, adj_share) * district_seasonality.get(district, {}).get(month_num, 1.0) / (sum(
+                district_closure_share.get(d, 0) * district_seasonality.get(d, {}).get(month_num, 1.0) 
+                for d in district_closure_share
+            ) or 1)))
             di_closures = min(di_closures, di_leads)
             
             if di_leads > 0 or di_closures > 0:
@@ -1834,7 +1849,7 @@ async def _generate_comprehensive_forecast_impl(
                     "district": district,
                     "predicted_leads": di_leads,
                     "predicted_closures": di_closures,
-                    "share_pct": round(share * 100, 2)
+                    "share_pct": round(adj_share * 100, 2)
                 })
         
         # Adjust for rounding errors
