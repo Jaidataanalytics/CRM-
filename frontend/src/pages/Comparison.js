@@ -136,6 +136,70 @@ const Comparison = () => {
     }
   };
 
+  const loadTargets = async () => {
+    try {
+      const res = await axios.get(`${API}/forecast-enhanced/targets?fiscal_year=${targetsFiscalYear}`, { withCredentials: true });
+      if (res.data.success) {
+        setTargets(res.data);
+        if (res.data.targets) {
+          setEditTargets({
+            yearly: res.data.targets.yearly || { leads: 0, closures: 0 },
+            half_yearly: res.data.targets.half_yearly || { H1: { leads: 0, closures: 0 }, H2: { leads: 0, closures: 0 } },
+            quarterly: res.data.targets.quarterly || { Q1: { leads: 0, closures: 0 }, Q2: { leads: 0, closures: 0 }, Q3: { leads: 0, closures: 0 }, Q4: { leads: 0, closures: 0 } },
+            monthly: res.data.targets.monthly || {}
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading targets:', error);
+    }
+  };
+
+  const saveTargets = async () => {
+    setSavingTargets(true);
+    try {
+      const res = await axios.post(`${API}/forecast-enhanced/targets`, {
+        fiscal_year: targetsFiscalYear,
+        targets: editTargets
+      }, { withCredentials: true });
+      
+      if (res.data.success) {
+        toast.success('Targets saved successfully');
+        loadTargets();
+      }
+    } catch (error) {
+      console.error('Error saving targets:', error);
+      toast.error('Failed to save targets');
+    } finally {
+      setSavingTargets(false);
+    }
+  };
+
+  const updateTarget = (level, period, field, value) => {
+    const numValue = parseInt(value) || 0;
+    setEditTargets(prev => {
+      const newTargets = { ...prev };
+      if (level === 'yearly') {
+        newTargets.yearly = { ...newTargets.yearly, [field]: numValue };
+      } else if (level === 'half_yearly') {
+        newTargets.half_yearly = { ...newTargets.half_yearly, [period]: { ...newTargets.half_yearly[period], [field]: numValue } };
+      } else if (level === 'quarterly') {
+        newTargets.quarterly = { ...newTargets.quarterly, [period]: { ...newTargets.quarterly[period], [field]: numValue } };
+      } else if (level === 'monthly') {
+        newTargets.monthly = { ...newTargets.monthly, [period]: { ...newTargets.monthly[period], [field]: numValue } };
+      }
+      return newTargets;
+    });
+  };
+
+  const getFiscalYearMonths = () => {
+    const [startYear] = targetsFiscalYear.split('-').map(y => y.length === 2 ? `20${y}` : y);
+    const months = [];
+    for (let i = 4; i <= 12; i++) months.push(`${startYear}-${String(i).padStart(2, '0')}`);
+    for (let i = 1; i <= 3; i++) months.push(`${parseInt(startYear) + 1}-${String(i).padStart(2, '0')}`);
+    return months;
+  };
+
   const loadComparisonData = async () => {
     setLoading(true);
     try {
