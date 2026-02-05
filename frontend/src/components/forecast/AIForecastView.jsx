@@ -128,6 +128,60 @@ const AIForecastView = () => {
   //   loadForecast();
   // }, []);
 
+  // Save projection with all data
+  const saveProjection = async () => {
+    if (!data) {
+      toast.error('No forecast to save');
+      return;
+    }
+    
+    setSavingProjection(true);
+    try {
+      // Prepare comprehensive payload with all forecast data
+      const payload = {
+        forecast_data: {
+          organization_forecast: data.organization_forecast,
+          chart_data: data.chart_data,
+          historical_summary: data.historical_summary,
+          consistency_check: data.consistency_check
+        },
+        dealer_forecasts: data.dealer_forecasts, // Full dealer array with by_kva, by_district
+        model_metrics: data.model_metrics,
+        model_selection: data.model_selection,
+        model_selection_mode: data.model_selection_mode,
+        parameters: {
+          months_ahead: monthsAhead,
+          years_back: yearsBack,
+          force_model: forceModel === 'auto' ? null : forceModel,
+          include_current_month: includeCurrentMonth
+        },
+        view_settings: {
+          view_mode: viewMode,
+          expanded_dealers: expandedDealers
+        },
+        notes: projectionNotes
+      };
+      
+      const res = await axios.post(
+        `${API}/forecast-enhanced/save-enhanced`,
+        payload,
+        { withCredentials: true }
+      );
+      
+      if (res.data.success) {
+        toast.success(`Projection saved! ID: ${res.data.projection_id}`);
+        setProjectionNotes(''); // Clear notes after save
+      } else {
+        toast.error(res.data.message || 'Failed to save projection');
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      toast.error(err.response?.data?.detail || 'Failed to save projection');
+    } finally {
+      setSavingProjection(false);
+    }
+  };
+
   const toggleDealer = (dealerName) => {
     setExpandedDealers(prev => ({
       ...prev,
