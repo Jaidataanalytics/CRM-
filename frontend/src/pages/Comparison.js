@@ -1172,11 +1172,13 @@ const Comparison = () => {
             </CardContent>
           </Card>
 
-          {/* Target Summary */}
+          {/* Current Entity Target Summary */}
           {targets?.exists && (
             <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg text-emerald-800">Current Saved Targets</CardTitle>
+                <CardTitle className="text-lg text-emerald-800">
+                  Saved Targets for {selectedEntityName || 'Organization'}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1201,6 +1203,81 @@ const Comparison = () => {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* All Targets Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">All Targets Summary - FY {targetsFiscalYear}</CardTitle>
+              <CardDescription>Overview of all targets set for this fiscal year</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {/* Organization Target */}
+                {allTargets.organization?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-amber-700 mb-2 flex items-center gap-2">
+                      <Building className="h-4 w-4" /> Organization Target
+                    </h4>
+                    <div className="grid grid-cols-4 gap-3">
+                      {allTargets.organization.map(t => (
+                        <div key="org" className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <p className="text-xs text-amber-600">Yearly</p>
+                          <p className="font-bold text-amber-800">{t.targets?.yearly?.leads?.toLocaleString() || 0} leads</p>
+                          <p className="text-sm text-amber-700">{t.targets?.yearly?.closures?.toLocaleString() || 0} closures</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Dealer Targets */}
+                {allTargets.dealer?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-indigo-700 mb-2 flex items-center gap-2">
+                      <Users className="h-4 w-4" /> Dealer Targets ({allTargets.dealer.length})
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+                      {allTargets.dealer.map(t => (
+                        <div key={t.entity_id} className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                          <p className="text-xs text-indigo-600 truncate font-medium">{t.entity_name || t.entity_id}</p>
+                          <p className="font-bold text-indigo-800">{t.targets?.yearly?.leads?.toLocaleString() || 0} leads</p>
+                          <p className="text-sm text-indigo-700">{t.targets?.yearly?.closures?.toLocaleString() || 0} closures</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Employee Targets */}
+                {allTargets.employee?.length > 0 && (
+                  <div>
+                    <h4 className="font-medium text-purple-700 mb-2 flex items-center gap-2">
+                      <User className="h-4 w-4" /> Employee Targets ({allTargets.employee.length})
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+                      {allTargets.employee.map(t => (
+                        <div key={t.entity_id} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                          <p className="text-xs text-purple-600 truncate font-medium">{t.entity_name || t.entity_id}</p>
+                          <p className="font-bold text-purple-800">{t.targets?.yearly?.leads?.toLocaleString() || 0} leads</p>
+                          <p className="text-sm text-purple-700">{t.targets?.yearly?.closures?.toLocaleString() || 0} closures</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No targets message */}
+                {(!allTargets.organization?.length && !allTargets.dealer?.length && !allTargets.employee?.length) && (
+                  <div className="text-center py-8 text-gray-500">
+                    <Target className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                    <p>No targets set yet for FY {targetsFiscalYear}</p>
+                    <p className="text-sm">Select an entity type above and set targets</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
           )}
         </TabsContent>
       </Tabs>
