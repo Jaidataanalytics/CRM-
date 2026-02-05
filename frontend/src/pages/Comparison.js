@@ -524,6 +524,10 @@ const Comparison = () => {
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             Manage Data
           </TabsTrigger>
+          <TabsTrigger value="targets">
+            <Target className="h-4 w-4 mr-2" />
+            Targets
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="comparison" className="space-y-6">
