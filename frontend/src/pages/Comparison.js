@@ -102,6 +102,7 @@ const Comparison = () => {
     loadPotentialSummary();
     loadDistrictData();
     loadKvaData();
+    loadTargets();
   }, []);
 
   useEffect(() => {
