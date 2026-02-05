@@ -222,6 +222,18 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] **Fix**: Moved the variable calculations immediately after `monthly_data` is fetched, before any conditional branches
 - [x] **Tested**: Backend endpoint `/api/forecast-enhanced/comprehensive-forecast` now returns valid forecasts
 
+### Save Projection Feature (Feb 5, 2026)
+- [x] Added "Save Projection" button to AI Forecast view (`AIForecastView.jsx`)
+- [x] Saves all comprehensive forecast data including:
+  - Organization-level forecasts (totals, chart_data, historical_summary)
+  - Full dealer_forecasts array with by_kva and by_district breakdowns
+  - Model metrics and selection details
+  - Generation parameters (months_ahead, years_back, force_model)
+  - View settings (tree/table mode, expanded dealers state)
+  - User notes
+- [x] Updated backend `/api/forecast-enhanced/save-enhanced` endpoint to handle new data structure
+- [x] Backend tested successfully - projections saved with full data
+
 ## Prioritized Backlog
 
 ### P0 - Critical
