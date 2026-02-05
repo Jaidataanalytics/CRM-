@@ -81,6 +81,10 @@ const AIForecastView = () => {
   const [filterDealer, setFilterDealer] = useState('');
   const [filterKva, setFilterKva] = useState('');
   const [filterDistrict, setFilterDistrict] = useState('');
+  
+  // Save state
+  const [savingProjection, setSavingProjection] = useState(false);
+  const [projectionNotes, setProjectionNotes] = useState('');
 
   const loadForecast = async () => {
     setLoading(true);
