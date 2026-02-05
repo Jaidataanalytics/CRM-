@@ -1519,6 +1519,33 @@ async def _generate_comprehensive_forecast_impl(
         dealer_district_history[dealer][district]["leads"] += leads
         dealer_district_history[dealer][district]["closures"] += closures
     
+    # ===== STEP 2b: Build monthly patterns for seasonality-aware forecasting =====
+    # Track monthly performance for each entity
+    dealer_monthly = defaultdict(lambda: defaultdict(lambda: {"leads": 0, "closures": 0}))
+    kva_monthly = defaultdict(lambda: defaultdict(lambda: {"leads": 0, "closures": 0}))
+    district_monthly = defaultdict(lambda: defaultdict(lambda: {"leads": 0, "closures": 0}))
+    
+    for r in breakdown_data:
+        dealer = r["_id"]["dealer"]
+        kva = r["_id"]["kva"]
+        district = r["_id"]["district"]
+        month = r["_id"]["month"]
+        leads = r["leads"]
+        closures = r["closures"]
+        
+        dealer_monthly[dealer][month]["leads"] += leads
+        dealer_monthly[dealer][month]["closures"] += closures
+        
+        kva_monthly[kva][month]["leads"] += leads
+        kva_monthly[kva][month]["closures"] += closures
+        
+        district_monthly[district][month]["leads"] += leads
+        district_monthly[district][month]["closures"] += closures
+    
+    # Calculate organization-level seasonality
+    org_seasonality = calculate_seasonality_indices(monthly_data)
+    org_momentum = calculate_recent_momentum(monthly_data)
+    
     # ===== STEP 3: Run ML Model Selection =====
     # Prepare data for model optimizer
     leads_series = [{"_id": d["_id"], "won": d["leads"], "total_enquiries": d["leads"]} for d in monthly_data]
