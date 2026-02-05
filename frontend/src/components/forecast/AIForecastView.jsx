@@ -191,6 +191,44 @@ const AIForecastView = () => {
     }));
   };
 
+  const toggleMonth = (dealerName, month) => {
+    const key = `${dealerName}_${month}`;
+    setExpandedMonths(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Get available months from data
+  const availableMonths = useMemo(() => {
+    if (!data?.organization_forecast?.months) return [];
+    return data.organization_forecast.months.map(m => ({
+      value: m.month,
+      label: m.month_name
+    }));
+  }, [data]);
+
+  // Get selected month data for summary cards
+  const selectedMonthData = useMemo(() => {
+    if (!data?.organization_forecast?.months) return null;
+    if (selectedMonth === 'all') {
+      return {
+        leads: data.organization_forecast.totals?.leads || 0,
+        closures: data.organization_forecast.totals?.closures || 0,
+        label: `Next ${monthsAhead} month${monthsAhead > 1 ? 's' : ''}`
+      };
+    }
+    const monthData = data.organization_forecast.months.find(m => m.month === selectedMonth);
+    if (monthData) {
+      return {
+        leads: monthData.predicted_leads || 0,
+        closures: monthData.predicted_closures || 0,
+        label: monthData.month_name
+      };
+    }
+    return null;
+  }, [data, selectedMonth, monthsAhead]);
+
   // Filter dealers based on search
   // dealer_forecasts is now an array with pre-aggregated totals and breakdowns
   const filteredDealers = useMemo(() => {
