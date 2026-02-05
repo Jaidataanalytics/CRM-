@@ -917,20 +917,72 @@ const Comparison = () => {
 
         {/* Targets Tab */}
         <TabsContent value="targets" className="space-y-6">
+          {/* Entity Selection */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 text-amber-500" />
-                    Sales Targets for FY {targetsFiscalYear}
-                  </CardTitle>
-                  <CardDescription>
-                    Set leads and closures targets at yearly, half-yearly, quarterly, and monthly levels
-                  </CardDescription>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Select Target Type</CardTitle>
+              <CardDescription>Choose who you want to set targets for</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4 items-end">
+                {/* Entity Type Selection */}
+                <div className="space-y-2">
+                  <Label>Target For</Label>
+                  <Select value={entityType} onValueChange={handleEntityTypeChange}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="organization">Organization</SelectItem>
+                      <SelectItem value="dealer">Dealer</SelectItem>
+                      <SelectItem value="employee">Employee</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <div className="flex gap-2">
-                  <Select value={targetsFiscalYear} onValueChange={(v) => { setTargetsFiscalYear(v); setTimeout(loadTargets, 100); }}>
+
+                {/* Dealer Selection */}
+                {entityType === 'dealer' && (
+                  <div className="space-y-2">
+                    <Label>Select Dealer</Label>
+                    <Select value={selectedEntityId} onValueChange={(v) => handleEntitySelect(v, v)}>
+                      <SelectTrigger className="w-64">
+                        <SelectValue placeholder="Choose a dealer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {dealersList.map(dealer => (
+                          <SelectItem key={dealer} value={dealer}>{dealer}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Employee Selection */}
+                {entityType === 'employee' && (
+                  <div className="space-y-2">
+                    <Label>Select Employee</Label>
+                    <Select value={selectedEntityId} onValueChange={(v) => {
+                      const emp = employeesList.find(e => e.user_id === v);
+                      handleEntitySelect(v, emp?.name || v);
+                    }}>
+                      <SelectTrigger className="w-64">
+                        <SelectValue placeholder="Choose an employee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employeesList.map(emp => (
+                          <SelectItem key={emp.user_id} value={emp.user_id}>
+                            {emp.name} ({emp.role})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Fiscal Year */}
+                <div className="space-y-2">
+                  <Label>Fiscal Year</Label>
+                  <Select value={targetsFiscalYear} onValueChange={setTargetsFiscalYear}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -938,6 +990,41 @@ const Comparison = () => {
                       <SelectItem value="2024-25">FY 2024-25</SelectItem>
                       <SelectItem value="2025-26">FY 2025-26</SelectItem>
                       <SelectItem value="2026-27">FY 2026-27</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Target Entry Form */}
+          {(entityType === 'organization' || selectedEntityId) && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-amber-500" />
+                      Targets for: {selectedEntityName || 'Organization'}
+                    </CardTitle>
+                    <CardDescription>
+                      Set leads and closures targets at yearly, half-yearly, quarterly, and monthly levels
+                    </CardDescription>
+                  </div>
+                  <Button onClick={saveTargets} disabled={savingTargets}>
+                    {savingTargets ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                    Save Targets
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={targetsTab} onValueChange={setTargetsTab}>
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                    <TabsTrigger value="half_yearly">Half-Yearly</TabsTrigger>
+                    <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
+                    <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                  </TabsList>
                     </SelectContent>
                   </Select>
                   <Button onClick={saveTargets} disabled={savingTargets}>
