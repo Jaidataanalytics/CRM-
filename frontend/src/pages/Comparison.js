@@ -1171,6 +1171,7 @@ const Comparison = () => {
               </Tabs>
             </CardContent>
           </Card>
+          )}
 
           {/* Current Entity Target Summary */}
           {targets?.exists && (
