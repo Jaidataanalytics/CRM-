@@ -510,6 +510,43 @@ const AIForecastView = () => {
             </Card>
           </div>
 
+          {/* Save Projection Section */}
+          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+            <CardContent className="p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex-1 max-w-xl">
+                  <Label htmlFor="projection-notes" className="text-sm font-medium text-emerald-800">
+                    Projection Notes (optional)
+                  </Label>
+                  <Input
+                    id="projection-notes"
+                    placeholder="Add notes about this projection..."
+                    value={projectionNotes}
+                    onChange={(e) => setProjectionNotes(e.target.value)}
+                    className="mt-1 bg-white"
+                    data-testid="projection-notes-input"
+                  />
+                </div>
+                <Button
+                  onClick={saveProjection}
+                  disabled={savingProjection}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+                  data-testid="save-projection-btn"
+                >
+                  {savingProjection ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Save Projection
+                </Button>
+              </div>
+              <p className="text-xs text-emerald-600 mt-2">
+                Saves all forecast data including dealer breakdowns, KVA/district splits, model metrics, and view settings
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
