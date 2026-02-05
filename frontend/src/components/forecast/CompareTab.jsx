@@ -244,8 +244,8 @@ export const CompareTab = () => {
           <div className="flex items-end gap-4">
             <div className="flex-1">
               <Select 
-                value={selectedIndex?.toString() || ''} 
-                onValueChange={(v) => setSelectedIndex(parseInt(v))}
+                value={selectedProjectionId || ''} 
+                onValueChange={(v) => setSelectedProjectionId(v)}
               >
                 <SelectTrigger data-testid="compare-forecast-select">
                   <SelectValue placeholder="Select a saved forecast" />
@@ -254,9 +254,20 @@ export const CompareTab = () => {
                   {savedForecasts.length === 0 ? (
                     <SelectItem value="none" disabled>No saved forecasts found</SelectItem>
                   ) : (
-                    savedForecasts.map((f) => (
-                      <SelectItem key={f.index} value={f.index.toString()}>
-                        #{f.index} - {formatDate(f.saved_at)} by {f.saved_by} ({f.horizon_months} months)
+                    savedForecasts.map((f, idx) => (
+                      <SelectItem key={f.projection_id || f.index || idx} value={f.projection_id || f.index?.toString() || idx.toString()}>
+                        {f.projection_id ? (
+                          <>
+                            #{f.projection_id.slice(-6)} - {formatDate(f.saved_at)} 
+                            {f.saved_by?.name ? ` by ${f.saved_by.name}` : ''} 
+                            ({f.parameters?.months_ahead || f.horizon_months || 3} months)
+                            {f.model_selection ? ' [AI]' : ''}
+                          </>
+                        ) : (
+                          <>
+                            #{f.index} - {formatDate(f.saved_at)} by {f.saved_by} ({f.horizon_months} months)
+                          </>
+                        )}
                       </SelectItem>
                     ))
                   )}
@@ -265,7 +276,7 @@ export const CompareTab = () => {
             </div>
             <Button 
               onClick={handleCompare} 
-              disabled={!selectedIndex || comparing}
+              disabled={!selectedProjectionId || comparing}
               data-testid="run-compare-button"
             >
               {comparing ? (
