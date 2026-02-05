@@ -1407,6 +1407,10 @@ async def _generate_comprehensive_forecast_impl(
         closures_optimizer = ModelOptimizer(closures_series)
         closures_result = closures_optimizer.optimize()
         
+        # Calculate historical totals (needed for fallback)
+        total_historical_leads = sum(d["leads"] for d in monthly_data)
+        total_historical_closures = sum(d["closures"] for d in monthly_data)
+        
         # Get predictions from best models
         if leads_optimizer.best_model:
             leads_predictions = leads_optimizer.best_model.predict(months_ahead)
@@ -1431,9 +1435,10 @@ async def _generate_comprehensive_forecast_impl(
         m = start_month_dt + relativedelta(months=i)
         future_months.append(m.strftime("%Y-%m"))
     
-    # Calculate historical totals for proportional distribution
-    total_historical_leads = sum(d["leads"] for d in monthly_data)
-    total_historical_closures = sum(d["closures"] for d in monthly_data)
+    # Ensure historical totals are calculated (in case of forced model path)
+    if 'total_historical_leads' not in dir():
+        total_historical_leads = sum(d["leads"] for d in monthly_data)
+        total_historical_closures = sum(d["closures"] for d in monthly_data)
     
     # ===== STEP 5: Build Organization-level forecast =====
     org_forecast = {
