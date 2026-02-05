@@ -2590,12 +2590,14 @@ async def update_projection(
 async def get_targets(
     request: Request,
     fiscal_year: Optional[str] = None,
+    entity_type: Optional[str] = "organization",  # organization, dealer, employee
+    entity_id: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get all targets for the specified fiscal year.
-    Fiscal year format: "2025-26" or "FY2025-26"
-    If not specified, returns current fiscal year targets.
+    Get targets for the specified fiscal year and entity.
+    entity_type: organization, dealer, or employee
+    entity_id: dealer name or employee user_id (required for dealer/employee)
     """
     db = await get_db(request)
     
@@ -2607,32 +2609,36 @@ async def get_targets(
         else:
             fiscal_year = f"{now.year - 1}-{str(now.year)[2:]}"
     
-    # Clean up fiscal year format
     fiscal_year = fiscal_year.replace("FY", "").strip()
     
-    targets = await db.forecast_targets.find_one(
-        {"fiscal_year": fiscal_year},
-        {"_id": 0}
-    )
+    # Build query based on entity type
+    query = {"fiscal_year": fiscal_year, "entity_type": entity_type}
+    if entity_type in ["dealer", "employee"] and entity_id:
+        query["entity_id"] = entity_id
+    elif entity_type == "organization":
+        query["entity_id"] = "org"
+    
+    targets = await db.forecast_targets.find_one(query, {"_id": 0})
     
     if not targets:
-        # Return default empty structure
         return {
             "success": True,
             "fiscal_year": fiscal_year,
+            "entity_type": entity_type,
+            "entity_id": entity_id or "org",
             "targets": {
                 "yearly": {"leads": 0, "closures": 0},
                 "half_yearly": {
-                    "H1": {"leads": 0, "closures": 0},  # Apr-Sep
-                    "H2": {"leads": 0, "closures": 0}   # Oct-Mar
+                    "H1": {"leads": 0, "closures": 0},
+                    "H2": {"leads": 0, "closures": 0}
                 },
                 "quarterly": {
-                    "Q1": {"leads": 0, "closures": 0},  # Apr-Jun
-                    "Q2": {"leads": 0, "closures": 0},  # Jul-Sep
-                    "Q3": {"leads": 0, "closures": 0},  # Oct-Dec
-                    "Q4": {"leads": 0, "closures": 0}   # Jan-Mar
+                    "Q1": {"leads": 0, "closures": 0},
+                    "Q2": {"leads": 0, "closures": 0},
+                    "Q3": {"leads": 0, "closures": 0},
+                    "Q4": {"leads": 0, "closures": 0}
                 },
-                "monthly": {}  # Will be populated with each month
+                "monthly": {}
             },
             "exists": False
         }
@@ -2640,11 +2646,92 @@ async def get_targets(
     return {
         "success": True,
         "fiscal_year": fiscal_year,
+        "entity_type": entity_type,
+        "entity_id": targets.get("entity_id"),
+        "entity_name": targets.get("entity_name"),
         "targets": targets.get("targets", {}),
         "updated_at": targets.get("updated_at"),
         "updated_by": targets.get("updated_by"),
         "exists": True
     }
+
+
+@router.get("/targets/all")
+async def get_all_targets(
+    request: Request,
+    fiscal_year: Optional[str] = None,
+    entity_type: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get all targets for a fiscal year, optionally filtered by entity type.
+    """
+    db = await get_db(request)
+    
+    if not fiscal_year:
+        now = datetime.now(timezone.utc)
+        if now.month >= 4:
+            fiscal_year = f"{now.year}-{str(now.year + 1)[2:]}"
+        else:
+            fiscal_year = f"{now.year - 1}-{str(now.year)[2:]}"
+    
+    fiscal_year = fiscal_year.replace("FY", "").strip()
+    
+    query = {"fiscal_year": fiscal_year}
+    if entity_type:
+        query["entity_type"] = entity_type
+    
+    cursor = db.forecast_targets.find(query, {"_id": 0})
+    targets_list = await cursor.to_list(500)
+    
+    # Group by entity type
+    grouped = {
+        "organization": [],
+        "dealer": [],
+        "employee": []
+    }
+    for t in targets_list:
+        et = t.get("entity_type", "organization")
+        if et in grouped:
+            grouped[et].append(t)
+    
+    return {
+        "success": True,
+        "fiscal_year": fiscal_year,
+        "targets": grouped,
+        "total": len(targets_list)
+    }
+
+
+@router.get("/targets/dealers")
+async def get_dealers_for_targets(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of dealers for target assignment."""
+    db = await get_db(request)
+    
+    dealers = await db.leads.distinct("dealer")
+    dealers = [d for d in dealers if d]
+    dealers.sort()
+    
+    return {"success": True, "dealers": dealers}
+
+
+@router.get("/targets/employees")
+async def get_employees_for_targets(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of employees for target assignment."""
+    db = await get_db(request)
+    
+    users = await db.users.find(
+        {"role": {"$in": ["Sales", "Manager"]}},
+        {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
+    ).to_list(200)
+    
+    return {"success": True, "employees": users}
 
 
 @router.post("/targets")
