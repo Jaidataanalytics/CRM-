@@ -1278,7 +1278,6 @@ const Comparison = () => {
               </div>
             </CardContent>
           </Card>
-          )}
         </TabsContent>
       </Tabs>
 
