@@ -262,6 +262,25 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
   - KVA/District: Varies by month within each dealer
 - [x] Added to forecast response: `seasonality_index`, `yoy_growth_factor` per month
 
+### Organization KVA Breakdown (Feb 5, 2026)
+- [x] Added Organization-wide KVA Breakdown section to forecast view
+- [x] Shows total gensets by KVA capacity across all dealers
+- [x] KVA Summary Cards with leads and closures per KVA size
+- [x] Month-wise KVA Distribution Table showing leads/sales for each month per KVA
+
+### Targets Management System (Feb 5, 2026)
+- [x] Created new endpoints for targets:
+  - `GET /api/forecast-enhanced/targets` - Get targets for fiscal year
+  - `POST /api/forecast-enhanced/targets` - Save/update targets
+  - `GET /api/forecast-enhanced/targets/compare/{projection_id}` - Compare with targets
+- [x] Support for multiple target levels:
+  - **Yearly**: Total leads/closures for the fiscal year
+  - **Half-yearly**: H1 (Apr-Sep), H2 (Oct-Mar)
+  - **Quarterly**: Q1, Q2, Q3, Q4 with different values each
+  - **Monthly**: Individual month targets
+- [x] Compare Tab enhanced to show Target vs Predicted vs Actual
+- [x] UI dialog to set targets at all levels
+
 ## Prioritized Backlog
 
 ### P0 - Critical
