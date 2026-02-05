@@ -1365,8 +1365,19 @@ async def _generate_comprehensive_forecast_impl(
         closures_result = closures_optimizer.optimize()
         
         # Get predictions from best models
-        leads_predictions = leads_optimizer.best_model.predict(months_ahead) if leads_optimizer.best_model else []
-        closures_predictions = closures_optimizer.best_model.predict(months_ahead) if closures_optimizer.best_model else []
+        if leads_optimizer.best_model:
+            leads_predictions = leads_optimizer.best_model.predict(months_ahead)
+        else:
+            # Fallback: use simple average if no model found
+            avg_leads = total_historical_leads / len(monthly_data) if monthly_data else 0
+            leads_predictions = [avg_leads] * months_ahead
+        
+        if closures_optimizer.best_model:
+            closures_predictions = closures_optimizer.best_model.predict(months_ahead)
+        else:
+            # Fallback: use simple average if no model found
+            avg_closures = total_historical_closures / len(monthly_data) if monthly_data else 0
+            closures_predictions = [avg_closures] * months_ahead
         
         model_selection_mode = "auto"
     
