@@ -565,23 +565,26 @@ async def get_conversion_time_analysis(
     
     for r in results:
         try:
-            enquiry_date = datetime.strptime(r["enquiry_date"][:10], "%Y-%m-%d")
+            enquiry_date = parse_date_flexible(r.get("enquiry_date", ""))
             closure_str = r.get("closure_date", "")
-            if closure_str:
-                closure_date = datetime.strptime(closure_str[:10], "%Y-%m-%d")
-                days = (closure_date - enquiry_date).days
-                
-                if 0 <= days <= 365:  # Reasonable range
-                    overall_times.append(days)
+            
+            if enquiry_date and closure_str:
+                closure_date = parse_date_flexible(closure_str)
+                if closure_date:
+                    days = (closure_date - enquiry_date).days
                     
-                    dealer = r.get("dealer", "Unknown")
-                    if dealer:
-                        dealer_times[dealer].append(days)
-                    
-                    segment = r.get("segment", "Unknown")
-                    if segment:
-                        segment_times[segment].append(days)
-        except:
+                    if 0 <= days <= 365:  # Reasonable range
+                        overall_times.append(days)
+                        
+                        dealer = r.get("dealer", "Unknown")
+                        if dealer:
+                            dealer_times[dealer].append(days)
+                        
+                        segment = r.get("segment", "Unknown")
+                        if segment:
+                            segment_times[segment].append(days)
+        except Exception as e:
+            logger.debug(f"Error parsing dates: {e}")
             continue
     
     # Calculate statistics
