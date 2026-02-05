@@ -134,6 +134,168 @@ async def get_db(request: Request):
     return request.app.state.db
 
 
+def calculate_seasonality_indices(monthly_data: List[dict]) -> Dict[int, float]:
+    """
+    Calculate seasonality indices for each month (1-12).
+    Index > 1 means that month typically performs above average.
+    Index < 1 means that month typically performs below average.
+    """
+    # Group data by calendar month
+    month_totals = defaultdict(list)
+    for d in monthly_data:
+        month_str = d.get("_id", d.get("month", ""))
+        if isinstance(month_str, str) and len(month_str) >= 7:
+            try:
+                month_num = int(month_str[5:7])  # Extract MM from YYYY-MM
+                month_totals[month_num].append(d.get("leads", 0))
+            except:
+                pass
+    
+    # Calculate average for each calendar month
+    monthly_averages = {}
+    for month_num, values in month_totals.items():
+        if values:
+            monthly_averages[month_num] = mean(values)
+    
+    # Calculate overall average
+    all_values = [v for vals in month_totals.values() for v in vals]
+    overall_avg = mean(all_values) if all_values else 1
+    
+    # Calculate seasonality index for each month
+    seasonality = {}
+    for month_num in range(1, 13):
+        if month_num in monthly_averages and overall_avg > 0:
+            seasonality[month_num] = monthly_averages[month_num] / overall_avg
+        else:
+            seasonality[month_num] = 1.0  # Default to neutral
+    
+    return seasonality
+
+
+def calculate_yoy_growth(monthly_data: List[dict], target_months: List[str]) -> Dict[str, float]:
+    """
+    Calculate year-over-year growth rates for target months.
+    Returns growth multiplier for each target month based on same month last year.
+    """
+    # Build lookup of historical data by YYYY-MM
+    historical = {}
+    for d in monthly_data:
+        month = d.get("_id", d.get("month", ""))
+        if isinstance(month, str):
+            historical[month] = {
+                "leads": d.get("leads", 0),
+                "closures": d.get("closures", 0)
+            }
+    
+    growth_rates = {}
+    for target in target_months:
+        # Parse target month to find same month last year
+        try:
+            year = int(target[:4])
+            month = int(target[5:7])
+            
+            # Look for same month in previous years
+            last_year = f"{year-1}-{month:02d}"
+            two_years_ago = f"{year-2}-{month:02d}"
+            
+            current_baseline = 0
+            comparisons = []
+            
+            if last_year in historical:
+                comparisons.append(historical[last_year]["leads"])
+            if two_years_ago in historical:
+                comparisons.append(historical[two_years_ago]["leads"])
+            
+            if comparisons:
+                # Calculate average of same month from previous years
+                avg_same_month = mean(comparisons)
+                
+                # Look at recent trend (last 3 months)
+                recent_months = []
+                for i in range(1, 4):
+                    prev_month = month - i
+                    prev_year = year if prev_month > 0 else year - 1
+                    prev_month = prev_month if prev_month > 0 else 12 + prev_month
+                    prev_key = f"{prev_year}-{prev_month:02d}"
+                    if prev_key in historical:
+                        recent_months.append(historical[prev_key]["leads"])
+                
+                if recent_months and avg_same_month > 0:
+                    recent_avg = mean(recent_months)
+                    # Growth rate considering recent momentum and YoY comparison
+                    growth_rates[target] = (recent_avg / avg_same_month) * 1.0  # Can add growth factor here
+                else:
+                    growth_rates[target] = 1.0
+            else:
+                growth_rates[target] = 1.0
+        except:
+            growth_rates[target] = 1.0
+    
+    return growth_rates
+
+
+def calculate_recent_momentum(monthly_data: List[dict], n_months: int = 3) -> float:
+    """
+    Calculate momentum factor based on recent months trend.
+    Returns multiplier indicating if recent performance is trending up or down.
+    """
+    if len(monthly_data) < n_months + 3:
+        return 1.0
+    
+    # Sort by month descending
+    sorted_data = sorted(monthly_data, key=lambda x: x.get("_id", x.get("month", "")), reverse=True)
+    
+    # Get recent months and previous period
+    recent = sorted_data[:n_months]
+    previous = sorted_data[n_months:n_months*2]
+    
+    recent_avg = mean([d.get("leads", 0) for d in recent]) if recent else 0
+    previous_avg = mean([d.get("leads", 0) for d in previous]) if previous else 0
+    
+    if previous_avg > 0:
+        momentum = recent_avg / previous_avg
+        # Dampen extreme values
+        return max(0.7, min(1.5, momentum))
+    return 1.0
+
+
+def calculate_entity_monthly_patterns(entity_monthly_data: Dict[str, List[dict]]) -> Dict[str, Dict[int, float]]:
+    """
+    Calculate monthly seasonality patterns for each entity (dealer/KVA/district).
+    Returns {entity: {month_num: index}} where index shows relative performance.
+    """
+    patterns = {}
+    
+    for entity, data in entity_monthly_data.items():
+        # Group by calendar month
+        month_values = defaultdict(list)
+        for d in data:
+            month_str = d.get("month", "")
+            if isinstance(month_str, str) and len(month_str) >= 7:
+                try:
+                    month_num = int(month_str[5:7])
+                    month_values[month_num].append(d.get("leads", 0) + d.get("closures", 0) * 0.5)  # Weight closures
+                except:
+                    pass
+        
+        # Calculate entity average
+        all_vals = [v for vals in month_values.values() for v in vals]
+        entity_avg = mean(all_vals) if all_vals else 1
+        
+        # Build pattern for this entity
+        entity_pattern = {}
+        for month_num in range(1, 13):
+            if month_num in month_values and entity_avg > 0:
+                month_avg = mean(month_values[month_num])
+                entity_pattern[month_num] = month_avg / entity_avg
+            else:
+                entity_pattern[month_num] = 1.0
+        
+        patterns[entity] = entity_pattern
+    
+    return patterns
+
+
 def get_last_12_months_range():
     """Get date range for last 12 months"""
     end_date = datetime.now(timezone.utc)
