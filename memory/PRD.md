@@ -249,6 +249,19 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
   - `dealer_forecasts[].months[]` with `by_kva` and `by_district` arrays per month
   - `organization_forecast.months[]` for summary card selection
 
+### Seasonality-Aware Forecasting Engine (Feb 5, 2026)
+- [x] **Completely overhauled** the forecasting engine to provide realistic month-wise predictions
+- [x] Implemented multiple factors for forecasting:
+  - **Monthly Seasonality Indices**: Each calendar month has a performance index based on historical patterns
+  - **Year-over-Year Growth**: Compares same month from previous years
+  - **Recent Momentum**: Last 3-month trend analysis per dealer
+  - **Entity-specific patterns**: Each dealer/KVA/district has unique seasonality
+- [x] Results now show meaningful variation:
+  - Organization: Feb=412, Mar=457, Apr=393 leads (not identical!)
+  - Dealer level: Each dealer has unique monthly patterns based on their history
+  - KVA/District: Varies by month within each dealer
+- [x] Added to forecast response: `seasonality_index`, `yoy_growth_factor` per month
+
 ## Prioritized Backlog
 
 ### P0 - Critical
