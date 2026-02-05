@@ -213,6 +213,15 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 }
 ```
 
+## Recent Bug Fixes (Feb 2026)
+
+### UnboundLocalError Fix (Feb 5, 2026)
+- [x] Fixed critical `UnboundLocalError` in `/app/backend/routes/forecast_enhanced.py`
+- [x] Error: "cannot access local variable 'total_historical_leads' where it is not associated with a value"
+- [x] **Root Cause**: Variables `total_historical_leads` and `total_historical_closures` were calculated inside a conditional `else:` block but used outside of it
+- [x] **Fix**: Moved the variable calculations immediately after `monthly_data` is fetched, before any conditional branches
+- [x] **Tested**: Backend endpoint `/api/forecast-enhanced/comprehensive-forecast` now returns valid forecasts
+
 ## Prioritized Backlog
 
 ### P0 - Critical
