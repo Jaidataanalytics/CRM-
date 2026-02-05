@@ -84,6 +84,7 @@ const Comparison = () => {
   
   // Targets state
   const [targets, setTargets] = useState(null);
+  const [allTargets, setAllTargets] = useState({ organization: [], dealer: [], employee: [] });
   const [targetsFiscalYear, setTargetsFiscalYear] = useState(() => {
     const now = new Date();
     if (now.getMonth() >= 3) return `${now.getFullYear()}-${String(now.getFullYear() + 1).slice(2)}`;
@@ -97,6 +98,11 @@ const Comparison = () => {
     monthly: {}
   });
   const [targetsTab, setTargetsTab] = useState('yearly');
+  const [entityType, setEntityType] = useState('organization'); // organization, dealer, employee
+  const [selectedEntityId, setSelectedEntityId] = useState('org');
+  const [selectedEntityName, setSelectedEntityName] = useState('Organization');
+  const [dealersList, setDealersList] = useState([]);
+  const [employeesList, setEmployeesList] = useState([]);
 
   useEffect(() => {
     loadPotentialSummary();
