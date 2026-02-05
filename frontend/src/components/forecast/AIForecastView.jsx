@@ -78,9 +78,11 @@ const AIForecastView = () => {
   // View state
   const [viewMode, setViewMode] = useState('tree'); // 'tree' or 'table'
   const [expandedDealers, setExpandedDealers] = useState({});
+  const [expandedMonths, setExpandedMonths] = useState({}); // For nested month expansion
   const [filterDealer, setFilterDealer] = useState('');
   const [filterKva, setFilterKva] = useState('');
   const [filterDistrict, setFilterDistrict] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('all'); // For summary cards month selector
   
   // Save state
   const [savingProjection, setSavingProjection] = useState(false);
