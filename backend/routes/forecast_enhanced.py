@@ -1637,7 +1637,7 @@ async def _generate_comprehensive_forecast_impl(
         "by_district": {}
     }
     
-    # Calculate dealer/KVA/district shares for proportional distribution
+    # Calculate dealer/KVA/district base shares for proportional distribution
     dealer_lead_share = {d: h["leads"]/total_historical_leads for d, h in dealer_history.items() if total_historical_leads > 0}
     dealer_closure_share = {d: h["closures"]/total_historical_closures for d, h in dealer_history.items() if total_historical_closures > 0}
     
@@ -1647,10 +1647,59 @@ async def _generate_comprehensive_forecast_impl(
     district_lead_share = {d: h["leads"]/total_historical_leads for d, h in district_history.items() if total_historical_leads > 0}
     district_closure_share = {d: h["closures"]/total_historical_closures for d, h in district_history.items() if total_historical_closures > 0}
     
-    # ===== STEP 6: Generate monthly predictions with breakdowns =====
+    # ===== STEP 5b: Calculate entity-specific seasonality patterns =====
+    # For each dealer, calculate their seasonal pattern
+    dealer_seasonality = {}
+    for dealer, months_data in dealer_monthly.items():
+        monthly_list = [{"month": m, "leads": d["leads"], "closures": d["closures"]} for m, d in months_data.items()]
+        if len(monthly_list) >= 6:
+            dealer_seasonality[dealer] = calculate_seasonality_indices(
+                [{"_id": m["month"], "leads": m["leads"]} for m in monthly_list]
+            )
+        else:
+            dealer_seasonality[dealer] = {i: 1.0 for i in range(1, 13)}
+    
+    # Calculate KVA seasonality
+    kva_seasonality = {}
+    for kva, months_data in kva_monthly.items():
+        monthly_list = [{"month": m, "leads": d["leads"]} for m, d in months_data.items()]
+        if len(monthly_list) >= 6:
+            kva_seasonality[kva] = calculate_seasonality_indices(
+                [{"_id": m["month"], "leads": m["leads"]} for m in monthly_list]
+            )
+        else:
+            kva_seasonality[kva] = {i: 1.0 for i in range(1, 13)}
+    
+    # Calculate district seasonality
+    district_seasonality = {}
+    for district, months_data in district_monthly.items():
+        monthly_list = [{"month": m, "leads": d["leads"]} for m, d in months_data.items()]
+        if len(monthly_list) >= 6:
+            district_seasonality[district] = calculate_seasonality_indices(
+                [{"_id": m["month"], "leads": m["leads"]} for m in monthly_list]
+            )
+        else:
+            district_seasonality[district] = {i: 1.0 for i in range(1, 13)}
+    
+    # Calculate YoY growth factors for target months
+    yoy_growth = calculate_yoy_growth(monthly_data, future_months)
+    
+    # ===== STEP 6: Generate monthly predictions with SEASONALITY-ADJUSTED breakdowns =====
     for i, month in enumerate(future_months):
         pred_leads = int(round(leads_predictions[i])) if i < len(leads_predictions) else 0
         pred_closures = int(round(closures_predictions[i])) if i < len(closures_predictions) else 0
+        
+        # Get calendar month number for seasonality lookup
+        month_num = int(month[5:7])  # Extract MM from YYYY-MM
+        
+        # Apply seasonality adjustment to base prediction
+        seasonality_factor = org_seasonality.get(month_num, 1.0)
+        yoy_factor = yoy_growth.get(month, 1.0)
+        
+        # Adjust predictions by seasonality and YoY trend (with dampening)
+        adjustment = (seasonality_factor * 0.7 + yoy_factor * 0.3)  # Weighted blend
+        pred_leads = int(round(pred_leads * adjustment))
+        pred_closures = int(round(pred_closures * adjustment))
         
         # Ensure closures don't exceed leads
         pred_closures = min(pred_closures, pred_leads)
@@ -1664,17 +1713,53 @@ async def _generate_comprehensive_forecast_impl(
             "predicted_leads": pred_leads,
             "predicted_closures": pred_closures,
             "conversion_rate": conversion_rate,
+            "seasonality_index": round(seasonality_factor, 2),
+            "yoy_growth_factor": round(yoy_factor, 2),
             "dealer_breakdown": [],
             "kva_breakdown": [],
             "district_breakdown": []
         }
         
-        # Distribute to dealers proportionally
+        # ===== DISTRIBUTE TO DEALERS WITH SEASONALITY ADJUSTMENT =====
+        # Each dealer gets their base share ADJUSTED by their own seasonality pattern
         dealer_leads_sum = 0
         dealer_closures_sum = 0
-        for dealer, share in sorted(dealer_lead_share.items(), key=lambda x: x[1], reverse=True):
-            d_leads = int(round(pred_leads * share))
-            d_closures = int(round(pred_closures * dealer_closure_share.get(dealer, share)))
+        dealer_adjusted_shares = {}
+        
+        for dealer, base_share in dealer_lead_share.items():
+            # Get this dealer's seasonality for this month
+            dealer_season_idx = dealer_seasonality.get(dealer, {}).get(month_num, 1.0)
+            
+            # Calculate recent momentum for this dealer
+            dealer_months_list = list(dealer_monthly.get(dealer, {}).items())
+            dealer_recent = sorted(dealer_months_list, key=lambda x: x[0], reverse=True)[:3]
+            dealer_previous = sorted(dealer_months_list, key=lambda x: x[0], reverse=True)[3:6]
+            
+            dealer_momentum = 1.0
+            if dealer_recent and dealer_previous:
+                recent_avg = mean([d[1]["leads"] for d in dealer_recent])
+                prev_avg = mean([d[1]["leads"] for d in dealer_previous]) if dealer_previous else recent_avg
+                if prev_avg > 0:
+                    dealer_momentum = max(0.6, min(1.6, recent_avg / prev_avg))
+            
+            # Adjusted share = base_share * dealer_seasonality * dealer_momentum
+            adjusted_share = base_share * dealer_season_idx * dealer_momentum
+            dealer_adjusted_shares[dealer] = adjusted_share
+        
+        # Normalize adjusted shares to sum to 1
+        total_adjusted = sum(dealer_adjusted_shares.values()) or 1
+        for dealer in dealer_adjusted_shares:
+            dealer_adjusted_shares[dealer] /= total_adjusted
+        
+        # Apply adjusted shares
+        for dealer, adj_share in sorted(dealer_adjusted_shares.items(), key=lambda x: x[1], reverse=True):
+            d_leads = int(round(pred_leads * adj_share))
+            # Also apply seasonality to closure share
+            closure_adj = dealer_closure_share.get(dealer, adj_share) * dealer_seasonality.get(dealer, {}).get(month_num, 1.0)
+            d_closures = int(round(pred_closures * closure_adj / (sum(
+                dealer_closure_share.get(d, 0) * dealer_seasonality.get(d, {}).get(month_num, 1.0) 
+                for d in dealer_closure_share
+            ) or 1)))
             d_closures = min(d_closures, d_leads)  # Can't close more than leads
             
             if d_leads > 0 or d_closures > 0:
@@ -1685,7 +1770,8 @@ async def _generate_comprehensive_forecast_impl(
                     "predicted_leads": d_leads,
                     "predicted_closures": d_closures,
                     "conversion_rate": round((d_closures/d_leads*100), 1) if d_leads > 0 else 0,
-                    "share_pct": round(share * 100, 2)
+                    "share_pct": round(adj_share * 100, 2),
+                    "seasonality_index": round(dealer_seasonality.get(dealer, {}).get(month_num, 1.0), 2)
                 })
         
         # Adjust for rounding errors
@@ -1694,12 +1780,27 @@ async def _generate_comprehensive_forecast_impl(
         if dealer_closures_sum != pred_closures and month_data["dealer_breakdown"]:
             month_data["dealer_breakdown"][0]["predicted_closures"] += (pred_closures - dealer_closures_sum)
         
-        # Distribute to KVA proportionally
+        # ===== DISTRIBUTE TO KVA WITH SEASONALITY ADJUSTMENT =====
         kva_leads_sum = 0
         kva_closures_sum = 0
-        for kva, share in sorted(kva_lead_share.items(), key=lambda x: x[1], reverse=True):
-            k_leads = int(round(pred_leads * share))
-            k_closures = int(round(pred_closures * kva_closure_share.get(kva, share)))
+        kva_adjusted_shares = {}
+        
+        for kva, base_share in kva_lead_share.items():
+            kva_season_idx = kva_seasonality.get(kva, {}).get(month_num, 1.0)
+            adjusted_share = base_share * kva_season_idx
+            kva_adjusted_shares[kva] = adjusted_share
+        
+        # Normalize
+        total_kva_adj = sum(kva_adjusted_shares.values()) or 1
+        for kva in kva_adjusted_shares:
+            kva_adjusted_shares[kva] /= total_kva_adj
+        
+        for kva, adj_share in sorted(kva_adjusted_shares.items(), key=lambda x: x[1], reverse=True):
+            k_leads = int(round(pred_leads * adj_share))
+            k_closures = int(round(pred_closures * kva_closure_share.get(kva, adj_share) * kva_seasonality.get(kva, {}).get(month_num, 1.0) / (sum(
+                kva_closure_share.get(k, 0) * kva_seasonality.get(k, {}).get(month_num, 1.0) 
+                for k in kva_closure_share
+            ) or 1)))
             k_closures = min(k_closures, k_leads)
             
             if k_leads > 0 or k_closures > 0:
@@ -1709,7 +1810,7 @@ async def _generate_comprehensive_forecast_impl(
                     "kva": kva,
                     "predicted_leads": k_leads,
                     "predicted_closures": k_closures,
-                    "share_pct": round(share * 100, 2)
+                    "share_pct": round(adj_share * 100, 2)
                 })
         
         # Adjust for rounding errors
