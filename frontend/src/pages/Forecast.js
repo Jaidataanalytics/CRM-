@@ -1095,10 +1095,10 @@ const Forecast = () => {
                             onOpenChange={() => setExpandedSaved(expandedSaved === idx ? null : idx)}
                           >
                             <div className="border rounded-lg overflow-hidden">
-                              <CollapsibleTrigger asChild>
+                              <CollapsibleTrigger className="w-full">
                                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-slate-50 cursor-pointer hover:from-gray-100 hover:to-slate-100">
                                   <div className="flex items-center gap-4">
-                                    <div>
+                                    <div className="text-left">
                                       <p className="font-medium">
                                         {saved.projection_id ? `Projection ${saved.projection_id.slice(-6)}` : `Projection #${saved.index}`}
                                       </p>
@@ -1107,19 +1107,19 @@ const Forecast = () => {
                                       </p>
                                     </div>
                                     <Badge variant="secondary">
-                                      {saved.forecast_data?.horizon_months || saved.horizon_months || 3} months
+                                      {saved.parameters?.months_ahead || saved.forecast_data?.horizon_months || saved.horizon_months || 3} months
                                     </Badge>
                                     {saved.version && saved.version > 1 && (
                                       <Badge variant="outline">v{saved.version}</Badge>
                                     )}
-                                    {saved.dealer_kva_forecast && (
-                                      <Badge className="bg-indigo-600">+ KVA</Badge>
+                                    {(saved.dealer_forecasts?.length > 0 || saved.dealer_kva_forecast) && (
+                                      <Badge className="bg-indigo-600">+ Dealers</Badge>
                                     )}
-                                    {saved.dealer_district_forecast && (
-                                      <Badge className="bg-green-600">+ District</Badge>
+                                    {saved.model_selection && (
+                                      <Badge className="bg-purple-600">AI Model</Badge>
                                     )}
-                                    {saved.scenarios && (
-                                      <Badge className="bg-purple-600">+ Scenarios</Badge>
+                                    {saved.notes && (
+                                      <Badge variant="outline" className="bg-amber-50">Has Notes</Badge>
                                     )}
                                   </div>
                                   <div className="flex items-center gap-4">
