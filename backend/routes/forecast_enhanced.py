@@ -1295,6 +1295,11 @@ async def _generate_comprehensive_forecast_impl(
     if len(monthly_data) < 12:
         return {"success": False, "message": f"Need at least 12 months of data. Found {len(monthly_data)}. Try increasing years_back parameter."}
     
+    # Calculate historical totals IMMEDIATELY after getting monthly_data
+    # This MUST be done here before any conditional branches to avoid UnboundLocalError
+    total_historical_leads = sum(d["leads"] for d in monthly_data)
+    total_historical_closures = sum(d["closures"] for d in monthly_data)
+    
     # ===== STEP 2: Get dealer/KVA/district breakdown =====
     breakdown_pipeline = [
         {
