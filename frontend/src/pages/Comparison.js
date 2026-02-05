@@ -208,12 +208,16 @@ const Comparison = () => {
     try {
       const res = await axios.post(`${API}/forecast-enhanced/targets`, {
         fiscal_year: targetsFiscalYear,
+        entity_type: entityType,
+        entity_id: selectedEntityId,
+        entity_name: selectedEntityName,
         targets: editTargets
       }, { withCredentials: true });
       
       if (res.data.success) {
-        toast.success('Targets saved successfully');
+        toast.success(`Targets saved for ${selectedEntityName}`);
         loadTargets();
+        loadAllTargets();
       }
     } catch (error) {
       console.error('Error saving targets:', error);
@@ -221,6 +225,22 @@ const Comparison = () => {
     } finally {
       setSavingTargets(false);
     }
+  };
+
+  const handleEntityTypeChange = (type) => {
+    setEntityType(type);
+    if (type === 'organization') {
+      setSelectedEntityId('org');
+      setSelectedEntityName('Organization');
+    } else {
+      setSelectedEntityId('');
+      setSelectedEntityName('');
+    }
+  };
+
+  const handleEntitySelect = (id, name) => {
+    setSelectedEntityId(id);
+    setSelectedEntityName(name);
   };
 
   const updateTarget = (level, period, field, value) => {
