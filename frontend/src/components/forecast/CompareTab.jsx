@@ -38,7 +38,7 @@ export const CompareTab = () => {
   const [loading, setLoading] = useState(true);
   const [comparing, setComparing] = useState(false);
   const [savedForecasts, setSavedForecasts] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [selectedProjectionId, setSelectedProjectionId] = useState(null);
   const [comparisonData, setComparisonData] = useState(null);
   const [selectedForecast, setSelectedForecast] = useState(null);
 
@@ -47,19 +47,47 @@ export const CompareTab = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedIndex !== null) {
-      const forecast = savedForecasts.find(f => f.index === selectedIndex);
+    if (selectedProjectionId) {
+      const forecast = savedForecasts.find(f => f.projection_id === selectedProjectionId || f.index?.toString() === selectedProjectionId);
       setSelectedForecast(forecast);
     } else {
       setSelectedForecast(null);
     }
-  }, [selectedIndex, savedForecasts]);
+  }, [selectedProjectionId, savedForecasts]);
 
   const loadSavedForecasts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API}/forecast/saved`, { withCredentials: true });
-      setSavedForecasts(res.data.forecasts || []);
+      // Try enhanced API first, fall back to legacy
+      let forecasts = [];
+      try {
+        const enhancedRes = await axios.get(`${API}/forecast-enhanced/projections`, { withCredentials: true });
+        if (enhancedRes.data.projections?.length > 0) {
+          forecasts = enhancedRes.data.projections.map((p, idx) => ({
+            ...p,
+            index: idx,
+            label: `${p.projection_id?.slice(-6) || idx} - ${new Date(p.saved_at).toLocaleDateString()}`
+          }));
+        }
+      } catch (e) {
+        console.log('Enhanced API not available, using legacy');
+      }
+      
+      // Also try legacy API and merge
+      try {
+        const legacyRes = await axios.get(`${API}/forecast/saved`, { withCredentials: true });
+        if (legacyRes.data.forecasts?.length > 0) {
+          const legacyForecasts = legacyRes.data.forecasts.map((f, idx) => ({
+            ...f,
+            label: `Legacy #${f.index || idx} - ${new Date(f.saved_at).toLocaleDateString()}`
+          }));
+          forecasts = [...forecasts, ...legacyForecasts];
+        }
+      } catch (e) {
+        console.log('Legacy API not available');
+      }
+      
+      setSavedForecasts(forecasts);
     } catch (error) {
       console.error('Error loading forecasts:', error);
       toast.error('Failed to load saved forecasts');
@@ -69,15 +97,25 @@ export const CompareTab = () => {
   };
 
   const handleCompare = async () => {
-    if (!selectedIndex) {
+    if (!selectedProjectionId) {
       toast.error('Please select a forecast to compare');
       return;
     }
     
     setComparing(true);
     try {
-      const res = await axios.get(`${API}/forecast/compare/${selectedIndex}`, { withCredentials: true });
-      setComparisonData(res.data);
+      // Try enhanced comparison first
+      const forecast = savedForecasts.find(f => f.projection_id === selectedProjectionId || f.index?.toString() === selectedProjectionId);
+      
+      if (forecast?.projection_id) {
+        // Enhanced projection - use enhanced compare endpoint
+        const res = await axios.get(`${API}/forecast-enhanced/compare/${forecast.projection_id}`, { withCredentials: true });
+        setComparisonData(res.data);
+      } else {
+        // Legacy forecast
+        const res = await axios.get(`${API}/forecast/compare/${selectedProjectionId}`, { withCredentials: true });
+        setComparisonData(res.data);
+      }
       toast.success('Comparison loaded successfully');
     } catch (error) {
       console.error('Error comparing:', error);
