@@ -1991,13 +1991,17 @@ async def save_enhanced_forecast(
     current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
 ):
     """
-    Save forecast with all data, charts (as base64 images), and audit trail support.
+    Save comprehensive AI forecast with all data including:
+    - Organization-level forecast
+    - Dealer breakdowns (by KVA and district)
+    - Model metrics and selection
+    - View settings (tree/table mode)
+    - Parameters used for generation
     """
     db = await get_db(request)
     body = await request.json()
     
     forecast_data = body.get("forecast_data", {})
-    chart_images = body.get("chart_images", {})  # Base64 encoded images
     notes = body.get("notes", "")
     
     projection_id = f"proj_{uuid.uuid4().hex[:12]}"
@@ -2013,13 +2017,24 @@ async def save_enhanced_forecast(
         "version": 1,
         "is_latest": True,
         
-        # Core forecast data
+        # Core forecast data (organization-level)
         "forecast_data": forecast_data,
         
-        # Chart images (base64)
-        "chart_images": chart_images,
+        # Full dealer forecasts array with by_kva and by_district breakdowns
+        "dealer_forecasts": body.get("dealer_forecasts", []),
         
-        # Additional analytics
+        # Model information
+        "model_metrics": body.get("model_metrics"),
+        "model_selection": body.get("model_selection"),
+        "model_selection_mode": body.get("model_selection_mode"),
+        
+        # Generation parameters
+        "parameters": body.get("parameters", {}),
+        
+        # View settings (tree/table mode, expanded dealers)
+        "view_settings": body.get("view_settings", {}),
+        
+        # Legacy fields for backward compatibility
         "dealer_kva_forecast": body.get("dealer_kva_forecast"),
         "dealer_district_forecast": body.get("dealer_district_forecast"),
         "scenarios": body.get("scenarios"),
@@ -2027,10 +2042,9 @@ async def save_enhanced_forecast(
         "conversion_analysis": body.get("conversion_analysis"),
         "product_trends": body.get("product_trends"),
         "geographic_opportunities": body.get("geographic_opportunities"),
-        
-        # Recommendations
         "recommendations": body.get("recommendations", []),
         "trends": body.get("trends", []),
+        "chart_images": body.get("chart_images", {}),
         
         # User notes
         "notes": notes,
