@@ -697,7 +697,7 @@ const AIForecastView = () => {
                 </div>
               </div>
               <CardDescription>
-                Full hierarchy: Organization → Dealer → KVA / District
+                Full hierarchy: Dealer → Month → KVA / District (Month-wise breakdown)
               </CardDescription>
             </CardHeader>
             <CardContent>
