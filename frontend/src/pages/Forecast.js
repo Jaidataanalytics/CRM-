@@ -1130,14 +1130,122 @@ const Forecast = () => {
                               
                               <CollapsibleContent>
                                 <div className="p-4 border-t bg-white space-y-6">
-                                  {/* Summary */}
+                                  {/* Notes */}
+                                  {saved.notes && (
+                                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                                      <p className="text-sm text-amber-800 font-medium">Notes:</p>
+                                      <p className="text-sm text-amber-700">{saved.notes}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* New Format: Organization-level totals */}
+                                  {saved.forecast_data?.organization_forecast && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <TrendingUp className="h-4 w-4" />
+                                        Forecast Summary
+                                      </h4>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="p-3 bg-indigo-50 rounded-lg text-center">
+                                          <p className="text-xs text-indigo-600 font-medium">Total Leads</p>
+                                          <p className="text-2xl font-bold text-indigo-700">
+                                            {saved.forecast_data.organization_forecast.totals?.leads?.toLocaleString() || 0}
+                                          </p>
+                                        </div>
+                                        <div className="p-3 bg-green-50 rounded-lg text-center">
+                                          <p className="text-xs text-green-600 font-medium">Total Closures</p>
+                                          <p className="text-2xl font-bold text-green-700">
+                                            {saved.forecast_data.organization_forecast.totals?.closures?.toLocaleString() || 0}
+                                          </p>
+                                        </div>
+                                        {saved.model_selection && (
+                                          <>
+                                            <div className="p-3 bg-slate-50 rounded-lg text-center">
+                                              <p className="text-xs text-slate-600 font-medium">Leads Model</p>
+                                              <p className="text-sm font-semibold text-slate-700">{saved.model_selection.leads_model}</p>
+                                            </div>
+                                            <div className="p-3 bg-slate-50 rounded-lg text-center">
+                                              <p className="text-xs text-slate-600 font-medium">Closures Model</p>
+                                              <p className="text-sm font-semibold text-slate-700">{saved.model_selection.closures_model}</p>
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* New Format: Monthly breakdown */}
+                                  {saved.forecast_data?.organization_forecast?.months && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <Calendar className="h-4 w-4" />
+                                        Monthly Forecast
+                                      </h4>
+                                      <div className="border rounded-lg overflow-hidden">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead>Month</TableHead>
+                                              <TableHead className="text-right">Leads</TableHead>
+                                              <TableHead className="text-right">Closures</TableHead>
+                                              <TableHead className="text-right">Conversion</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {saved.forecast_data.organization_forecast.months.map((m, midx) => (
+                                              <TableRow key={midx}>
+                                                <TableCell className="font-medium">{m.month_name || m.month}</TableCell>
+                                                <TableCell className="text-right">{m.predicted_leads?.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right text-green-600 font-medium">{m.predicted_closures?.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right">{m.conversion_rate || 0}%</TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* New Format: Dealer forecasts with month-wise breakdown */}
+                                  {saved.dealer_forecasts && saved.dealer_forecasts.length > 0 && (
+                                    <div>
+                                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                                        <Building2 className="h-4 w-4" />
+                                        Dealer Breakdown ({saved.dealer_forecasts.length} dealers)
+                                      </h4>
+                                      <div className="border rounded-lg max-h-96 overflow-y-auto">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow className="bg-slate-50">
+                                              <TableHead>Dealer</TableHead>
+                                              <TableHead className="text-right">Total Leads</TableHead>
+                                              <TableHead className="text-right">Total Closures</TableHead>
+                                              <TableHead className="text-right">Months</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {saved.dealer_forecasts.slice(0, 20).map((d, didx) => (
+                                              <TableRow key={didx}>
+                                                <TableCell className="font-medium">{d.dealer}</TableCell>
+                                                <TableCell className="text-right">{d.totals?.leads || 0}</TableCell>
+                                                <TableCell className="text-right text-green-600">{d.totals?.closures || 0}</TableCell>
+                                                <TableCell className="text-right text-slate-500">{d.months?.length || 0}</TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Old Format: Summary */}
                                   {(saved.forecast_data?.forecast?.summary || saved.summary) && (
                                     <div className="p-3 bg-muted/50 rounded-lg">
                                       <p className="text-sm">{saved.forecast_data?.forecast?.summary || saved.summary}</p>
                                     </div>
                                   )}
                                   
-                                  {/* Monthly Predictions Table */}
+                                  {/* Old Format: Monthly Predictions Table */}
                                   {(saved.forecast_data?.forecast?.predictions || saved.predictions) && (
                                     <div>
                                       <h4 className="font-medium mb-2 flex items-center gap-2">
