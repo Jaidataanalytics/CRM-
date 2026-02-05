@@ -1687,12 +1687,25 @@ async def _generate_comprehensive_forecast_impl(
             consistency_check["issues"].append(f"{month}: District leads total ({dist_lead_total}) != org total ({month_data['predicted_leads']})")
     
     # ===== STEP 9: Build model metrics =====
+    # Determine model names - handle fallback case
+    leads_model_name = "Simple Average (Fallback)"
+    if leads_optimizer.best_model and hasattr(leads_optimizer.best_model, 'name'):
+        leads_model_name = leads_optimizer.best_model.name
+    elif force_model:
+        leads_model_name = force_model
+    
+    closures_model_name = "Simple Average (Fallback)"
+    if closures_optimizer.best_model and hasattr(closures_optimizer.best_model, 'name'):
+        closures_model_name = closures_optimizer.best_model.name
+    elif force_model:
+        closures_model_name = force_model
+    
     model_metrics = {
         "model_selection_mode": model_selection_mode,
         "forced_model": force_model if model_selection_mode == "manual" else None,
         "available_models": list(MODEL_MAP.keys()),
         "leads_model": {
-            "name": leads_optimizer.best_model.name if hasattr(leads_optimizer.best_model, 'name') else (force_model or "None"),
+            "name": leads_model_name,
             "accuracy": round(leads_optimizer.best_accuracy, 2) if leads_optimizer.best_accuracy else None,
             "mape": round(leads_optimizer.best_mape, 2) if hasattr(leads_optimizer, 'best_mape') and leads_optimizer.best_mape else None,
             "all_models_tested": [
@@ -1703,10 +1716,10 @@ async def _generate_comprehensive_forecast_impl(
                     "note": r.get("note", "")
                 }
                 for r in leads_optimizer.results
-            ]
+            ] if hasattr(leads_optimizer, 'results') else []
         },
         "closures_model": {
-            "name": closures_optimizer.best_model.name if hasattr(closures_optimizer.best_model, 'name') else (force_model or "None"),
+            "name": closures_model_name,
             "accuracy": round(closures_optimizer.best_accuracy, 2) if closures_optimizer.best_accuracy else None,
             "mape": round(closures_optimizer.best_mape, 2) if hasattr(closures_optimizer, 'best_mape') and closures_optimizer.best_mape else None,
             "all_models_tested": [
@@ -1717,7 +1730,7 @@ async def _generate_comprehensive_forecast_impl(
                     "note": r.get("note", "")
                 }
                 for r in closures_optimizer.results
-            ]
+            ] if hasattr(closures_optimizer, 'results') else []
         },
         "data_quality": {
             "months_analyzed": len(monthly_data),
