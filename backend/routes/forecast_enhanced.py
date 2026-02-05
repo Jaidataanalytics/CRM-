@@ -32,6 +32,46 @@ from routes.auth import get_current_user, require_roles
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/forecast-enhanced", tags=["Enhanced Forecast"])
 
+
+def parse_date_flexible(date_str: str) -> Optional[datetime]:
+    """
+    Parse date string in multiple formats.
+    Handles: '2026-02-07', '07 Feb 2026', '07-Feb-2026', '2026/02/07', etc.
+    """
+    if not date_str:
+        return None
+    
+    # Clean the string
+    date_str = str(date_str).strip()
+    
+    # Try multiple formats
+    formats = [
+        "%Y-%m-%d",      # 2026-02-07
+        "%d %b %Y",      # 07 Feb 2026
+        "%d-%b-%Y",      # 07-Feb-2026
+        "%d/%m/%Y",      # 07/02/2026
+        "%Y/%m/%d",      # 2026/02/07
+        "%d %B %Y",      # 07 February 2026
+        "%B %d, %Y",     # February 07, 2026
+        "%Y-%m-%dT%H:%M:%S",  # ISO format with time
+        "%Y-%m-%dT%H:%M:%S.%f",  # ISO format with microseconds
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str[:len(date_str)].split('T')[0] if 'T' in date_str else date_str, fmt)
+        except ValueError:
+            continue
+    
+    # Try to parse just the first 10 characters as YYYY-MM-DD
+    try:
+        return datetime.strptime(date_str[:10], "%Y-%m-%d")
+    except ValueError:
+        pass
+    
+    return None
+
+
 # Won stages
 WON_STAGES = ["Closed-Won", "Order Booked"]
 LOST_STAGES = ["Closed-Lost", "Closed-Dropped"]
