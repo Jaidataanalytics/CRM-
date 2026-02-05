@@ -1206,34 +1206,102 @@ const Forecast = () => {
                                     </div>
                                   )}
                                   
-                                  {/* New Format: Dealer forecasts with month-wise breakdown */}
+                                  {/* New Format: Dealer forecasts with FULL month-wise breakdown (nested) */}
                                   {saved.dealer_forecasts && saved.dealer_forecasts.length > 0 && (
                                     <div>
                                       <h4 className="font-medium mb-2 flex items-center gap-2">
                                         <Building2 className="h-4 w-4" />
                                         Dealer Breakdown ({saved.dealer_forecasts.length} dealers)
                                       </h4>
-                                      <div className="border rounded-lg max-h-96 overflow-y-auto">
-                                        <Table>
-                                          <TableHeader>
-                                            <TableRow className="bg-slate-50">
-                                              <TableHead>Dealer</TableHead>
-                                              <TableHead className="text-right">Total Leads</TableHead>
-                                              <TableHead className="text-right">Total Closures</TableHead>
-                                              <TableHead className="text-right">Months</TableHead>
-                                            </TableRow>
-                                          </TableHeader>
-                                          <TableBody>
-                                            {saved.dealer_forecasts.slice(0, 20).map((d, didx) => (
-                                              <TableRow key={didx}>
-                                                <TableCell className="font-medium">{d.dealer}</TableCell>
-                                                <TableCell className="text-right">{d.totals?.leads || 0}</TableCell>
-                                                <TableCell className="text-right text-green-600">{d.totals?.closures || 0}</TableCell>
-                                                <TableCell className="text-right text-slate-500">{d.months?.length || 0}</TableCell>
-                                              </TableRow>
-                                            ))}
-                                          </TableBody>
-                                        </Table>
+                                      <div className="space-y-2 max-h-[500px] overflow-y-auto border rounded-lg p-3 bg-slate-50">
+                                        {saved.dealer_forecasts.slice(0, 30).map((d, didx) => (
+                                          <Collapsible key={didx}>
+                                            <CollapsibleTrigger className="w-full">
+                                              <div className="flex items-center justify-between p-3 bg-white hover:bg-gray-50 rounded-lg border transition-colors">
+                                                <div className="flex items-center gap-3">
+                                                  <ChevronRight className="w-4 h-4 text-gray-500" />
+                                                  <Building2 className="w-4 h-4 text-indigo-500" />
+                                                  <span className="font-medium text-left">{d.dealer}</span>
+                                                  <Badge variant="outline" className="text-xs">
+                                                    {d.months?.length || 0} months
+                                                  </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                  <Badge className="bg-indigo-100 text-indigo-700">
+                                                    {d.totals?.leads || 0} leads
+                                                  </Badge>
+                                                  <Badge className="bg-green-100 text-green-700">
+                                                    {d.totals?.closures || 0} closures
+                                                  </Badge>
+                                                </div>
+                                              </div>
+                                            </CollapsibleTrigger>
+                                            <CollapsibleContent>
+                                              <div className="ml-7 mt-2 space-y-2">
+                                                {/* Month-wise breakdown */}
+                                                {d.months?.map((month, midx) => (
+                                                  <Collapsible key={midx}>
+                                                    <CollapsibleTrigger className="w-full">
+                                                      <div className="flex items-center justify-between p-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-100 transition-colors">
+                                                        <div className="flex items-center gap-2">
+                                                          <ChevronRight className="w-3 h-3 text-indigo-500" />
+                                                          <Calendar className="w-3 h-3 text-indigo-600" />
+                                                          <span className="text-sm font-medium text-indigo-800">{month.month_name}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                          <Badge variant="outline" className="text-xs bg-white">
+                                                            {month.predicted_leads || 0} leads
+                                                          </Badge>
+                                                          <Badge variant="outline" className="text-xs bg-white text-green-700">
+                                                            {month.predicted_closures || 0} closures
+                                                          </Badge>
+                                                        </div>
+                                                      </div>
+                                                    </CollapsibleTrigger>
+                                                    <CollapsibleContent>
+                                                      <div className="ml-5 mt-2 p-3 bg-white border rounded-lg">
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                          {/* KVA Breakdown */}
+                                                          <div>
+                                                            <p className="text-xs font-medium text-indigo-700 mb-2 flex items-center gap-1">
+                                                              <Layers className="w-3 h-3" /> By KVA
+                                                            </p>
+                                                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                                                              {month.by_kva?.length > 0 ? month.by_kva.slice(0, 8).map((k, kidx) => (
+                                                                <div key={kidx} className="flex justify-between text-xs p-1 bg-gray-50 rounded">
+                                                                  <span>{k.kva} KVA</span>
+                                                                  <span className="text-gray-600">{k.leads} leads, {k.closures} won</span>
+                                                                </div>
+                                                              )) : (
+                                                                <p className="text-xs text-gray-400 italic">No KVA data</p>
+                                                              )}
+                                                            </div>
+                                                          </div>
+                                                          {/* District Breakdown */}
+                                                          <div>
+                                                            <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1">
+                                                              <MapPin className="w-3 h-3" /> By District
+                                                            </p>
+                                                            <div className="space-y-1 max-h-32 overflow-y-auto">
+                                                              {month.by_district?.length > 0 ? month.by_district.slice(0, 8).map((dist, distidx) => (
+                                                                <div key={distidx} className="flex justify-between text-xs p-1 bg-gray-50 rounded">
+                                                                  <span className="truncate max-w-[100px]">{dist.district}</span>
+                                                                  <span className="text-gray-600">{dist.leads} leads, {dist.closures} won</span>
+                                                                </div>
+                                                              )) : (
+                                                                <p className="text-xs text-gray-400 italic">No district data</p>
+                                                              )}
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </CollapsibleContent>
+                                                  </Collapsible>
+                                                ))}
+                                              </div>
+                                            </CollapsibleContent>
+                                          </Collapsible>
+                                        ))}
                                       </div>
                                     </div>
                                   )}
