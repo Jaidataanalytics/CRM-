@@ -1025,23 +1025,6 @@ const Comparison = () => {
                     <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
                     <TabsTrigger value="monthly">Monthly</TabsTrigger>
                   </TabsList>
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={saveTargets} disabled={savingTargets}>
-                    {savingTargets ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-                    Save Targets
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={targetsTab} onValueChange={setTargetsTab}>
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                  <TabsTrigger value="half_yearly">Half-Yearly</TabsTrigger>
-                  <TabsTrigger value="quarterly">Quarterly</TabsTrigger>
-                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                </TabsList>
 
                 {/* Yearly Targets */}
                 <TabsContent value="yearly" className="pt-4">
