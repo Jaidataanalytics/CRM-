@@ -161,9 +161,10 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 
 ### Comparison Page
 - [x] Market potential data upload via Excel
-- [x] Comparison by District, Dealer, State, KVA Range
+- [x] Comparison by District, Dealer, State, KVA Range, **Source**, **Segment**
 - [x] Uses actual `district` field (not `location`)
 - [x] Indian Financial Year date logic
+- [x] **Source/Segment Market Potentials** - Manage and compare by lead source and customer segment
 
 ### Global Filters
 - [x] Date range (Indian FY default)
