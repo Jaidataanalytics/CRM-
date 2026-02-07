@@ -986,6 +986,118 @@ const Comparison = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Sources Tab */}
+            <TabsContent value="sources">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Source Market Potentials</CardTitle>
+                  <CardDescription>
+                    Manage market potential data by lead source. Sources are auto-populated from your leads data.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Source</TableHead>
+                        <TableHead className="text-right">Potential</TableHead>
+                        <TableHead className="text-right">Market Size</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sourcesData.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{item.source}</TableCell>
+                          <TableCell className="text-right">
+                            {item.potential?.toLocaleString() || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {item.market_size?.toLocaleString() || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" onClick={() => handleDeleteEntry(item)}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {sourcesData.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No source potentials set. Add entries to track market potential by source.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                  {availableSources.length > 0 && (
+                    <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        <strong>{availableSources.length}</strong> unique sources found in your leads data
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Segments Tab */}
+            <TabsContent value="segments">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Segment Market Potentials</CardTitle>
+                  <CardDescription>
+                    Manage market potential data by customer segment. Segments are auto-populated from your leads data.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Segment</TableHead>
+                        <TableHead className="text-right">Potential</TableHead>
+                        <TableHead className="text-right">Market Size</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {segmentsData.map((item, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell className="font-medium">{item.segment}</TableCell>
+                          <TableCell className="text-right">
+                            {item.potential?.toLocaleString() || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {item.market_size?.toLocaleString() || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="ghost" onClick={() => handleDeleteEntry(item)}>
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {segmentsData.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                            No segment potentials set. Add entries to track market potential by segment.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                  {availableSegments.length > 0 && (
+                    <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                      <p className="text-sm text-green-700">
+                        <strong>{availableSegments.length}</strong> unique segments found in your leads data
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
         </TabsContent>
 
