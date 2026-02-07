@@ -684,6 +684,8 @@ const Comparison = () => {
                   <SelectItem value="dealer">Dealer</SelectItem>
                   <SelectItem value="state">State</SelectItem>
                   <SelectItem value="kva">KVA Range</SelectItem>
+                  <SelectItem value="source">Source</SelectItem>
+                  <SelectItem value="segment">Segment</SelectItem>
                 </SelectContent>
               </Select>
             </div>
