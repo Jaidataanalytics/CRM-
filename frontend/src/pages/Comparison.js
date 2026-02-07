@@ -471,13 +471,27 @@ const Comparison = () => {
         );
         toast.success('District potential deleted');
         loadDistrictData();
-      } else {
+      } else if (managementTab === 'kva') {
         await axios.delete(
           `${API}/market-potential/kva-ranges/${encodeURIComponent(item.kva_range)}`,
           { withCredentials: true }
         );
         toast.success('KVA potential deleted');
         loadKvaData();
+      } else if (managementTab === 'sources') {
+        await axios.delete(
+          `${API}/market-potential/sources/${encodeURIComponent(item.source)}`,
+          { withCredentials: true }
+        );
+        toast.success('Source potential deleted');
+        loadSourcesData();
+      } else if (managementTab === 'segments') {
+        await axios.delete(
+          `${API}/market-potential/segments/${encodeURIComponent(item.segment)}`,
+          { withCredentials: true }
+        );
+        toast.success('Segment potential deleted');
+        loadSegmentsData();
       }
       loadPotentialSummary();
       loadComparisonData();
