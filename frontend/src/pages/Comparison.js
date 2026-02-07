@@ -83,7 +83,9 @@ const Comparison = () => {
     state: '',
     potential: '',
     kva_range: '',
-    market_size: ''
+    market_size: '',
+    source: '',
+    segment: ''
   });
   
   // Targets state
