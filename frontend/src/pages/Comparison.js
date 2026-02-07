@@ -1473,11 +1473,13 @@ const Comparison = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              Add {managementTab === 'districts' ? 'District Potential' : 'KVA Range Potential'}
+              Add {managementTab === 'districts' ? 'District Potential' : 
+                   managementTab === 'kva' ? 'KVA Range Potential' :
+                   managementTab === 'sources' ? 'Source Potential' : 'Segment Potential'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {managementTab === 'districts' ? (
+            {managementTab === 'districts' && (
               <>
                 <div className="space-y-2">
                   <Label>Dealer Name *</Label>
@@ -1513,7 +1515,8 @@ const Comparison = () => {
                   />
                 </div>
               </>
-            ) : (
+            )}
+            {managementTab === 'kva' && (
               <>
                 <div className="space-y-2">
                   <Label>KVA Range *</Label>
@@ -1530,6 +1533,76 @@ const Comparison = () => {
                     value={newEntry.market_size}
                     onChange={(e) => setNewEntry({...newEntry, market_size: e.target.value})}
                     placeholder="e.g., 2500"
+                  />
+                </div>
+              </>
+            )}
+            {managementTab === 'sources' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Source *</Label>
+                  <Select value={newEntry.source} onValueChange={(v) => setNewEntry({...newEntry, source: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSources.map(source => (
+                        <SelectItem key={source} value={source}>{source}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Potential (Units)</Label>
+                  <Input
+                    type="number"
+                    value={newEntry.potential}
+                    onChange={(e) => setNewEntry({...newEntry, potential: e.target.value})}
+                    placeholder="e.g., 100"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Market Size (Units)</Label>
+                  <Input
+                    type="number"
+                    value={newEntry.market_size}
+                    onChange={(e) => setNewEntry({...newEntry, market_size: e.target.value})}
+                    placeholder="e.g., 500"
+                  />
+                </div>
+              </>
+            )}
+            {managementTab === 'segments' && (
+              <>
+                <div className="space-y-2">
+                  <Label>Segment *</Label>
+                  <Select value={newEntry.segment} onValueChange={(v) => setNewEntry({...newEntry, segment: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a segment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableSegments.map(segment => (
+                        <SelectItem key={segment} value={segment}>{segment}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Potential (Units)</Label>
+                  <Input
+                    type="number"
+                    value={newEntry.potential}
+                    onChange={(e) => setNewEntry({...newEntry, potential: e.target.value})}
+                    placeholder="e.g., 200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Market Size (Units)</Label>
+                  <Input
+                    type="number"
+                    value={newEntry.market_size}
+                    onChange={(e) => setNewEntry({...newEntry, market_size: e.target.value})}
+                    placeholder="e.g., 1000"
                   />
                 </div>
               </>
