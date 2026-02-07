@@ -649,6 +649,94 @@ async def get_market_comparison(
         
         comparison_data.sort(key=lambda x: x['current_sales'], reverse=True)
     
+    elif compare_by == "source":
+        # Source comparison
+        source_potentials = await db.market_potential_sources.find({}, {'_id': 0}).to_list(100)
+        source_potential_map = {sp['source']: sp for sp in source_potentials}
+        
+        # Get sales by source
+        pipeline_current = [
+            {"$match": current_query},
+            {"$group": {"_id": "$source", "sales": {"$sum": 1}}}
+        ]
+        pipeline_ly = [
+            {"$match": last_year_query},
+            {"$group": {"_id": "$source", "sales": {"$sum": 1}}}
+        ]
+        
+        current_sales_data = await db.leads.aggregate(pipeline_current).to_list(100)
+        ly_sales_data = await db.leads.aggregate(pipeline_ly).to_list(100)
+        
+        current_sales_map = {s['_id']: s['sales'] for s in current_sales_data if s['_id']}
+        ly_sales_map = {s['_id']: s['sales'] for s in ly_sales_data if s['_id']}
+        
+        # Combine all sources
+        all_sources = set(source_potential_map.keys()) | set(current_sales_map.keys())
+        
+        for src in all_sources:
+            pot_data = source_potential_map.get(src, {})
+            potential = pot_data.get('potential', 0) or pot_data.get('market_size', 0)
+            current_sales = current_sales_map.get(src, 0)
+            ly_sales = ly_sales_map.get(src, 0)
+            
+            yoy_change = ((current_sales - ly_sales) / ly_sales * 100) if ly_sales > 0 else 0
+            market_share = (current_sales / potential * 100) if potential > 0 else 0
+            
+            comparison_data.append({
+                'name': src or 'Unknown',
+                'potential': potential,
+                'current_sales': current_sales,
+                'last_year_sales': ly_sales,
+                'market_share': round(market_share, 1),
+                'yoy_change': round(yoy_change, 1)
+            })
+        
+        comparison_data.sort(key=lambda x: x['current_sales'], reverse=True)
+    
+    elif compare_by == "segment":
+        # Segment comparison
+        segment_potentials = await db.market_potential_segments.find({}, {'_id': 0}).to_list(100)
+        segment_potential_map = {sp['segment']: sp for sp in segment_potentials}
+        
+        # Get sales by segment
+        pipeline_current = [
+            {"$match": current_query},
+            {"$group": {"_id": "$segment", "sales": {"$sum": 1}}}
+        ]
+        pipeline_ly = [
+            {"$match": last_year_query},
+            {"$group": {"_id": "$segment", "sales": {"$sum": 1}}}
+        ]
+        
+        current_sales_data = await db.leads.aggregate(pipeline_current).to_list(100)
+        ly_sales_data = await db.leads.aggregate(pipeline_ly).to_list(100)
+        
+        current_sales_map = {s['_id']: s['sales'] for s in current_sales_data if s['_id']}
+        ly_sales_map = {s['_id']: s['sales'] for s in ly_sales_data if s['_id']}
+        
+        # Combine all segments
+        all_segments = set(segment_potential_map.keys()) | set(current_sales_map.keys())
+        
+        for seg in all_segments:
+            pot_data = segment_potential_map.get(seg, {})
+            potential = pot_data.get('potential', 0) or pot_data.get('market_size', 0)
+            current_sales = current_sales_map.get(seg, 0)
+            ly_sales = ly_sales_map.get(seg, 0)
+            
+            yoy_change = ((current_sales - ly_sales) / ly_sales * 100) if ly_sales > 0 else 0
+            market_share = (current_sales / potential * 100) if potential > 0 else 0
+            
+            comparison_data.append({
+                'name': seg or 'Unknown',
+                'potential': potential,
+                'current_sales': current_sales,
+                'last_year_sales': ly_sales,
+                'market_share': round(market_share, 1),
+                'yoy_change': round(yoy_change, 1)
+            })
+        
+        comparison_data.sort(key=lambda x: x['current_sales'], reverse=True)
+    
     # Calculate totals
     total_potential = sum(d['potential'] for d in comparison_data)
     total_current = sum(d['current_sales'] for d in comparison_data)
