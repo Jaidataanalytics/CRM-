@@ -710,3 +710,168 @@ async def get_potential_summary(
         'total_kva_potential': total_kva_potential,
         'has_data': district_count > 0 or kva_count > 0
     }
+
+
+# ============================================
+# SOURCE POTENTIAL ENDPOINTS
+# ============================================
+
+@router.get("/sources")
+async def get_source_potentials(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all source potential entries"""
+    db = await get_db(request)
+    
+    sources = await db.market_potential_sources.find({}, {'_id': 0}).to_list(100)
+    return {'sources': sources}
+
+
+@router.get("/sources/list")
+async def get_sources_from_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get distinct sources from leads data"""
+    db = await get_db(request)
+    
+    sources = await db.leads.distinct('source')
+    sources = [s for s in sources if s]
+    sources.sort()
+    return {'sources': sources}
+
+
+@router.post("/sources")
+async def add_source_potential(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Add or update a source potential entry"""
+    db = await get_db(request)
+    body = await request.json()
+    
+    source = body.get('source', '').strip()
+    potential = body.get('potential', 0)
+    market_size = body.get('market_size', 0)
+    
+    if not source:
+        raise HTTPException(status_code=400, detail="Source name is required")
+    
+    user_id = getattr(current_user, 'email', None) or getattr(current_user, 'name', None) or 'unknown'
+    
+    await db.market_potential_sources.update_one(
+        {'source': source},
+        {
+            '$set': {
+                'source': source,
+                'potential': int(potential),
+                'market_size': int(market_size),
+                'updated_at': datetime.utcnow(),
+                'updated_by': user_id
+            }
+        },
+        upsert=True
+    )
+    
+    return {'status': 'success', 'message': f'Source potential for {source} saved'}
+
+
+@router.delete("/sources/{source}")
+async def delete_source_potential(
+    request: Request,
+    source: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a source potential entry"""
+    db = await get_db(request)
+    
+    result = await db.market_potential_sources.delete_one({'source': source})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Source potential not found")
+    
+    return {'status': 'success', 'message': 'Source potential deleted'}
+
+
+# ============================================
+# SEGMENT POTENTIAL ENDPOINTS
+# ============================================
+
+@router.get("/segments")
+async def get_segment_potentials(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get all segment potential entries"""
+    db = await get_db(request)
+    
+    segments = await db.market_potential_segments.find({}, {'_id': 0}).to_list(100)
+    return {'segments': segments}
+
+
+@router.get("/segments/list")
+async def get_segments_from_leads(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Get distinct segments from leads data"""
+    db = await get_db(request)
+    
+    segments = await db.leads.distinct('segment')
+    segments = [s for s in segments if s]
+    segments.sort()
+    return {'segments': segments}
+
+
+@router.post("/segments")
+async def add_segment_potential(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Add or update a segment potential entry"""
+    db = await get_db(request)
+    body = await request.json()
+    
+    segment = body.get('segment', '').strip()
+    potential = body.get('potential', 0)
+    market_size = body.get('market_size', 0)
+    
+    if not segment:
+        raise HTTPException(status_code=400, detail="Segment name is required")
+    
+    user_id = getattr(current_user, 'email', None) or getattr(current_user, 'name', None) or 'unknown'
+    
+    await db.market_potential_segments.update_one(
+        {'segment': segment},
+        {
+            '$set': {
+                'segment': segment,
+                'potential': int(potential),
+                'market_size': int(market_size),
+                'updated_at': datetime.utcnow(),
+                'updated_by': user_id
+            }
+        },
+        upsert=True
+    )
+    
+    return {'status': 'success', 'message': f'Segment potential for {segment} saved'}
+
+
+@router.delete("/segments/{segment}")
+async def delete_segment_potential(
+    request: Request,
+    segment: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a segment potential entry"""
+    db = await get_db(request)
+    
+    result = await db.market_potential_segments.delete_one({'segment': segment})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Segment potential not found")
+    
+    return {'status': 'success', 'message': 'Segment potential deleted'}
+
