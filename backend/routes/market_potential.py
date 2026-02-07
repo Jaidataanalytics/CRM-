@@ -398,7 +398,7 @@ async def delete_kva_potential(
 async def get_market_comparison(
     request: Request,
     current_user: User = Depends(get_current_user),
-    compare_by: str = Query("district", enum=["district", "dealer", "state", "kva"]),
+    compare_by: str = Query("district", enum=["district", "dealer", "state", "kva", "source", "segment"]),
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     state: Optional[str] = None,
