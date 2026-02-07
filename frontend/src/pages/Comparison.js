@@ -65,6 +65,10 @@ const Comparison = () => {
   // District/KVA management
   const [districtData, setDistrictData] = useState([]);
   const [kvaData, setKvaData] = useState([]);
+  const [sourcesData, setSourcesData] = useState([]);
+  const [segmentsData, setSegmentsData] = useState([]);
+  const [availableSources, setAvailableSources] = useState([]);
+  const [availableSegments, setAvailableSegments] = useState([]);
   const [managementTab, setManagementTab] = useState('districts');
   
   // Upload state
