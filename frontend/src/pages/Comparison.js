@@ -388,7 +388,7 @@ const Comparison = () => {
         }, { withCredentials: true });
         toast.success('District potential added');
         loadDistrictData();
-      } else {
+      } else if (managementTab === 'kva') {
         if (!newEntry.kva_range) {
           toast.error('KVA Range is required');
           return;
@@ -399,9 +399,33 @@ const Comparison = () => {
         }, { withCredentials: true });
         toast.success('KVA potential added');
         loadKvaData();
+      } else if (managementTab === 'sources') {
+        if (!newEntry.source) {
+          toast.error('Source is required');
+          return;
+        }
+        await axios.post(`${API}/market-potential/sources`, {
+          source: newEntry.source,
+          potential: parseInt(newEntry.potential) || 0,
+          market_size: parseInt(newEntry.market_size) || 0
+        }, { withCredentials: true });
+        toast.success('Source potential added');
+        loadSourcesData();
+      } else if (managementTab === 'segments') {
+        if (!newEntry.segment) {
+          toast.error('Segment is required');
+          return;
+        }
+        await axios.post(`${API}/market-potential/segments`, {
+          segment: newEntry.segment,
+          potential: parseInt(newEntry.potential) || 0,
+          market_size: parseInt(newEntry.market_size) || 0
+        }, { withCredentials: true });
+        toast.success('Segment potential added');
+        loadSegmentsData();
       }
       setShowAddDialog(false);
-      setNewEntry({ dealer: '', district: '', state: '', potential: '', kva_range: '', market_size: '' });
+      setNewEntry({ dealer: '', district: '', state: '', potential: '', kva_range: '', market_size: '', source: '', segment: '' });
       loadPotentialSummary();
       loadComparisonData();
     } catch (error) {
