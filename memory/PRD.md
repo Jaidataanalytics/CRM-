@@ -281,6 +281,28 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] Compare Tab enhanced to show Target vs Predicted vs Actual
 - [x] UI dialog to set targets at all levels
 
+### Source and Segment Market Potential Management (Feb 7, 2026)
+- [x] Added new backend endpoints in `/app/backend/routes/market_potential.py`:
+  - `GET /api/market-potential/sources` - Get all source potentials
+  - `GET /api/market-potential/sources/list` - Get unique sources from leads data
+  - `POST /api/market-potential/sources` - Add/update source potential
+  - `DELETE /api/market-potential/sources/{source}` - Delete source potential
+  - `GET /api/market-potential/segments` - Get all segment potentials
+  - `GET /api/market-potential/segments/list` - Get unique segments from leads data
+  - `POST /api/market-potential/segments` - Add/update segment potential
+  - `DELETE /api/market-potential/segments/{segment}` - Delete segment potential
+- [x] Extended comparison endpoint to support `compare_by=source` and `compare_by=segment`
+- [x] Updated frontend Comparison.js:
+  - Added "Source Potentials" tab in Manage Data section
+  - Added "Segment Potentials" tab in Manage Data section
+  - Added Source/Segment options in Compare by dropdown
+  - Source dropdown populated from leads data in Add Entry dialog
+  - Segment dropdown populated from leads data in Add Entry dialog
+  - Shows unique sources/segments count info from leads data
+- [x] New MongoDB collections:
+  - `market_potential_sources`: {source, potential, market_size, updated_at, updated_by}
+  - `market_potential_segments`: {segment, potential, market_size, updated_at, updated_by}
+
 ## Prioritized Backlog
 
 ### P0 - Critical
