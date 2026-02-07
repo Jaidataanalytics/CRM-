@@ -150,6 +150,32 @@ const Comparison = () => {
     }
   };
 
+  const loadSourcesData = async () => {
+    try {
+      const [potentialsRes, listRes] = await Promise.all([
+        axios.get(`${API}/market-potential/sources`, { withCredentials: true }),
+        axios.get(`${API}/market-potential/sources/list`, { withCredentials: true })
+      ]);
+      setSourcesData(potentialsRes.data.sources || []);
+      setAvailableSources(listRes.data.sources || []);
+    } catch (error) {
+      console.error('Error loading sources data:', error);
+    }
+  };
+
+  const loadSegmentsData = async () => {
+    try {
+      const [potentialsRes, listRes] = await Promise.all([
+        axios.get(`${API}/market-potential/segments`, { withCredentials: true }),
+        axios.get(`${API}/market-potential/segments/list`, { withCredentials: true })
+      ]);
+      setSegmentsData(potentialsRes.data.segments || []);
+      setAvailableSegments(listRes.data.segments || []);
+    } catch (error) {
+      console.error('Error loading segments data:', error);
+    }
+  };
+
   const loadTargets = async () => {
     try {
       const res = await axios.get(`${API}/forecast-enhanced/targets?fiscal_year=${targetsFiscalYear}&entity_type=${entityType}&entity_id=${selectedEntityId}`, { withCredentials: true });
