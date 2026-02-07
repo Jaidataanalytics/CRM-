@@ -114,6 +114,8 @@ const Comparison = () => {
     loadPotentialSummary();
     loadDistrictData();
     loadKvaData();
+    loadSourcesData();
+    loadSegmentsData();
     loadTargets();
   }, []);
 
