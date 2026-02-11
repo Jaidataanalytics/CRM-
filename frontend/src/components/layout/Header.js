@@ -18,9 +18,10 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink, MapPin, Building2, User, Users, Phone, Mail, FileText, Edit } from 'lucide-react';
+import { Search, Bell, X, AlertTriangle, Calendar, Clock, ExternalLink, MapPin, Building2, User, Users, Phone, Mail, FileText, Edit, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useSidebar } from './Sidebar';
 
 const API = '/api';
 
