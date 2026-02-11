@@ -806,7 +806,7 @@ const Comparison = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 text-center">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Potential</p>
                     <p className="text-xl font-bold">{filteredTotals.potential?.toLocaleString() || 0}</p>
