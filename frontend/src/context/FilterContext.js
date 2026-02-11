@@ -90,10 +90,13 @@ export const FilterProvider = ({ children }) => {
     const params = new URLSearchParams();
     const active = getActiveFilters();
     
+    if (active.zone) params.append('zone', active.zone);
     if (active.state) params.append('state', active.state);
+    if (active.area) params.append('area', active.area);
     if (active.dealer) params.append('dealer', active.dealer);
     if (active.employee) params.append('employee_name', active.employee);
     if (active.segment) params.append('segment', active.segment);
+    if (active.source) params.append('source', active.source);
     if (active.enquiryStatus) params.append('enquiry_status', active.enquiryStatus);
     if (active.enquiryStage) params.append('enquiry_stage', active.enquiryStage);
     if (active.kvaMin) params.append('kva_min', active.kvaMin);
