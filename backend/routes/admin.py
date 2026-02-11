@@ -1497,3 +1497,160 @@ async def get_duplicate_detection_status(
         "total_leads": total_leads,
         "duplicate_percentage": round((duplicate_count / max(total_leads, 1)) * 100, 2)
     }
+
+
+
+@router.post("/fix-date-formats")
+async def fix_date_formats(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN))
+):
+    """
+    Fix all date fields in leads collection to use YYYY-MM-DD format.
+    This handles various date formats like "01 Apr 2025", "01-Apr-2025", etc.
+    """
+    db = await get_db(request)
+    
+    from datetime import datetime as dt
+    
+    def parse_date_fix(date_val):
+        """Parse date value to YYYY-MM-DD format"""
+        if not date_val or not isinstance(date_val, str):
+            return None
+        date_val = date_val.strip()
+        if not date_val or date_val.lower() in ['nan', 'none', 'nat', '']:
+            return None
+        # If already in correct format (YYYY-MM-DD), return as-is
+        if len(date_val) >= 10 and date_val[4] == '-' and date_val[7] == '-':
+            try:
+                # Validate it's a real date
+                dt.strptime(date_val[:10], "%Y-%m-%d")
+                return date_val[:10]
+            except:
+                pass
+        # Try various formats
+        formats = [
+            "%d %b %Y",      # 01 Apr 2025
+            "%d-%b-%Y",      # 01-Apr-2025
+            "%d %b %y",      # 01 Apr 25
+            "%d-%b-%y",      # 01-Apr-25
+            "%d/%m/%Y",      # 01/04/2025
+            "%d-%m-%Y",      # 01-04-2025
+            "%d/%m/%y",      # 01/04/25
+            "%d-%m-%y",      # 01-04-25
+            "%Y/%m/%d",      # 2025/04/01
+            "%m/%d/%Y",      # 04/01/2025
+            "%b %d, %Y",     # Apr 01, 2025
+            "%B %d, %Y",     # April 01, 2025
+        ]
+        for fmt in formats:
+            try:
+                return dt.strptime(date_val, fmt).strftime("%Y-%m-%d")
+            except (ValueError, IndexError):
+                continue
+        return None  # Couldn't parse
+    
+    # Date fields to fix
+    date_fields = [
+        'enquiry_date', 'planned_followup_date', 'last_followup_date', 
+        'enquiry_closure_date', 'eo_po_date', 'sales_order_date',
+        'po_date', 'invoice_date', 'dispatch_date', 'oem_order_date',
+        'quotation_date', 'lost_date', 'promise_delivery_date'
+    ]
+    
+    fixed_count = 0
+    leads_updated = 0
+    errors = []
+    
+    try:
+        # Find all leads and check/fix dates
+        cursor = db.leads.find({})
+        async for lead in cursor:
+            updates = {}
+            for field in date_fields:
+                val = lead.get(field)
+                if val and isinstance(val, str):
+                    parsed = parse_date_fix(val)
+                    if parsed and parsed != val:
+                        updates[field] = parsed
+                        fixed_count += 1
+            
+            if updates:
+                updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+                await db.leads.update_one({'_id': lead['_id']}, {'$set': updates})
+                leads_updated += 1
+        
+        # Log activity
+        activity = ActivityLog(
+            user_id=current_user.user_id,
+            action="fix_date_formats",
+            resource_type="lead",
+            details={
+                "leads_updated": leads_updated,
+                "fields_fixed": fixed_count,
+                "date_fields_checked": date_fields
+            }
+        )
+        activity_doc = activity.model_dump()
+        activity_doc["created_at"] = activity_doc["created_at"].isoformat()
+        await db.activity_logs.insert_one(activity_doc)
+        
+        return {
+            "success": True,
+            "leads_updated": leads_updated,
+            "fields_fixed": fixed_count,
+            "message": f"Fixed {fixed_count} date fields across {leads_updated} leads"
+        }
+        
+    except Exception as e:
+        logger.error(f"Date fix failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Date fix failed: {str(e)}")
+
+
+@router.get("/date-format-status")
+async def get_date_format_status(
+    request: Request,
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER))
+):
+    """
+    Get the status of date formats in the leads collection.
+    Returns count of leads with good vs bad date formats for each date field.
+    """
+    db = await get_db(request)
+    
+    date_fields = [
+        'enquiry_date', 'planned_followup_date', 'last_followup_date', 
+        'enquiry_closure_date', 'eo_po_date', 'sales_order_date'
+    ]
+    
+    status = {}
+    total_bad = 0
+    
+    for field in date_fields:
+        # Count good format (YYYY-MM-DD)
+        good_count = await db.leads.count_documents({
+            field: {"$regex": "^20[0-9]{2}-[0-9]{2}-[0-9]{2}"}
+        })
+        # Count bad format (exists, not null, doesn't match YYYY-MM-DD)
+        bad_count = await db.leads.count_documents({
+            field: {"$exists": True, "$ne": None, "$not": {"$regex": "^20"}}
+        })
+        status[field] = {"good": good_count, "bad": bad_count}
+        total_bad += bad_count
+    
+    # Get sample bad dates if any
+    samples = []
+    if total_bad > 0:
+        for field in date_fields:
+            sample = await db.leads.find_one({
+                field: {"$exists": True, "$ne": None, "$not": {"$regex": "^20"}}
+            }, {"enquiry_no": 1, field: 1, "_id": 0})
+            if sample:
+                samples.append({"field": field, "value": sample.get(field), "enquiry_no": sample.get("enquiry_no")})
+    
+    return {
+        "status": status,
+        "total_bad_dates": total_bad,
+        "needs_fix": total_bad > 0,
+        "sample_bad_dates": samples[:5]
+    }
