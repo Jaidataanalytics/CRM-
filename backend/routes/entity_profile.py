@@ -424,7 +424,7 @@ async def get_entity_profile(
                 "total": d["total"],
                 "won": d["won"],
                 "lost": d["lost"],
-                "conversion_rate": round((d["won"] / (d["won"] + d["lost"]) * 100), 1) if (d["won"] + d["lost"]) > 0 else 0
+                "conversion_rate": round((d["won"] / d["total"] * 100), 1) if d["total"] > 0 else 0
             } for d in dealers if d["_id"]]
         }
         
@@ -446,7 +446,7 @@ async def get_entity_profile(
             "total": d["total"],
             "won": d["won"],
             "lost": d["lost"],
-            "conversion_rate": round((d["won"] / (d["won"] + d["lost"]) * 100), 1) if (d["won"] + d["lost"]) > 0 else 0
+            "conversion_rate": round((d["won"] / d["total"] * 100), 1) if d["total"] > 0 else 0
         } for d in districts if d["_id"]]
         
     elif entity_type == "dealer":
