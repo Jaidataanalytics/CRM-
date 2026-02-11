@@ -164,6 +164,7 @@ const Admin = () => {
     loadTrashStats();
     loadEntityProfileConfig();
     loadRecentUploads();
+    loadDateFormatStatus();
   }, []);
 
   useEffect(() => {
