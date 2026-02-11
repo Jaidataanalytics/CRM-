@@ -227,7 +227,8 @@ async def get_entity_profile(
     })
     quotations_sent = await db.leads.count_documents({**base_filter, "quotation_sent": True})
     
-    conversion_rate = (won_leads / (won_leads + lost_leads) * 100) if (won_leads + lost_leads) > 0 else 0
+    # Conversion Rate = Won Leads / Total Leads (not just closed leads)
+    conversion_rate = (won_leads / total_leads * 100) if total_leads > 0 else 0
     call_to_quotation_rate = (quotations_sent / calls_placed * 100) if calls_placed > 0 else 0
     
     profile["kpis"] = {
