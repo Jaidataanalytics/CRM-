@@ -874,6 +874,8 @@ const Comparison = () => {
                   {[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12" />)}
                 </div>
               ) : (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
+                  <div className="min-w-[700px] sm:min-w-0 px-4 sm:px-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
