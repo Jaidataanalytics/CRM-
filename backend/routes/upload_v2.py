@@ -378,13 +378,23 @@ def parse_date(date_val) -> str:
         date_val = date_val.strip()
         if not date_val or date_val.lower() in ['nan', 'none', 'nat']:
             return None
-        # Try various formats
-        formats = ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d-%b-%Y", "%d %b %Y", "%Y/%m/%d"]
-        for fmt in formats:
+        # Try various formats - full string first, then first token
+        formats_full = ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d-%b-%Y", "%d %b %Y", "%d-%b-%y", "%d %b %y", "%Y/%m/%d"]
+        for fmt in formats_full:
             try:
-                return datetime.strptime(date_val.split()[0], fmt).strftime("%Y-%m-%d")
+                return datetime.strptime(date_val, fmt).strftime("%Y-%m-%d")
             except (ValueError, IndexError):
                 continue
+        # Try with just first token for formats like "2025-04-01 00:00:00"
+        try:
+            first_token = date_val.split()[0]
+            for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"]:
+                try:
+                    return datetime.strptime(first_token, fmt).strftime("%Y-%m-%d")
+                except (ValueError, IndexError):
+                    continue
+        except:
+            pass
         return date_val  # Return as-is if can't parse
     return None
 
