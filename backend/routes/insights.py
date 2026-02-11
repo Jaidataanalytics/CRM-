@@ -730,10 +730,10 @@ async def get_district_performance(
             "$addFields": {
                 "conversion_rate": {
                     "$cond": [
-                        {"$eq": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
+                        {"$eq": ["$total_leads", 0]},
                         0,
                         {"$multiply": [
-                            {"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]},
+                            {"$divide": ["$won_leads", "$total_leads"]},
                             100
                         ]}
                     ]
