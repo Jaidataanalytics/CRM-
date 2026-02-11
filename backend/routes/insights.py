@@ -1192,11 +1192,11 @@ async def get_summary_builder(
             row["periods"][period] = value
             row["total"] += value if metric != "conversion_rate" else 0
         
-        # For conversion rate, calculate the total differently
+        # For conversion rate, calculate the total differently - use won/total (not won/closed)
         if metric == "conversion_rate":
             total_won = sum(data_lookup.get(dim, {}).get(p, {}).get("won_leads", 0) for p in time_periods)
-            total_lost = sum(data_lookup.get(dim, {}).get(p, {}).get("lost_leads", 0) for p in time_periods)
-            row["total"] = round((total_won / (total_won + total_lost) * 100), 1) if (total_won + total_lost) > 0 else 0
+            total_leads = sum(data_lookup.get(dim, {}).get(p, {}).get("leads", 0) for p in time_periods)
+            row["total"] = round((total_won / total_leads * 100), 1) if total_leads > 0 else 0
         
         pivot_rows.append(row)
     
@@ -1208,16 +1208,16 @@ async def get_summary_builder(
     for period in time_periods:
         if metric == "conversion_rate":
             total_won = sum(data_lookup.get(dim, {}).get(period, {}).get("won_leads", 0) for dim in dimensions)
-            total_lost = sum(data_lookup.get(dim, {}).get(period, {}).get("lost_leads", 0) for dim in dimensions)
-            column_totals[period] = round((total_won / (total_won + total_lost) * 100), 1) if (total_won + total_lost) > 0 else 0
+            total_leads = sum(data_lookup.get(dim, {}).get(period, {}).get("leads", 0) for dim in dimensions)
+            column_totals[period] = round((total_won / total_leads * 100), 1) if total_leads > 0 else 0
         else:
             column_totals[period] = sum(row["periods"].get(period, 0) for row in pivot_rows)
     
     # Grand total
     if metric == "conversion_rate":
         total_won_all = sum(r["won_leads"] for r in results)
-        total_lost_all = sum(r["lost_leads"] for r in results)
-        grand_total = round((total_won_all / (total_won_all + total_lost_all) * 100), 1) if (total_won_all + total_lost_all) > 0 else 0
+        total_leads_all = sum(r["leads"] for r in results)
+        grand_total = round((total_won_all / total_leads_all * 100), 1) if total_leads_all > 0 else 0
     else:
         grand_total = sum(row["total"] for row in pivot_rows)
     
