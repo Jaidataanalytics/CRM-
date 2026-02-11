@@ -66,7 +66,7 @@ const UserManagement = () => {
 
   const loadFilterOptions = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/leads/filter-options`, { withCredentials: true });
+      const res = await axios.get(`${API}/filters/all`, { withCredentials: true });
       setDealers(res.data.dealers || []);
       setStates(res.data.states || []);
     } catch (error) {
