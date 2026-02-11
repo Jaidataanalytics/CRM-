@@ -533,12 +533,12 @@ async def get_entity_profile(
                 "won": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", won_stages]}, 1, 0]}},
                 "lost": {"$sum": {"$cond": [{"$in": ["$enquiry_stage", lost_stages]}, 1, 0]}}
             }},
-            {"$match": {"$expr": {"$gt": [{"$add": ["$won", "$lost"]}, 5]}}},  # Min 5 closed leads
+            {"$match": {"$expr": {"$gt": ["$total", 5]}}},  # Min 5 total leads
             {"$addFields": {
                 "conversion_rate": {
                     "$cond": [
-                        {"$gt": [{"$add": ["$won", "$lost"]}, 0]},
-                        {"$multiply": [{"$divide": ["$won", {"$add": ["$won", "$lost"]}]}, 100]},
+                        {"$gt": ["$total", 0]},
+                        {"$multiply": [{"$divide": ["$won", "$total"]}, 100]},
                         0
                     ]
                 }
