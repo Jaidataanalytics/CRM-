@@ -35,6 +35,8 @@ class UserCreate(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
     user_id: str
     email: str
     name: str
