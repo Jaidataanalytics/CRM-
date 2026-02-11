@@ -111,6 +111,12 @@ const Admin = () => {
   const [runningCleanup, setRunningCleanup] = useState(false);
   const [cleanupResult, setCleanupResult] = useState(null);
   
+  // Date Fix state
+  const [dateFormatStatus, setDateFormatStatus] = useState(null);
+  const [loadingDateStatus, setLoadingDateStatus] = useState(false);
+  const [fixingDates, setFixingDates] = useState(false);
+  const [dateFixResult, setDateFixResult] = useState(null);
+  
   // Entity Profile Config state
   const [entityProfileConfig, setEntityProfileConfig] = useState(null);
   const [availableKpis, setAvailableKpis] = useState({ built_in_metrics: [], configurable_metrics: [] });
