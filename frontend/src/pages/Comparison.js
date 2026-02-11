@@ -77,6 +77,9 @@ const Comparison = () => {
   const [availableSegments, setAvailableSegments] = useState([]);
   const [managementTab, setManagementTab] = useState('districts');
   
+  // Checkbox selection state for comparison items
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  
   // Upload state
   const [uploading, setUploading] = useState(false);
   
