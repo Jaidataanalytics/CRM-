@@ -205,6 +205,43 @@ const Admin = () => {
     }
   };
 
+  // Date Format Functions
+  const loadDateFormatStatus = async () => {
+    setLoadingDateStatus(true);
+    try {
+      const res = await axios.get(`${API}/admin/date-format-status`, { withCredentials: true });
+      setDateFormatStatus(res.data);
+    } catch (error) {
+      console.error('Error loading date format status:', error);
+    } finally {
+      setLoadingDateStatus(false);
+    }
+  };
+
+  const runDateFix = async () => {
+    if (!window.confirm('This will scan all leads and fix date formats to YYYY-MM-DD. This may take a few minutes for large datasets. Continue?')) {
+      return;
+    }
+    
+    setFixingDates(true);
+    setDateFixResult(null);
+    try {
+      const res = await axios.post(`${API}/admin/fix-date-formats`, {}, { 
+        withCredentials: true,
+        timeout: 300000 // 5 minute timeout for large datasets
+      });
+      setDateFixResult(res.data);
+      toast.success(`Fixed ${res.data.fields_fixed} date fields across ${res.data.leads_updated} leads`);
+      loadDateFormatStatus();
+      loadDataStats();
+    } catch (error) {
+      console.error('Error fixing dates:', error);
+      toast.error('Failed to fix dates: ' + (error.response?.data?.detail || error.message));
+    } finally {
+      setFixingDates(false);
+    }
+  };
+
   const runDataImport = async (leadsOnly = false, fullReset = false) => {
     const message = fullReset 
       ? 'This will DELETE ALL data and import fresh data from export. This is a COMPLETE RESET. Are you absolutely sure?'
