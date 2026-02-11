@@ -167,7 +167,7 @@ export const FilterBar = () => {
       </div>
 
       {expanded && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mt-3 sm:mt-4">
           {/* State */}
           <div className="space-y-1">
             <label className="text-xs font-medium text-muted-foreground">State</label>
