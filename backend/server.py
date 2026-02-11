@@ -696,12 +696,22 @@ async def run_heavy_migrations_background():
     Run heavy migrations in the background to avoid blocking server startup.
     This allows the server to respond to health checks immediately.
     """
+    # Small delay to let server fully start first
+    await asyncio.sleep(5)
+    
     try:
         logger.info("Starting background migrations...")
         
-        # These are heavier migrations that can take time
-        await migrate_detect_duplicates()
-        await migrate_qualified_status()
+        # These are heavier migrations that can take time - run with timeout
+        try:
+            await asyncio.wait_for(migrate_detect_duplicates(), timeout=120)
+        except asyncio.TimeoutError:
+            logger.warning("Duplicate detection migration timed out - will retry next startup")
+        
+        try:
+            await asyncio.wait_for(migrate_qualified_status(), timeout=60)
+        except asyncio.TimeoutError:
+            logger.warning("Qualified status migration timed out - will retry next startup")
         
         logger.info("Background migrations completed successfully")
     except Exception as e:
