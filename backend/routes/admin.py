@@ -902,7 +902,7 @@ async def get_recent_uploads(
     cutoff_str = cutoff_date.isoformat()
     
     # Get upload activities from activity logs
-    upload_actions = ["bulk_upload", "lost_leads_upload", "historical_data_upload"]
+    upload_actions = ["bulk_upload", "lost_leads_upload", "historical_data_upload", "lead_upload", "so_upload"]
     
     activities = await db.activity_logs.find(
         {
