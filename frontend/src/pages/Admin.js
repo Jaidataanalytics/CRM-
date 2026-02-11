@@ -2253,6 +2253,105 @@ const Admin = () => {
             </CardContent>
           </Card>
 
+          {/* Data Maintenance Card */}
+          <Card className="border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-600">
+                <Wrench className="h-5 w-5" />
+                Data Maintenance
+              </CardTitle>
+              <CardDescription>
+                Fix common data issues like incorrect date formats. Use these tools to clean up data after problematic uploads.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Date Format Status */}
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-blue-800">Date Format Check</h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadDateFormatStatus}
+                    disabled={loadingDateStatus}
+                  >
+                    {loadingDateStatus ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    <span className="ml-1">Check Status</span>
+                  </Button>
+                </div>
+                
+                {dateFormatStatus ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      {dateFormatStatus.needs_fix ? (
+                        <Badge variant="destructive" className="gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {dateFormatStatus.total_bad_dates} dates need fixing
+                        </Badge>
+                      ) : (
+                        <Badge variant="default" className="gap-1 bg-green-500">
+                          <CheckCircle className="h-3 w-3" />
+                          All dates properly formatted
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {dateFormatStatus.needs_fix && dateFormatStatus.sample_bad_dates?.length > 0 && (
+                      <div className="text-sm text-blue-700">
+                        <p className="font-medium mb-1">Sample bad dates:</p>
+                        <div className="space-y-1 bg-white/50 p-2 rounded">
+                          {dateFormatStatus.sample_bad_dates.map((s, i) => (
+                            <div key={i} className="font-mono text-xs">
+                              {s.enquiry_no}: {s.field} = "{s.value}"
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {dateFormatStatus.needs_fix && (
+                      <Button
+                        onClick={runDateFix}
+                        disabled={fixingDates}
+                        className="w-full bg-blue-600 hover:bg-blue-700"
+                      >
+                        {fixingDates ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Fixing dates... (this may take a few minutes)
+                          </>
+                        ) : (
+                          <>
+                            <Wrench className="h-4 w-4 mr-2" />
+                            Fix All Date Formats
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    
+                    {dateFixResult && (
+                      <div className="p-3 bg-green-50 border border-green-200 rounded text-green-800">
+                        <div className="flex items-center gap-2 font-medium">
+                          <CheckCircle className="h-4 w-4" />
+                          Fix Complete!
+                        </div>
+                        <p className="text-sm mt-1">
+                          Fixed {dateFixResult.fields_fixed} date fields across {dateFixResult.leads_updated} leads
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-blue-600">Click "Check Status" to scan for date format issues</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Delete Leads Card */}
           <Card className="border-red-200">
             <CardHeader>
