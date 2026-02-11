@@ -947,6 +947,8 @@ const Comparison = () => {
                     )}
                   </TableBody>
                 </Table>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
