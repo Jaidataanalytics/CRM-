@@ -171,17 +171,28 @@ export const Header = () => {
   };
 
   return (
-    <div className="flex items-center gap-4 px-4 py-2 bg-white border-b dark:bg-slate-900 dark:border-slate-800">
+    <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 bg-white border-b dark:bg-slate-900 dark:border-slate-800">
+      {/* Mobile Menu Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden shrink-0"
+        onClick={() => setMobileOpen(true)}
+        data-testid="mobile-menu-btn"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
       {/* Global Search */}
       <div className="relative flex-1 max-w-md" ref={searchRef}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search leads, dealers, employees..."
+            placeholder="Search leads, dealers..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             onFocus={() => searchQuery.length >= 2 && setShowResults(true)}
-            className="pl-10 pr-10"
+            className="pl-10 pr-10 text-sm"
           />
           {searchQuery && (
             <Button
