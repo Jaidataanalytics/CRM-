@@ -27,6 +27,7 @@ const API = '/api';
 
 export const Header = () => {
   const navigate = useNavigate();
+  const { setMobileOpen } = useSidebar();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState({ leads: [], entities: [] });
   const [isSearching, setIsSearching] = useState(false);
