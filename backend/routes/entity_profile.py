@@ -332,7 +332,7 @@ async def get_entity_profile(
         "total": s["total"],
         "won": s["won"],
         "lost": s["lost"],
-        "conversion_rate": round((s["won"] / (s["won"] + s["lost"]) * 100), 1) if (s["won"] + s["lost"]) > 0 else 0
+        "conversion_rate": round((s["won"] / s["total"] * 100), 1) if s["total"] > 0 else 0
     } for s in segment_data]
     
     # Follow-up Status
