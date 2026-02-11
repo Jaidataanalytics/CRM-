@@ -877,6 +877,13 @@ const Comparison = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={selectedItems.size === comparisonData.length && comparisonData.length > 0}
+                          onCheckedChange={(checked) => checked ? selectAll() : deselectAll()}
+                          data-testid="select-all-checkbox"
+                        />
+                      </TableHead>
                       <TableHead>{compareBy.charAt(0).toUpperCase() + compareBy.slice(1)}</TableHead>
                       {compareBy === 'dealer' && <TableHead className="text-right">Districts</TableHead>}
                       {compareBy === 'state' && <TableHead className="text-right">Dealers</TableHead>}
@@ -889,7 +896,14 @@ const Comparison = () => {
                   </TableHeader>
                   <TableBody>
                     {comparisonData.map((item, idx) => (
-                      <TableRow key={idx}>
+                      <TableRow key={idx} className={!selectedItems.has(item.name) ? 'opacity-40' : ''}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedItems.has(item.name)}
+                            onCheckedChange={() => toggleItem(item.name)}
+                            data-testid={`row-checkbox-${idx}`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {item.name}
                           {item.state && <span className="text-xs text-muted-foreground ml-2">({item.state})</span>}
