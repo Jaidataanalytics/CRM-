@@ -1144,8 +1144,8 @@ async def get_enhanced_entity_analytics(
         {"$addFields": {
             "conversion_rate": {
                 "$cond": [
-                    {"$gt": [{"$add": ["$won_leads", "$lost_leads"]}, 0]},
-                    {"$multiply": [{"$divide": ["$won_leads", {"$add": ["$won_leads", "$lost_leads"]}]}, 100]},
+                    {"$gt": ["$total_leads", 0]},
+                    {"$multiply": [{"$divide": ["$won_leads", "$total_leads"]}, 100]},
                     0
                 ]
             }
