@@ -58,6 +58,18 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] **Summary Indicator**: Shows "(X of Y selected)" in summary title when filtering active
 - [x] **Tested**: 18/18 tests passed via testing agent
 
+### Capacitor Android App Setup (Feb 11, 2026) - NEW
+- [x] **Capacitor 6 Installed**: @capacitor/core, @capacitor/cli, @capacitor/android, @capacitor/status-bar, @capacitor/splash-screen
+- [x] **Android Project Generated**: Full native Android project at `frontend/android/`
+- [x] **App Configuration**: App ID `com.shardalms.app`, loads from `https://www.shardalms.com`
+- [x] **Custom App Icons**: Sharda logo icons generated for all Android densities (mdpi to xxxhdpi)
+- [x] **Splash Screen**: Dark navy (#0f172a) background with centered Sharda logo
+- [x] **Status Bar**: Dark themed to match app sidebar
+- [x] **Play Store Icon**: 512x512 icon at `android/app/src/main/ic_launcher-playstore.png`
+- [x] **Build Guide**: Complete guide at `frontend/ANDROID_BUILD_GUIDE.md`
+- [x] **Build Script**: `frontend/build-android.sh` for CLI builds
+- [ ] **APK Build**: Cannot build in this ARM64 container - needs Android Studio on x86 machine
+
 ### Mobile & Tablet Responsive Design (Feb 11, 2026) - NEW
 - [x] **Responsive Sidebar**: Desktop sidebar hidden below 1024px, replaced with hamburger menu + Sheet drawer
 - [x] **Hamburger Menu**: Visible on mobile/tablet, opens full navigation drawer from left side
