@@ -1188,6 +1188,8 @@ async def get_summary_builder(
                 value = cell["won_leads"]
             elif metric == "lost_leads":
                 value = cell["lost_leads"]
+            elif metric == "open_leads":
+                value = cell["open_leads"]
             elif metric == "conversion_rate":
                 value = cell["conversion_rate"]
             else:
