@@ -310,7 +310,7 @@ export const Header = () => {
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[420px] p-0 max-h-[80vh] flex flex-col" align="end">
+        <PopoverContent className="w-[calc(100vw-2rem)] sm:w-[420px] p-0 max-h-[80vh] flex flex-col" align="end">
           <div className="p-4 border-b shrink-0">
             <h4 className="font-semibold flex items-center gap-2">
               <Bell className="h-4 w-4" />
