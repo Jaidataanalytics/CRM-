@@ -32,11 +32,17 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { 
   TrendingUp, TrendingDown, Minus, Plus, MapPin, Building, Users, User,
   Target, BarChart3, Trash2, Save, RefreshCw, Map, Globe, Download,
-  Upload, FileSpreadsheet, Edit, X, Zap, AlertCircle
+  Upload, FileSpreadsheet, Edit, X, Zap, AlertCircle, Filter, CheckSquare
 } from 'lucide-react';
 import {
   BarChart,
