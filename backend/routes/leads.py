@@ -306,9 +306,12 @@ async def get_users_for_dropdown(
 async def export_leads(
     request: Request,
     current_user: User = Depends(get_current_user),
+    zone: Optional[str] = None,
     state: Optional[str] = None,
+    area: Optional[str] = None,
     dealer: Optional[str] = None,
     segment: Optional[str] = None,
+    source: Optional[str] = None,
     employee_name: Optional[str] = None,
     enquiry_status: Optional[str] = None,
     enquiry_stage: Optional[str] = None,
@@ -335,12 +338,18 @@ async def export_leads(
     query = {"deleted_at": {"$exists": False}}
     
     # Basic filters
+    if zone:
+        query["zone"] = zone
     if state:
         query["state"] = state
+    if area:
+        query["area_office"] = area
     if dealer:
         query["dealer"] = dealer
     if segment:
         query["segment"] = segment
+    if source:
+        query["source"] = source
     if employee_name:
         query["employee_name"] = employee_name
     if enquiry_status:
