@@ -106,8 +106,8 @@ export const FilterBar = () => {
   const activeCount = Object.keys(activeFilters).filter(k => !['startDate', 'endDate'].includes(k)).length;
 
   return (
-    <div className="backdrop-blur-md bg-background/80 border-b border-border/40 sticky top-0 z-20 p-4">
-      <div className="flex items-center gap-4 flex-wrap">
+    <div className="backdrop-blur-md bg-background/80 border-b border-border/40 sticky top-0 z-20 px-3 py-2 sm:p-4">
+      <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
         <Button
           variant={expanded ? "default" : "outline"}
           size="sm"
@@ -115,7 +115,7 @@ export const FilterBar = () => {
           className="gap-2"
         >
           <Filter className="h-4 w-4" />
-          Filters
+          <span className="hidden sm:inline">Filters</span>
           {activeCount > 0 && (
             <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
               {activeCount}
@@ -124,12 +124,12 @@ export const FilterBar = () => {
         </Button>
 
         {/* Date Range */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {filters.startDate ? format(new Date(filters.startDate), 'MMM dd, yyyy') : 'Start Date'}
+              <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                {filters.startDate ? format(new Date(filters.startDate), 'MMM dd, yyyy') : 'Start'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -141,12 +141,12 @@ export const FilterBar = () => {
               />
             </PopoverContent>
           </Popover>
-          <span className="text-muted-foreground">to</span>
+          <span className="text-muted-foreground text-xs">to</span>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                {filters.endDate ? format(new Date(filters.endDate), 'MMM dd, yyyy') : 'End Date'}
+              <Button variant="outline" size="sm" className="gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3">
+                <CalendarIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                {filters.endDate ? format(new Date(filters.endDate), 'MMM dd, yyyy') : 'End'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
