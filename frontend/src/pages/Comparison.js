@@ -793,35 +793,42 @@ const Comparison = () => {
           </div>
 
           {/* Totals Summary */}
-          {totals && Object.keys(totals).length > 0 && (
+          {filteredTotals && Object.keys(filteredTotals).length > 0 && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Overall Summary</CardTitle>
+                <CardTitle className="text-lg">
+                  Overall Summary
+                  {selectedItems.size < comparisonData.length && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      ({selectedItems.size} of {comparisonData.length} selected)
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                   <div>
                     <p className="text-sm text-muted-foreground">Total Potential</p>
-                    <p className="text-xl font-bold">{totals.potential?.toLocaleString() || 0}</p>
+                    <p className="text-xl font-bold">{filteredTotals.potential?.toLocaleString() || 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Current Sales</p>
-                    <p className="text-xl font-bold text-blue-600">{totals.current_sales?.toLocaleString() || 0}</p>
+                    <p className="text-xl font-bold text-blue-600">{filteredTotals.current_sales?.toLocaleString() || 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Last Year Sales</p>
-                    <p className="text-xl font-bold text-gray-600">{totals.last_year_sales?.toLocaleString() || 0}</p>
+                    <p className="text-xl font-bold text-gray-600">{filteredTotals.last_year_sales?.toLocaleString() || 0}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Market Share</p>
-                    <p className="text-xl font-bold text-purple-600">{totals.market_share || 0}%</p>
+                    <p className="text-xl font-bold text-purple-600">{filteredTotals.market_share || 0}%</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">YoY Change</p>
                     <div className="flex items-center justify-center gap-1">
-                      {getTrendIcon(totals.yoy_change)}
-                      <p className={`text-xl font-bold ${totals.yoy_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {totals.yoy_change >= 0 ? '+' : ''}{totals.yoy_change || 0}%
+                      {getTrendIcon(filteredTotals.yoy_change)}
+                      <p className={`text-xl font-bold ${filteredTotals.yoy_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {filteredTotals.yoy_change >= 0 ? '+' : ''}{filteredTotals.yoy_change || 0}%
                       </p>
                     </div>
                   </div>
