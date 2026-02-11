@@ -522,15 +522,57 @@ const Comparison = () => {
     return 'text-red-600 bg-red-50';
   };
 
-  // Chart data for top 10
+  // Auto-select all items when comparison data changes
+  useEffect(() => {
+    if (comparisonData.length > 0) {
+      setSelectedItems(new Set(comparisonData.map(item => item.name)));
+    }
+  }, [comparisonData]);
+
+  // Filtered data based on selected checkboxes
+  const filteredComparisonData = useMemo(() => {
+    if (selectedItems.size === 0 && comparisonData.length > 0) return comparisonData;
+    return comparisonData.filter(item => selectedItems.has(item.name));
+  }, [comparisonData, selectedItems]);
+
+  // Recalculate totals based on filtered data
+  const filteredTotals = useMemo(() => {
+    if (filteredComparisonData.length === 0) return totals;
+    const totalPotential = filteredComparisonData.reduce((s, d) => s + (d.potential || 0), 0);
+    const totalCurrent = filteredComparisonData.reduce((s, d) => s + (d.current_sales || 0), 0);
+    const totalLy = filteredComparisonData.reduce((s, d) => s + (d.last_year_sales || 0), 0);
+    const marketShare = totalPotential > 0 ? (totalCurrent / totalPotential * 100) : 0;
+    const yoyChange = totalLy > 0 ? ((totalCurrent - totalLy) / totalLy * 100) : 0;
+    return {
+      potential: totalPotential,
+      current_sales: totalCurrent,
+      last_year_sales: totalLy,
+      market_share: Math.round(marketShare * 10) / 10,
+      yoy_change: Math.round(yoyChange * 10) / 10
+    };
+  }, [filteredComparisonData, totals]);
+
+  // Chart data for top 10 (from filtered data)
   const chartData = useMemo(() => {
-    return comparisonData.slice(0, 10).map(item => ({
+    return filteredComparisonData.slice(0, 10).map(item => ({
       name: item.name?.substring(0, 15) || 'Unknown',
       current: item.current_sales,
       lastYear: item.last_year_sales,
       potential: item.potential
     }));
-  }, [comparisonData]);
+  }, [filteredComparisonData]);
+
+  const toggleItem = (name) => {
+    setSelectedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const selectAll = () => setSelectedItems(new Set(comparisonData.map(i => i.name)));
+  const deselectAll = () => setSelectedItems(new Set());
 
   if (loading && !potentialSummary) {
     return (
