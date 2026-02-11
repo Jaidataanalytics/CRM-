@@ -725,11 +725,11 @@ async def startup_db_client():
         return
     
     try:
-        # Seed default admin user if not exists
-        import bcrypt
-        admin_password_hash = bcrypt.hashpw("admin".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        # Seed default admin user if not exists (only hash password if creating new user)
         existing_admin = await db.users.find_one({"username": "admin"})
         if not existing_admin:
+            import bcrypt
+            admin_password_hash = bcrypt.hashpw("admin".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
             admin_user = {
                 "user_id": "user_admin_default",
                 "username": "admin",
@@ -742,13 +742,6 @@ async def startup_db_client():
             }
             await db.users.insert_one(admin_user)
             logger.info("Default admin user created (username: admin, password: admin)")
-        else:
-            # Update existing admin password to 'admin' for preview and fix role if lowercase
-            await db.users.update_one(
-                {"username": "admin"},
-                {"$set": {"password_hash": admin_password_hash, "role": "Admin"}}
-            )
-            logger.info("Admin user password updated")
         
         # Run FAST migrations synchronously (these are quick and essential)
         await migrate_metric_settings()
