@@ -29,7 +29,7 @@ const ActivityLogs = () => {
 
   const loadLogs = useCallback(async () => {
     try {
-      const res = await axios.get(`${API}/admin/audit-logs?page=${logsPage}&limit=20`, { withCredentials: true });
+      const res = await axios.get(`${API}/admin/activity-logs?page=${logsPage}&limit=20`, { withCredentials: true });
       setLogs(res.data.logs || []);
       setLogsTotalPages(res.data.pages || 1);
     } catch (error) {
