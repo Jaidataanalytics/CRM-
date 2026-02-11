@@ -726,8 +726,8 @@ async def startup_db_client():
     
     try:
         # Seed default admin user if not exists
-        import hashlib
-        admin_password_hash = hashlib.sha256("admin".encode()).hexdigest()
+        import bcrypt
+        admin_password_hash = bcrypt.hashpw("admin".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         existing_admin = await db.users.find_one({"username": "admin"})
         if not existing_admin:
             admin_user = {
