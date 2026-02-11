@@ -723,7 +723,7 @@ const Comparison = () => {
 
         <TabsContent value="comparison" className="space-y-6">
           {/* Comparison Controls */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Label>Compare by:</Label>
               <Select value={compareBy} onValueChange={setCompareBy}>
@@ -740,6 +740,52 @@ const Comparison = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Item Selection Popover */}
+            {comparisonData.length > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="filter-items-btn">
+                    <Filter className="h-4 w-4 mr-2" />
+                    {selectedItems.size} of {comparisonData.length} selected
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3" align="start">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">
+                        Select {compareBy.charAt(0).toUpperCase() + compareBy.slice(1)}s
+                      </p>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={selectAll} data-testid="select-all-btn">
+                          All
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={deselectAll} data-testid="deselect-all-btn">
+                          None
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-1 border-t pt-2">
+                      {comparisonData.map((item) => (
+                        <label
+                          key={item.name}
+                          className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted cursor-pointer text-sm"
+                          data-testid={`filter-item-${item.name}`}
+                        >
+                          <Checkbox
+                            checked={selectedItems.has(item.name)}
+                            onCheckedChange={() => toggleItem(item.name)}
+                          />
+                          <span className="truncate flex-1">{item.name}</span>
+                          <span className="text-xs text-muted-foreground tabular-nums">{item.current_sales}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+
             <Button variant="outline" size="sm" onClick={loadComparisonData} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
