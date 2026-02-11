@@ -761,38 +761,42 @@ async def startup_db_client():
         await migrate_quotation_sent_flag()
         
         # Create indexes for better query performance (including COMPOUND indexes for KPIs)
-        # Single field indexes
-        await db.leads.create_index("lead_id", unique=True)
-        await db.leads.create_index("enquiry_no")
-        await db.leads.create_index("state")
-        await db.leads.create_index("dealer")
-        await db.leads.create_index("employee_name")
-        await db.leads.create_index("segment")
-        await db.leads.create_index("enquiry_status")
-        await db.leads.create_index("enquiry_date")
-        await db.leads.create_index("is_duplicate")
-        await db.leads.create_index("phone_number")
-        await db.leads.create_index("location")
-        await db.leads.create_index("enquiry_stage")
-        await db.leads.create_index("enquiry_type")
-        await db.leads.create_index("has_so_record")
-        await db.leads.create_index("dispatch_status")
-        
-        # COMPOUND indexes for KPI queries (critical for performance)
-        await db.leads.create_index([("is_duplicate", 1), ("enquiry_date", 1)])
-        await db.leads.create_index([("enquiry_stage", 1), ("is_duplicate", 1)])
-        await db.leads.create_index([("enquiry_status", 1), ("enquiry_type", 1)])
-        await db.leads.create_index([("has_so_record", 1), ("enquiry_date", 1)])
-        await db.leads.create_index([("dispatch_status", 1), ("enquiry_stage", 1)])
-        
-        # User related indexes
-        await db.users.create_index("user_id", unique=True)
-        await db.users.create_index("email", unique=True)
-        await db.user_sessions.create_index("session_token", unique=True)
-        await db.user_sessions.create_index("user_id")
-        await db.activity_logs.create_index("user_id")
-        await db.activity_logs.create_index("created_at")
-        logger.info("Database indexes created successfully")
+        # Use background=True to avoid blocking
+        try:
+            # Single field indexes
+            await db.leads.create_index("lead_id", unique=True, background=True)
+            await db.leads.create_index("enquiry_no", background=True)
+            await db.leads.create_index("state", background=True)
+            await db.leads.create_index("dealer", background=True)
+            await db.leads.create_index("employee_name", background=True)
+            await db.leads.create_index("segment", background=True)
+            await db.leads.create_index("enquiry_status", background=True)
+            await db.leads.create_index("enquiry_date", background=True)
+            await db.leads.create_index("is_duplicate", background=True)
+            await db.leads.create_index("phone_number", background=True)
+            await db.leads.create_index("location", background=True)
+            await db.leads.create_index("enquiry_stage", background=True)
+            await db.leads.create_index("enquiry_type", background=True)
+            await db.leads.create_index("has_so_record", background=True)
+            await db.leads.create_index("dispatch_status", background=True)
+            
+            # COMPOUND indexes for KPI queries (critical for performance)
+            await db.leads.create_index([("is_duplicate", 1), ("enquiry_date", 1)], background=True)
+            await db.leads.create_index([("enquiry_stage", 1), ("is_duplicate", 1)], background=True)
+            await db.leads.create_index([("enquiry_status", 1), ("enquiry_type", 1)], background=True)
+            await db.leads.create_index([("has_so_record", 1), ("enquiry_date", 1)], background=True)
+            await db.leads.create_index([("dispatch_status", 1), ("enquiry_stage", 1)], background=True)
+            
+            # User related indexes
+            await db.users.create_index("user_id", unique=True, background=True)
+            await db.users.create_index("email", unique=True, background=True)
+            await db.user_sessions.create_index("session_token", unique=True, background=True)
+            await db.user_sessions.create_index("user_id", background=True)
+            await db.activity_logs.create_index("user_id", background=True)
+            await db.activity_logs.create_index("created_at", background=True)
+            logger.info("Database indexes created successfully")
+        except Exception as idx_err:
+            logger.warning(f"Index creation warning (non-fatal): {str(idx_err)}")
         
         # Schedule HEAVY migrations to run in background (non-blocking)
         # This allows the server to respond to health checks immediately
