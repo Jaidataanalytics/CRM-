@@ -726,10 +726,10 @@ async def startup_db_client():
     
     try:
         # Seed default admin user if not exists
+        import hashlib
+        admin_password_hash = hashlib.sha256("admin".encode()).hexdigest()
         existing_admin = await db.users.find_one({"username": "admin"})
         if not existing_admin:
-            import hashlib
-            admin_password_hash = hashlib.sha256("admin123".encode()).hexdigest()
             admin_user = {
                 "user_id": "user_admin_default",
                 "username": "admin",
@@ -741,9 +741,14 @@ async def startup_db_client():
                 "created_at": datetime.now(timezone.utc).isoformat()
             }
             await db.users.insert_one(admin_user)
-            logger.info("Default admin user created (username: admin, password: admin123)")
+            logger.info("Default admin user created (username: admin, password: admin)")
         else:
-            logger.info("Admin user already exists")
+            # Update existing admin password to 'admin' for preview
+            await db.users.update_one(
+                {"username": "admin"},
+                {"$set": {"password_hash": admin_password_hash}}
+            )
+            logger.info("Admin user password updated")
         
         # Run FAST migrations synchronously (these are quick and essential)
         await migrate_metric_settings()
