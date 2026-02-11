@@ -1157,10 +1157,11 @@ async def get_summary_builder(
             if dim not in data_lookup:
                 data_lookup[dim] = {}
             data_lookup[dim][period] = {
-                "leads": r["total_leads"],
+                "leads": r["leads"],
                 "qty": r["total_qty"],
                 "won_leads": r["won_leads"],
                 "lost_leads": r["lost_leads"],
+                "open_leads": r["open_leads"],
                 "won_qty": r["won_qty"],
                 "conversion_rate": round(r["conversion_rate"], 1)
             }
@@ -1175,7 +1176,7 @@ async def get_summary_builder(
         }
         for period in time_periods:
             cell = data_lookup.get(dim, {}).get(period, {
-                "leads": 0, "qty": 0, "won_leads": 0, "lost_leads": 0, "won_qty": 0, "conversion_rate": 0
+                "leads": 0, "qty": 0, "won_leads": 0, "lost_leads": 0, "open_leads": 0, "won_qty": 0, "conversion_rate": 0
             })
             
             # Select the metric value
