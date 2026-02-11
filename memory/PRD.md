@@ -304,6 +304,18 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
   - `market_potential_sources`: {source, potential, market_size, updated_at, updated_by}
   - `market_potential_segments`: {segment, potential, market_size, updated_at, updated_by}
 
+### Admin Page Bug Fixes & Data Maintenance Tools (Feb 11, 2026)
+- [x] Fixed Activity Logs not loading (was calling wrong endpoint `/api/admin/audit-logs`, changed to `/api/admin/activity-logs`)
+- [x] Fixed filter options 404 error in User Management (changed from `/api/leads/filter-options` to `/api/filters/all`)
+- [x] Fixed Recent Uploads not showing new uploads (added `lead_upload` and `so_upload` to allowed action types)
+- [x] Fixed date parsing in upload_v2.py to handle "dd MMM yyyy" format (e.g., "01 Apr 2025")
+- [x] Added **Data Maintenance** section to Admin > Data Management tab:
+  - `GET /api/admin/date-format-status` - Check for date format issues across all date fields
+  - `POST /api/admin/fix-date-formats` - Fix all date fields to YYYY-MM-DD format
+  - UI shows count of leads with bad dates and sample values
+  - "Fix All Date Formats" button to run bulk fix
+- [x] Changed demo credentials to `admin` / `admin` for preview environment
+
 ## Prioritized Backlog
 
 ### P0 - Critical
