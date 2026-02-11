@@ -58,6 +58,18 @@ Build a comprehensive leads management dashboard for tracking sales leads, forec
 - [x] **Summary Indicator**: Shows "(X of Y selected)" in summary title when filtering active
 - [x] **Tested**: 18/18 tests passed via testing agent
 
+### Mobile & Tablet Responsive Design (Feb 11, 2026) - NEW
+- [x] **Responsive Sidebar**: Desktop sidebar hidden below 1024px, replaced with hamburger menu + Sheet drawer
+- [x] **Hamburger Menu**: Visible on mobile/tablet, opens full navigation drawer from left side
+- [x] **Auto-Close on Navigate**: Mobile sidebar closes automatically when user clicks a nav link
+- [x] **Responsive Grids**: Dashboard KPIs (2-col mobile, 4-col desktop), FilterBar (1-col mobile, 6-col desktop)
+- [x] **Compact Filter Bar**: Smaller date buttons, compact spacing on mobile
+- [x] **Scrollable Tables**: Comparison table horizontally scrollable on mobile
+- [x] **Responsive Headers**: Page headers stack vertically on mobile, horizontal on desktop
+- [x] **Responsive Padding**: Content area uses smaller padding on mobile (p-3 vs p-6)
+- [x] **SidebarContext**: Shared state between Header (hamburger button) and Sidebar (drawer)
+- [x] **Tested**: 17/17 tests passed via testing agent across 390px, 768px, and 1920px viewports
+
 ### Source and Segment Market Potential (Feb 7, 2026)
 - [x] Added source/segment comparison endpoints and management UI
 - [x] Extended comparison to support compare_by=source and compare_by=segment
