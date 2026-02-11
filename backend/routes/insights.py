@@ -964,7 +964,7 @@ async def get_lost_leads_breakdown(
 async def get_summary_builder(
     request: Request,
     current_user: User = Depends(get_current_user),
-    metric: str = Query("leads", enum=["leads", "qty", "won_leads", "lost_leads", "conversion_rate"]),
+    metric: str = Query("leads", enum=["leads", "qty", "won_leads", "lost_leads", "open_leads", "conversion_rate"]),
     time_frame: str = Query("monthly", enum=["monthly", "quarterly", "yearly"]),
     dimension: str = Query("employee", enum=["employee", "dealer", "state", "district", "segment", "source", "kva"]),
     start_date: Optional[str] = None,
