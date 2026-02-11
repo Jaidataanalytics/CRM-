@@ -1098,13 +1098,16 @@ async def get_summary_builder(
                     "dimension": dimension_field,
                     "time_period": "$time_period"
                 },
-                "total_leads": {"$sum": 1},
+                "leads": {"$sum": 1},
                 "total_qty": {"$sum": {"$ifNull": ["$qty", 0]}},
                 "won_leads": {
                     "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, 1, 0]}
                 },
                 "lost_leads": {
                     "$sum": {"$cond": [{"$in": ["$enquiry_stage", LOST_STAGES]}, 1, 0]}
+                },
+                "open_leads": {
+                    "$sum": {"$cond": [{"$not": {"$in": ["$enquiry_stage", WON_STAGES + LOST_STAGES]}}, 1, 0]}
                 },
                 "won_qty": {
                     "$sum": {"$cond": [{"$in": ["$enquiry_stage", WON_STAGES]}, {"$ifNull": ["$qty", 0]}, 0]}
