@@ -735,7 +735,7 @@ async def startup_db_client():
                 "username": "admin",
                 "email": "admin@sharda.com",
                 "name": "Administrator",
-                "role": "admin",
+                "role": "Admin",
                 "password_hash": admin_password_hash,
                 "is_active": True,
                 "created_at": datetime.now(timezone.utc).isoformat()
@@ -743,10 +743,10 @@ async def startup_db_client():
             await db.users.insert_one(admin_user)
             logger.info("Default admin user created (username: admin, password: admin)")
         else:
-            # Update existing admin password to 'admin' for preview
+            # Update existing admin password to 'admin' for preview and fix role if lowercase
             await db.users.update_one(
                 {"username": "admin"},
-                {"$set": {"password_hash": admin_password_hash}}
+                {"$set": {"password_hash": admin_password_hash, "role": "Admin"}}
             )
             logger.info("Admin user password updated")
         
