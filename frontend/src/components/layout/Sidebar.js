@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
 import {
@@ -13,20 +13,26 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle,
   ArrowLeftRight,
   Truck,
-  Target,
   Copy,
-  FileText
+  FileText,
+  Menu,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { useState, useEffect, createContext, useContext } from 'react';
 import axios from 'axios';
 
 const API = '/api';
+
+// Context for mobile sidebar state
+const SidebarContext = createContext({ mobileOpen: false, setMobileOpen: () => {} });
+export const useSidebar = () => useContext(SidebarContext);
+export { SidebarContext };
 
 const menuItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'KPIs', roles: ['Admin', 'Manager', 'Employee'] },
@@ -39,74 +45,31 @@ const menuItems = [
   { path: '/tenders', icon: FileText, label: 'Tenders', roles: ['Admin', 'Manager', 'TenderUser'] },
   { path: '/comparison', icon: GitCompare, label: 'Comparison', roles: ['Admin', 'Manager', 'Employee'] },
   { path: '/forecast', icon: LineChart, label: 'Forecast', roles: ['Admin', 'Manager'] },
-  // Compare Forecasts is now integrated into Forecast page as a tab
   { path: '/admin', icon: Settings, label: 'Admin', roles: ['Admin'] },
 ];
 
-export const Sidebar = () => {
-  const { user, logout, hasRole } = useAuth();
+const SidebarNav = ({ collapsed, onNavClick, overdueCount, visibleItems }) => {
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
-  const [overdueCount, setOverdueCount] = useState(0);
-
-  // Fetch overdue count
-  useEffect(() => {
-    const fetchOverdueCount = async () => {
-      try {
-        const res = await axios.get(`${API}/notifications/summary`, { withCredentials: true });
-        setOverdueCount(res.data.critical + res.data.warning);
-      } catch (err) {
-        console.error('Failed to fetch overdue count');
-      }
-    };
-    fetchOverdueCount();
-    const interval = setInterval(fetchOverdueCount, 120000); // Poll every 2 minutes
-    return () => clearInterval(interval);
-  }, []);
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  const visibleItems = menuItems.filter(item => 
-    item.roles.some(role => hasRole(role))
-  );
-
   return (
-    <aside className={cn(
-      "flex flex-col h-screen bg-slate-900 text-white transition-all duration-300",
-      collapsed ? "w-16" : "w-64"
-    )}>
-      {/* Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-700">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <img src="/sharda-logo.png" alt="Sharda" className="w-8 h-8 object-contain" />
-            <h1 className="font-heading font-bold text-lg">Sharda</h1>
-          </div>
-        )}
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-slate-400 hover:text-white hover:bg-slate-800"
-        >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
-      </div>
-
-      {/* Navigation */}
+    <>
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1 px-2">
           {visibleItems.map((item) => (
             <li key={item.path}>
               <NavLink
                 to={item.path}
+                onClick={onNavClick}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-                  isActive 
-                    ? "bg-primary text-primary-foreground" 
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
                     : "text-slate-400 hover:text-white hover:bg-slate-800",
                   collapsed && "justify-center"
                 )}
@@ -153,8 +116,8 @@ export const Sidebar = () => {
             </div>
           )}
         </div>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size={collapsed ? "icon" : "sm"}
           onClick={handleLogout}
           className={cn(
@@ -166,6 +129,89 @@ export const Sidebar = () => {
           {!collapsed && <span>Logout</span>}
         </Button>
       </div>
-    </aside>
+    </>
+  );
+};
+
+export const Sidebar = () => {
+  const { hasRole } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [overdueCount, setOverdueCount] = useState(0);
+  const { mobileOpen, setMobileOpen } = useSidebar();
+  const location = useLocation();
+
+  useEffect(() => {
+    const fetchOverdueCount = async () => {
+      try {
+        const res = await axios.get(`${API}/notifications/summary`, { withCredentials: true });
+        setOverdueCount(res.data.critical + res.data.warning);
+      } catch (err) {
+        console.error('Failed to fetch overdue count');
+      }
+    };
+    fetchOverdueCount();
+    const interval = setInterval(fetchOverdueCount, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, setMobileOpen]);
+
+  const visibleItems = menuItems.filter(item =>
+    item.roles.some(role => hasRole(role))
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar - hidden on mobile */}
+      <aside className={cn(
+        "hidden lg:flex flex-col h-screen bg-slate-900 text-white transition-all duration-300",
+        collapsed ? "w-16" : "w-64"
+      )} data-testid="desktop-sidebar">
+        {/* Logo */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          {!collapsed && (
+            <div className="flex items-center gap-2">
+              <img src="/sharda-logo.png" alt="Sharda" className="w-8 h-8 object-contain" />
+              <h1 className="font-heading font-bold text-lg">Sharda</h1>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-slate-400 hover:text-white hover:bg-slate-800"
+          >
+            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        <SidebarNav
+          collapsed={collapsed}
+          onNavClick={() => {}}
+          overdueCount={overdueCount}
+          visibleItems={visibleItems}
+        />
+      </aside>
+
+      {/* Mobile Sidebar - Sheet drawer */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="p-0 w-72 bg-slate-900 text-white border-slate-700" data-testid="mobile-sidebar">
+          <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+          <div className="flex items-center gap-2 p-4 border-b border-slate-700">
+            <img src="/sharda-logo.png" alt="Sharda" className="w-8 h-8 object-contain" />
+            <h1 className="font-heading font-bold text-lg">Sharda</h1>
+          </div>
+          <SidebarNav
+            collapsed={false}
+            onNavClick={() => setMobileOpen(false)}
+            overdueCount={overdueCount}
+            visibleItems={visibleItems}
+          />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 };
