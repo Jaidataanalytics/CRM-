@@ -1195,14 +1195,14 @@ async def get_enhanced_entity_analytics(
             "won_leads": cy_won,
             "lost_leads": cy_lost,
             "total_kva": round(cy_total_kva, 1),
-            "conversion_rate": round((cy_won / (cy_won + cy_lost) * 100) if (cy_won + cy_lost) > 0 else 0, 1)
+            "conversion_rate": round((cy_won / cy_total * 100) if cy_total > 0 else 0, 1)
         },
         "last_year": {
             "total_leads": ly_total,
             "won_leads": ly_won,
             "lost_leads": ly_lost,
             "total_kva": round(ly_total_kva, 1),
-            "conversion_rate": round((ly_won / (ly_won + ly_lost) * 100) if (ly_won + ly_lost) > 0 else 0, 1)
+            "conversion_rate": round((ly_won / ly_total * 100) if ly_total > 0 else 0, 1)
         },
         "yoy_change": {
             "total_leads": calc_yoy_change(cy_total, ly_total),
